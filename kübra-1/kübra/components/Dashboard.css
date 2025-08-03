@@ -1,0 +1,50 @@
+.dashboard h1 {
+  font-size: 2rem;
+  margin-bottom: 32px;
+}
+
+.dashboard-cards {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.dashboard-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 24px 32px;
+  min-width: 180px;
+  text-align: center;
+}
+
+.dashboard-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+.dashboard-card p {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.dashboard-actions {
+  margin-top: 24px;
+}
+
+.dashboard-actions button {
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 24px;
+  margin-right: 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dashboard-actions button:hover {
+  background: #125ea2;
+}
