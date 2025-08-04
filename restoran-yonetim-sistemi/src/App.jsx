@@ -19,13 +19,14 @@ import AdminDashboard from './pages/admin/Dashboard.jsx';
 import ReportsPage from './pages/reports/ReportsPage.jsx';
 import ProductsPage from './pages/products/ProductsPage.jsx';
 import StokUpdate from './components/stock/StokUpdate.jsx';
-import MenuUpdate from './components/menu/MenuUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
+import MenuPage from './pages/menu/MenuPage.jsx';
 
 // Shared Staff Pages (Garson/Kasiyer)
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
+
 
 // Stil dosyaları
 import "./App.css";
@@ -61,11 +62,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 function App() {
   const { user } = useContext(AuthContext);
 
-  // AuthContext'ten gelen kullanıcı bilgisi yüklenene kadar bekle
-  if (user === undefined) {
-    return null; // veya bir yükleme ekranı göster
-  }
-
   return (
     <ThemeProvider>
       <TableProvider>
@@ -89,8 +85,8 @@ function App() {
             <Route path="products" element={<ProductsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="stock" element={<StokUpdate />} />
-            <Route path="menu" element={<MenuUpdate />} />
             <Route path="personnel" element={<PersonnelPage />} />
+            <Route path="menu" element={<MenuPage />} />
           </Route>
 
           {/* Garson Paneli */}

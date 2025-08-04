@@ -74,7 +74,7 @@ function StokUpdate() {
 
   return (
     <div style={{ maxWidth: 1000, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
-      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Stok Yönetimi</h2>
+      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Ürün & Stok Yönetimi</h2>
       <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         {kategoriler.map((kategori) => (
           <button key={kategori} onClick={() => setAktifKategori(kategori)} style={{ background: aktifKategori === kategori ? "#1a3c34" : "#e0e0e0", color: aktifKategori === kategori ? "#fff" : "#1a3c34", border: "none", borderRadius: 8, padding: "8px 18px", fontWeight: 700, cursor: "pointer" }}>

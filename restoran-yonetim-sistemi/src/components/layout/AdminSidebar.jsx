@@ -35,7 +35,6 @@ const AdminSidebar = () => {
                 </div>
             </div>
             <nav className="admin-sidebar-nav">
-                {/* NavLink, URL'ye göre aktif linki otomatik olarak stillendirir */}
                 <NavLink
                     to="/admin/dashboard"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
@@ -46,14 +45,7 @@ const AdminSidebar = () => {
                     to="/admin/stock"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Stok Güncelleme
-                </NavLink>
-
-                <NavLink
-                    to="/admin/menu"
-                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                >
-                    Menü Güncelleme
+                    Ürün Yönetimi
                 </NavLink>
                 <NavLink
                     to="/admin/personnel"
@@ -61,48 +53,43 @@ const AdminSidebar = () => {
                 >
                     Personel
                 </NavLink>
-
-
                 <NavLink
                     to="/admin/reports"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Rapor
                 </NavLink>
-                {/* Diğer admin linkleri buraya eklenebilir */}
             </nav>
-            
+
             {/* Alt kısım - Ayarlar ve Çıkış */}
             <div className="admin-sidebar-bottom">
-                {/* Ayarlar Butonu */}
-                                       <button
-                           onClick={() => setShowSettings(!showSettings)}
-                           className="admin-settings-btn"
-                           style={{
-                               background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
-                               color: '#ffffff',
-                               border: 'none',
-                               padding: '12px 20px',
-                               borderRadius: '10px',
-                               fontSize: '1rem',
-                               fontWeight: '600',
-                               cursor: 'pointer',
-                               transition: 'all 0.3s ease',
-                               marginBottom: '10px',
-                               width: '100%',
-                               display: 'flex',
-                               alignItems: 'center',
-                               justifyContent: 'center',
-                               gap: '8px'
-                           }}
-                       >
+                <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="admin-settings-btn"
+                    style={{
+                        background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        marginBottom: '10px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                    }}
+                >
                     <span>⚙️</span>
                     Ayarlar
                 </button>
 
-                {/* Tema Değiştirme Modal */}
                 {showSettings && createPortal(
-                    <div 
+                    <div
                         style={{
                             position: 'fixed',
                             top: 0,
@@ -117,7 +104,7 @@ const AdminSidebar = () => {
                         }}
                         onClick={() => setShowSettings(false)}
                     >
-                        <div 
+                        <div
                             style={{
                                 background: colors.card,
                                 borderRadius: '15px',
@@ -130,8 +117,6 @@ const AdminSidebar = () => {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-
-                            {/* Kapatma Butonu */}
                             <button
                                 onClick={() => setShowSettings(false)}
                                 style={{
@@ -161,8 +146,6 @@ const AdminSidebar = () => {
                             >
                                 ✕
                             </button>
-
-                            {/* Modal İçeriği */}
                             <div style={{
                                 fontSize: '1.2rem',
                                 fontWeight: '700',
@@ -172,7 +155,6 @@ const AdminSidebar = () => {
                             }}>
                                 ⚙️ Ayarlar
                             </div>
-
                             <div style={{
                                 fontSize: '1rem',
                                 fontWeight: '600',
@@ -181,7 +163,6 @@ const AdminSidebar = () => {
                             }}>
                                 Tema Seçimi
                             </div>
-
                             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                                 <button
                                     onClick={() => toggleTheme()}
@@ -214,7 +195,6 @@ const AdminSidebar = () => {
                                     {isDarkMode ? 'Gece Modu' : 'Gündüz Modu'}
                                 </button>
                             </div>
-
                             <div style={{
                                 fontSize: '0.9rem',
                                 color: colors.textSecondary,
@@ -227,8 +207,6 @@ const AdminSidebar = () => {
                     </div>,
                     document.body
                 )}
-
-                {/* Çıkış Yap Butonu */}
                 <button
                     onClick={handleLogout}
                     className="admin-logout-btn"
