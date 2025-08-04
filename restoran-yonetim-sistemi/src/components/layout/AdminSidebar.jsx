@@ -11,12 +11,25 @@ const AdminSidebar = () => {
     return (
         <div className="admin-sidebar">
             <div className="admin-sidebar-header">
-                <h2>Admin Paneli</h2>
+                <div className="admin-user-info">
+                    <div className="admin-user-name">Betül</div>
+                    <div className="admin-user-role">Admin</div>
+                </div>
             </div>
             <nav className="admin-sidebar-nav">
                 {/* NavLink, URL'ye göre aktif linki otomatik olarak stillendirir */}
                 <NavLink
+<<<<<<< Updated upstream
                     to="/admin/anasayfa"
+=======
+                    to="/admin/dashboard"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    Ana Sayfa
+                </NavLink>
+                <NavLink
+                    to="/admin/stock"
+>>>>>>> Stashed changes
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Anasayfa
@@ -28,7 +41,7 @@ const AdminSidebar = () => {
                     Rezervasyon
                 </NavLink>
                 <NavLink
-                    to="/admin/menu"
+                    to="/admin/products"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Menü Güncelleme
@@ -40,7 +53,7 @@ const AdminSidebar = () => {
                     Stok Güncelleme
                 </NavLink>
                 <NavLink
-                    to="/admin/personel"
+                    to="/admin/personnel"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Personel
@@ -52,7 +65,13 @@ const AdminSidebar = () => {
                     Sipariş Geçmişi
                 </NavLink>
                 <NavLink
-                    to="/admin/raporlar"
+                    to="/admin/reservations"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    Rezervasyonlar
+                </NavLink>
+                <NavLink
+                    to="/admin/reports"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Rapor

@@ -1,22 +1,58 @@
-import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import { TableProvider } from './context/TableContext';
+import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
+import { useContext } from 'react';
+import { TableProvider } from './context/TableContext.jsx';
+import { AuthContext } from './context/AuthContext.jsx';
 
 // Layouts
-import AdminLayout from './components/layout/AdminLayout';
-import StaffLayout from './components/layout/StaffLayout';
+import AdminLayout from './components/layout/AdminLayout.jsx';
+import StaffLayout from './components/layout/StaffLayout.jsx';
 
-// Pages
-import Login from './pages/auth/Login';
-import StockPage from './pages/stock/StockPage';
-import MenuUpdate from './components/menu/MenuUpdate';
-import PersonnelPage from './pages/personnel/PersonnelPage';
-import ReportsPage from './pages/reports/ReportsPage';
-import TablesPage from './pages/tables/TablesPage';
-import ProductsPage from './pages/products/ProductsPage';
-import ReservationsPage from './pages/reservations/ReservationsPage';
-import OrderPage from './pages/orders/OrderPage';
-import SummaryPage from './pages/orders/SummaryPage';
+// Auth Pages
+import Login from './pages/auth/Login.jsx';
+import ForgotPassword from './pages/auth/ForgotPassword.jsx';
+import ResetPassword from './pages/auth/ResetPassword.jsx';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/Dashboard.jsx';
+import ReportsPage from './pages/reports/ReportsPage.jsx';
+import ProductsPage from './pages/products/ProductsPage.jsx';
+import ReservationsPage from './pages/reservations/ReservationsPage.jsx';
+import StockPage from './pages/stock/StockPage.jsx';
+import PersonnelPage from './pages/personnel/PersonnelPage.jsx'; // Yeni personel sayfası
+
+// Staff & Shared Pages
+import TablesPage from './pages/tables/TablesPage.jsx';
+import TablesGridPage from './pages/tables/TablesGridPage.jsx';
+import OrderPage from './pages/orders/OrderPage.jsx';
+import SummaryPage from './pages/orders/SummaryPage.jsx';
+
+// Stil dosyaları
+import "./App.css";
+
+// Yetkilendirme için korumalı rota bileşeni
+const ProtectedRoute = ({ children, requiredRole }) => {
+  const { user } = useContext(AuthContext);
+  if (!user) return <Navigate to="/login" replace />;
+  
+  if (requiredRole) {
+    // Array kontrolü
+    if (Array.isArray(requiredRole)) {
+      if (!requiredRole.includes(user.role)) {
+        const homePath = user.role === 'admin' ? '/admin/dashboard' : '/staff/home';
+        return <Navigate to={homePath} replace />;
+      }
+    } else {
+      // String kontrolü
+      if (user.role !== requiredRole) {
+        const homePath = user.role === 'admin' ? '/admin/dashboard' : '/staff/home';
+        return <Navigate to={homePath} replace />;
+      }
+    }
+  }
+  
+  return children;
+};
+
 
 // Yeni Admin Sayfaları
 import Anasayfa from './pages/admin/Anasayfa';
@@ -25,21 +61,15 @@ import SiparisGecmisi from './pages/admin/SiparisGecmisi';
 
 function App() {
   return (
-    <>
-      {/* Geçici Navigasyon Menüsü (Test için) */}
-      <nav style={{ marginBottom: '20px', padding: '10px', background: '#f0f0f0', display: 'flex', gap: '15px' }}>
-        <Link to="/login">Login</Link>
-        <Link to="/admin">Admin Paneli</Link>
-        <Link to="/garson">Garson Paneli</Link>
-        <Link to="/kasiyer">Kasiyer Paneli</Link>
-      </nav>
-
+    <TableProvider>
       <Routes>
-        {/* Standalone Sayfalar */}
-        <Route path="/" element={<Login />} />
+        {/* Layout Olmayan Sayfalar */}
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* Admin Paneli */}
+<<<<<<< Updated upstream
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Anasayfa />} />
           <Route path="anasayfa" element={<Anasayfa />} />
@@ -48,43 +78,47 @@ function App() {
           <Route path="stok" element={<StockPage />} />
           <Route path="personel" element={<PersonnelPage />} />
           <Route path="siparis-gecmisi" element={<SiparisGecmisi />} />
+=======
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="tables" element={<TablesPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="reservations" element={<ReservationsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+>>>>>>> Stashed changes
           <Route path="raporlar" element={<ReportsPage />} />
+          <Route path="stock" element={<StockPage />} />
+          <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
         </Route>
 
-        {/* Personel Paneli (Garson ve Kasiyer için ortak yapı) */}
-        {/* TableProvider'ı burada kullanarak tüm alt bileşenlerin context'e erişmesini sağlıyoruz */}
+        {/* Personel Paneli (Garson/Kasiyer) */}
         <Route
-          path="/garson"
+          path="/staff/*"
           element={
-            <TableProvider>
+            <ProtectedRoute requiredRole={['garson', 'kasiyer']}>
               <StaffLayout />
-            </TableProvider>
+            </ProtectedRoute>
           }
         >
-          <Route index element={<TablesPage />} />
-          <Route path="masalar" element={<TablesPage />} />
-          <Route path="urunler" element={<ProductsPage />} />
-          <Route path="rezervasyonlar" element={<ReservationsPage />} />
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<TablesGridPage />} />
+          <Route path="tables" element={<TablesGridPage />} />
           <Route path="order/:tableId" element={<OrderPage />} />
           <Route path="summary/:tableId" element={<SummaryPage />} />
         </Route>
 
-        <Route
-          path="/kasiyer"
-          element={
-            <TableProvider>
-              <StaffLayout />
-            </TableProvider>
-          }
-        >
-          <Route index element={<TablesPage />} /> {/* Kasiyer de masalar sayfasından başlar */}
-          <Route path="order/:tableId" element={<OrderPage />} />
-          <Route path="summary/:tableId" element={<SummaryPage />} />
-          {/* Kasiyere özel başka sayfalar varsa buraya eklenebilir */}
-        </Route>
-
+        {/* Varsayılan Rota */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </>
+    </TableProvider>
   );
 }
 
