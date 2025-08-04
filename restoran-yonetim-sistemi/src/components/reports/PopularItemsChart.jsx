@@ -30,13 +30,25 @@ const PopularItemsChart = () => {
     ],
   };
 
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: 'white'
+        }
+      }
+    }
+  };
+
   return (
-    <Card className="mb-4">
+    <Card className="mb-4" style={{ backgroundColor: '#2c3e50', color: 'white' }}>
       <Card.Body>
-        <Card.Title className="text-center fs-5 mb-3">🍕 En Çok Satan Ürünler</Card.Title>
+        <Card.Title className="text-center fs-5 mb-3" style={{ color: 'white' }}>🍕 En Çok Satan Ürünler</Card.Title>
 
         <div style={{ maxWidth: '300px', margin: '0 auto' }}>
-          <Pie data={data} />
+          <Pie data={data} options={options} />
         </div>
 
       </Card.Body>

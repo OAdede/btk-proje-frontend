@@ -24,9 +24,113 @@ ChartJS.register(
 );
 
 const SalesChart = () => {
+  // Gerçek zamanlı tarih hesaplama fonksiyonları
+  const getCurrentYear = () => new Date().getFullYear();
+  const getCurrentMonth = () => {
+    const months = ['ocak', 'subat', 'mart', 'nisan', 'mayis', 'haziran', 
+                   'temmuz', 'agustos', 'eylul', 'ekim', 'kasim', 'aralik'];
+    return months[new Date().getMonth()];
+  };
+
   const [mode, setMode] = useState('daily');
-  const [selectedMonth, setSelectedMonth] = useState('aralik');
-  const [selectedYear, setSelectedYear] = useState('2024');
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [selectedYear, setSelectedYear] = useState(getCurrentYear().toString());
+
+  // Dinamik günlük tarih oluşturma
+  const generateDailyLabels = (monthName, monthIndex, year) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    // Eğer seçilen ay geçmişte ise, o ayın ilk haftasını göster
+    // Eğer şu anki ay ise, bu haftayı göster
+    let startDate;
+    if (monthIndex === currentMonth && year === currentYear.toString()) {
+      // Bu hafta
+      const dayOfWeek = currentDate.getDay(); // 0 = Pazar, 1 = Pazartesi
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Pazartesi'ye olan gün sayısı
+      startDate = new Date(currentDate);
+      startDate.setDate(currentDate.getDate() - daysToMonday);
+    } else {
+      // Seçilen ayın ilk haftası
+      startDate = new Date(parseInt(year), monthIndex, 1);
+      const dayOfWeek = startDate.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      startDate.setDate(startDate.getDate() - daysToMonday);
+    }
+
+    const labels = [];
+    const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+    const monthShortNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      const day = date.getDate();
+      const monthShort = monthShortNames[date.getMonth()];
+      labels.push(`${dayNames[i]} (${day} ${monthShort})`);
+    }
+
+    return labels;
+  };
+
+  // Dinamik haftalık tarih oluşturma
+  const generateWeeklyLabels = (monthName, monthIndex, year) => {
+    const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    // Eğer şu anki ay seçiliyse, bu ayın haftalarını göster
+    if (monthIndex === currentMonth && year === currentYear.toString()) {
+      const weekOfMonth = Math.ceil(currentDate.getDate() / 7);
+      const labels = [];
+      for (let i = 1; i <= 4; i++) {
+        if (i <= weekOfMonth) {
+          labels.push(`${i}. Hafta (${monthNames[monthIndex]})`);
+        } else {
+          labels.push(`${i}. Hafta (${monthNames[monthIndex]})`);
+        }
+      }
+      return labels;
+    } else {
+      // Geçmiş veya gelecek aylar için standart haftalar
+      return [
+        `1. Hafta (${monthNames[monthIndex]})`,
+        `2. Hafta (${monthNames[monthIndex]})`,
+        `3. Hafta (${monthNames[monthIndex]})`,
+        `4. Hafta (${monthNames[monthIndex]})`
+      ];
+    }
+  };
+
+  // Dinamik aylık tarih oluşturma
+  const generateMonthlyLabels = (year) => {
+    const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    
+    // Eğer şu anki yıl seçiliyse, bu yılın aylarını göster
+    if (year === currentYear.toString()) {
+      const currentMonth = currentDate.getMonth();
+      const labels = [];
+      for (let i = 0; i < 12; i++) {
+        if (i <= currentMonth) {
+          labels.push(`${monthNames[i]} ${year}`);
+        } else {
+          labels.push(`${monthNames[i]} ${year}`);
+        }
+      }
+      return labels;
+    } else {
+      // Geçmiş veya gelecek yıllar için tüm aylar
+      return monthNames.map(month => `${month} ${year}`);
+    }
+  };
 
   const months = [
     { value: 'ocak', label: 'Ocak' },
@@ -44,137 +148,149 @@ const SalesChart = () => {
   ];
 
   const years = [
-    { value: '2022', label: '2022' },
-    { value: '2023', label: '2023' },
-    { value: '2024', label: '2024' },
-    { value: '2025', label: '2025' },
+    { value: (getCurrentYear() - 2).toString(), label: (getCurrentYear() - 2).toString() },
+    { value: (getCurrentYear() - 1).toString(), label: (getCurrentYear() - 1).toString() },
+    { value: getCurrentYear().toString(), label: getCurrentYear().toString() },
+    { value: (getCurrentYear() + 1).toString(), label: (getCurrentYear() + 1).toString() },
   ];
 
-  const dataSets = {
-    daily: {
-      ocak: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1100, 1300, 1600, 1200, 1800, 2000, 1500],
+  // Veri setlerini dinamik olarak oluştur
+  const getDataSets = () => {
+    const currentYear = getCurrentYear();
+    const yearOptions = [
+      { value: (currentYear - 2).toString(), label: (currentYear - 2).toString() },
+      { value: (currentYear - 1).toString(), label: (currentYear - 1).toString() },
+      { value: currentYear.toString(), label: currentYear.toString() },
+      { value: (currentYear + 1).toString(), label: (currentYear + 1).toString() },
+    ];
+
+    return {
+      daily: {
+        ocak: {
+          labels: generateDailyLabels('ocak', 0, selectedYear),
+          data: [1100, 1300, 1600, 1200, 1800, 2000, 1500],
+        },
+        subat: {
+          labels: generateDailyLabels('subat', 1, selectedYear),
+          data: [1000, 1200, 1400, 1100, 1600, 1800, 1300],
+        },
+        mart: {
+          labels: generateDailyLabels('mart', 2, selectedYear),
+          data: [1150, 1350, 1650, 1250, 1850, 2050, 1550],
+        },
+        nisan: {
+          labels: generateDailyLabels('nisan', 3, selectedYear),
+          data: [1250, 1450, 1750, 1350, 1950, 2150, 1650],
+        },
+        mayis: {
+          labels: generateDailyLabels('mayis', 4, selectedYear),
+          data: [1300, 1500, 1800, 1400, 2000, 2200, 1700],
+        },
+        haziran: {
+          labels: generateDailyLabels('haziran', 5, selectedYear),
+          data: [1350, 1550, 1850, 1450, 2050, 2250, 1750],
+        },
+        temmuz: {
+          labels: generateDailyLabels('temmuz', 6, selectedYear),
+          data: [1400, 1600, 1900, 1500, 2100, 2300, 1800],
+        },
+        agustos: {
+          labels: generateDailyLabels('agustos', 7, selectedYear),
+          data: [1450, 1650, 1950, 1550, 2150, 2350, 1850],
+        },
+        eylul: {
+          labels: generateDailyLabels('eylul', 8, selectedYear),
+          data: [1200, 1400, 1700, 1300, 1900, 2100, 1600],
+        },
+        ekim: {
+          labels: generateDailyLabels('ekim', 9, selectedYear),
+          data: [1250, 1450, 1750, 1350, 1950, 2150, 1650],
+        },
+        kasim: {
+          labels: generateDailyLabels('kasim', 10, selectedYear),
+          data: [1300, 1500, 1800, 1400, 2000, 2200, 1700],
+        },
+        aralik: {
+          labels: generateDailyLabels('aralik', 11, selectedYear),
+          data: [1200, 1500, 1800, 1400, 2000, 2200, 1700],
+        },
       },
-      subat: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1000, 1200, 1400, 1100, 1600, 1800, 1300],
+      weekly: {
+        ocak: {
+          labels: generateWeeklyLabels('ocak', 0, selectedYear),
+          data: [8500, 9200, 7800, 9500],
+        },
+        subat: {
+          labels: generateWeeklyLabels('subat', 1, selectedYear),
+          data: [8000, 8700, 7500, 9000],
+        },
+        mart: {
+          labels: generateWeeklyLabels('mart', 2, selectedYear),
+          data: [8800, 9500, 8200, 9800],
+        },
+        nisan: {
+          labels: generateWeeklyLabels('nisan', 3, selectedYear),
+          data: [9500, 10200, 8900, 10500],
+        },
+        mayis: {
+          labels: generateWeeklyLabels('mayis', 4, selectedYear),
+          data: [10000, 10700, 9400, 11000],
+        },
+        haziran: {
+          labels: generateWeeklyLabels('haziran', 5, selectedYear),
+          data: [10500, 11200, 9900, 11500],
+        },
+        temmuz: {
+          labels: generateWeeklyLabels('temmuz', 6, selectedYear),
+          data: [11000, 11700, 10400, 12000],
+        },
+        agustos: {
+          labels: generateWeeklyLabels('agustos', 7, selectedYear),
+          data: [11500, 12200, 10900, 12500],
+        },
+        eylul: {
+          labels: generateWeeklyLabels('eylul', 8, selectedYear),
+          data: [9000, 9700, 8400, 10000],
+        },
+        ekim: {
+          labels: generateWeeklyLabels('ekim', 9, selectedYear),
+          data: [9500, 10200, 8900, 10500],
+        },
+        kasim: {
+          labels: generateWeeklyLabels('kasim', 10, selectedYear),
+          data: [10000, 10700, 9400, 11000],
+        },
+        aralik: {
+          labels: generateWeeklyLabels('aralik', 11, selectedYear),
+          data: [9800, 10200, 8700, 11000],
+        },
       },
-      mart: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1150, 1350, 1650, 1250, 1850, 2050, 1550],
+      monthly: {
+        2022: {
+          labels: generateMonthlyLabels('2022'),
+          data: [38000, 42000, 35000, 47000, 44000, 49000, 51000, 54000, 48000, 50000, 52000, 55000],
+        },
+        2023: {
+          labels: generateMonthlyLabels('2023'),
+          data: [40000, 44000, 37000, 49000, 46000, 51000, 53000, 56000, 50000, 52000, 54000, 57000],
+        },
+        2024: {
+          labels: generateMonthlyLabels('2024'),
+          data: [42000, 46000, 39000, 51000, 48000, 53000, 55000, 58000, 52000, 54000, 56000, 59000],
+        },
+        2025: {
+          labels: generateMonthlyLabels('2025'),
+          data: [44000, 48000, 41000, 53000, 50000, 55000, 57000, 60000, 54000, 56000, 58000, 61000],
+        },
       },
-      nisan: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1250, 1450, 1750, 1350, 1950, 2150, 1650],
+      yearly: {
+        labels: yearOptions.map(year => year.value),
+        data: [570000, 600000, 630000, 660000],
       },
-      mayis: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1300, 1500, 1800, 1400, 2000, 2200, 1700],
-      },
-      haziran: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1350, 1550, 1850, 1450, 2050, 2250, 1750],
-      },
-      temmuz: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1400, 1600, 1900, 1500, 2100, 2300, 1800],
-      },
-      agustos: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1450, 1650, 1950, 1550, 2150, 2350, 1850],
-      },
-      eylul: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1200, 1400, 1700, 1300, 1900, 2100, 1600],
-      },
-      ekim: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1250, 1450, 1750, 1350, 1950, 2150, 1650],
-      },
-      kasim: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1300, 1500, 1800, 1400, 2000, 2200, 1700],
-      },
-      aralik: {
-        labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
-        data: [1200, 1500, 1800, 1400, 2000, 2200, 1700],
-      },
-    },
-    weekly: {
-      ocak: {
-        labels: ['1. Hafta (Ocak)', '2. Hafta (Ocak)', '3. Hafta (Ocak)', '4. Hafta (Ocak)'],
-        data: [8500, 9200, 7800, 9500],
-      },
-      subat: {
-        labels: ['1. Hafta (Şubat)', '2. Hafta (Şubat)', '3. Hafta (Şubat)', '4. Hafta (Şubat)'],
-        data: [8000, 8700, 7500, 9000],
-      },
-      mart: {
-        labels: ['1. Hafta (Mart)', '2. Hafta (Mart)', '3. Hafta (Mart)', '4. Hafta (Mart)'],
-        data: [8800, 9500, 8200, 9800],
-      },
-      nisan: {
-        labels: ['1. Hafta (Nisan)', '2. Hafta (Nisan)', '3. Hafta (Nisan)', '4. Hafta (Nisan)'],
-        data: [9500, 10200, 8900, 10500],
-      },
-      mayis: {
-        labels: ['1. Hafta (Mayıs)', '2. Hafta (Mayıs)', '3. Hafta (Mayıs)', '4. Hafta (Mayıs)'],
-        data: [10000, 10700, 9400, 11000],
-      },
-      haziran: {
-        labels: ['1. Hafta (Haziran)', '2. Hafta (Haziran)', '3. Hafta (Haziran)', '4. Hafta (Haziran)'],
-        data: [10500, 11200, 9900, 11500],
-      },
-      temmuz: {
-        labels: ['1. Hafta (Temmuz)', '2. Hafta (Temmuz)', '3. Hafta (Temmuz)', '4. Hafta (Temmuz)'],
-        data: [11000, 11700, 10400, 12000],
-      },
-      agustos: {
-        labels: ['1. Hafta (Ağustos)', '2. Hafta (Ağustos)', '3. Hafta (Ağustos)', '4. Hafta (Ağustos)'],
-        data: [11500, 12200, 10900, 12500],
-      },
-      eylul: {
-        labels: ['1. Hafta (Eylül)', '2. Hafta (Eylül)', '3. Hafta (Eylül)', '4. Hafta (Eylül)'],
-        data: [9000, 9700, 8400, 10000],
-      },
-      ekim: {
-        labels: ['1. Hafta (Ekim)', '2. Hafta (Ekim)', '3. Hafta (Ekim)', '4. Hafta (Ekim)'],
-        data: [9500, 10200, 8900, 10500],
-      },
-      kasim: {
-        labels: ['1. Hafta (Kasım)', '2. Hafta (Kasım)', '3. Hafta (Kasım)', '4. Hafta (Kasım)'],
-        data: [10000, 10700, 9400, 11000],
-      },
-      aralik: {
-        labels: ['1. Hafta (Aralık)', '2. Hafta (Aralık)', '3. Hafta (Aralık)', '4. Hafta (Aralık)'],
-        data: [9800, 10200, 8700, 11000],
-      },
-    },
-    monthly: {
-      2022: {
-        labels: ['Ocak 2022', 'Şubat 2022', 'Mart 2022', 'Nisan 2022', 'Mayıs 2022', 'Haziran 2022', 'Temmuz 2022', 'Ağustos 2022', 'Eylül 2022', 'Ekim 2022', 'Kasım 2022', 'Aralık 2022'],
-        data: [38000, 42000, 35000, 47000, 44000, 49000, 51000, 54000, 48000, 50000, 52000, 55000],
-      },
-      2023: {
-        labels: ['Ocak 2023', 'Şubat 2023', 'Mart 2023', 'Nisan 2023', 'Mayıs 2023', 'Haziran 2023', 'Temmuz 2023', 'Ağustos 2023', 'Eylül 2023', 'Ekim 2023', 'Kasım 2023', 'Aralık 2023'],
-        data: [40000, 44000, 37000, 49000, 46000, 51000, 53000, 56000, 50000, 52000, 54000, 57000],
-      },
-      2024: {
-        labels: ['Ocak 2024', 'Şubat 2024', 'Mart 2024', 'Nisan 2024', 'Mayıs 2024', 'Haziran 2024', 'Temmuz 2024', 'Ağustos 2024', 'Eylül 2024', 'Ekim 2024', 'Kasım 2024', 'Aralık 2024'],
-        data: [42000, 46000, 39000, 51000, 48000, 53000, 55000, 58000, 52000, 54000, 56000, 59000],
-      },
-      2025: {
-        labels: ['Ocak 2025', 'Şubat 2025', 'Mart 2025', 'Nisan 2025', 'Mayıs 2025', 'Haziran 2025', 'Temmuz 2025', 'Ağustos 2025', 'Eylül 2025', 'Ekim 2025', 'Kasım 2025', 'Aralık 2025'],
-        data: [44000, 48000, 41000, 53000, 50000, 55000, 57000, 60000, 54000, 56000, 58000, 61000],
-      },
-    },
-    yearly: {
-      labels: ['2022', '2023', '2024', '2025'],
-      data: [570000, 600000, 630000, 660000],
-    },
+    };
   };
 
+  const dataSets = getDataSets();
   const currentData = mode === 'monthly' 
     ? dataSets[mode][selectedYear]
     : mode === 'yearly'
@@ -196,9 +312,15 @@ const SalesChart = () => {
   const options = {
     responsive: true,
     plugins: {
-      legend: { position: 'top' },
+      legend: { 
+        position: 'top',
+        labels: {
+          color: 'white'
+        }
+      },
       title: {
         display: true,
+        color: 'white',
         text:
           mode === 'daily'
             ? 'Günlük Satışlar'
@@ -209,12 +331,30 @@ const SalesChart = () => {
                 : 'Yıllık Satışlar',
       },
     },
+    scales: {
+      x: {
+        ticks: {
+          color: 'white'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      },
+      y: {
+        ticks: {
+          color: 'white'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        }
+      }
+    }
   };
 
   return (
-    <Card className="mb-4">
+    <Card className="mb-4" style={{ backgroundColor: '#2c3e50', color: 'white' }}>
       <Card.Body>
-        <Card.Title>Satış Grafiği</Card.Title>
+        <Card.Title style={{ color: 'white' }}>Satış Grafiği</Card.Title>
 
         <div className="d-flex justify-content-between align-items-center mb-3">
           <ButtonGroup>
