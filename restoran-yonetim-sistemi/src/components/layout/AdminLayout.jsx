@@ -7,7 +7,7 @@ import './AdminLayout.css';
 
 const AdminLayout = () => {
     const { colors } = useTheme();
-    
+
     return (
         <div className="admin-layout" style={{ background: colors.background }}>
             <TopNav />

@@ -61,6 +61,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 function App() {
   const { user } = useContext(AuthContext);
 
+  // AuthContext'ten gelen kullanıcı bilgisi yüklenene kadar bekle
+  if (user === undefined) {
+    return null; // veya bir yükleme ekranı göster
+  }
+
   return (
     <ThemeProvider>
       <TableProvider>
@@ -137,3 +142,5 @@ function App() {
     </ThemeProvider>
   );
 }
+
+export default App;

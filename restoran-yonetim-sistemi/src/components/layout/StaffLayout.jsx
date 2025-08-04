@@ -7,7 +7,7 @@ import './StaffLayout.css';
 
 const StaffLayout = () => {
     const { colors } = useTheme();
-    
+
     return (
         <div className="staff-layout" style={{ background: colors.background }}>
             <TopNav />

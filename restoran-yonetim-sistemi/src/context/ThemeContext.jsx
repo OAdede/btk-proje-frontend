@@ -28,7 +28,7 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     // Tema değişikliğini local storage'a kaydet
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-    
+
     // Body'ye tema sınıfını ekle
     document.body.className = isDarkMode ? 'dark-theme' : 'light-theme';
   }, [isDarkMode]);
@@ -36,7 +36,7 @@ export const ThemeProvider = ({ children }) => {
   const theme = {
     isDarkMode,
     toggleTheme,
-    colors: !isDarkMode ? {
+    colors: isDarkMode ? {
       // Koyu tema renkleri
       background: '#1a252f',
       cardBackground: '#2c3e50',
@@ -70,4 +70,4 @@ export const ThemeProvider = ({ children }) => {
       {children}
     </ThemeContext.Provider>
   );
-}; 
+};

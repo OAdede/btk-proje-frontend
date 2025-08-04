@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
@@ -10,7 +10,14 @@ const mockUsers = [
 ];
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(undefined);
+
+    useEffect(() => {
+        // Bu useEffect, component ilk yüklendiğinde çalışır ve
+        // başlangıçta 'undefined' olan kullanıcı durumunu 'null' (giriş yapılmamış) olarak ayarlar.
+        // Bu, uygulamanın "yükleniyor" durumunda takılı kalmasını önler.
+        setUser(null);
+    }, []);
 
     const login = async (email, password) => {
         const foundUser = mockUsers.find(u => u.email === email && u.password === password);
