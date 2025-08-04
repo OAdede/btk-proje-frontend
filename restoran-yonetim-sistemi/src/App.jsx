@@ -20,6 +20,7 @@ import ReportsPage from './pages/reports/ReportsPage.jsx';
 import ProductsPage from './pages/products/ProductsPage.jsx';
 
 import StokUpdate from './components/stock/StokUpdate.jsx';
+import MenuUpdate from './components/menu/MenuUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx'; // Yeni personel sayfası
 
 // Staff & Shared Pages
@@ -83,6 +84,7 @@ function App() {
 
   <Route path="reports" element={<ReportsPage />} />
   <Route path="stock" element={<StokUpdate />} />
+  <Route path="menu" element={<MenuUpdate />} />
   <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
 </Route>
 

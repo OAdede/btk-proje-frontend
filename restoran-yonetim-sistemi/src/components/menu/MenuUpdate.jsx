@@ -66,36 +66,28 @@ const varsayilanUrunler = {
   ],
 };
 
-function MenuUpdate({ onMenuChange }) {
-  // localStorage'dan verileri yükle veya varsayılan değerleri kullan
+function MenuUpdate() {
   const [menu, setMenu] = useState(() => {
     const kayitliMenu = localStorage.getItem('menuData');
     return kayitliMenu ? JSON.parse(kayitliMenu) : varsayilanUrunler;
   });
 
-  const [aktifKategori, setAktifKategori] = useState("Tümü");
+  const [aktifKategori, setAktifKategori] = useState("Aperatif");
   const [yeniUrun, setYeniUrun] = useState({ ad: "", fiyat: "" });
+  const [duzenleModal, setDuzenleModal] = useState({ acik: false, urun: null, index: -1, kategori: "" });
+  const [duzenleAd, setDuzenleAd] = useState("");
+  const [duzenleFiyat, setDuzenleFiyat] = useState("");
 
-  // Menü değiştiğinde localStorage'a kaydet
   useEffect(() => {
     localStorage.setItem('menuData', JSON.stringify(menu));
-    if (onMenuChange) {
-      onMenuChange(menu);
-    }
-  }, [menu, onMenuChange]);
+  }, [menu]);
 
-  const tumUrunler = Object.values(menu).flat();
+  const tumUrunler = Object.entries(menu).flatMap(([kategori, urunler]) => urunler.map(u => ({ ...u, kategori })));
   const gosterilecekUrunler =
-    aktifKategori === "Tümü" ? tumUrunler : menu[aktifKategori] || [];
-
-  const getBirim = (kategori) => {
-    if (kategori === "İçecekler" || kategori === "Tatlılar") return "adet";
-    return "porsiyon";
-  };
+    aktifKategori === "Tümü" ? tumUrunler : (menu[aktifKategori] || []).map(u => ({ ...u, kategori: aktifKategori }));
 
   const urunEkle = () => {
     if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") return;
-
     const yeniMenu = {
       ...menu,
       [aktifKategori]: [
@@ -104,45 +96,39 @@ function MenuUpdate({ onMenuChange }) {
       ],
     };
     setMenu(yeniMenu);
-
-    // Stok listesine otomatik ekle
-    if (onMenuChange) {
-      const stokUrunu = {
-        ad: yeniUrun.ad,
-        miktar: 50, // Varsayılan miktar
-        minStok: 10, // Varsayılan minimum stok
-        birim: getBirim(aktifKategori)
-      };
-      onMenuChange(yeniMenu, stokUrunu, aktifKategori, "ekle");
-    }
-
     setYeniUrun({ ad: "", fiyat: "" });
   };
 
   const urunSil = (index) => {
     if (aktifKategori === "Tümü") return;
-
-    const silinecekUrun = menu[aktifKategori][index];
     const yeniMenu = {
       ...menu,
       [aktifKategori]: menu[aktifKategori].filter((_, i) => i !== index),
     };
     setMenu(yeniMenu);
-
-    // Stok listesinden otomatik çıkar
-    if (onMenuChange) {
-      onMenuChange(yeniMenu, silinecekUrun, aktifKategori, "sil");
-    }
   };
 
   const urunDuzenle = (urun, index) => {
-    // Fiyat düzenleme modal'ı burada olacak
-    // Şimdilik sadece stok senkronizasyonu için hazırlık
+    setDuzenleModal({ acik: true, urun, index, kategori: aktifKategori });
+    setDuzenleAd(urun.ad);
+    setDuzenleFiyat(urun.fiyat.toString());
+  };
+
+  const fiyatKaydet = () => {
+    if (!duzenleModal.acik || duzenleModal.index === -1) return;
+    const yeniMenu = { ...menu };
+    yeniMenu[duzenleModal.kategori][duzenleModal.index] = {
+      ad: duzenleAd,
+      fiyat: Number(duzenleFiyat),
+    };
+    setMenu(yeniMenu);
+    setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" });
   };
 
   return (
-    <div style={{ maxWidth: 800, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
+    <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
       <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Menü Güncelleme</h2>
+      {/* Kategori Filtresi */}
       <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         {kategoriler.map((kategori) => (
           <button
@@ -151,53 +137,144 @@ function MenuUpdate({ onMenuChange }) {
             style={{
               background: aktifKategori === kategori ? "#1a3c34" : "#e0e0e0",
               color: aktifKategori === kategori ? "#fff" : "#1a3c34",
-              border: "none",
-              borderRadius: 8,
-              padding: "8px 18px",
-              fontWeight: aktifKategori === kategori ? 700 : 500,
-              fontSize: 16,
-              cursor: "pointer",
-              transition: "all 0.2s",
-              boxShadow: aktifKategori === kategori ? "0 2px 8px #1a3c3422" : "none",
+              border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
             }}
           >
             {kategori}
           </button>
         ))}
       </div>
+      {/* Yeni Ürün Ekleme Formu */}
       {aktifKategori !== "Tümü" && (
-        <div style={{ display: "flex", gap: 12, margin: "20px 0 28px 0" }}>
-          <input
-            type="text"
-            placeholder="Ürün adı"
-            value={yeniUrun.ad}
-            onChange={e => setYeniUrun({ ...yeniUrun, ad: e.target.value })}
-            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: 180 }}
-          />
-          <input
-            type="number"
-            placeholder="Fiyat"
-            value={yeniUrun.fiyat}
-            onChange={e => setYeniUrun({ ...yeniUrun, fiyat: e.target.value })}
-            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: 100 }}
-          />
-          <button onClick={urunEkle} style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "8px 24px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Ekle</button>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: "0 1px 6px #0001" }}>
+          <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Yeni Ürün Ekle</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+            <input
+              name="ad"
+              value={yeniUrun.ad}
+              onChange={(e) => setYeniUrun({ ...yeniUrun, ad: e.target.value })}
+              placeholder="Ürün adı"
+              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
+            />
+            <input
+              name="fiyat"
+              type="number"
+              value={yeniUrun.fiyat}
+              onChange={(e) => setYeniUrun({ ...yeniUrun, fiyat: e.target.value })}
+              placeholder="Fiyat (₺)"
+              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
+            />
+            <button
+              onClick={urunEkle}
+              style={{
+                background: "#1a3c34", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
+              }}
+            >
+              Ekle
+            </button>
+          </div>
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
-        {gosterilecekUrunler.map((urun, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, boxShadow: "0 1px 6px #0001", padding: "12px 20px", gap: 24 }}>
-            <div style={{ flex: 1, fontWeight: 600, fontSize: 17, color: "#1a3c34" }}>{urun.ad}</div>
-            <div style={{ fontWeight: 600, fontSize: 17, color: "#388e3c", minWidth: 80 }}>{urun.fiyat} ₺</div>
-            {aktifKategori !== "Tümü" && (
-              <>
-                <button onClick={() => urunDuzenle(urun, i)} style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Düzenle</button>
-                <button onClick={() => urunSil(i)} style={{ background: "#d90429", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Sil</button>
-              </>
-            )}
+      {/* Menü Listesi */}
+      <div style={{ display: "grid", gap: 16 }}>
+        {gosterilecekUrunler.map((urun, index) => (
+          <div
+            key={`${aktifKategori}-${index}`}
+            style={{
+              background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 1px 6px #0001",
+              display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 16, alignItems: "center"
+            }}
+          >
+            <div>
+              <h4 style={{ margin: "0 0 4px 0", color: "#1a3c34" }}>{urun.ad}</h4>
+              <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
+                {urun.fiyat} ₺ | {urun.kategori}
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span
+                style={{
+                  background: "#38b000",
+                  color: "#fff",
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  fontSize: "12px",
+                  fontWeight: "bold"
+                }}
+              >
+                Aktif
+              </span>
+            </div>
+            <button
+              onClick={() => urunDuzenle(urun, index)}
+              style={{
+                background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer",
+              }}
+            >
+              Düzenle
+            </button>
+            <button
+              onClick={() => urunSil(index)}
+              style={{
+                background: "#d90429", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer",
+              }}
+            >
+              Sil
+            </button>
           </div>
         ))}
       </div>
+      {/* Düzenleme Modal */}
+      {duzenleModal.acik && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 12, padding: 24, minWidth: 400, boxShadow: "0 4px 20px #0002"
+          }}>
+            <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Ürün Düzenle: {duzenleModal.urun?.ad}</h3>
+            <div style={{ display: "grid", gap: 16 }}>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, color: "#1a3c34" }}>Ürün Adı:</label>
+                <input
+                  type="text"
+                  value={duzenleAd}
+                  onChange={(e) => setDuzenleAd(e.target.value)}
+                  style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", marginBottom: 4, color: "#1a3c34" }}>Fiyat (₺):</label>
+                <input
+                  type="number"
+                  value={duzenleFiyat}
+                  onChange={(e) => setDuzenleFiyat(e.target.value)}
+                  style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={fiyatKaydet}
+                  style={{
+                    background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", cursor: "pointer",
+                  }}
+                >
+                  Kaydet
+                </button>
+                <button
+                  onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
+                  style={{
+                    background: "#666", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", cursor: "pointer",
+                  }}
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
