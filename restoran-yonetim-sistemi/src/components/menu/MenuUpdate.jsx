@@ -4,7 +4,7 @@ import "./MenuUpdate.css";
 const kategoriler = [
   "Tümü",
   "Ana Yemek",
-  "Aparatifler",
+  "Aperatif",
   "Fırın",
   "Izgaralar",
   "Kahvaltılıklar",
@@ -20,7 +20,7 @@ const varsayilanUrunler = {
     { ad: "Pilav Üstü Döner", fiyat: 550 },
     { ad: "SSK Dürüm Döner", fiyat: 560 },
   ],
-  "Aparatifler": [
+  "Aperatif": [
     { ad: "Çiğköfte", fiyat: 140 },
     { ad: "Soğan Halkası", fiyat: 130 },
     { ad: "Patates Kızartması", fiyat: 140 },

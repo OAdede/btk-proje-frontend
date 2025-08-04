@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
 import { useContext } from 'react';
 import { TableProvider } from './context/TableContext.jsx';
@@ -17,7 +18,7 @@ import AdminDashboard from './pages/admin/Dashboard.jsx';
 import ReportsPage from './pages/reports/ReportsPage.jsx';
 import ProductsPage from './pages/products/ProductsPage.jsx';
 
-import StockPage from './pages/stock/StockPage.jsx';
+import StokUpdate from './components/stock/StokUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx'; // Yeni personel sayfası
 
 // Staff & Shared Pages
@@ -59,7 +60,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children;
 };
 
-
 function App() {
   return (
     <TableProvider>
@@ -80,7 +80,7 @@ function App() {
   <Route path="products" element={<ProductsPage />} />
 
   <Route path="reports" element={<ReportsPage />} />
-  <Route path="stock" element={<StockPage />} />
+  <Route path="stock" element={<StokUpdate />} />
   <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
 </Route>
 
