@@ -1,9 +1,11 @@
 // src/components/reports/IncomeExpenseTable.jsx
 import React, { useState } from 'react';
 import { Card, Table, ButtonGroup, Button, Form, Badge } from 'react-bootstrap';
+import { useTheme } from '../../context/ThemeContext';
 import './IncomeExpenseTable.css';
 
 const IncomeExpenseTable = () => {
+  const { colors } = useTheme();
   const [filter, setFilter] = useState('all'); // all, income, expense
   const [period, setPeriod] = useState('month'); // week, month, year
   const [selectedMonth, setSelectedMonth] = useState('aralik');
@@ -118,11 +120,11 @@ const IncomeExpenseTable = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#1a252f', padding: '20px', borderRadius: '8px' }}>
-      <Card className="mb-4" style={{ backgroundColor: '#2c3e50', color: 'white', border: 'none' }}>
+    <div style={{ backgroundColor: colors.background, padding: '20px', borderRadius: '8px' }}>
+      <Card className="mb-4" style={{ backgroundColor: colors.cardBackground, color: colors.text, border: 'none' }}>
         <Card.Body>
           <Card.Title className="d-flex justify-content-between align-items-center mb-3">
-            <span style={{ color: 'white' }}>Gelir-Gider Detayları</span>
+            <span style={{ color: colors.text }}>Gelir-Gider Detayları</span>
           <div className="d-flex gap-2">
             <ButtonGroup size="sm">
               <Button
@@ -179,7 +181,7 @@ const IncomeExpenseTable = () => {
         {/* Özet Kartları */}
         <div className="row mb-3">
           <div className="col-md-4">
-            <div className="card" style={{ backgroundColor: '#27ae60', color: 'white' }}>
+            <div className="card" style={{ backgroundColor: colors.success, color: 'white' }}>
               <div className="card-body text-center">
                 <h6 style={{ color: 'white' }}>Toplam Gelir</h6>
                 <h4 style={{ color: 'white' }}>{formatAmount(totalIncome)}</h4>
@@ -187,7 +189,7 @@ const IncomeExpenseTable = () => {
             </div>
           </div>
           <div className="col-md-4">
-            <div className="card" style={{ backgroundColor: '#e74c3c', color: 'white' }}>
+            <div className="card" style={{ backgroundColor: colors.danger, color: 'white' }}>
               <div className="card-body text-center">
                 <h6 style={{ color: 'white' }}>Toplam Gider</h6>
                 <h4 style={{ color: 'white' }}>{formatAmount(totalExpense)}</h4>
@@ -195,7 +197,7 @@ const IncomeExpenseTable = () => {
             </div>
           </div>
           <div className="col-md-4">
-            <div className={`card ${netProfit >= 0 ? 'bg-primary' : 'bg-warning'}`} style={{ color: 'white' }}>
+            <div className="card" style={{ backgroundColor: netProfit >= 0 ? colors.primary : colors.warning, color: 'white' }}>
               <div className="card-body text-center">
                 <h6 style={{ color: 'white' }}>Net Kar/Zarar</h6>
                 <h4 style={{ color: 'white' }}>{formatAmount(netProfit)}</h4>
@@ -239,7 +241,7 @@ const IncomeExpenseTable = () => {
 
         {filteredData.length === 0 && (
           <div className="text-center py-4">
-            <p style={{ color: '#bdc3c7' }}>Bu dönem için veri bulunamadı.</p>
+            <p style={{ color: colors.textSecondary }}>Bu dönem için veri bulunamadı.</p>
           </div>
         )}
       </Card.Body>

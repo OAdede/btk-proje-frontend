@@ -12,55 +12,56 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved ? JSON.parse(saved) : false;
+    // Local storage'dan tema tercihini al
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    // Varsayılan olarak sistem temasını kullan
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  useEffect(() => {
-    localStorage.setItem('theme', JSON.stringify(isDarkMode));
-    // Body elementine tema attribute'u ekle
-    document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-    document.body.style.background = isDarkMode ? '#040410' : '#f8f9fa';
-    document.body.style.color = isDarkMode ? '#ffffff' : '#1e293b';
-  }, [isDarkMode]);
-
   const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
+    setIsDarkMode(prev => !prev);
   };
+
+  useEffect(() => {
+    // Tema değişikliğini local storage'a kaydet
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    
+    // Body'ye tema sınıfını ekle
+    document.body.className = isDarkMode ? 'dark-theme' : 'light-theme';
+  }, [isDarkMode]);
 
   const theme = {
     isDarkMode,
     toggleTheme,
-    colors: isDarkMode ? {
-      // Gece modu renkleri
-      background: '#040410',
-      surface: 'rgba(255, 255, 255, 0.1)',
-      primary: '#1e3c72',
+    colors: !isDarkMode ? {
+      // Koyu tema renkleri
+      background: '#1a252f',
+      cardBackground: '#2c3e50',
       text: '#ffffff',
-      textSecondary: 'rgba(255, 255, 255, 0.8)',
-      border: 'rgba(255, 255, 255, 0.1)',
-      sidebar: 'rgba(4, 4, 16, 0.9)',
-      card: 'rgba(255, 255, 255, 0.1)',
-      button: '#1a3c34',
-      buttonHover: 'rgba(255, 255, 255, 0.2)',
-      danger: '#E0190F',
-      success: '#38b000',
-      warning: '#ff6b35'
+      textSecondary: '#bdc3c7',
+      tableRowBackground: '#1b345c',
+      tableHeaderBackground: '#34495e',
+      border: '#34495e',
+      success: '#27ae60',
+      danger: '#e74c3c',
+      primary: '#3498db',
+      warning: '#f39c12'
     } : {
-      // Gündüz modu renkleri
+      // Açık tema renkleri
       background: '#f8f9fa',
-      surface: '#ffffff',
-      primary: '#1a3c34',
-      text: '#1e293b',
-      textSecondary: '#64748b',
-      border: '#e2e8f0',
-      sidebar: 'rgba(255, 255, 255, 0.95)',
-      card: '#ffffff',
-      button: '#1a3c34',
-      buttonHover: '#e0e0e0',
-      danger: '#d90429',
-      success: '#38b000',
-      warning: '#ff6b35'
+      cardBackground: '#ffffff',
+      text: '#2c3e50',
+      textSecondary: '#6c757d',
+      tableRowBackground: '#ffffff',
+      tableHeaderBackground: '#e9ecef',
+      border: '#dee2e6',
+      success: '#28a745',
+      danger: '#dc3545',
+      primary: '#007bff',
+      warning: '#ffc107'
     }
   };
 

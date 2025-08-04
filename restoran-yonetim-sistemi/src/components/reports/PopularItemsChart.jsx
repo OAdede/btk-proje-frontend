@@ -8,10 +8,12 @@ import {
   Legend,
 } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
+import { useTheme } from '../../context/ThemeContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const PopularItemsChart = () => {
+  const { colors } = useTheme();
   const data = {
     labels: ['Adana Kebap', 'Mercimek Çorbası', 'Künefe', 'İskender', 'Sütlaç'],
     datasets: [
@@ -36,18 +38,19 @@ const PopularItemsChart = () => {
       legend: {
         position: 'top',
         labels: {
-          color: 'white'
+          color: colors.text
         }
       }
-    }
+    },
+    backgroundColor: colors.cardBackground
   };
 
   return (
-    <Card className="mb-4" style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+    <Card className="mb-4" style={{ backgroundColor: colors.cardBackground, color: colors.text }}>
       <Card.Body>
-        <Card.Title className="text-center fs-5 mb-3" style={{ color: 'white' }}>🍕 En Çok Satan Ürünler</Card.Title>
+        <Card.Title className="text-center fs-5 mb-3" style={{ color: colors.text }}>🍕 En Çok Satan Ürünler</Card.Title>
 
-        <div style={{ maxWidth: '300px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '300px', margin: '0 auto', backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px' }}>
           <Pie data={data} options={options} />
         </div>
 
