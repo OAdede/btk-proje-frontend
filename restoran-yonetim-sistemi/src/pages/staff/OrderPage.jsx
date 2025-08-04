@@ -1,8 +1,8 @@
 import React, { useState, useContext, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TableContext } from "../../../context/TableContext";
-import { AuthContext } from "../../../context/AuthContext";
-import { useTheme } from "../../../context/ThemeContext";
+import { TableContext } from "../../context/TableContext";
+import { AuthContext } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function OrderPage() {
     const { tableId } = useParams();

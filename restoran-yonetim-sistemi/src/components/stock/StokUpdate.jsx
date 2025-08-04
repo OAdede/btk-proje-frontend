@@ -1,305 +1,324 @@
 import React, { useState, useEffect } from "react";
-import "./StokUpdate.css";
 
-const kategoriler = [
-  "Tümü",
-  "Ana Yemek",
-  "Aperatif",
-  "Fırın",
-  "Izgaralar",
-  "Kahvaltılıklar",
-  "İçecekler",
-  "Tatlılar",
-];
-
-const varsayilanUrunler = {
+const varsayilanStokUrunleri = {
   "Ana Yemek": [
-    { ad: "Et Döner", fiyat: 535 },
-    { ad: "Döner Beyti Sarma", fiyat: 545 },
-    { ad: "Tereyağlı İskender", fiyat: 560 },
-    { ad: "Pilav Üstü Döner", fiyat: 550 },
-    { ad: "SSK Dürüm Döner", fiyat: 560 },
+    { ad: "Et Döner", miktar: 50, minStok: 10, birim: "porsiyon" },
+    { ad: "Döner Beyti Sarma", miktar: 30, minStok: 5, birim: "porsiyon" },
+    { ad: "Tereyağlı İskender", miktar: 25, minStok: 8, birim: "porsiyon" },
+    { ad: "Pilav Üstü Döner", miktar: 40, minStok: 12, birim: "porsiyon" },
+    { ad: "SSK Dürüm Döner", miktar: 35, minStok: 7, birim: "porsiyon" },
   ],
-  "Aperatif": [
-    { ad: "Çiğköfte", fiyat: 140 },
-    { ad: "Soğan Halkası", fiyat: 130 },
-    { ad: "Patates Kızartması", fiyat: 140 },
-    { ad: "Börek Çeşitleri", fiyat: 140 },
-    { ad: "Salata Çeşitleri", fiyat: 120 },
+  "Aparatifler": [
+    { ad: "Çiğköfte", miktar: 20, minStok: 5, birim: "porsiyon" },
+    { ad: "Soğan Halkası", miktar: 15, minStok: 3, birim: "porsiyon" },
+    { ad: "Patates Kızartması", miktar: 30, minStok: 8, birim: "porsiyon" },
+    { ad: "Börek Çeşitleri", miktar: 25, minStok: 6, birim: "porsiyon" },
+    { ad: "Salata Çeşitleri", miktar: 18, minStok: 4, birim: "porsiyon" },
   ],
   "Fırın": [
-    { ad: "Kuşbaşılı Pide", fiyat: 540 },
-    { ad: "Karışık Pide", fiyat: 550 },
-    { ad: "Kaşarlı Pide", fiyat: 470 },
-    { ad: "Kıymalı Pide", fiyat: 490 },
-    { ad: "Lahmacun", fiyat: 170 },
+    { ad: "Kuşbaşılı Pide", miktar: 12, minStok: 3, birim: "porsiyon" },
+    { ad: "Karışık Pide", miktar: 15, minStok: 4, birim: "porsiyon" },
+    { ad: "Kaşarlı Pide", miktar: 20, minStok: 5, birim: "porsiyon" },
+    { ad: "Kıymalı Pide", miktar: 18, minStok: 4, birim: "porsiyon" },
+    { ad: "Lahmacun", miktar: 30, minStok: 8, birim: "porsiyon" },
   ],
   "Izgaralar": [
-    { ad: "Patlıcan Kebap", fiyat: 610 },
-    { ad: "Special Kebap", fiyat: 570 },
-    { ad: "Beyti Sarma", fiyat: 560 },
-    { ad: "Tavuk Pirzola", fiyat: 540 },
-    { ad: "Izgara Köfte", fiyat: 550 },
+    { ad: "Patlıcan Kebap", miktar: 15, minStok: 5, birim: "porsiyon" },
+    { ad: "Special Kebap", miktar: 20, minStok: 6, birim: "porsiyon" },
+    { ad: "Beyti Sarma", miktar: 18, minStok: 5, birim: "porsiyon" },
+    { ad: "Tavuk Pirzola", miktar: 22, minStok: 7, birim: "porsiyon" },
+    { ad: "Izgara Köfte", miktar: 25, minStok: 8, birim: "porsiyon" },
   ],
   "Kahvaltılıklar": [
-    { ad: "Kahvaltı Tabağı", fiyat: 450 },
-    { ad: "Serpme Kahvaltı", fiyat: 600 },
-    { ad: "Menemen", fiyat: 200 },
-    { ad: "Kuymak", fiyat: 250 },
-    { ad: "Avakado yumurta", fiyat: 130 },
+    { ad: "Kahvaltı Tabağı", miktar: 10, minStok: 3, birim: "porsiyon" },
+    { ad: "Serpme Kahvaltı", miktar: 8, minStok: 2, birim: "porsiyon" },
+    { ad: "Menemen", miktar: 15, minStok: 5, birim: "porsiyon" },
+    { ad: "Kuymak", miktar: 12, minStok: 4, birim: "porsiyon" },
+    { ad: "Avakado yumurta", miktar: 20, minStok: 6, birim: "porsiyon" },
   ],
   "İçecekler": [
-    { ad: "Kola", fiyat: 85 },
-    { ad: "Fanta", fiyat: 85 },
-    { ad: "Sprite", fiyat: 85 },
-    { ad: "Tea", fiyat: 85 },
-    { ad: "Ayran", fiyat: 75 },
-    { ad: "Su", fiyat: 30 },
+    { ad: "Kola", miktar: 48, minStok: 12, birim: "adet" },
+    { ad: "Fanta", miktar: 45, minStok: 10, birim: "adet" },
+    { ad: "Sprite", miktar: 42, minStok: 10, birim: "adet" },
+    { ad: "Tea", miktar: 60, minStok: 15, birim: "adet" },
+    { ad: "Ayran", miktar: 35, minStok: 8, birim: "adet" },
+    { ad: "Su", miktar: 100, minStok: 20, birim: "adet" },
   ],
   "Tatlılar": [
-    { ad: "Künefe", fiyat: 120 },
-    { ad: "Baklava", fiyat: 150 },
-    { ad: "Sütlaç", fiyat: 80 },
-    { ad: "Kazandibi", fiyat: 100 },
-    { ad: "Tiramisu", fiyat: 130 },
-    { ad: "Cheesecake", fiyat: 140 },
+    { ad: "Künefe", miktar: 15, minStok: 5, birim: "adet" },
+    { ad: "Baklava", miktar: 20, minStok: 6, birim: "adet" },
+    { ad: "Sütlaç", miktar: 25, minStok: 8, birim: "adet" },
+    { ad: "Kazandibi", miktar: 18, minStok: 5, birim: "adet" },
+    { ad: "Tiramisu", miktar: 12, minStok: 4, birim: "adet" },
+    { ad: "Cheesecake", miktar: 10, minStok: 3, birim: "adet" },
   ],
 };
 
-function StokUpdate() {
-  // localStorage'dan menü verilerini yükle
-  const [menu, setMenu] = useState(() => {
-    const kayitliMenu = localStorage.getItem('menuData');
-    return kayitliMenu ? JSON.parse(kayitliMenu) : varsayilanUrunler;
-  });
+const kategoriler = ["Tümü", "Ana Yemek", "Aparatifler", "Fırın", "Izgaralar", "Kahvaltılıklar", "İçecekler", "Tatlılar"];
 
-  // Stok verilerini menüden oluştur
+const URUN_SAYFASI = 10; // Sayfa başına gösterilecek ürün sayısı
+
+function StokUpdate({ menuData, onMenuChange }) {
   const [stok, setStok] = useState(() => {
     const kayitliStok = localStorage.getItem('stokData');
-    if (kayitliStok) {
-      return JSON.parse(kayitliStok);
-    } else {
-      // Menüden stok verilerini oluştur
-      const yeniStok = {};
-      Object.keys(menu).forEach(kategori => {
-        yeniStok[kategori] = menu[kategori].map(urun => ({
-          ad: urun.ad,
-          miktar: Math.floor(Math.random() * 50) + 10, // Rastgele miktar
-          minStok: Math.floor(Math.random() * 10) + 5, // Rastgele minimum stok
-          birim: kategori === "İçecekler" || kategori === "Tatlılar" ? "adet" : "porsiyon"
-        }));
-      });
-      return yeniStok;
-    }
+    return kayitliStok ? JSON.parse(kayitliStok) : varsayilanStokUrunleri;
   });
 
-  const [aktifKategori, setAktifKategori] = useState("Aperatif");
+  const [aktifKategori, setAktifKategori] = useState("Tümü");
+  const [mevcutSayfa, setMevcutSayfa] = useState(1); // Sayfalama için state
   const [yeniUrun, setYeniUrun] = useState({ ad: "", miktar: "", minStok: "", birim: "" });
   const [duzenleModal, setDuzenleModal] = useState({ acik: false, urun: null, index: -1, kategori: "" });
   const [duzenleMiktar, setDuzenleMiktar] = useState("");
   const [duzenleMinStok, setDuzenleMinStok] = useState("");
 
-  // Stok verilerini localStorage'a kaydet
   useEffect(() => {
     localStorage.setItem('stokData', JSON.stringify(stok));
   }, [stok]);
 
-  // Gösterilecek ürünleri hesapla
-  const gosterilecekUrunler = aktifKategori === "Tümü" 
-    ? Object.values(stok).flat() 
-    : stok[aktifKategori] || [];
+  useEffect(() => {
+    setMevcutSayfa(1); // Kategori değiştiğinde ilk sayfaya dön
+  }, [aktifKategori]);
+
+  const tumUrunler = Object.entries(stok).flatMap(([kategori, urunler]) =>
+    urunler.map(urun => ({ ...urun, kategori }))
+  );
+
+  const gosterilecekUrunler =
+    aktifKategori === "Tümü"
+      ? tumUrunler
+      : stok[aktifKategori]?.map(u => ({ ...u, kategori: aktifKategori })) || [];
+
+  // Sayfalama mantığı
+  const sonUrunIndex = mevcutSayfa * URUN_SAYFASI;
+  const ilkUrunIndex = sonUrunIndex - URUN_SAYFASI;
+  const mevcutSayfaUrunleri = gosterilecekUrunler.slice(ilkUrunIndex, sonUrunIndex);
+  const toplamSayfaSayisi = Math.ceil(gosterilecekUrunler.length / URUN_SAYFASI);
 
   const stokDurumu = (miktar, minStok) => {
-    if (miktar > minStok * 2) return { durum: "Yeterli", renk: "#4caf50", class: "yeterli" };
-    if (miktar > minStok) return { durum: "Az", renk: "#ff9800", class: "az" };
-    return { durum: "Kritik", renk: "#f44336", class: "kritik" };
-  };
-
-  const getBirim = (kategori) => {
-    return kategori === "İçecekler" || kategori === "Tatlılar" ? "adet" : "porsiyon";
+    if (miktar <= 0) return { durum: "Tükendi", renk: "#d90429" };
+    if (miktar <= minStok) return { durum: "Kritik", renk: "#ff6b35" };
+    return { durum: "Yeterli", renk: "#38b000" };
   };
 
   const urunEkle = () => {
-    if (!yeniUrun.ad || !yeniUrun.miktar || !yeniUrun.minStok || !yeniUrun.birim) {
-      alert("Lütfen tüm alanları doldurun!");
-      return;
-    }
+    if (!yeniUrun.ad || !yeniUrun.miktar || !yeniUrun.minStok || !yeniUrun.birim || !aktifKategori || aktifKategori === "Tümü") return;
 
-    const yeniStokData = { ...stok };
-    if (!yeniStokData[aktifKategori]) {
-      yeniStokData[aktifKategori] = [];
-    }
+    const guncelStok = { ...stok };
+    const kategoriUrunleri = guncelStok[aktifKategori] ? [...guncelStok[aktifKategori]] : [];
 
-    yeniStokData[aktifKategori].push({
-      ad: yeniUrun.ad,
+    kategoriUrunleri.push({
+      ...yeniUrun,
       miktar: Number(yeniUrun.miktar),
-      minStok: Number(yeniUrun.minStok),
-      birim: yeniUrun.birim,
+      minStok: Number(yeniUrun.minStok)
     });
 
-    setStok(yeniStokData);
+    guncelStok[aktifKategori] = kategoriUrunleri;
+    setStok(guncelStok);
     setYeniUrun({ ad: "", miktar: "", minStok: "", birim: "" });
   };
 
-  const urunSil = (index) => {
-    if (window.confirm("Bu ürünü silmek istediğinizden emin misiniz?")) {
-      const yeniStok = { ...stok };
-      yeniStok[aktifKategori].splice(index, 1);
-      setStok(yeniStok);
-    }
+  const urunSil = (urunAdi, kategori) => {
+    const guncelStok = { ...stok };
+    guncelStok[kategori] = guncelStok[kategori].filter(u => u.ad !== urunAdi);
+    setStok(guncelStok);
   };
 
-  const urunDuzenle = (urun, index) => {
-    setDuzenleModal({ acik: true, urun, index, kategori: aktifKategori });
+  const urunDuzenle = (urun, kategori) => {
+    const urunIndex = stok[kategori].findIndex(u => u.ad === urun.ad);
+    setDuzenleModal({ acik: true, urun, index: urunIndex, kategori });
     setDuzenleMiktar(urun.miktar.toString());
     setDuzenleMinStok(urun.minStok.toString());
   };
 
   const miktarKaydet = () => {
-    if (!duzenleMiktar || !duzenleMinStok) {
-      alert("Lütfen tüm alanları doldurun!");
-      return;
-    }
-
+    if (!duzenleMiktar || !duzenleMinStok || !duzenleModal.kategori || duzenleModal.index === -1) return;
     const yeniStok = { ...stok };
-    yeniStok[duzenleModal.kategori][duzenleModal.index] = {
-      ...duzenleModal.urun,
-      miktar: Number(duzenleMiktar),
-      minStok: Number(duzenleMinStok),
-    };
-
+    yeniStok[duzenleModal.kategori][duzenleModal.index].miktar = Number(duzenleMiktar);
+    yeniStok[duzenleModal.kategori][duzenleModal.index].minStok = Number(duzenleMinStok);
     setStok(yeniStok);
     setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" });
   };
 
-  return (
-    <div className="stok-container">
-      <h2 className="stok-title">Stok Güncelleme</h2>
+  const handlePageChange = (sayfaNumarasi) => {
+    setMevcutSayfa(sayfaNumarasi);
+  };
 
-      {/* Kategori Filtresi */}
-      <div className="kategori-filter">
+  return (
+    <div style={{ maxWidth: 1000, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
+      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Stok Güncelleme</h2>
+      <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
         {kategoriler.map((kategori) => (
           <button
             key={kategori}
             onClick={() => setAktifKategori(kategori)}
-            className={aktifKategori === kategori ? "active" : ""}
+            style={{
+              background: aktifKategori === kategori ? "#1a3c34" : "#e0e0e0",
+              color: aktifKategori === kategori ? "#fff" : "#1a3c34",
+              border: "none",
+              borderRadius: 8,
+              padding: "8px 18px",
+              fontWeight: aktifKategori === kategori ? 700 : 500,
+              fontSize: 16,
+              cursor: "pointer",
+              transition: "all 0.2s",
+              boxShadow: aktifKategori === kategori ? "0 2px 8px #1a3c3422" : "none",
+            }}
           >
             {kategori}
           </button>
         ))}
       </div>
-
-      {/* Yeni Ürün Ekleme Formu */}
       {aktifKategori !== "Tümü" && (
-        <div className="yeni-urun-form">
-          <h3 className="yeni-urun-title">Yeni Ürün Ekle</h3>
-          <div className="urun-form">
-            <input
-              name="ad"
-              value={yeniUrun.ad}
-              onChange={(e) => setYeniUrun({ ...yeniUrun, ad: e.target.value })}
-              placeholder="Ürün adı"
-            />
-            <input
-              name="miktar"
-              type="number"
-              value={yeniUrun.miktar}
-              onChange={(e) => setYeniUrun({ ...yeniUrun, miktar: e.target.value })}
-              placeholder="Miktar"
-            />
-            <input
-              name="minStok"
-              type="number"
-              value={yeniUrun.minStok}
-              onChange={(e) => setYeniUrun({ ...yeniUrun, minStok: e.target.value })}
-              placeholder="Min. Stok"
-            />
-            <select
-              name="birim"
-              value={yeniUrun.birim}
-              onChange={(e) => setYeniUrun({ ...yeniUrun, birim: e.target.value })}
-            >
-              <option value="">Birim Seçin</option>
-              <option value="porsiyon">Porsiyon</option>
-              <option value="adet">Adet</option>
-              <option value="kg">Kg</option>
-              <option value="kutu">Kutu</option>
-            </select>
-            <button onClick={urunEkle} className="urun-ekle-btn">
-              Ekle
-            </button>
-          </div>
+        <div style={{ display: "flex", gap: 12, margin: "20px 0 28px 0", flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="Ürün adı"
+            value={yeniUrun.ad}
+            onChange={e => setYeniUrun({ ...yeniUrun, ad: e.target.value })}
+            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: 150 }}
+          />
+          <input
+            type="number"
+            placeholder="Miktar"
+            value={yeniUrun.miktar}
+            onChange={e => setYeniUrun({ ...yeniUrun, miktar: e.target.value })}
+            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: 80 }}
+          />
+          <input
+            type="number"
+            placeholder="Min. Stok"
+            value={yeniUrun.minStok}
+            onChange={e => setYeniUrun({ ...yeniUrun, minStok: e.target.value })}
+            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: 80 }}
+          />
+          <select
+            value={yeniUrun.birim}
+            onChange={e => setYeniUrun({ ...yeniUrun, birim: e.target.value })}
+            style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: 100 }}
+          >
+            <option value="">Birim</option>
+            <option value="porsiyon">porsiyon</option>
+            <option value="adet">adet</option>
+            <option value="kg">kg</option>
+            <option value="litre">litre</option>
+          </select>
+          <button onClick={urunEkle} style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "8px 24px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Ekle</button>
         </div>
       )}
-
-      {/* Stok Listesi */}
-      <div className="urun-listesi">
-        {gosterilecekUrunler.map((urun, index) => {
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8, minHeight: '550px' }}>
+        {mevcutSayfaUrunleri.map((urun, i) => {
           const durum = stokDurumu(urun.miktar, urun.minStok);
           return (
-            <div key={`${aktifKategori}-${index}`} className="urun-item">
-              <div className="urun-info">
-                <div className="urun-ad">{urun.ad}</div>
-                <div className="urun-detay">
-                  {urun.miktar} {urun.birim} | Min: {urun.minStok}
-                </div>
-              </div>
-              
-              <div className={`urun-stok ${durum.class}`}>
+            <div key={`${urun.ad}-${i}`} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, boxShadow: "0 1px 6px #0001", padding: "12px 20px", gap: 20 }}>
+              <div style={{ flex: 1, fontWeight: 600, fontSize: 17, color: "#1a3c34" }}>{urun.ad}</div>
+              <div style={{ fontWeight: 600, fontSize: 17, color: "#1a3c34", minWidth: 80 }}>{urun.miktar} {urun.birim}</div>
+              <div style={{ fontWeight: 600, fontSize: 17, color: "#666", minWidth: 80 }}>Min: {urun.minStok}</div>
+              <div style={{
+                fontWeight: 600,
+                fontSize: 15,
+                color: "#fff",
+                background: durum.renk,
+                padding: "4px 12px",
+                borderRadius: 12,
+                minWidth: 80,
+                textAlign: "center"
+              }}>
                 {durum.durum}
               </div>
-
-              <div className="urun-actions">
-                <button
-                  onClick={() => urunDuzenle(urun, index)}
-                  className="urun-btn duzenle"
-                >
-                  Düzenle
-                </button>
-
-                <button
-                  onClick={() => urunSil(index)}
-                  className="urun-btn sil"
-                >
-                  Sil
-                </button>
-              </div>
+              <>
+                <button onClick={() => urunDuzenle(urun, urun.kategori)} style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Düzenle</button>
+                <button onClick={() => urunSil(urun.ad, urun.kategori)} style={{ background: "#d90429", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Sil</button>
+              </>
             </div>
           );
         })}
       </div>
 
+      {/* Sayfalama Butonları */}
+      {toplamSayfaSayisi > 1 && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+          <button
+            onClick={() => handlePageChange(mevcutSayfa - 1)}
+            disabled={mevcutSayfa === 1}
+            style={{ ...paginationButtonStyle, opacity: mevcutSayfa === 1 ? 0.5 : 1 }}
+          >
+            Önceki
+          </button>
+          {Array.from({ length: toplamSayfaSayisi }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => handlePageChange(i + 1)}
+              style={{
+                ...paginationButtonStyle,
+                background: mevcutSayfa === i + 1 ? "#1a3c34" : "#e0e0e0",
+                color: mevcutSayfa === i + 1 ? "#fff" : "#1a3c34",
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => handlePageChange(mevcutSayfa + 1)}
+            disabled={mevcutSayfa === toplamSayfaSayisi}
+            style={{ ...paginationButtonStyle, opacity: mevcutSayfa === toplamSayfaSayisi ? 0.5 : 1 }}
+          >
+            Sonraki
+          </button>
+        </div>
+      )}
+
       {/* Düzenleme Modal */}
       {duzenleModal.acik && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Ürün Düzenle: {duzenleModal.urun?.ad}</h3>
-            <div>
-              <label>Miktar:</label>
-              <input
-                type="number"
-                value={duzenleMiktar}
-                onChange={(e) => setDuzenleMiktar(e.target.value)}
-              />
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: 12,
+            padding: 32,
+            minWidth: 400,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+          }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#1a3c34" }}>Stok Bilgilerini Düzenle</h3>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{duzenleModal.urun?.ad}</div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Miktar:</label>
+                <input
+                  type="number"
+                  placeholder="Yeni miktar"
+                  value={duzenleMiktar}
+                  onChange={e => setDuzenleMiktar(e.target.value)}
+                  style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: "100%" }}
+                />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", marginBottom: 4, fontWeight: 500 }}>Minimum Stok:</label>
+                <input
+                  type="number"
+                  placeholder="Minimum stok"
+                  value={duzenleMinStok}
+                  onChange={e => setDuzenleMinStok(e.target.value)}
+                  style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb", fontSize: 15, width: "100%" }}
+                />
+              </div>
             </div>
-            <div>
-              <label>Min. Stok:</label>
-              <input
-                type="number"
-                value={duzenleMinStok}
-                onChange={(e) => setDuzenleMinStok(e.target.value)}
-              />
-            </div>
-            <div className="modal-buttons">
-              <button onClick={miktarKaydet} className="modal-btn kaydet">
-                Kaydet
-              </button>
-              <button 
-                onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
-                className="modal-btn iptal"
-              >
-                İptal
-              </button>
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <button onClick={() => {
+                setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" });
+                setDuzenleMiktar("");
+                setDuzenleMinStok("");
+              }} style={{ background: "#6c757d", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>İptal</button>
+              <button onClick={miktarKaydet} style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontWeight: 600, fontSize: 15, cursor: "pointer" }}>Kaydet</button>
             </div>
           </div>
         </div>
@@ -308,4 +327,14 @@ function StokUpdate() {
   );
 }
 
-export default StokUpdate; 
+const paginationButtonStyle = {
+  border: "none",
+  borderRadius: 8,
+  padding: "8px 16px",
+  fontWeight: 600,
+  fontSize: 15,
+  cursor: "pointer",
+  transition: "all 0.2s",
+};
+
+export default StokUpdate;

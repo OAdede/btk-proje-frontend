@@ -23,9 +23,9 @@ import MenuUpdate from './components/menu/MenuUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 
 // Shared Staff Pages (Garson/Kasiyer)
-import WaiterHome from './components/pelin/pages/WaiterHome.jsx';
-import OrderPage from './components/pelin/pages/OrderPage.jsx';
-import SummaryPage from './components/pelin/pages/SummaryPage.jsx';
+import WaiterHome from './pages/staff/WaiterHome.jsx';
+import OrderPage from './pages/staff/OrderPage.jsx';
+import SummaryPage from './pages/staff/SummaryPage.jsx';
 
 // Stil dosyaları
 import "./App.css";

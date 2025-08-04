@@ -1,93 +1,88 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { TableContext } from "../../context/TableContext"; // YOL GÜNCELLENDİ
 import "./TablesPage.css";
-import TableStatusModal from "../../components/tables/TableStatusModal";
 
 const TablesPage = () => {
+    const navigate = useNavigate();
+    // CONTEXT'TEN DOĞRU VERİLER ALINDI
+    const { tableStatus } = useContext(TableContext);
     const [activeFloor, setActiveFloor] = useState("kat1");
-    const [kat1Tables, setKat1Tables] = useState(Array.from({ length: 8 }, (_, i) => ({
-        id: i + 1,
-        name: `1-${i + 1}`,
-        status: "boş"
-    })));
 
-    const [kat2Tables, setKat2Tables] = useState(Array.from({ length: 8 }, (_, i) => ({
-        id: i + 9,
-        name: `2-${i + 1}`,
-        status: "dolu"
-    })));
+    const kat1Tables = Array.from({ length: 8 }, (_, i) => ({ id: `${i + 1}`, name: `${i + 1}` }));
+    const kat2Tables = Array.from({ length: 8 }, (_, i) => ({ id: `${i + 9}`, name: `${i + 9}` }));
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedTable, setSelectedTable] = useState(null);
-
+    // RENKLER YENİ STATÜLERE GÖRE GÜNCELLENDİ
     const statusColors = {
-        "boş": "#8BC34A",
-        "dolu": "#F44336",
-        "rezerve": "#FFEB3B"
+        "bos": "#4caf50",
+        "dolu": "#f44336",
+        "rezerve": "#ffeb3b"
     };
 
-    const handleTableClick = (table) => {
-        setSelectedTable(table);
-        setIsModalOpen(true);
+    const statusTextColor = {
+        "bos": "#fff",
+        "dolu": "#fff",
+        "rezerve": "#222"
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedTable(null);
+    const handleTableClick = (tableId) => {
+        // Yönlendirme artık göreceli yola göre doğru çalışacak
+        navigate(`../order/${tableId}`);
     };
 
-    const handleStatusChange = (newStatus) => {
-        const tableUpdater = (tables) =>
-            tables.map(t => t.id === selectedTable.id ? { ...t, status: newStatus } : t);
-
-        if (activeFloor === "kat1") {
-            setKat1Tables(tableUpdater);
-        } else {
-            setKat2Tables(tableUpdater);
+    // METİNLER YENİ STATÜLERE GÖRE GÜNCELLENDİ
+    const getStatusText = (status) => {
+        switch (status) {
+            case "bos": return "Boş";
+            case "dolu": return "Dolu";
+            case "rezerve": return "Rezerve";
+            default: return "Boş";
         }
-        handleCloseModal();
-    };
+    }
 
     const currentTables = activeFloor === "kat1" ? kat1Tables : kat2Tables;
 
     return (
-        <div className="tables-page-container">
-            <div className="tables-section">
-                <h1>Masa Yönetimi - Kat {activeFloor === "kat1" ? 1 : 2}</h1>
-                <div className="tables-grid-pelin">
-                    {currentTables.map((table) => (
-                        <div
-                            key={table.id}
-                            className="table-box"
-                            style={{ backgroundColor: statusColors[table.status] }}
-                            onClick={() => handleTableClick(table)}
-                            title={`Masa ${table.name}`}
-                        >
-                            {table.name.split("-")[1]}
-                        </div>
-                    ))}
-                </div>
-            </div>
-            <div className="floor-selection-section">
-                <h3>Katlar</h3>
-                <div
-                    className={`floor-selector-box ${activeFloor === "kat1" ? "active" : ""}`}
+        <div className="tables-page">
+            <h1>Masa Yönetimi</h1>
+            <div className="floor-selector">
+                <button
+                    className={`floor-btn ${activeFloor === "kat1" ? "active" : ""}`}
                     onClick={() => setActiveFloor("kat1")}
                 >
                     Kat 1
-                </div>
-                <div
-                    className={`floor-selector-box ${activeFloor === "kat2" ? "active" : ""}`}
+                </button>
+                <button
+                    className={`floor-btn ${activeFloor === "kat2" ? "active" : ""}`}
                     onClick={() => setActiveFloor("kat2")}
                 >
                     Kat 2
+                </button>
+            </div>
+
+            <div className="tables-grid">
+                <h2>{activeFloor === "kat1" ? "Kat 1" : "Kat 2"} Masaları</h2>
+                <div className="tables-list">
+                    {currentTables.map((table) => {
+                        // Statü okunması basitleştirildi
+                        const status = tableStatus[table.id] || "bos";
+                        return (
+                            <div
+                                key={table.id}
+                                className="table-card"
+                                style={{
+                                    background: statusColors[status],
+                                    color: statusTextColor[status]
+                                }}
+                                onClick={() => handleTableClick(table.id)}
+                            >
+                                <div className="table-number">{table.name}</div>
+                                <div className="table-status">{getStatusText(status)}</div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
-            <TableStatusModal
-                visible={isModalOpen}
-                onClose={handleCloseModal}
-                onStatusChange={handleStatusChange}
-                currentStatus={selectedTable?.status}
-            />
         </div>
     );
 };

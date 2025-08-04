@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TableContext } from "../../../context/TableContext";
-import { AuthContext } from "../../../context/AuthContext";
+import { TableContext } from "../../context/TableContext";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function WaiterHome() {
     const navigate = useNavigate();

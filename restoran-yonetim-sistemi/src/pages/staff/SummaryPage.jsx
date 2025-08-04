@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TableContext } from "../../../context/TableContext";
-import { AuthContext } from "../../../context/AuthContext";
+import { TableContext } from "../../context/TableContext";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function SummaryPage() {
     const { tableId } = useParams();
