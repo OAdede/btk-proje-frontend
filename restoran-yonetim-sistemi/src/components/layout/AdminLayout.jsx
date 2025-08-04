@@ -1,16 +1,15 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import '../../App.css';
+import AdminSidebar from './AdminSidebar';
+import './AdminLayout.css';
 
 const AdminLayout = () => {
     return (
-        <div className="app-layout">
-            <Sidebar />
-            <main className="main-content">
-                <div className="page-container">
-                    <Outlet />
-                </div>
+        <div className="admin-layout">
+            <AdminSidebar />
+            <main className="admin-main-content">
+                {/* Alt route'lar (Stok, Menu, Personel vb.) burada render edilecek */}
+                <Outlet />
             </main>
         </div>
     );

@@ -6,13 +6,13 @@ const TablesPage = () => {
     const [activeFloor, setActiveFloor] = useState("kat1");
     const [kat1Tables, setKat1Tables] = useState(Array.from({ length: 8 }, (_, i) => ({
         id: i + 1,
-        name: `${i + 1}`,
+        name: `1-${i + 1}`,
         status: "boş"
     })));
 
     const [kat2Tables, setKat2Tables] = useState(Array.from({ length: 8 }, (_, i) => ({
         id: i + 9,
-        name: `${i + 9}`,
+        name: `2-${i + 1}`,
         status: "dolu"
     })));
 
@@ -20,15 +20,9 @@ const TablesPage = () => {
     const [selectedTable, setSelectedTable] = useState(null);
 
     const statusColors = {
-        "boş": "#4caf50",
-        "dolu": "#f44336",
-        "rezerve": "#ffeb3b"
-    };
-
-    const statusTextColor = {
-        "boş": "#fff",
-        "dolu": "#fff",
-        "rezerve": "#222"
+        "boş": "#8BC34A",
+        "dolu": "#F44336",
+        "rezerve": "#FFEB3B"
     };
 
     const handleTableClick = (table) => {
@@ -45,7 +39,7 @@ const TablesPage = () => {
         const tableUpdater = (tables) =>
             tables.map(t => t.id === selectedTable.id ? { ...t, status: newStatus } : t);
 
-        if (kat1Tables.some(t => t.id === selectedTable.id)) {
+        if (activeFloor === "kat1") {
             setKat1Tables(tableUpdater);
         } else {
             setKat2Tables(tableUpdater);
@@ -53,86 +47,39 @@ const TablesPage = () => {
         handleCloseModal();
     };
 
-    const addTable = (floor) => {
-        if (floor === "kat1") {
-            if (kat1Tables.length >= 8) return;
-            const newTable = {
-                id: (kat1Tables.length > 0 ? Math.max(...kat1Tables.map(t => t.id)) : 0) + 1,
-                name: `${(kat1Tables.length > 0 ? Math.max(...kat1Tables.map(t => t.id)) : 0) + 1}`,
-                status: "boş"
-            };
-            setKat1Tables([...kat1Tables, newTable]);
-        } else {
-            if (kat2Tables.length >= 8) return;
-            const newTable = {
-                id: (kat2Tables.length > 0 ? Math.max(...kat2Tables.map(t => t.id)) : 8) + 1,
-                name: `${(kat2Tables.length > 0 ? Math.max(...kat2Tables.map(t => t.id)) : 8) + 1}`,
-                status: "boş"
-            };
-            setKat2Tables([...kat2Tables, newTable]);
-        }
-    };
-
-    const removeTable = (tableId) => {
-        if (kat1Tables.some(t => t.id === tableId)) {
-            setKat1Tables(kat1Tables.filter(table => table.id !== tableId));
-        } else {
-            setKat2Tables(kat2Tables.filter(table => table.id !== tableId));
-        }
-    };
-
     const currentTables = activeFloor === "kat1" ? kat1Tables : kat2Tables;
 
     return (
-        <>
-            <div className="tables-page">
-                <h1>Masa Yönetimi</h1>
-                <div className="floor-selector">
-                    <button
-                        className={`floor-btn ${activeFloor === "kat1" ? "active" : ""}`}
-                        onClick={() => setActiveFloor("kat1")}
-                    >
-                        Kat 1
-                    </button>
-                    <button
-                        className={`floor-btn ${activeFloor === "kat2" ? "active" : ""}`}
-                        onClick={() => setActiveFloor("kat2")}
-                    >
-                        Kat 2
-                    </button>
+        <div className="tables-page-container">
+            <div className="tables-section">
+                <h1>Masa Yönetimi - Kat {activeFloor === "kat1" ? 1 : 2}</h1>
+                <div className="tables-grid-pelin">
+                    {currentTables.map((table) => (
+                        <div
+                            key={table.id}
+                            className="table-box"
+                            style={{ backgroundColor: statusColors[table.status] }}
+                            onClick={() => handleTableClick(table)}
+                            title={`Masa ${table.name}`}
+                        >
+                            {table.name.split("-")[1]}
+                        </div>
+                    ))}
                 </div>
-                <div className="tables-controls">
-                    <button className="add-table-btn" onClick={() => addTable(activeFloor)} disabled={currentTables.length >= 8}>
-                        + Masa Ekle
-                    </button>
+            </div>
+            <div className="floor-selection-section">
+                <h3>Katlar</h3>
+                <div
+                    className={`floor-selector-box ${activeFloor === "kat1" ? "active" : ""}`}
+                    onClick={() => setActiveFloor("kat1")}
+                >
+                    Kat 1
                 </div>
-                <div className="tables-grid">
-                    <h2>{activeFloor === "kat1" ? "Kat 1" : "Kat 2"} Masaları</h2>
-                    <div className="tables-list">
-                        {currentTables.map((table) => (
-                            <div
-                                key={table.id}
-                                className="table-card"
-                                style={{
-                                    background: statusColors[table.status],
-                                    color: statusTextColor[table.status]
-                                }}
-                                onClick={() => handleTableClick(table)}
-                            >
-                                <div className="table-number">{table.name}</div>
-                                <div className="table-status">{table.status.charAt(0).toUpperCase() + table.status.slice(1)}</div>
-                                <button
-                                    className="remove-table-btn"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeTable(table.id);
-                                    }}
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                <div
+                    className={`floor-selector-box ${activeFloor === "kat2" ? "active" : ""}`}
+                    onClick={() => setActiveFloor("kat2")}
+                >
+                    Kat 2
                 </div>
             </div>
             <TableStatusModal
@@ -141,7 +88,7 @@ const TablesPage = () => {
                 onStatusChange={handleStatusChange}
                 currentStatus={selectedTable?.status}
             />
-        </>
+        </div>
     );
 };
 
