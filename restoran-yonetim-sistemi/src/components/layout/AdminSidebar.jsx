@@ -20,8 +20,18 @@ const AdminSidebar = () => {
         <div className="admin-sidebar" style={{ background: colors.sidebar }}>
             <div className="admin-sidebar-header">
                 <div className="admin-user-info">
-                    <div className="admin-user-name">Betül</div>
-                    <div className="admin-user-role">Admin</div>
+                    <div className="admin-user-name" style={{
+                        fontFamily: '00623 Sans Serif Bold, sans-serif',
+                        fontWeight: '700',
+                        fontSize: '1.4rem',
+                        color: colors.text
+                    }}>Betül</div>
+                    <div className="admin-user-role" style={{
+                        fontFamily: '00623 Sans Serif Bold, sans-serif',
+                        fontWeight: '700',
+                        fontSize: '1.2rem',
+                        color: colors.textSecondary
+                    }}>Admin</div>
                 </div>
             </div>
             <nav className="admin-sidebar-nav">
@@ -65,27 +75,27 @@ const AdminSidebar = () => {
             {/* Alt kısım - Ayarlar ve Çıkış */}
             <div className="admin-sidebar-bottom">
                 {/* Ayarlar Butonu */}
-                <button
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="admin-settings-btn"
-                    style={{
-                        background: colors.button,
-                        color: colors.text,
-                        border: 'none',
-                        padding: '12px 20px',
-                        borderRadius: '10px',
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        marginBottom: '10px',
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                    }}
-                >
+                                       <button
+                           onClick={() => setShowSettings(!showSettings)}
+                           className="admin-settings-btn"
+                           style={{
+                               background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
+                               color: '#ffffff',
+                               border: 'none',
+                               padding: '12px 20px',
+                               borderRadius: '10px',
+                               fontSize: '1rem',
+                               fontWeight: '600',
+                               cursor: 'pointer',
+                               transition: 'all 0.3s ease',
+                               marginBottom: '10px',
+                               width: '100%',
+                               display: 'flex',
+                               alignItems: 'center',
+                               justifyContent: 'center',
+                               gap: '8px'
+                           }}
+                       >
                     <span>⚙️</span>
                     Ayarlar
                 </button>

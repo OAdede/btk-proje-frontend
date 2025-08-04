@@ -38,27 +38,27 @@ const StaffSidebar = () => {
             {/* Alt kısım - Ayarlar ve Çıkış */}
             <div className="staff-sidebar-bottom">
                 {/* Ayarlar Butonu */}
-                <button
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="staff-settings-btn"
-                    style={{
-                        background: colors.button,
-                        color: colors.text,
-                        border: 'none',
-                        padding: '12px 20px',
-                        borderRadius: '10px',
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        marginBottom: '10px',
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                    }}
-                >
+                                       <button
+                           onClick={() => setShowSettings(!showSettings)}
+                           className="staff-settings-btn"
+                           style={{
+                               background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
+                               color: '#ffffff',
+                               border: 'none',
+                               padding: '12px 20px',
+                               borderRadius: '10px',
+                               fontSize: '1rem',
+                               fontWeight: '600',
+                               cursor: 'pointer',
+                               transition: 'all 0.3s ease',
+                               marginBottom: '10px',
+                               width: '100%',
+                               display: 'flex',
+                               alignItems: 'center',
+                               justifyContent: 'center',
+                               gap: '8px'
+                           }}
+                       >
                     <span>⚙️</span>
                     Ayarlar
                 </button>

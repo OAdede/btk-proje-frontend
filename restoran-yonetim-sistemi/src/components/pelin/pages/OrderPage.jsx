@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../../context/TableContext";
 import { AuthContext } from "../../../context/AuthContext";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function OrderPage() {
     const { tableId } = useParams();
@@ -12,6 +13,7 @@ export default function OrderPage() {
     // TableContext'ten güncel fonksiyonları ve state'leri al
     const { saveOrder, orders, products, processPayment } = useContext(TableContext);
     const { user } = useContext(AuthContext);
+    const { colors } = useTheme();
 
     // Aktif kategoriye göre ürünleri filtrele
     const filteredProducts = useMemo(() => {
@@ -62,9 +64,9 @@ export default function OrderPage() {
     const isCashier = user && user.role === 'kasiyer';
 
     return (
-        <div style={{ padding: 30, display: "flex", gap: 50 }}>
+        <div style={{ padding: 30, display: "flex", gap: 50, background: colors.background, color: colors.text }}>
             <div style={{ flex: 3 }}>
-                <h2 style={{ marginBottom: 20 }}>Masa {tableId} - Sipariş</h2>
+                <h2 style={{ marginBottom: 20, color: colors.text }}>Masa {tableId} - Sipariş</h2>
 
                 {/* Kategori Butonları */}
                 <div style={{ display: "flex", gap: 20, marginBottom: 30 }}>
@@ -74,9 +76,10 @@ export default function OrderPage() {
                             onClick={() => setActiveCategory(cat)}
                             style={{
                                 padding: "10px 25px", fontSize: "20px", borderRadius: 12,
-                                backgroundColor: activeCategory === cat ? "#007bff" : "#ddd",
-                                color: activeCategory === cat ? "white" : "black",
+                                backgroundColor: activeCategory === cat ? colors.primary : colors.button,
+                                color: "#ffffff",
                                 border: "none", cursor: "pointer",
+                                transition: "all 0.3s ease"
                             }}
                         >
                             {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -90,17 +93,42 @@ export default function OrderPage() {
                         <div
                             key={product.id}
                             style={{
-                                border: "1px solid #ccc", borderRadius: 10, padding: 15,
-                                backgroundColor: product.stock === 0 ? "#e0e0e0" : "#f9f9f9",
+                                border: `1px solid ${colors.border}`, borderRadius: 10, padding: 15,
+                                backgroundColor: product.stock === 0 ? colors.surface : colors.card,
                                 textAlign: "center", opacity: product.stock === 0 ? 0.6 : 1,
+                                color: colors.text
                             }}
                         >
-                            <h3>{product.name}</h3>
-                            <p>{product.price}₺ | Stok: {product.stock}</p>
+                            <h3 style={{ color: colors.text, margin: "0 0 10px 0" }}>{product.name}</h3>
+                            <p style={{ color: colors.textSecondary, margin: "0 0 15px 0" }}>{product.price}₺ | Stok: {product.stock}</p>
                             <div style={{ display: "flex", justifyContent: "center", gap: 10, alignItems: "center" }}>
-                                <button onClick={() => handleQuantityChange(product, -1)} disabled={product.stock === 0}>-</button>
-                                <span>{cart[product.id]?.count || 0}</span>
-                                <button onClick={() => handleQuantityChange(product, 1)} disabled={product.stock === 0 || (cart[product.id]?.count || 0) >= product.stock}>+</button>
+                                <button 
+                                    onClick={() => handleQuantityChange(product, -1)} 
+                                    disabled={product.stock === 0}
+                                    style={{
+                                        background: colors.button,
+                                        color: "#ffffff",
+                                        border: "none",
+                                        borderRadius: "5px",
+                                        padding: "5px 10px",
+                                        cursor: "pointer",
+                                        fontSize: "16px"
+                                    }}
+                                >-</button>
+                                <span style={{ color: colors.text, fontSize: "16px", fontWeight: "bold" }}>{cart[product.id]?.count || 0}</span>
+                                <button 
+                                    onClick={() => handleQuantityChange(product, 1)} 
+                                    disabled={product.stock === 0 || (cart[product.id]?.count || 0) >= product.stock}
+                                    style={{
+                                        background: colors.button,
+                                        color: "#ffffff",
+                                        border: "none",
+                                        borderRadius: "5px",
+                                        padding: "5px 10px",
+                                        cursor: "pointer",
+                                        fontSize: "16px"
+                                    }}
+                                >+</button>
                             </div>
                         </div>
                     ))}
@@ -108,37 +136,84 @@ export default function OrderPage() {
 
                 {/* İleri ve Geri Butonları */}
                 <div style={{ textAlign: "right", marginTop: 30 }}>
-                    <button onClick={handleNext} style={{ padding: "15px 40px", fontSize: "18px", backgroundColor: "#007bff", color: "white", border: "none", borderRadius: "10px", cursor: "pointer", marginRight: "10px" }}>
+                    <button onClick={handleNext} style={{ 
+                        padding: "15px 40px", 
+                        fontSize: "18px", 
+                        backgroundColor: colors.primary, 
+                        color: "#ffffff", 
+                        border: "none", 
+                        borderRadius: "10px", 
+                        cursor: "pointer", 
+                        marginRight: "10px",
+                        transition: "all 0.3s ease"
+                    }}>
                         İleri
                     </button>
-                    <button onClick={() => navigate(-1)} style={{ padding: "15px 40px", fontSize: "18px", backgroundColor: "#6c757d", color: "white", border: "none", borderRadius: "10px", cursor: "pointer" }}>
+                    <button onClick={() => navigate(-1)} style={{ 
+                        padding: "15px 40px", 
+                        fontSize: "18px", 
+                        backgroundColor: colors.button, 
+                        color: "#ffffff", 
+                        border: "none", 
+                        borderRadius: "10px", 
+                        cursor: "pointer",
+                        transition: "all 0.3s ease"
+                    }}>
                         Geri
                     </button>
                 </div>
             </div>
 
             {/* Onaylanmış Siparişler Bölümü */}
-            <div style={{ flex: 2, border: "1px solid #ccc", borderRadius: 10, padding: 15, backgroundColor: "#fafafa", height: "fit-content", maxHeight: "80vh", overflowY: "auto", position: "sticky", top: "30px" }}>
-                <h3>Onaylanmış Siparişler</h3>
+            <div style={{ 
+                flex: 2, 
+                border: `1px solid ${colors.border}`, 
+                borderRadius: 10, 
+                padding: 15, 
+                backgroundColor: colors.card, 
+                height: "fit-content", 
+                maxHeight: "80vh", 
+                overflowY: "auto", 
+                position: "sticky", 
+                top: "30px",
+                color: colors.text
+            }}>
+                <h3 style={{ color: colors.text, marginBottom: 15 }}>Onaylanmış Siparişler</h3>
                 {Object.keys(confirmedOrders).length > 0 ? (
                     <>
                         <ul style={{ listStyleType: 'none', padding: 0 }}>
                             {Object.entries(confirmedOrders).map(([id, item]) => (
-                                <li key={id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+                                <li key={id} style={{ 
+                                    padding: '8px 0', 
+                                    borderBottom: `1px solid ${colors.border}`,
+                                    color: colors.text
+                                }}>
                                     {item.name} x {item.count} = {item.count * item.price}₺
                                 </li>
                             ))}
                         </ul>
-                        <p style={{ fontWeight: "bold", marginTop: 10, fontSize: "1.2em" }}>
+                        <p style={{ 
+                            fontWeight: "bold", 
+                            marginTop: 10, 
+                            fontSize: "1.2em",
+                            color: colors.text
+                        }}>
                             Toplam Hesap: {totalConfirmedPrice}₺
                         </p>
                         {isCashier && (
                             <button
                                 onClick={() => processPayment(tableId)}
                                 style={{
-                                    width: "100%", padding: "15px", fontSize: "18px",
-                                    backgroundColor: "#28a745", color: "white", border: "none",
-                                    borderRadius: "10px", cursor: "pointer", marginTop: "10px"
+                                    width: "100%", 
+                                    padding: "15px", 
+                                    fontSize: "18px",
+                                    backgroundColor: colors.success, 
+                                    color: "#ffffff", 
+                                    border: "none",
+                                    borderRadius: "10px", 
+                                    cursor: "pointer", 
+                                    marginTop: "10px",
+                                    transition: "all 0.3s ease"
                                 }}
                             >
                                 Ödeme Al ve Masayı Kapat
@@ -146,7 +221,7 @@ export default function OrderPage() {
                         )}
                     </>
                 ) : (
-                    <p>Henüz onaylanmış sipariş yok.</p>
+                    <p style={{ color: colors.textSecondary }}>Henüz onaylanmış sipariş yok.</p>
                 )}
             </div>
         </div>
