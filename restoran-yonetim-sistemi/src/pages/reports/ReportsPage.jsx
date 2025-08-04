@@ -1,6 +1,7 @@
 import React from 'react';
 import SalesChart from '../../components/reports/SalesChart';
 import PopularItemsChart from '../../components/reports/PopularItemsChart';
+import IncomeExpenseTable from '../../components/reports/IncomeExpenseTable';
 import './ReportsPage.css';
 
 const ReportsPage = () => {
@@ -42,6 +43,10 @@ const ReportsPage = () => {
                 <div className="chart-wrapper">
                     <PopularItemsChart />
                 </div>
+            </div>
+
+            <div className="table-container">
+                <IncomeExpenseTable />
             </div>
         </div>
     );

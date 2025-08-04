@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -34,3 +33,4 @@
     "vite": "^7.0.4"
   }
 }
+
