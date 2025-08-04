@@ -70,8 +70,19 @@
     box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
 }
 
+.staff-sidebar-bottom {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.staff-settings-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .staff-logout-btn {
-    margin-top: 24px;
+    margin-top: 10px;
     background: #dc3545 !important;
     color: #ffffff !important;
 }
@@ -79,6 +90,8 @@
 .staff-logout-btn:hover {
     background: #c82333 !important;
     color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
 .staff-main-content {

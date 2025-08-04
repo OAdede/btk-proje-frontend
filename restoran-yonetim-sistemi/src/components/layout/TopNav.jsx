@@ -2,11 +2,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
+import { useTheme } from '../../context/ThemeContext';
 import './TopNav.css';
 
 const TopNav = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
+    const { colors } = useTheme();
 
     const handleLogout = () => {
         logout();
@@ -27,7 +29,7 @@ const TopNav = () => {
     };
 
     return (
-        <div className="top-nav">
+        <div className="top-nav" style={{ background: colors.sidebar }}>
             <div className="top-nav-left">
                 <h2 className="top-nav-title">Restoran Yönetim Sistemi</h2>
             </div>

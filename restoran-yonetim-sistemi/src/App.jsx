@@ -3,6 +3,7 @@ import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
 import { useContext } from 'react';
 import { TableProvider } from './context/TableContext.jsx';
 import { AuthContext } from './context/AuthContext.jsx';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 
 // Layouts
 import AdminLayout from './components/layout/AdminLayout.jsx';
@@ -62,8 +63,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
 function App() {
   return (
-    <TableProvider>
-      <Routes>
+    <ThemeProvider>
+      <TableProvider>
+        <Routes>
         {/* Layout Olmayan Sayfalar */}
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -110,7 +112,8 @@ function App() {
         {/* Varsayılan Rota */}
         <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
-    </TableProvider>
+      </TableProvider>
+    </ThemeProvider>
   );
 }
 
