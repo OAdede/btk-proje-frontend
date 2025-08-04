@@ -51,13 +51,13 @@ export default function OrderPage() {
             return;
         }
         saveOrder(tableId, cart);
-        navigate(`../summary/${tableId}`);
+        navigate(`/kasiyer/summary/${tableId}`);
     };
 
     const handlePayment = () => {
         payAndClearTable(tableId);
         alert(`Masa ${tableId} için ödeme alındı. Masa boşaltılıyor.`);
-        navigate("/kasiyer");
+        navigate("/kasiyer/home");
     };
 
     const confirmedOrders = orders[tableId] || {};

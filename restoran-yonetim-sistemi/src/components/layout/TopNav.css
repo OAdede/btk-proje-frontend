@@ -1,0 +1,145 @@
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 0 24px;
+    height: 70px;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.top-nav-left {
+    display: flex;
+    align-items: center;
+}
+
+.top-nav-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #343a40;
+    margin: 0;
+}
+
+.top-nav-center {
+    display: flex;
+    align-items: center;
+}
+
+.role-switcher {
+    display: flex;
+    gap: 8px;
+    background: #f8f9fa;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.role-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.role-btn:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.role-btn.active {
+    background: #007bff;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.top-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.logout-btn {
+    padding: 8px 16px;
+    border: 1px solid #dc3545;
+    background: #ffffff;
+    color: #dc3545;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.logout-btn:hover {
+    background: #dc3545;
+    color: #ffffff;
+}
+
+.login-btn {
+    padding: 8px 16px;
+    border: 1px solid #007bff;
+    background: #007bff;
+    color: #ffffff;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.login-btn:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .top-nav {
+        padding: 0 16px;
+        height: 60px;
+    }
+    
+    .top-nav-title {
+        font-size: 1.2rem;
+    }
+    
+    .role-switcher {
+        gap: 4px;
+        padding: 2px;
+    }
+    
+    .role-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .user-info {
+        display: none;
+    }
+} 

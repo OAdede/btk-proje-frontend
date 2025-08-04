@@ -5,9 +5,6 @@ import "./StaffLayout.css";
 // Bu Sidebar hem Garson hem Kasiyer için ortak olacak.
 // İleride kullanıcı rolüne göre linkler gösterilip gizlenebilir.
 const StaffSidebar = () => {
-    const handleLogout = () => {
-        console.log("Çıkış yapıldı");
-    };
 
     return (
         <div className="staff-sidebar">
@@ -29,12 +26,6 @@ const StaffSidebar = () => {
                     Masalar
                 </NavLink>
             </nav>
-            <button
-                className="staff-nav-item staff-logout-btn"
-                onClick={handleLogout}
-            >
-                Çıkış Yap
-            </button>
         </div>
     );
 };

@@ -3,10 +3,6 @@ import { NavLink } from "react-router-dom";
 import "./AdminLayout.css";
 
 const AdminSidebar = () => {
-    const handleLogout = () => {
-        // Gelecekte logout mantığı buraya eklenecek
-        console.log("Çıkış yapıldı");
-    };
 
     return (
         <div className="admin-sidebar">
@@ -30,12 +26,7 @@ const AdminSidebar = () => {
                 >
                     Stok Güncelleme
                 </NavLink>
-                <NavLink
-                    to="/admin/rezervasyon"
-                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                >
-                    Rezervasyon
-                </NavLink>
+
                 <NavLink
                     to="/admin/products"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
@@ -54,12 +45,7 @@ const AdminSidebar = () => {
                 >
                     Sipariş Geçmişi
                 </NavLink>
-                <NavLink
-                    to="/admin/reservations"
-                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                >
-                    Rezervasyonlar
-                </NavLink>
+
                 <NavLink
                     to="/admin/reports"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
@@ -68,12 +54,6 @@ const AdminSidebar = () => {
                 </NavLink>
                 {/* Diğer admin linkleri buraya eklenebilir */}
             </nav>
-            <button
-                className="admin-nav-item admin-logout-btn"
-                onClick={handleLogout}
-            >
-                Çıkış Yap
-            </button>
         </div>
     );
 };

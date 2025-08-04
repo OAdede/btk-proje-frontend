@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TableContext } from "../context/TableContext";
+import { TableContext } from "../../../context/TableContext";
 
 export default function SummaryPage() {
     const { tableId } = useParams();
@@ -28,7 +28,7 @@ export default function SummaryPage() {
 
     const handlePayment = () => {
         processPayment(tableId);
-        navigate("/kasiyer"); // Kasiyeri masalar sayfasına yönlendir
+        navigate("/kasiyer/home"); // Kasiyeri masalar sayfasına yönlendir
     };
 
     const pageTitle = isNewOrder ? `Masa ${tableId} - Yeni Sipariş Özeti` : `Masa ${tableId} - Ödeme Ekranı`;

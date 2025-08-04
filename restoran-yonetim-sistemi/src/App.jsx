@@ -16,7 +16,7 @@ import ResetPassword from './pages/auth/ResetPassword.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
 import ReportsPage from './pages/reports/ReportsPage.jsx';
 import ProductsPage from './pages/products/ProductsPage.jsx';
-import ReservationsPage from './pages/reservations/ReservationsPage.jsx';
+
 import StockPage from './pages/stock/StockPage.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx'; // Yeni personel sayfası
 
@@ -25,6 +25,12 @@ import TablesPage from './pages/tables/TablesPage.jsx';
 import TablesGridPage from './pages/tables/TablesGridPage.jsx';
 import OrderPage from './pages/orders/OrderPage.jsx';
 import SummaryPage from './pages/orders/SummaryPage.jsx';
+
+// Pelin's Kasiyer Pages
+import KasiyerPanel from './components/pelin/App.jsx';
+import WaiterHome from './components/pelin/pages/WaiterHome.jsx';
+import PelinOrderPage from './components/pelin/pages/OrderPage.jsx';
+import PelinSummaryPage from './components/pelin/pages/SummaryPage.jsx';
 
 // Stil dosyaları
 import "./App.css";
@@ -66,30 +72,22 @@ function App() {
 {/* Admin Paneli */}
 <Route
   path="/admin/*"
-  element={
-    <ProtectedRoute requiredRole="admin">
-      <AdminLayout />
-    </ProtectedRoute>
-  }
+  element={<AdminLayout />}
 >
   <Route index element={<Navigate to="dashboard" replace />} />
   <Route path="dashboard" element={<AdminDashboard />} />
   <Route path="tables" element={<TablesPage />} />
   <Route path="products" element={<ProductsPage />} />
-  <Route path="reservations" element={<ReservationsPage />} />
+
   <Route path="reports" element={<ReportsPage />} />
   <Route path="stock" element={<StockPage />} />
   <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
 </Route>
 
-        {/* Personel Paneli (Garson/Kasiyer) */}
+        {/* Personel Paneli (Garson/Kasiyer) - Admin de erişebilir */}
         <Route
           path="/staff/*"
-          element={
-            <ProtectedRoute requiredRole={['garson', 'kasiyer']}>
-              <StaffLayout />
-            </ProtectedRoute>
-          }
+          element={<StaffLayout />}
         >
           <Route index element={<Navigate to="home" replace />} />
           <Route path="home" element={<TablesGridPage />} />
@@ -98,8 +96,19 @@ function App() {
           <Route path="summary/:tableId" element={<SummaryPage />} />
         </Route>
 
+        {/* Kasiyer Paneli (Pelin'in sayfaları) */}
+        <Route
+          path="/kasiyer/*"
+          element={<StaffLayout />}
+        >
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<WaiterHome />} />
+          <Route path="order/:tableId" element={<PelinOrderPage />} />
+          <Route path="summary/:tableId" element={<PelinSummaryPage />} />
+        </Route>
+
         {/* Varsayılan Rota */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
       </Routes>
     </TableProvider>
   );

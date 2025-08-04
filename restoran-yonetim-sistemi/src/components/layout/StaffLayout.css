@@ -1,7 +1,13 @@
 .staff-layout {
     display: flex;
+    flex-direction: column;
     min-height: 100vh;
     background-color: #f8f9fa;
+}
+
+.staff-content-wrapper {
+    display: flex;
+    flex: 1;
 }
 
 .staff-sidebar {

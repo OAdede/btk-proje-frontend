@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TableContext } from "../context/TableContext";
+import { TableContext } from "../../../context/TableContext";
 
 export default function WaiterHome() {
     const navigate = useNavigate();
@@ -45,7 +45,7 @@ export default function WaiterHome() {
                                 border: "2px solid #333",
                                 userSelect: "none",
                             }}
-                            onClick={() => navigate(`/order/${tableId}`)}
+                            onClick={() => navigate(`/kasiyer/order/${tableId}`)}
                             title={`Masa ${tableId}`}
                         >
                             {tableId.split("-")[1]}
