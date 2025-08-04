@@ -1,6 +1,7 @@
 // src/components/reports/IncomeExpenseTable.jsx
 import React, { useState } from 'react';
 import { Card, Table, ButtonGroup, Button, Form, Badge } from 'react-bootstrap';
+import './IncomeExpenseTable.css';
 
 const IncomeExpenseTable = () => {
   const [filter, setFilter] = useState('all'); // all, income, expense
@@ -117,10 +118,11 @@ const IncomeExpenseTable = () => {
   };
 
   return (
-    <Card className="mb-4">
-      <Card.Body>
-        <Card.Title className="d-flex justify-content-between align-items-center mb-3">
-          <span>Gelir-Gider Detayları</span>
+    <div style={{ backgroundColor: '#1a252f', padding: '20px', borderRadius: '8px' }}>
+      <Card className="mb-4" style={{ backgroundColor: '#2c3e50', color: 'white', border: 'none' }}>
+        <Card.Body>
+          <Card.Title className="d-flex justify-content-between align-items-center mb-3">
+            <span style={{ color: 'white' }}>Gelir-Gider Detayları</span>
           <div className="d-flex gap-2">
             <ButtonGroup size="sm">
               <Button
@@ -177,32 +179,32 @@ const IncomeExpenseTable = () => {
         {/* Özet Kartları */}
         <div className="row mb-3">
           <div className="col-md-4">
-            <div className="card bg-success text-white">
+            <div className="card" style={{ backgroundColor: '#27ae60', color: 'white' }}>
               <div className="card-body text-center">
-                <h6>Toplam Gelir</h6>
-                <h4>{formatAmount(totalIncome)}</h4>
+                <h6 style={{ color: 'white' }}>Toplam Gelir</h6>
+                <h4 style={{ color: 'white' }}>{formatAmount(totalIncome)}</h4>
               </div>
             </div>
           </div>
           <div className="col-md-4">
-            <div className="card bg-danger text-white">
+            <div className="card" style={{ backgroundColor: '#e74c3c', color: 'white' }}>
               <div className="card-body text-center">
-                <h6>Toplam Gider</h6>
-                <h4>{formatAmount(totalExpense)}</h4>
+                <h6 style={{ color: 'white' }}>Toplam Gider</h6>
+                <h4 style={{ color: 'white' }}>{formatAmount(totalExpense)}</h4>
               </div>
             </div>
           </div>
           <div className="col-md-4">
-            <div className={`card ${netProfit >= 0 ? 'bg-primary' : 'bg-warning'} text-white`}>
+            <div className={`card ${netProfit >= 0 ? 'bg-primary' : 'bg-warning'}`} style={{ color: 'white' }}>
               <div className="card-body text-center">
-                <h6>Net Kar/Zarar</h6>
-                <h4>{formatAmount(netProfit)}</h4>
+                <h6 style={{ color: 'white' }}>Net Kar/Zarar</h6>
+                <h4 style={{ color: 'white' }}>{formatAmount(netProfit)}</h4>
               </div>
             </div>
           </div>
         </div>
 
-        <Table responsive striped hover>
+        <Table responsive className="custom-table">
           <thead>
             <tr>
               <th>Tarih</th>
@@ -214,7 +216,7 @@ const IncomeExpenseTable = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((item) => (
+            {filteredData.map((item, index) => (
               <tr key={item.id}>
                 <td>{formatDate(item.date)}</td>
                 <td>
@@ -224,7 +226,7 @@ const IncomeExpenseTable = () => {
                 </td>
                 <td>{item.category}</td>
                 <td>{item.description}</td>
-                <td className={item.type === 'income' ? 'text-success' : 'text-danger'}>
+                <td style={{ fontWeight: 'bold' }}>
                   {formatAmount(item.amount)}
                 </td>
                 <td>
@@ -237,11 +239,12 @@ const IncomeExpenseTable = () => {
 
         {filteredData.length === 0 && (
           <div className="text-center py-4">
-            <p className="text-muted">Bu dönem için veri bulunamadı.</p>
+            <p style={{ color: '#bdc3c7' }}>Bu dönem için veri bulunamadı.</p>
           </div>
         )}
       </Card.Body>
     </Card>
+    </div>
   );
 };
 

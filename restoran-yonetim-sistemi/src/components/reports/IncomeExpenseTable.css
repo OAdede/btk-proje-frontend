@@ -1,0 +1,32 @@
+/* IncomeExpenseTable.css */
+.custom-table tbody tr {
+  background-color: #1b345c !important;
+  color: white !important;
+}
+
+.custom-table tbody tr td {
+  background-color: #1b345c !important;
+  color: white !important;
+  border-color: #1b345c !important;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #1b345c !important;
+  color: white !important;
+}
+
+.custom-table tbody tr:hover td {
+  background-color: #1b345c !important;
+  color: white !important;
+}
+
+.custom-table thead tr {
+  background-color: #34495e !important;
+  color: white !important;
+}
+
+.custom-table thead tr th {
+  background-color: #34495e !important;
+  color: white !important;
+  border-color: #34495e !important;
+} 
