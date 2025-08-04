@@ -99,6 +99,9 @@ function MenuUpdate({ onMenuChange }) {
 =======
     if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") return;
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     const yeniMenu = {
       ...menu,
@@ -147,6 +150,9 @@ function MenuUpdate({ onMenuChange }) {
 =======
     <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
       <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Menü Güncelleme</h2>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       
       {/* Kategori Filtresi */}
