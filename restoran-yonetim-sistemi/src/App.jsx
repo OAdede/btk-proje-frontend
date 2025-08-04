@@ -74,6 +74,10 @@ function App() {
 >
   <Route index element={<Navigate to="dashboard" replace />} />
   <Route path="dashboard" element={<AdminDashboard />} />
+  <Route path="tables" element={<TablesPage />} />
+  <Route path="products" element={<ProductsPage />} />
+  <Route path="reservations" element={<ReservationsPage />} />
+  <Route path="reports" element={<ReportsPage />} />
   <Route path="stock" element={<StockPage />} />
   <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
 </Route>
