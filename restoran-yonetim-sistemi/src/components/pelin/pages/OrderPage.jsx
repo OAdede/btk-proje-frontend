@@ -9,6 +9,8 @@ export default function OrderPage() {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const { colors } = useTheme();
+
+    // Varsayılan kategoriyi "Ana Yemek" olarak ayarla
     const [activeCategory, setActiveCategory] = useState("Ana Yemek");
     const [cart, setCart] = useState({});
 
@@ -162,7 +164,6 @@ export default function OrderPage() {
                         Geri
                     </button>
                 </div>
-
             </div>
 
             {/* Onaylanmış Siparişler Bölümü */}
@@ -180,6 +181,7 @@ export default function OrderPage() {
                 color: colors.text
             }}>
                 <h3 style={{ color: colors.text, marginBottom: 15 }}>Onaylanmış Siparişler</h3>
+
                 {Object.keys(confirmedOrders).length > 0 ? (
                     <>
                         <ul style={{ listStyle: "none", padding: 0 }}>
