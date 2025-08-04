@@ -7,11 +7,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext'; // AuthProvider'ı import et
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider> {/* Uygulamayı AuthProvider ile sarmala */}
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+  <BrowserRouter>
+    <AuthProvider> {/* Uygulamayı AuthProvider ile sarmala */}
+      <App />
+    </AuthProvider>
+  </BrowserRouter>
 );
