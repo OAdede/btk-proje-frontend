@@ -23,7 +23,7 @@ export default function SummaryPage() {
 
     const handleConfirm = () => {
         confirmOrder(tableId);
-        navigate("/garson"); // Garsonu masalar sayfasına yönlendir
+        navigate("/kasiyer/home"); // Garsonu masalar sayfasına yönlendir
     };
 
     const handlePayment = () => {

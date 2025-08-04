@@ -25,7 +25,7 @@ function Login() {
         if (role === 'admin') {
           navigate('/admin/dashboard');
         } else {
-          navigate('/staff/home');
+          navigate('/kasiyer/home');
         }
       }
     } catch (err) {
