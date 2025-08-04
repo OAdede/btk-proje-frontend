@@ -19,7 +19,7 @@ const TopNav = () => {
             navigate('/admin/dashboard');
         } else if (role === 'garson') {
             // Garson için orders sayfaları
-            navigate('/staff/home');
+            navigate('/kasiyer/home');
         } else if (role === 'kasiyer') {
             // Kasiyer için Pelin'in sayfaları
             navigate('/kasiyer/home');
@@ -31,22 +31,22 @@ const TopNav = () => {
             <div className="top-nav-left">
                 <h2 className="top-nav-title">Restoran Yönetim Sistemi</h2>
             </div>
-            
+
             <div className="top-nav-center">
                 <div className="role-switcher">
-                    <button 
+                    <button
                         className={`role-btn ${!user || user?.role === 'admin' ? 'active' : ''}`}
                         onClick={() => switchToRole('admin')}
                     >
                         Admin
                     </button>
-                    <button 
+                    <button
                         className={`role-btn ${user?.role === 'garson' ? 'active' : ''}`}
                         onClick={() => switchToRole('garson')}
                     >
                         Garson
                     </button>
-                    <button 
+                    <button
                         className={`role-btn ${user?.role === 'kasiyer' ? 'active' : ''}`}
                         onClick={() => switchToRole('kasiyer')}
                     >
