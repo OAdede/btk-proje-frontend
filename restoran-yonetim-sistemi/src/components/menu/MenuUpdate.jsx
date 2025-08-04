@@ -66,7 +66,7 @@ const varsayilanUrunler = {
   ],
 };
 
-function MenuUpdate() {
+function MenuUpdate({ onMenuChange }) {
   const [menu, setMenu] = useState(() => {
     const kayitliMenu = localStorage.getItem('menuData');
     return kayitliMenu ? JSON.parse(kayitliMenu) : varsayilanUrunler;
@@ -80,18 +80,26 @@ function MenuUpdate() {
 
   useEffect(() => {
     localStorage.setItem('menuData', JSON.stringify(menu));
-  }, [menu]);
+    if (onMenuChange) {
+      onMenuChange(menu);
+    }
+  }, [menu, onMenuChange]);
 
   const tumUrunler = Object.entries(menu).flatMap(([kategori, urunler]) => urunler.map(u => ({ ...u, kategori })));
   const gosterilecekUrunler =
     aktifKategori === "Tümü" ? tumUrunler : (menu[aktifKategori] || []).map(u => ({ ...u, kategori: aktifKategori }));
 
   const urunEkle = () => {
+<<<<<<< Updated upstream
     if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") {
       alert("Lütfen tüm alanları doldurun!");
       return;
     }
     
+=======
+    if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") return;
+
+>>>>>>> Stashed changes
     const yeniMenu = {
       ...menu,
       [aktifKategori]: [
@@ -133,8 +141,13 @@ function MenuUpdate() {
   };
 
   return (
+<<<<<<< Updated upstream
     <div className="menu-container">
       <h2 className="menu-title">Menü Güncelleme</h2>
+=======
+    <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
+      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Menü Güncelleme</h2>
+>>>>>>> Stashed changes
       
       {/* Kategori Filtresi */}
       <div className="kategori-filter">
