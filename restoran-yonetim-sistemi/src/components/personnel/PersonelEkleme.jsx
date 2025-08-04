@@ -124,12 +124,16 @@ const PersonelEkleme = () => {
       </div>
 
       {/* Rol Filtresi */}
-      <div className="role-filter">
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         {["Tümü", "Garson", "Kasiyer"].map((role) => (
           <button
             key={role}
             onClick={() => setActiveRole(role)}
-            className={activeRole === role ? "active" : ""}
+            style={{
+              background: activeRole === role ? "#1a3c34" : "#e0e0e0",
+              color: activeRole === role ? "#fff" : "#1a3c34",
+              border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
+            }}
           >
             {role}
           </button>
