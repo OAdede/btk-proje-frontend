@@ -5,9 +5,8 @@ import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import "./StaffLayout.css";
 
-// Bu Sidebar hem Garson hem Kasiyer için ortak olacak.
 const StaffSidebar = () => {
-    const { logout } = useContext(AuthContext);
+    const { logout, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const [showSettings, setShowSettings] = useState(false);
@@ -17,55 +16,50 @@ const StaffSidebar = () => {
         navigate('/login');
     };
 
+    const homePath = `/${user?.role}/home`;
+
     return (
         <div className="staff-sidebar" style={{ background: colors.sidebar }}>
             <div className="staff-sidebar-header">
                 <h2>Personel Paneli</h2>
             </div>
             <nav className="staff-sidebar-nav">
-                {/* 
-                  "Ana Sayfa" kaldırıldı. 
-                  "Masalar" linki, garson/kasiyer ana sayfası olan WaiterHome'a yönlendiriyor.
-                */}
                 <NavLink
-                    to="/kasiyer/home"
+                    to={homePath}
                     className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
                 >
                     Masalar
                 </NavLink>
             </nav>
-            
-            {/* Alt kısım - Ayarlar ve Çıkış */}
+
             <div className="staff-sidebar-bottom">
-                {/* Ayarlar Butonu */}
-                                       <button
-                           onClick={() => setShowSettings(!showSettings)}
-                           className="staff-settings-btn"
-                           style={{
-                               background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
-                               color: '#ffffff',
-                               border: 'none',
-                               padding: '12px 20px',
-                               borderRadius: '10px',
-                               fontSize: '1rem',
-                               fontWeight: '600',
-                               cursor: 'pointer',
-                               transition: 'all 0.3s ease',
-                               marginBottom: '10px',
-                               width: '100%',
-                               display: 'flex',
-                               alignItems: 'center',
-                               justifyContent: 'center',
-                               gap: '8px'
-                           }}
-                       >
+                <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="staff-settings-btn"
+                    style={{
+                        background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '12px 20px',
+                        borderRadius: '10px',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        marginBottom: '10px',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                    }}
+                >
                     <span>⚙️</span>
                     Ayarlar
                 </button>
 
-                {/* Tema Değiştirme Modal */}
                 {showSettings && createPortal(
-                    <div 
+                    <div
                         style={{
                             position: 'fixed',
                             top: 0,
@@ -80,7 +74,7 @@ const StaffSidebar = () => {
                         }}
                         onClick={() => setShowSettings(false)}
                     >
-                        <div 
+                        <div
                             style={{
                                 background: colors.card,
                                 borderRadius: '15px',
@@ -93,7 +87,6 @@ const StaffSidebar = () => {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Kapatma Butonu */}
                             <button
                                 onClick={() => setShowSettings(false)}
                                 style={{
@@ -124,7 +117,6 @@ const StaffSidebar = () => {
                                 ✕
                             </button>
 
-                            {/* Modal İçeriği */}
                             <div style={{
                                 fontSize: '1.2rem',
                                 fontWeight: '700',
@@ -190,7 +182,6 @@ const StaffSidebar = () => {
                     document.body
                 )}
 
-                {/* Çıkış Yap Butonu */}
                 <button
                     onClick={handleLogout}
                     className="staff-logout-btn"

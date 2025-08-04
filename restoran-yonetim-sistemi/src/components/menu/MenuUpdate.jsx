@@ -90,19 +90,11 @@ function MenuUpdate({ onMenuChange }) {
     aktifKategori === "Tümü" ? tumUrunler : (menu[aktifKategori] || []).map(u => ({ ...u, kategori: aktifKategori }));
 
   const urunEkle = () => {
-<<<<<<< Updated upstream
     if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") {
       alert("Lütfen tüm alanları doldurun!");
       return;
     }
-    
-=======
-    if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") return;
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     const yeniMenu = {
       ...menu,
       [aktifKategori]: [
@@ -133,7 +125,7 @@ function MenuUpdate({ onMenuChange }) {
       alert("Lütfen tüm alanları doldurun!");
       return;
     }
-    
+
     const yeniMenu = { ...menu };
     yeniMenu[duzenleModal.kategori][duzenleModal.index] = {
       ad: duzenleAd,
@@ -144,17 +136,9 @@ function MenuUpdate({ onMenuChange }) {
   };
 
   return (
-<<<<<<< Updated upstream
-    <div className="menu-container">
-      <h2 className="menu-title">Menü Güncelleme</h2>
-=======
     <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
       <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Menü Güncelleme</h2>
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-      
+
       {/* Kategori Filtresi */}
       <div className="kategori-filter">
         {kategoriler.map((kategori) => (
@@ -167,7 +151,7 @@ function MenuUpdate({ onMenuChange }) {
           </button>
         ))}
       </div>
-      
+
       {/* Yeni Ürün Ekleme Formu */}
       {aktifKategori !== "Tümü" && (
         <div className="yeni-urun-form">
@@ -192,7 +176,7 @@ function MenuUpdate({ onMenuChange }) {
           </div>
         </div>
       )}
-      
+
       {/* Menü Listesi */}
       <div className="urun-listesi">
         {gosterilecekUrunler.map((urun, index) => (
@@ -203,11 +187,11 @@ function MenuUpdate({ onMenuChange }) {
                 {urun.fiyat} ₺ | {urun.kategori}
               </div>
             </div>
-            
+
             <div className="urun-kategori">
               Aktif
             </div>
-            
+
             <div className="urun-actions">
               <button
                 onClick={() => urunDuzenle(urun, index)}
@@ -225,7 +209,7 @@ function MenuUpdate({ onMenuChange }) {
           </div>
         ))}
       </div>
-      
+
       {/* Düzenleme Modal */}
       {duzenleModal.acik && (
         <div className="modal-overlay">
@@ -251,7 +235,7 @@ function MenuUpdate({ onMenuChange }) {
               <button onClick={fiyatKaydet} className="modal-btn kaydet">
                 Kaydet
               </button>
-              <button 
+              <button
                 onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
                 className="modal-btn iptal"
               >

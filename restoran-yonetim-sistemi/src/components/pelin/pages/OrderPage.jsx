@@ -7,26 +7,22 @@ import { useTheme } from "../../../context/ThemeContext";
 export default function OrderPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
-    const [activeCategory, setActiveCategory] = useState("yemekler");
-    const [cart, setCart] = useState({});
-
-    // TableContext'ten güncel fonksiyonları ve state'leri al
-    const { saveOrder, orders, products, processPayment } = useContext(TableContext);
     const { user } = useContext(AuthContext);
     const { colors } = useTheme();
+    const [activeCategory, setActiveCategory] = useState("Ana Yemek");
+    const [cart, setCart] = useState({});
 
-    // Aktif kategoriye göre ürünleri filtrele
+    const { saveOrder, orders, products, processPayment } = useContext(TableContext);
+
     const filteredProducts = useMemo(() => {
         if (!products || !products[activeCategory]) return [];
         return products[activeCategory];
     }, [products, activeCategory]);
 
     useEffect(() => {
-        // Masa değiştiğinde sepeti sıfırla
         setCart({});
     }, [tableId]);
 
-    // Ürün miktarını değiştirme
     const handleQuantityChange = (product, delta) => {
         setCart((prev) => {
             const currentQty = prev[product.id]?.count || 0;
@@ -44,17 +40,15 @@ export default function OrderPage() {
         });
     };
 
-    // "İleri" butonuna basıldığında
     const handleNext = () => {
         if (Object.keys(cart).length === 0) {
             alert("Lütfen siparişe ürün ekleyin.");
             return;
         }
         saveOrder(tableId, cart);
-        navigate(`/kasiyer/summary/${tableId}`);
+        navigate(`/${user.role}/summary/${tableId}`);
     };
 
-    // Onaylanmış siparişleri ve toplam tutarı hesapla
     const confirmedOrders = orders[tableId] || {};
     const totalConfirmedPrice = Object.values(confirmedOrders).reduce(
         (sum, item) => sum + item.price * item.count,
@@ -62,14 +56,18 @@ export default function OrderPage() {
     );
 
     const isCashier = user && user.role === 'kasiyer';
+    const handlePayment = () => {
+        processPayment(tableId);
+        alert(`Masa ${tableId} için ödeme alındı.`);
+        navigate(`/${user.role}/home`);
+    }
 
     return (
         <div style={{ padding: 30, display: "flex", gap: 50, background: colors.background, color: colors.text }}>
             <div style={{ flex: 3 }}>
                 <h2 style={{ marginBottom: 20, color: colors.text }}>Masa {tableId} - Sipariş</h2>
 
-                {/* Kategori Butonları */}
-                <div style={{ display: "flex", gap: 20, marginBottom: 30 }}>
+                <div style={{ display: "flex", gap: 10, marginBottom: 30, flexWrap: 'wrap' }}>
                     {Object.keys(products).map((cat) => (
                         <button
                             key={cat}
@@ -82,12 +80,11 @@ export default function OrderPage() {
                                 transition: "all 0.3s ease"
                             }}
                         >
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                            {cat}
                         </button>
                     ))}
                 </div>
 
-                {/* Ürün Listesi */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 20 }}>
                     {filteredProducts.map((product) => (
                         <div
@@ -102,8 +99,8 @@ export default function OrderPage() {
                             <h3 style={{ color: colors.text, margin: "0 0 10px 0" }}>{product.name}</h3>
                             <p style={{ color: colors.textSecondary, margin: "0 0 15px 0" }}>{product.price}₺ | Stok: {product.stock}</p>
                             <div style={{ display: "flex", justifyContent: "center", gap: 10, alignItems: "center" }}>
-                                <button 
-                                    onClick={() => handleQuantityChange(product, -1)} 
+                                <button
+                                    onClick={() => handleQuantityChange(product, -1)}
                                     disabled={product.stock === 0}
                                     style={{
                                         background: colors.button,
@@ -116,8 +113,8 @@ export default function OrderPage() {
                                     }}
                                 >-</button>
                                 <span style={{ color: colors.text, fontSize: "16px", fontWeight: "bold" }}>{cart[product.id]?.count || 0}</span>
-                                <button 
-                                    onClick={() => handleQuantityChange(product, 1)} 
+                                <button
+                                    onClick={() => handleQuantityChange(product, 1)}
                                     disabled={product.stock === 0 || (cart[product.id]?.count || 0) >= product.stock}
                                     style={{
                                         background: colors.button,
@@ -134,28 +131,27 @@ export default function OrderPage() {
                     ))}
                 </div>
 
-                {/* İleri ve Geri Butonları */}
                 <div style={{ textAlign: "right", marginTop: 30 }}>
-                    <button onClick={handleNext} style={{ 
-                        padding: "15px 40px", 
-                        fontSize: "18px", 
-                        backgroundColor: colors.primary, 
-                        color: "#ffffff", 
-                        border: "none", 
-                        borderRadius: "10px", 
-                        cursor: "pointer", 
+                    <button onClick={handleNext} style={{
+                        padding: "15px 40px",
+                        fontSize: "18px",
+                        backgroundColor: colors.primary,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "10px",
+                        cursor: "pointer",
                         marginRight: "10px",
                         transition: "all 0.3s ease"
                     }}>
                         İleri
                     </button>
-                    <button onClick={() => navigate(-1)} style={{ 
-                        padding: "15px 40px", 
-                        fontSize: "18px", 
-                        backgroundColor: colors.button, 
-                        color: "#ffffff", 
-                        border: "none", 
-                        borderRadius: "10px", 
+                    <button onClick={() => navigate(-1)} style={{
+                        padding: "15px 40px",
+                        fontSize: "18px",
+                        backgroundColor: colors.button,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "10px",
                         cursor: "pointer",
                         transition: "all 0.3s ease"
                     }}>
@@ -165,16 +161,16 @@ export default function OrderPage() {
             </div>
 
             {/* Onaylanmış Siparişler Bölümü */}
-            <div style={{ 
-                flex: 2, 
-                border: `1px solid ${colors.border}`, 
-                borderRadius: 10, 
-                padding: 15, 
-                backgroundColor: colors.card, 
-                height: "fit-content", 
-                maxHeight: "80vh", 
-                overflowY: "auto", 
-                position: "sticky", 
+            <div style={{
+                flex: 2,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 10,
+                padding: 15,
+                backgroundColor: colors.card,
+                height: "fit-content",
+                maxHeight: "80vh",
+                overflowY: "auto",
+                position: "sticky",
                 top: "30px",
                 color: colors.text
             }}>
@@ -183,8 +179,8 @@ export default function OrderPage() {
                     <>
                         <ul style={{ listStyleType: 'none', padding: 0 }}>
                             {Object.entries(confirmedOrders).map(([id, item]) => (
-                                <li key={id} style={{ 
-                                    padding: '8px 0', 
+                                <li key={id} style={{
+                                    padding: '8px 0',
                                     borderBottom: `1px solid ${colors.border}`,
                                     color: colors.text
                                 }}>
@@ -192,9 +188,9 @@ export default function OrderPage() {
                                 </li>
                             ))}
                         </ul>
-                        <p style={{ 
-                            fontWeight: "bold", 
-                            marginTop: 10, 
+                        <p style={{
+                            fontWeight: "bold",
+                            marginTop: 10,
                             fontSize: "1.2em",
                             color: colors.text
                         }}>
@@ -202,16 +198,16 @@ export default function OrderPage() {
                         </p>
                         {isCashier && (
                             <button
-                                onClick={() => processPayment(tableId)}
+                                onClick={handlePayment}
                                 style={{
-                                    width: "100%", 
-                                    padding: "15px", 
+                                    width: "100%",
+                                    padding: "15px",
                                     fontSize: "18px",
-                                    backgroundColor: colors.success, 
-                                    color: "#ffffff", 
+                                    backgroundColor: colors.success,
+                                    color: "#ffffff",
                                     border: "none",
-                                    borderRadius: "10px", 
-                                    cursor: "pointer", 
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
                                     marginTop: "10px",
                                     transition: "all 0.3s ease"
                                 }}

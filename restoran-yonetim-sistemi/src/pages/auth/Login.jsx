@@ -22,10 +22,16 @@ function Login() {
     try {
       const role = await login(email, password);
       if (role) {
+        // Role göre doğru ana sayfaya yönlendir
         if (role === 'admin') {
           navigate('/admin/dashboard');
-        } else {
+        } else if (role === 'garson') {
+          navigate('/garson/home');
+        } else if (role === 'kasiyer') {
           navigate('/kasiyer/home');
+        } else {
+          // Varsayılan bir rota (genellikle olmamalı)
+          navigate('/');
         }
       }
     } catch (err) {

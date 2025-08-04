@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useContext } from 'react';
 import { TableProvider } from './context/TableContext.jsx';
 import { AuthContext } from './context/AuthContext.jsx';
@@ -18,22 +18,14 @@ import ResetPassword from './pages/auth/ResetPassword.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
 import ReportsPage from './pages/reports/ReportsPage.jsx';
 import ProductsPage from './pages/products/ProductsPage.jsx';
-
 import StokUpdate from './components/stock/StokUpdate.jsx';
 import MenuUpdate from './components/menu/MenuUpdate.jsx';
-import PersonnelPage from './pages/personnel/PersonnelPage.jsx'; // Yeni personel sayfası
+import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 
-// Staff & Shared Pages
-import TablesPage from './pages/tables/TablesPage.jsx';
-import TablesGridPage from './pages/tables/TablesGridPage.jsx';
-import OrderPage from './pages/orders/OrderPage.jsx';
-import SummaryPage from './pages/orders/SummaryPage.jsx';
-
-// Pelin's Kasiyer Pages
-import KasiyerPanel from './components/pelin/App.jsx';
+// Shared Staff Pages (Garson/Kasiyer)
 import WaiterHome from './components/pelin/pages/WaiterHome.jsx';
-import PelinOrderPage from './components/pelin/pages/OrderPage.jsx';
-import PelinSummaryPage from './components/pelin/pages/SummaryPage.jsx';
+import OrderPage from './components/pelin/pages/OrderPage.jsx';
+import SummaryPage from './components/pelin/pages/SummaryPage.jsx';
 
 // Stil dosyaları
 import "./App.css";
@@ -41,79 +33,99 @@ import "./App.css";
 // Yetkilendirme için korumalı rota bileşeni
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { user } = useContext(AuthContext);
-  if (!user) return <Navigate to="/login" replace />;
-  
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Eğer belirli bir rol veya roller gerekiyorsa kontrol et
   if (requiredRole) {
-    // Array kontrolü
+    const userRole = user.role;
+    // Gerekli rol bir dizi ise içinde olup olmadığını kontrol et
     if (Array.isArray(requiredRole)) {
-      if (!requiredRole.includes(user.role)) {
-        const homePath = user.role === 'admin' ? '/admin/dashboard' : '/staff/home';
-        return <Navigate to={homePath} replace />;
+      if (!requiredRole.includes(userRole)) {
+        return <Navigate to={`/${user.baseRole}/home`} replace />;
       }
     } else {
-      // String kontrolü
-      if (user.role !== requiredRole) {
-        const homePath = user.role === 'admin' ? '/admin/dashboard' : '/staff/home';
-        return <Navigate to={homePath} replace />;
+      // Gerekli rol tek bir string ise eşit olup olmadığını kontrol et
+      if (userRole !== requiredRole) {
+        return <Navigate to={`/${user.baseRole}/home`} replace />;
       }
     }
   }
-  
+
   return children;
 };
 
+
 function App() {
+  const { user } = useContext(AuthContext);
+
   return (
     <ThemeProvider>
       <TableProvider>
         <Routes>
-        {/* Layout Olmayan Sayfalar */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password/:token" element={<ResetPassword />} />
+          {/* Layout Olmayan Sayfalar */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-{/* Admin Paneli */}
-<Route
-  path="/admin/*"
-  element={<AdminLayout />}
->
-  <Route index element={<Navigate to="dashboard" replace />} />
-  <Route path="dashboard" element={<AdminDashboard />} />
-  <Route path="tables" element={<TablesPage />} />
-  <Route path="products" element={<ProductsPage />} />
+          {/* Admin Paneli */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="stock" element={<StokUpdate />} />
+            <Route path="menu" element={<MenuUpdate />} />
+            <Route path="personnel" element={<PersonnelPage />} />
+          </Route>
 
-  <Route path="reports" element={<ReportsPage />} />
-  <Route path="stock" element={<StokUpdate />} />
-  <Route path="menu" element={<MenuUpdate />} />
-  <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
-</Route>
+          {/* Garson Paneli */}
+          <Route
+            path="/garson/*"
+            element={
+              <ProtectedRoute requiredRole="garson">
+                <StaffLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<WaiterHome />} />
+            <Route path="order/:tableId" element={<OrderPage />} />
+            <Route path="summary/:tableId" element={<SummaryPage />} />
+          </Route>
 
-        {/* Personel Paneli (Garson/Kasiyer) - Admin de erişebilir */}
-        <Route
-          path="/staff/*"
-          element={<StaffLayout />}
-        >
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<TablesGridPage />} />
-          <Route path="tables" element={<TablesGridPage />} />
-          <Route path="order/:tableId" element={<OrderPage />} />
-          <Route path="summary/:tableId" element={<SummaryPage />} />
-        </Route>
+          {/* Kasiyer Paneli */}
+          <Route
+            path="/kasiyer/*"
+            element={
+              <ProtectedRoute requiredRole="kasiyer">
+                <StaffLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<WaiterHome />} />
+            <Route path="order/:tableId" element={<OrderPage />} />
+            <Route path="summary/:tableId" element={<SummaryPage />} />
+          </Route>
 
-        {/* Kasiyer Paneli (Pelin'in sayfaları) */}
-        <Route
-          path="/kasiyer/*"
-          element={<StaffLayout />}
-        >
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<WaiterHome />} />
-          <Route path="order/:tableId" element={<PelinOrderPage />} />
-          <Route path="summary/:tableId" element={<PelinSummaryPage />} />
-        </Route>
-
-        {/* Varsayılan Rota */}
-        <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-      </Routes>
+          {/* Varsayılan Rota */}
+          <Route
+            path="*"
+            element={
+              user ? <Navigate to={`/${user.baseRole === 'admin' ? 'admin/dashboard' : user.baseRole + '/home'}`} replace /> : <Navigate to="/login" replace />
+            }
+          />
+        </Routes>
       </TableProvider>
     </ThemeProvider>
   );

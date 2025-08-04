@@ -2,25 +2,28 @@ import React, { createContext, useState } from 'react';
 
 export const AuthContext = createContext();
 
-// Test kullanıcıları
+// Test kullanıcıları güncellendi
 const mockUsers = [
-    { email: 'admin@restoran.com', password: '123', role: 'admin' },
-    { email: 'garson@restoran.com', password: '123', role: 'garson' },
-    { email: 'kasiyer@restoran.com', password: '123', role: 'kasiyer' }
+    { email: 'admin', password: '1234', role: 'admin', baseRole: 'admin' },
+    { email: 'garson', password: '1234', role: 'garson', baseRole: 'garson' },
+    { email: 'kasiyer', password: '1234', role: 'kasiyer', baseRole: 'kasiyer' }
 ];
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
 
     const login = async (email, password) => {
-        // Test kullanıcılarını kontrol et
         const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-        
+
         if (foundUser) {
-            setUser({ role: foundUser.role, email: foundUser.email });
+            setUser({
+                email: foundUser.email,
+                baseRole: foundUser.baseRole,
+                role: foundUser.role
+            });
             return foundUser.role;
         } else {
-            throw new Error('Geçersiz email veya şifre');
+            throw new Error('Geçersiz kullanıcı adı veya şifre');
         }
     };
 
@@ -28,8 +31,17 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const switchRole = (newRole) => {
+        setUser(currentUser => {
+            if (currentUser.baseRole === 'admin') {
+                return { ...currentUser, role: newRole };
+            }
+            return currentUser;
+        });
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, logout, switchRole }}>
             {children}
         </AuthContext.Provider>
     );

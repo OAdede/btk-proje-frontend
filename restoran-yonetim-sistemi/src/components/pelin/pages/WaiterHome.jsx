@@ -1,31 +1,39 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TableContext } from "../../../context/TableContext";
+import { AuthContext } from "../../../context/AuthContext";
 
 export default function WaiterHome() {
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
     const { tableStatus } = useContext(TableContext);
     const [selectedFloor, setSelectedFloor] = useState(1);
 
-    // Masa isimleri 1-1, 1-2, ...
     const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
+
+    const handleTableClick = (tableId) => {
+        // Kullanıcının mevcut rolüne göre doğru sipariş sayfasına yönlendir.
+        // Bu, /garson/order/... veya /kasiyer/order/... olabilir.
+        navigate(`/${user.role}/order/${tableId}`);
+    };
 
     const getColor = (status) => {
         switch (status) {
             case "empty":
+            case "bos": // Eski verilerle uyumluluk için
                 return "#8BC34A"; // yeşil
             case "occupied":
+            case "dolu": // Eski verilerle uyumluluk için
                 return "#F44336"; // kırmızı
             case "reserved":
                 return "#FFEB3B"; // sarı
             default:
-                return "#8BC34A"; // default boş yeşil
+                return "#8BC34A";
         }
     };
 
     return (
         <div style={{ padding: "2rem", display: "flex", gap: "2rem" }}>
-            {/* Masa kutuları */}
             <div style={{ flexGrow: 1 }}>
                 <h2>Kat {selectedFloor} - Masa Seçimi</h2>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "1rem" }}>
@@ -45,7 +53,7 @@ export default function WaiterHome() {
                                 border: "2px solid #333",
                                 userSelect: "none",
                             }}
-                            onClick={() => navigate(`/kasiyer/order/${tableId}`)}
+                            onClick={() => handleTableClick(tableId)}
                             title={`Masa ${tableId}`}
                         >
                             {tableId.split("-")[1]}
@@ -54,7 +62,6 @@ export default function WaiterHome() {
                 </div>
             </div>
 
-            {/* Kat seçimi */}
             <div style={{ width: "120px" }}>
                 <h3>Katlar</h3>
                 {[1, 2].map((floor) => (

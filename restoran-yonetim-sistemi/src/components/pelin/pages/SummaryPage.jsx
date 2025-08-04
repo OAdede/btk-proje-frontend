@@ -1,17 +1,14 @@
 import React, { useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../../context/TableContext";
+import { AuthContext } from "../../../context/AuthContext";
 
 export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
-    const { orders, lastOrders, confirmOrder, processPayment } = useContext(TableContext);
+    const { user } = useContext(AuthContext);
+    const { orders, lastOrders, confirmOrder } = useContext(TableContext);
 
-    // Bu sayfa iki amaçla kullanılacak:
-    // 1. Garson yeni siparişi onaylar (lastOrders kullanılır)
-    // 2. Kasiyer mevcut siparişin ödemesini alır (orders kullanılır)
-
-    // Eğer onaylanmamış yeni bir sipariş varsa, onu kullan. Yoksa, mevcut onaylanmış siparişi kullan.
     const isNewOrder = lastOrders[tableId] && Object.keys(lastOrders[tableId]).length > 0;
     const currentOrder = isNewOrder ? lastOrders[tableId] : (orders[tableId] || {});
 
@@ -23,15 +20,27 @@ export default function SummaryPage() {
 
     const handleConfirm = () => {
         confirmOrder(tableId);
-        navigate("/kasiyer/home"); // Garsonu masalar sayfasına yönlendir
+        // Onay sonrası aktif role göre doğru ana sayfaya yönlendir
+        navigate(`/${user.role}/home`);
     };
 
-    const handlePayment = () => {
-        processPayment(tableId);
-        navigate("/kasiyer/home"); // Kasiyeri masalar sayfasına yönlendir
+    // Kasiyer ise ödeme al butonu gösterilir, değilse sipariş onayı
+    const isCashier = user && user.role === 'kasiyer';
+    // Garson yeni sipariş onayı yapabilir
+    const canConfirm = user && user.role === 'garson' && isNewOrder;
+
+    // Geri butonunun hangi sayfaya döneceğini belirle
+    const handleGoBack = () => {
+        // Eğer yeni bir sipariş onayı ekranındaysa, sipariş sayfasına dön
+        if (isNewOrder) {
+            navigate(`/${user.role}/order/${tableId}`);
+        } else {
+            // Değilse, masaların olduğu ana ekrana dön
+            navigate(`/${user.role}/home`);
+        }
     };
 
-    const pageTitle = isNewOrder ? `Masa ${tableId} - Yeni Sipariş Özeti` : `Masa ${tableId} - Ödeme Ekranı`;
+    const pageTitle = isNewOrder ? `Masa ${tableId} - Yeni Sipariş Özeti` : `Masa ${tableId} - Mevcut Sipariş`;
 
     return (
         <div style={{ padding: 30, maxWidth: '600px', margin: 'auto', border: '1px solid #ddd', borderRadius: '10px' }}>
@@ -40,18 +49,8 @@ export default function SummaryPage() {
             {Object.keys(currentOrder).length === 0 ? (
                 <div style={{ textAlign: "center" }}>
                     <p>Bu masaya ait görüntülenecek bir sipariş yok.</p>
-                    <button
-                        onClick={() => navigate(-1)}
-                        style={{
-                            padding: "10px 20px",
-                            borderRadius: "8px",
-                            border: "none",
-                            backgroundColor: "#007bff",
-                            color: "white",
-                            cursor: "pointer",
-                        }}
-                    >
-                        Geri Dön
+                    <button onClick={() => navigate(`/${user.role}/home`)} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", backgroundColor: "#007bff", color: "white", cursor: "pointer" }}>
+                        Masalara Dön
                     </button>
                 </div>
             ) : (
@@ -68,50 +67,17 @@ export default function SummaryPage() {
                         <strong>Toplam: {totalPrice}₺</strong>
                     </p>
                     <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between' }}>
-                        <button
-                            onClick={() => navigate(-1)}
-                            style={{
-                                backgroundColor: "#6c757d",
-                                color: "white",
-                                padding: "15px 30px",
-                                borderRadius: "8px",
-                                border: "none",
-                                cursor: "pointer",
-                                fontSize: '16px'
-                            }}
-                        >
+                        <button onClick={handleGoBack} style={{ backgroundColor: "#6c757d", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}>
                             Geri
                         </button>
 
-                        {isNewOrder ? (
+                        {/* Garson yeni siparişi onaylayabilir */}
+                        {canConfirm && (
                             <button
                                 onClick={handleConfirm}
-                                style={{
-                                    backgroundColor: "green",
-                                    color: "white",
-                                    padding: "15px 30px",
-                                    borderRadius: "8px",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    fontSize: '16px'
-                                }}
+                                style={{ backgroundColor: "green", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
                             >
                                 Siparişi Onayla
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handlePayment}
-                                style={{
-                                    backgroundColor: "#28a745",
-                                    color: "white",
-                                    padding: "15px 30px",
-                                    borderRadius: "8px",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    fontSize: '16px'
-                                }}
-                            >
-                                Ödeme Al
                             </button>
                         )}
                     </div>
