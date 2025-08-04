@@ -15,24 +15,18 @@ const StaffSidebar = () => {
                 <h2>Personel Paneli</h2>
             </div>
             <nav className="staff-sidebar-nav">
-                {/* Garson Sayfaları */}
+                {/* Garson ve Kasiyer Sayfaları */}
                 <NavLink
-                    to="/garson/masalar"
+                    to="/staff/home"
+                    className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
+                >
+                    Ana Sayfa
+                </NavLink>
+                <NavLink
+                    to="/staff/tables"
                     className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
                 >
                     Masalar
-                </NavLink>
-                <NavLink
-                    to="/garson/urunler"
-                    className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
-                >
-                    Ürünler
-                </NavLink>
-                <NavLink
-                    to="/garson/rezervasyonlar"
-                    className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
-                >
-                    Rezervasyonlar
                 </NavLink>
             </nav>
             <button

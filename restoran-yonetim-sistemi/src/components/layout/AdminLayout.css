@@ -28,6 +28,25 @@
     color: #343a40;
     font-weight: 700;
     margin: 0;
+    margin-bottom: 16px;
+}
+
+.admin-user-info {
+    padding: 12px 0;
+    border-top: 1px solid #e9ecef;
+}
+
+.admin-user-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 4px;
+}
+
+.admin-user-role {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
 }
 
 .admin-sidebar-nav {

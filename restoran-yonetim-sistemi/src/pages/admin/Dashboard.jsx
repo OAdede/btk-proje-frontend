@@ -28,20 +28,6 @@ const Dashboard = () => {
   return (
     <div className="home-page">
       <h1>Hoşgeldiniz, Admin!</h1>
-      <div className="dashboard-cards">
-        <div className="dashboard-card">
-          <h3>Bugünkü Sipariş</h3>
-          <p>12</p>
-        </div>
-        <div className="dashboard-card">
-          <h3>Toplam Kazanç</h3>
-          <p>1500₺</p>
-        </div>
-        <div className="dashboard-card">
-          <h3>Aktif Rezervasyon</h3>
-          <p>3</p>
-        </div>
-      </div>
       <div className="katlar-wrapper">
         <div className="kat">
           <h2>1. Kat</h2>

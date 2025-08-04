@@ -2,12 +2,26 @@ import React, { createContext, useState } from 'react';
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // { role: 'garson' | 'kasiyer' | 'admin' }
+// Test kullanıcıları
+const mockUsers = [
+    { email: 'admin@restoran.com', password: '123', role: 'admin' },
+    { email: 'garson@restoran.com', password: '123', role: 'garson' },
+    { email: 'kasiyer@restoran.com', password: '123', role: 'kasiyer' }
+];
 
-    const login = (role) => {
-        setUser({ role });
-        // Gerçek uygulamada burada token vs. de saklanabilir.
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+
+    const login = async (email, password) => {
+        // Test kullanıcılarını kontrol et
+        const foundUser = mockUsers.find(u => u.email === email && u.password === password);
+        
+        if (foundUser) {
+            setUser({ role: foundUser.role, email: foundUser.email });
+            return foundUser.role;
+        } else {
+            throw new Error('Geçersiz email veya şifre');
+        }
     };
 
     const logout = () => {
