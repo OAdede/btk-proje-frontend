@@ -16,6 +16,7 @@ const StaffSidebar = () => {
         navigate('/login');
     };
 
+    // Mevcut role göre ana sayfa yolunu belirle
     const homePath = `/${user?.role}/home`;
 
     return (

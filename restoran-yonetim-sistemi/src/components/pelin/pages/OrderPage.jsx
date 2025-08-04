@@ -14,6 +14,7 @@ export default function OrderPage() {
 
     const { saveOrder, orders, products, processPayment } = useContext(TableContext);
 
+    // Gerekli kontrol ekleniyor (products ve activeCategory varsa)
     const filteredProducts = useMemo(() => {
         if (!products || !products[activeCategory]) return [];
         return products[activeCategory];
@@ -60,7 +61,7 @@ export default function OrderPage() {
         processPayment(tableId);
         alert(`Masa ${tableId} için ödeme alındı.`);
         navigate(`/${user.role}/home`);
-    }
+    };
 
     return (
         <div style={{ padding: 30, display: "flex", gap: 50, background: colors.background, color: colors.text }}>
@@ -68,15 +69,18 @@ export default function OrderPage() {
                 <h2 style={{ marginBottom: 20, color: colors.text }}>Masa {tableId} - Sipariş</h2>
 
                 <div style={{ display: "flex", gap: 10, marginBottom: 30, flexWrap: 'wrap' }}>
-                    {Object.keys(products).map((cat) => (
+                    {products && Object.keys(products).map((cat) => (
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
                             style={{
-                                padding: "10px 25px", fontSize: "20px", borderRadius: 12,
+                                padding: "10px 25px",
+                                fontSize: "20px",
+                                borderRadius: 12,
                                 backgroundColor: activeCategory === cat ? colors.primary : colors.button,
                                 color: "#ffffff",
-                                border: "none", cursor: "pointer",
+                                border: "none",
+                                cursor: "pointer",
                                 transition: "all 0.3s ease"
                             }}
                         >
@@ -158,6 +162,7 @@ export default function OrderPage() {
                         Geri
                     </button>
                 </div>
+
             </div>
 
             {/* Onaylanmış Siparişler Bölümü */}
@@ -177,14 +182,11 @@ export default function OrderPage() {
                 <h3 style={{ color: colors.text, marginBottom: 15 }}>Onaylanmış Siparişler</h3>
                 {Object.keys(confirmedOrders).length > 0 ? (
                     <>
-                        <ul style={{ listStyleType: 'none', padding: 0 }}>
-                            {Object.entries(confirmedOrders).map(([id, item]) => (
-                                <li key={id} style={{
-                                    padding: '8px 0',
-                                    borderBottom: `1px solid ${colors.border}`,
-                                    color: colors.text
-                                }}>
-                                    {item.name} x {item.count} = {item.count * item.price}₺
+                        <ul style={{ listStyle: "none", padding: 0 }}>
+                            {Object.values(confirmedOrders).map((item) => (
+                                <li key={item.id} style={{ marginBottom: 10 }}>
+                                    <span style={{ fontWeight: "bold", color: colors.text }}>{item.name}</span>
+                                    {" "}x{item.count} - {item.price * item.count}₺
                                 </li>
                             ))}
                         </ul>

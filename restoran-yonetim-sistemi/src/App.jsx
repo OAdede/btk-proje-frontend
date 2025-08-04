@@ -122,7 +122,14 @@ function App() {
           <Route
             path="*"
             element={
-              user ? <Navigate to={`/${user.baseRole === 'admin' ? 'admin/dashboard' : user.baseRole + '/home'}`} replace /> : <Navigate to="/login" replace />
+              user ? (
+                <Navigate
+                  to={`/${user.baseRole === 'admin' ? 'admin/dashboard' : user.baseRole + '/home'}`}
+                  replace
+                />
+              ) : (
+                <Navigate to="/login" replace />
+              )
             }
           />
         </Routes>
@@ -130,5 +137,3 @@ function App() {
     </ThemeProvider>
   );
 }
-
-export default App;
