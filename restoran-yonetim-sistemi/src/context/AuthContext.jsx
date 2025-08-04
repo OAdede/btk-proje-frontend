@@ -2,87 +2,72 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
-// Başlangıç kullanıcıları (veritabanı simülasyonu)
-const initialUsers = {
-    'admin': { password: '123', role: 'admin', status: 'Aktif' },
-    'kasiyer': { password: '123', role: 'kasiyer', status: 'Aktif' },
-    'garson': { password: '123', role: 'garson', status: 'Aktif' },
-};
+// Backend simülasyonu için sahte veritabanı
+const mockUsers = [
+    { id: 1, email: 'admin@restoran.com', password: '123', role: 'admin', name: 'Yönetici Admin' },
+    { id: 2, email: 'kasiyer@restoran.com', password: '123', role: 'kasiyer', name: 'Ayşe Kasa' },
+    { id: 3, email: 'garson@restoran.com', password: '123', role: 'garson', name: 'Ali Veli' },
+];
+
+// Sahte API çağrısını simüle eden yardımcı fonksiyon
+const fakeApiCall = (duration = 500) => new Promise(resolve => setTimeout(resolve, duration));
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [users, setUsers] = useState(() => {
-        // Personel listesini localStorage'dan al, yoksa initialUsers ile başlat
-        // Bu, PersonelEkleme sayfasındaki verilerle tutarlılık sağlar.
-        const savedPersonnel = localStorage.getItem('personnelData');
-        // Bu kısım daha sonra gerçek personel listesiyle entegre edilecek.
-        // Şimdilik basit bir birleştirme yapalım.
-        return savedPersonnel ? JSON.parse(savedPersonnel) : initialUsers;
-    });
+    const [loading, setLoading] = useState(true);
 
-    // Gerçekte bu personel listesiyle senkronize olmalı.
-    // Şimdilik bu context'in kendi kullanıcı listesi olacak.
-
-    const login = (username, password) => {
-        // Bu fonksiyon hem kullanıcı adı hem de e-posta ile çalışabilir.
-        let foundUser = null;
-        let userRole = null;
-
-        for (const role in users) {
-            const userArray = users[role];
-            if (Array.isArray(userArray)) {
-                const matchedUser = userArray.find(u => (u.ad === username || u.email === username) && u.password === password && u.status === 'Aktif');
-                if (matchedUser) {
-                    foundUser = matchedUser;
-                    userRole = role.toLowerCase();
-                    break;
-                }
+    useEffect(() => {
+        // Sayfa yenilendiğinde kullanıcı oturumunu kontrol et
+        try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
             }
+        } catch (error) {
+            console.error("Kullanıcı verisi okunurken hata:", error);
+            localStorage.removeItem('user');
         }
+        setLoading(false);
+    }, []);
+
+    const login = async (email, password) => {
+        await fakeApiCall();
+        const foundUser = mockUsers.find(u => u.email === email && u.password === password);
 
         if (foundUser) {
-            setUser({ role: userRole, name: foundUser.ad });
-            return userRole;
+            const userData = { id: foundUser.id, email: foundUser.email, role: foundUser.role, name: foundUser.name };
+            setUser(userData);
+            localStorage.setItem('user', JSON.stringify(userData));
+            return userData.role;
+        } else {
+            throw new Error('E-posta veya şifre hatalı.');
         }
-
-        // Eski basit kullanıcılar için kontrol
-        const legacyUser = initialUsers[username];
-        if (legacyUser && legacyUser.password === password) {
-            setUser({ role: legacyUser.role, name: username });
-            return legacyUser.role;
-        }
-
-        return null;
     };
 
     const logout = () => {
         setUser(null);
+        localStorage.removeItem('user');
     };
 
-    const requestPasswordReset = (email) => {
-        // Backend simülasyonu: Kullanıcıyı e-postaya göre bul ve token oluştur.
-        console.log(`${email} için şifre sıfırlama isteği alındı.`);
-        // Gerçekte burada backend'e istek atılır ve backend mail gönderir.
-        const token = Math.random().toString(36).substr(2);
-        const resetLink = `${window.location.origin}/reset-password/${token}`;
-        console.log(`%cSıfırlama Linki (Simülasyon):`, 'color: green; font-weight: bold;');
-        console.log(resetLink);
-        // Burada kullanıcıya bir token atanabilir ve state güncellenebilir.
-        return true; // Başarılı simülasyonu
+    const requestPasswordReset = async (email) => {
+        await fakeApiCall();
+        console.log(`Şifre sıfırlama isteği backend'e gönderildi: ${email}`);
+        // Her zaman başarılı mesajı göstererek kullanıcıların hangi e-postaların kayıtlı olduğunu anlamasını engelle
+        return `Eğer ${email} adresi sistemimizde kayıtlıysa, şifre sıfırlama linki gönderildi.`;
     };
 
-    const resetPassword = (token, newPassword) => {
-        // Backend simülasyonu: Token'a sahip kullanıcıyı bul ve şifresini güncelle.
-        console.log(`Şifre, token '${token}' için güncelleniyor.`);
-        // Gerçekte: setUsers state'i güncellenir.
-        // Örnek: Kullanıcıyı token ile bul, şifresini değiştir ve durumunu 'Aktif' yap.
-        return true; // Başarılı simülasyonu
+    const resetPassword = async (token, password) => {
+        await fakeApiCall();
+        console.log(`Yeni şifre (${password}) backend'e gönderildi. Token: ${token}`);
+        if (!token || token === 'invalid_token') {
+            throw new Error('Geçersiz veya süresi dolmuş link.');
+        }
+        return 'Şifreniz başarıyla güncellendi.';
     };
-
 
     return (
-        <AuthContext.Provider value={{ user, users, login, logout, requestPasswordReset, resetPassword }}>
-            {children}
+        <AuthContext.Provider value={{ user, loading, login, logout, requestPasswordReset, resetPassword }}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

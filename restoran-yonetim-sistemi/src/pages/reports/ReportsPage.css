@@ -1,0 +1,23 @@
+.reports-page {
+    padding: 20px;
+}
+
+.page-title {
+    font-size: 1.8rem;
+    color: #1e293b;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.chart-wrapper {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
