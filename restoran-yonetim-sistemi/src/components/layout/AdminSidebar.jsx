@@ -28,13 +28,13 @@ const AdminSidebar = () => {
                 </NavLink>
 
                 <NavLink
-                    to="/admin/products"
+                    to="/admin/menu"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Menü Güncelleme
                 </NavLink>
                 <NavLink
-                    to="/admin/personel"
+                    to="/admin/personnel"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Personel
