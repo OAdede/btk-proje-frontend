@@ -54,11 +54,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 };
 
 
-// Yeni Admin Sayfaları
-import Anasayfa from './pages/admin/Anasayfa';
-import Rezervasyon from './pages/admin/Rezervasyon';
-import SiparisGecmisi from './pages/admin/SiparisGecmisi';
-
 function App() {
   return (
     <TableProvider>
@@ -68,36 +63,20 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-        {/* Admin Paneli */}
-<<<<<<< Updated upstream
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Anasayfa />} />
-          <Route path="anasayfa" element={<Anasayfa />} />
-          <Route path="rezervasyon" element={<Rezervasyon />} />
-          <Route path="menu" element={<MenuUpdate />} />
-          <Route path="stok" element={<StockPage />} />
-          <Route path="personel" element={<PersonnelPage />} />
-          <Route path="siparis-gecmisi" element={<SiparisGecmisi />} />
-=======
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="tables" element={<TablesPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="reservations" element={<ReservationsPage />} />
-          <Route path="reports" element={<ReportsPage />} />
->>>>>>> Stashed changes
-          <Route path="raporlar" element={<ReportsPage />} />
-          <Route path="stock" element={<StockPage />} />
-          <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
-        </Route>
+{/* Admin Paneli */}
+<Route
+  path="/admin/*"
+  element={
+    <ProtectedRoute requiredRole="admin">
+      <AdminLayout />
+    </ProtectedRoute>
+  }
+>
+  <Route index element={<Navigate to="dashboard" replace />} />
+  <Route path="dashboard" element={<AdminDashboard />} />
+  <Route path="stock" element={<StockPage />} />
+  <Route path="personnel" element={<PersonnelPage />} /> {/* Yeni personel rota */}
+</Route>
 
         {/* Personel Paneli (Garson/Kasiyer) */}
         <Route

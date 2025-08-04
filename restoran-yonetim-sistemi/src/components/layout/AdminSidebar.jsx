@@ -19,9 +19,6 @@ const AdminSidebar = () => {
             <nav className="admin-sidebar-nav">
                 {/* NavLink, URL'ye göre aktif linki otomatik olarak stillendirir */}
                 <NavLink
-<<<<<<< Updated upstream
-                    to="/admin/anasayfa"
-=======
                     to="/admin/dashboard"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
@@ -29,10 +26,9 @@ const AdminSidebar = () => {
                 </NavLink>
                 <NavLink
                     to="/admin/stock"
->>>>>>> Stashed changes
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Anasayfa
+                    Stok Güncelleme
                 </NavLink>
                 <NavLink
                     to="/admin/rezervasyon"
@@ -47,19 +43,13 @@ const AdminSidebar = () => {
                     Menü Güncelleme
                 </NavLink>
                 <NavLink
-                    to="/admin/stok"
-                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                >
-                    Stok Güncelleme
-                </NavLink>
-                <NavLink
-                    to="/admin/personnel"
+                    to="/admin/personel"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Personel
                 </NavLink>
                 <NavLink
-                    to="/admin/siparis-gecmisi"
+                    to="/admin/orders"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
                     Sipariş Geçmişi
