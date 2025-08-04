@@ -12,6 +12,7 @@ import {
   Legend,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { useTheme } from '../../context/ThemeContext';
 
 ChartJS.register(
   LineElement,
@@ -24,6 +25,7 @@ ChartJS.register(
 );
 
 const SalesChart = () => {
+  const { colors } = useTheme();
   // Gerçek zamanlı tarih hesaplama fonksiyonları
   const getCurrentYear = () => new Date().getFullYear();
   const getCurrentMonth = () => {
@@ -315,12 +317,12 @@ const SalesChart = () => {
       legend: { 
         position: 'top',
         labels: {
-          color: 'white'
+          color: colors.text
         }
       },
       title: {
         display: true,
-        color: 'white',
+        color: colors.text,
         text:
           mode === 'daily'
             ? 'Günlük Satışlar'
@@ -334,27 +336,28 @@ const SalesChart = () => {
     scales: {
       x: {
         ticks: {
-          color: 'white'
+          color: colors.text
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: colors.isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         }
       },
       y: {
         ticks: {
-          color: 'white'
+          color: colors.text
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: colors.isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         }
       }
-    }
+    },
+    backgroundColor: colors.cardBackground
   };
 
   return (
-    <Card className="mb-4" style={{ backgroundColor: '#2c3e50', color: 'white' }}>
+    <Card className="mb-4" style={{ backgroundColor: colors.cardBackground, color: colors.text }}>
       <Card.Body>
-        <Card.Title style={{ color: 'white' }}>Satış Grafiği</Card.Title>
+        <Card.Title style={{ color: colors.text }}>Satış Grafiği</Card.Title>
 
         <div className="d-flex justify-content-between align-items-center mb-3">
           <ButtonGroup>
@@ -413,7 +416,9 @@ const SalesChart = () => {
           )}
         </div>
 
-        <Line data={chartData} options={options} />
+        <div style={{ backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px' }}>
+          <Line data={chartData} options={options} />
+        </div>
       </Card.Body>
     </Card>
   );
