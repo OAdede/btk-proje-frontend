@@ -16,28 +16,46 @@ const AdminSidebar = () => {
             <nav className="admin-sidebar-nav">
                 {/* NavLink, URL'ye göre aktif linki otomatik olarak stillendirir */}
                 <NavLink
-                    to="/admin/stok"
+                    to="/admin/anasayfa"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Stok Güncelle
+                    Anasayfa
+                </NavLink>
+                <NavLink
+                    to="/admin/rezervasyon"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    Rezervasyon
                 </NavLink>
                 <NavLink
                     to="/admin/menu"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Menü Güncelle
+                    Menü Güncelleme
+                </NavLink>
+                <NavLink
+                    to="/admin/stok"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    Stok Güncelleme
                 </NavLink>
                 <NavLink
                     to="/admin/personel"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Personel Ekleme
+                    Personel
+                </NavLink>
+                <NavLink
+                    to="/admin/siparis-gecmisi"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    Sipariş Geçmişi
                 </NavLink>
                 <NavLink
                     to="/admin/raporlar"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Raporlar
+                    Rapor
                 </NavLink>
                 {/* Diğer admin linkleri buraya eklenebilir */}
             </nav>

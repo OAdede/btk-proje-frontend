@@ -18,6 +18,11 @@ import ReservationsPage from './pages/reservations/ReservationsPage';
 import OrderPage from './pages/orders/OrderPage';
 import SummaryPage from './pages/orders/SummaryPage';
 
+// Yeni Admin Sayfaları
+import Anasayfa from './pages/admin/Anasayfa';
+import Rezervasyon from './pages/admin/Rezervasyon';
+import SiparisGecmisi from './pages/admin/SiparisGecmisi';
+
 function App() {
   return (
     <>
@@ -36,10 +41,13 @@ function App() {
 
         {/* Admin Paneli */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<StockPage />} />
-          <Route path="stok" element={<StockPage />} />
+          <Route index element={<Anasayfa />} />
+          <Route path="anasayfa" element={<Anasayfa />} />
+          <Route path="rezervasyon" element={<Rezervasyon />} />
           <Route path="menu" element={<MenuUpdate />} />
+          <Route path="stok" element={<StockPage />} />
           <Route path="personel" element={<PersonnelPage />} />
+          <Route path="siparis-gecmisi" element={<SiparisGecmisi />} />
           <Route path="raporlar" element={<ReportsPage />} />
         </Route>
 
