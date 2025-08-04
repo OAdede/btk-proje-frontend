@@ -99,54 +99,54 @@ function StokUpdate() {
   const [duzenleMiktar, setDuzenleMiktar] = useState("");
   const [duzenleMinStok, setDuzenleMinStok] = useState("");
 
-  // Stok değiştiğinde localStorage'a kaydet
+  // Stok verilerini localStorage'a kaydet
   useEffect(() => {
     localStorage.setItem('stokData', JSON.stringify(stok));
   }, [stok]);
 
-  const tumUrunler = Object.values(stok).flat();
-  const gosterilecekUrunler =
-    aktifKategori === "Tümü" ? tumUrunler : stok[aktifKategori] || [];
+  // Gösterilecek ürünleri hesapla
+  const gosterilecekUrunler = aktifKategori === "Tümü" 
+    ? Object.values(stok).flat() 
+    : stok[aktifKategori] || [];
 
   const stokDurumu = (miktar, minStok) => {
-    if (miktar <= 0) return { durum: "Tükendi", renk: "#d90429" };
-    if (miktar <= minStok) return { durum: "Kritik", renk: "#ff6b35" };
-    return { durum: "Yeterli", renk: "#38b000" };
+    if (miktar > minStok * 2) return { durum: "Yeterli", renk: "#4caf50", class: "yeterli" };
+    if (miktar > minStok) return { durum: "Az", renk: "#ff9800", class: "az" };
+    return { durum: "Kritik", renk: "#f44336", class: "kritik" };
   };
 
   const getBirim = (kategori) => {
-    if (kategori === "İçecekler" || kategori === "Tatlılar") return "adet";
-    return "porsiyon";
+    return kategori === "İçecekler" || kategori === "Tatlılar" ? "adet" : "porsiyon";
   };
 
   const urunEkle = () => {
-    if (!yeniUrun.ad || !yeniUrun.miktar || !yeniUrun.minStok || !aktifKategori || aktifKategori === "Tümü") return;
+    if (!yeniUrun.ad || !yeniUrun.miktar || !yeniUrun.minStok || !yeniUrun.birim) {
+      alert("Lütfen tüm alanları doldurun!");
+      return;
+    }
 
-    const yeniStok = {
-      ...stok,
-      [aktifKategori]: [
-        ...(stok[aktifKategori] || []),
-        { 
-          ...yeniUrun, 
-          miktar: Number(yeniUrun.miktar),
-          minStok: Number(yeniUrun.minStok),
-          birim: yeniUrun.birim || getBirim(aktifKategori)
-        },
-      ],
-    };
+    const yeniStokData = { ...stok };
+    if (!yeniStokData[aktifKategori]) {
+      yeniStokData[aktifKategori] = [];
+    }
 
-    setStok(yeniStok);
+    yeniStokData[aktifKategori].push({
+      ad: yeniUrun.ad,
+      miktar: Number(yeniUrun.miktar),
+      minStok: Number(yeniUrun.minStok),
+      birim: yeniUrun.birim,
+    });
+
+    setStok(yeniStokData);
     setYeniUrun({ ad: "", miktar: "", minStok: "", birim: "" });
   };
 
   const urunSil = (index) => {
-    if (aktifKategori === "Tümü") return;
-    
-    const yeniStok = {
-      ...stok,
-      [aktifKategori]: stok[aktifKategori].filter((_, i) => i !== index),
-    };
-    setStok(yeniStok);
+    if (window.confirm("Bu ürünü silmek istediğinizden emin misiniz?")) {
+      const yeniStok = { ...stok };
+      yeniStok[aktifKategori].splice(index, 1);
+      setStok(yeniStok);
+    }
   };
 
   const urunDuzenle = (urun, index) => {
@@ -156,7 +156,10 @@ function StokUpdate() {
   };
 
   const miktarKaydet = () => {
-    if (!duzenleModal.acik || duzenleModal.index === -1) return;
+    if (!duzenleMiktar || !duzenleMinStok) {
+      alert("Lütfen tüm alanları doldurun!");
+      return;
+    }
 
     const yeniStok = { ...stok };
     yeniStok[duzenleModal.kategori][duzenleModal.index] = {
@@ -170,20 +173,16 @@ function StokUpdate() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
-      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Stok Güncelleme</h2>
+    <div className="stok-container">
+      <h2 className="stok-title">Stok Güncelleme</h2>
 
       {/* Kategori Filtresi */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+      <div className="kategori-filter">
         {kategoriler.map((kategori) => (
           <button
             key={kategori}
             onClick={() => setAktifKategori(kategori)}
-            style={{
-              background: aktifKategori === kategori ? "#1a3c34" : "#e0e0e0",
-              color: aktifKategori === kategori ? "#fff" : "#1a3c34",
-              border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-            }}
+            className={aktifKategori === kategori ? "active" : ""}
           >
             {kategori}
           </button>
@@ -192,15 +191,14 @@ function StokUpdate() {
 
       {/* Yeni Ürün Ekleme Formu */}
       {aktifKategori !== "Tümü" && (
-        <div style={{ background: "#fff", borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: "0 1px 6px #0001" }}>
-          <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Yeni Ürün Ekle</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div className="yeni-urun-form">
+          <h3 className="yeni-urun-title">Yeni Ürün Ekle</h3>
+          <div className="urun-form">
             <input
               name="ad"
               value={yeniUrun.ad}
               onChange={(e) => setYeniUrun({ ...yeniUrun, ad: e.target.value })}
               placeholder="Ürün adı"
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <input
               name="miktar"
@@ -208,7 +206,6 @@ function StokUpdate() {
               value={yeniUrun.miktar}
               onChange={(e) => setYeniUrun({ ...yeniUrun, miktar: e.target.value })}
               placeholder="Miktar"
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <input
               name="minStok"
@@ -216,13 +213,11 @@ function StokUpdate() {
               value={yeniUrun.minStok}
               onChange={(e) => setYeniUrun({ ...yeniUrun, minStok: e.target.value })}
               placeholder="Min. Stok"
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <select
               name="birim"
               value={yeniUrun.birim}
               onChange={(e) => setYeniUrun({ ...yeniUrun, birim: e.target.value })}
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             >
               <option value="">Birim Seçin</option>
               <option value="porsiyon">Porsiyon</option>
@@ -230,12 +225,7 @@ function StokUpdate() {
               <option value="kg">Kg</option>
               <option value="kutu">Kutu</option>
             </select>
-            <button
-              onClick={urunEkle}
-              style={{
-                background: "#1a3c34", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-              }}
-            >
+            <button onClick={urunEkle} className="urun-ekle-btn">
               Ekle
             </button>
           </div>
@@ -243,56 +233,37 @@ function StokUpdate() {
       )}
 
       {/* Stok Listesi */}
-      <div style={{ display: "grid", gap: 16 }}>
+      <div className="urun-listesi">
         {gosterilecekUrunler.map((urun, index) => {
           const durum = stokDurumu(urun.miktar, urun.minStok);
           return (
-            <div
-              key={`${aktifKategori}-${index}`}
-              style={{
-                background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 1px 6px #0001",
-                display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 16, alignItems: "center"
-              }}
-            >
-              <div>
-                <h4 style={{ margin: "0 0 4px 0", color: "#1a3c34" }}>{urun.ad}</h4>
-                <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
+            <div key={`${aktifKategori}-${index}`} className="urun-item">
+              <div className="urun-info">
+                <div className="urun-ad">{urun.ad}</div>
+                <div className="urun-detay">
                   {urun.miktar} {urun.birim} | Min: {urun.minStok}
-                </p>
+                </div>
               </div>
               
-              <div style={{ textAlign: "center" }}>
-                <span
-                  style={{
-                    background: durum.renk,
-                    color: "#fff",
-                    padding: "4px 12px",
-                    borderRadius: 20,
-                    fontSize: "12px",
-                    fontWeight: "bold"
-                  }}
-                >
-                  {durum.durum}
-                </span>
+              <div className={`urun-stok ${durum.class}`}>
+                {durum.durum}
               </div>
 
-              <button
-                onClick={() => urunDuzenle(urun, index)}
-                style={{
-                  background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer",
-                }}
-              >
-                Düzenle
-              </button>
+              <div className="urun-actions">
+                <button
+                  onClick={() => urunDuzenle(urun, index)}
+                  className="urun-btn duzenle"
+                >
+                  Düzenle
+                </button>
 
-              <button
-                onClick={() => urunSil(index)}
-                style={{
-                  background: "#d90429", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer",
-                }}
-              >
-                Sil
-              </button>
+                <button
+                  onClick={() => urunSil(index)}
+                  className="urun-btn sil"
+                >
+                  Sil
+                </button>
+              </div>
             </div>
           );
         })}
@@ -300,51 +271,35 @@ function StokUpdate() {
 
       {/* Düzenleme Modal */}
       {duzenleModal.acik && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 12, padding: 24, minWidth: 400, boxShadow: "0 4px 20px #0002"
-          }}>
-            <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Ürün Düzenle: {duzenleModal.urun?.ad}</h3>
-            <div style={{ display: "grid", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, color: "#1a3c34" }}>Miktar:</label>
-                <input
-                  type="number"
-                  value={duzenleMiktar}
-                  onChange={(e) => setDuzenleMiktar(e.target.value)}
-                  style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, color: "#1a3c34" }}>Min. Stok:</label>
-                <input
-                  type="number"
-                  value={duzenleMinStok}
-                  onChange={(e) => setDuzenleMinStok(e.target.value)}
-                  style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
-                />
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={miktarKaydet}
-                  style={{
-                    background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", cursor: "pointer",
-                  }}
-                >
-                  Kaydet
-                </button>
-                <button
-                  onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
-                  style={{
-                    background: "#666", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", cursor: "pointer",
-                  }}
-                >
-                  İptal
-                </button>
-              </div>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Ürün Düzenle: {duzenleModal.urun?.ad}</h3>
+            <div>
+              <label>Miktar:</label>
+              <input
+                type="number"
+                value={duzenleMiktar}
+                onChange={(e) => setDuzenleMiktar(e.target.value)}
+              />
+            </div>
+            <div>
+              <label>Min. Stok:</label>
+              <input
+                type="number"
+                value={duzenleMinStok}
+                onChange={(e) => setDuzenleMinStok(e.target.value)}
+              />
+            </div>
+            <div className="modal-buttons">
+              <button onClick={miktarKaydet} className="modal-btn kaydet">
+                Kaydet
+              </button>
+              <button 
+                onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
+                className="modal-btn iptal"
+              >
+                İptal
+              </button>
             </div>
           </div>
         </div>

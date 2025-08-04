@@ -1,1 +1,303 @@
-/* PersonelEkleme bileşenine özel stiller buraya gelecek */
+/* PersonelEkleme bileşenine özel stiller */
+.personnel-container {
+  max-width: 1000px;
+  margin: 32px auto;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.personnel-title {
+  margin: 0 0 16px 0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+/* Rol Filtresi */
+.role-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+
+.role-filter button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.role-filter button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.role-filter button.active {
+  background: linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%);
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(45, 140, 255, 0.3);
+}
+
+/* Yeni Personel Ekleme Formu */
+.add-personnel-form {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.add-personnel-title {
+  margin: 0 0 16px 0;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.personnel-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.personnel-form input,
+.personnel-form select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.personnel-form input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.personnel-form input:focus,
+.personnel-form select:focus {
+  outline: none;
+  border-color: #2d8cff;
+  box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.personnel-form select option {
+  background: #1a3c34;
+  color: #ffffff;
+}
+
+.add-personnel-btn {
+  background: linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.add-personnel-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(45, 140, 255, 0.3);
+}
+
+.add-personnel-btn:active {
+  transform: translateY(0);
+}
+
+/* Personel Listesi */
+.personnel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.personnel-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 16px 20px;
+  gap: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.personnel-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.personnel-info {
+  flex: 1;
+}
+
+.personnel-name {
+  font-weight: 600;
+  font-size: 17px;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.personnel-details {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.personnel-status {
+  font-weight: 600;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.personnel-status.active {
+  background: linear-gradient(90deg, #38b000 0%, #4caf50 100%);
+  box-shadow: 0 2px 8px rgba(56, 176, 0, 0.3);
+}
+
+.personnel-status.inactive {
+  background: linear-gradient(90deg, #6c757d 0%, #495057 100%);
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+/* Responsive Tasarım */
+@media (max-width: 768px) {
+  .personnel-container {
+    margin: 16px;
+    padding: 20px;
+  }
+  
+  .personnel-form {
+    grid-template-columns: 1fr;
+  }
+  
+  .role-filter {
+    flex-wrap: wrap;
+  }
+  
+  .personnel-item {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .personnel-info {
+    text-align: center;
+  }
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.personnel-item {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Gece modu için ek stiller */
+[data-theme="dark"] .personnel-container {
+  background: rgba(4, 4, 16, 0.8);
+}
+
+[data-theme="dark"] .add-personnel-form {
+  background: rgba(4, 4, 16, 0.6);
+}
+
+[data-theme="dark"] .personnel-item {
+  background: rgba(4, 4, 16, 0.6);
+}
+
+[data-theme="dark"] .personnel-item:hover {
+  background: rgba(4, 4, 16, 0.8);
+}
+
+/* Gündüz modu için ek stiller */
+[data-theme="light"] .personnel-container {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .personnel-title {
+  color: #333333;
+}
+
+[data-theme="light"] .role-filter button {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333333;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .role-filter button:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .add-personnel-form {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .add-personnel-title {
+  color: #333333;
+}
+
+[data-theme="light"] .personnel-form input,
+[data-theme="light"] .personnel-form select {
+  background: rgba(255, 255, 255, 0.9);
+  color: #333333;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .personnel-form input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .personnel-item {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .personnel-item:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+[data-theme="light"] .personnel-name {
+  color: #333333;
+}
+
+[data-theme="light"] .personnel-details {
+  color: rgba(0, 0, 0, 0.7);
+}

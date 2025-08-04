@@ -87,7 +87,11 @@ function MenuUpdate() {
     aktifKategori === "Tümü" ? tumUrunler : (menu[aktifKategori] || []).map(u => ({ ...u, kategori: aktifKategori }));
 
   const urunEkle = () => {
-    if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") return;
+    if (!yeniUrun.ad || !yeniUrun.fiyat || !aktifKategori || aktifKategori === "Tümü") {
+      alert("Lütfen tüm alanları doldurun!");
+      return;
+    }
+    
     const yeniMenu = {
       ...menu,
       [aktifKategori]: [
@@ -100,12 +104,11 @@ function MenuUpdate() {
   };
 
   const urunSil = (index) => {
-    if (aktifKategori === "Tümü") return;
-    const yeniMenu = {
-      ...menu,
-      [aktifKategori]: menu[aktifKategori].filter((_, i) => i !== index),
-    };
-    setMenu(yeniMenu);
+    if (window.confirm("Bu ürünü silmek istediğinizden emin misiniz?")) {
+      const yeniMenu = { ...menu };
+      yeniMenu[aktifKategori].splice(index, 1);
+      setMenu(yeniMenu);
+    }
   };
 
   const urunDuzenle = (urun, index) => {
@@ -115,7 +118,11 @@ function MenuUpdate() {
   };
 
   const fiyatKaydet = () => {
-    if (!duzenleModal.acik || duzenleModal.index === -1) return;
+    if (!duzenleAd || !duzenleFiyat) {
+      alert("Lütfen tüm alanları doldurun!");
+      return;
+    }
+    
     const yeniMenu = { ...menu };
     yeniMenu[duzenleModal.kategori][duzenleModal.index] = {
       ad: duzenleAd,
@@ -126,35 +133,32 @@ function MenuUpdate() {
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
-      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Menü Güncelleme</h2>
+    <div className="menu-container">
+      <h2 className="menu-title">Menü Güncelleme</h2>
+      
       {/* Kategori Filtresi */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+      <div className="kategori-filter">
         {kategoriler.map((kategori) => (
           <button
             key={kategori}
             onClick={() => setAktifKategori(kategori)}
-            style={{
-              background: aktifKategori === kategori ? "#1a3c34" : "#e0e0e0",
-              color: aktifKategori === kategori ? "#fff" : "#1a3c34",
-              border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-            }}
+            className={aktifKategori === kategori ? "active" : ""}
           >
             {kategori}
           </button>
         ))}
       </div>
+      
       {/* Yeni Ürün Ekleme Formu */}
       {aktifKategori !== "Tümü" && (
-        <div style={{ background: "#fff", borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: "0 1px 6px #0001" }}>
-          <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Yeni Ürün Ekle</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div className="yeni-urun-form">
+          <h3 className="yeni-urun-title">Yeni Ürün Ekle</h3>
+          <div className="urun-form">
             <input
               name="ad"
               value={yeniUrun.ad}
               onChange={(e) => setYeniUrun({ ...yeniUrun, ad: e.target.value })}
               placeholder="Ürün adı"
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <input
               name="fiyat"
@@ -162,115 +166,78 @@ function MenuUpdate() {
               value={yeniUrun.fiyat}
               onChange={(e) => setYeniUrun({ ...yeniUrun, fiyat: e.target.value })}
               placeholder="Fiyat (₺)"
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
-            <button
-              onClick={urunEkle}
-              style={{
-                background: "#1a3c34", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-              }}
-            >
+            <button onClick={urunEkle} className="urun-ekle-btn">
               Ekle
             </button>
           </div>
         </div>
       )}
+      
       {/* Menü Listesi */}
-      <div style={{ display: "grid", gap: 16 }}>
+      <div className="urun-listesi">
         {gosterilecekUrunler.map((urun, index) => (
-          <div
-            key={`${aktifKategori}-${index}`}
-            style={{
-              background: "#fff", borderRadius: 12, padding: 20, boxShadow: "0 1px 6px #0001",
-              display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 16, alignItems: "center"
-            }}
-          >
-            <div>
-              <h4 style={{ margin: "0 0 4px 0", color: "#1a3c34" }}>{urun.ad}</h4>
-              <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
+          <div key={`${aktifKategori}-${index}`} className="urun-item">
+            <div className="urun-info">
+              <div className="urun-ad">{urun.ad}</div>
+              <div className="urun-fiyat">
                 {urun.fiyat} ₺ | {urun.kategori}
-              </p>
+              </div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <span
-                style={{
-                  background: "#38b000",
-                  color: "#fff",
-                  padding: "4px 12px",
-                  borderRadius: 20,
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}
+            
+            <div className="urun-kategori">
+              Aktif
+            </div>
+            
+            <div className="urun-actions">
+              <button
+                onClick={() => urunDuzenle(urun, index)}
+                className="urun-btn duzenle"
               >
-                Aktif
-              </span>
+                Düzenle
+              </button>
+              <button
+                onClick={() => urunSil(index)}
+                className="urun-btn sil"
+              >
+                Sil
+              </button>
             </div>
-            <button
-              onClick={() => urunDuzenle(urun, index)}
-              style={{
-                background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer",
-              }}
-            >
-              Düzenle
-            </button>
-            <button
-              onClick={() => urunSil(index)}
-              style={{
-                background: "#d90429", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", cursor: "pointer",
-              }}
-            >
-              Sil
-            </button>
           </div>
         ))}
       </div>
+      
       {/* Düzenleme Modal */}
       {duzenleModal.acik && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
-        }}>
-          <div style={{
-            background: "#fff", borderRadius: 12, padding: 24, minWidth: 400, boxShadow: "0 4px 20px #0002"
-          }}>
-            <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Ürün Düzenle: {duzenleModal.urun?.ad}</h3>
-            <div style={{ display: "grid", gap: 16 }}>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, color: "#1a3c34" }}>Ürün Adı:</label>
-                <input
-                  type="text"
-                  value={duzenleAd}
-                  onChange={(e) => setDuzenleAd(e.target.value)}
-                  style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", marginBottom: 4, color: "#1a3c34" }}>Fiyat (₺):</label>
-                <input
-                  type="number"
-                  value={duzenleFiyat}
-                  onChange={(e) => setDuzenleFiyat(e.target.value)}
-                  style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
-                />
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={fiyatKaydet}
-                  style={{
-                    background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", cursor: "pointer",
-                  }}
-                >
-                  Kaydet
-                </button>
-                <button
-                  onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
-                  style={{
-                    background: "#666", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", cursor: "pointer",
-                  }}
-                >
-                  İptal
-                </button>
-              </div>
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Ürün Düzenle: {duzenleModal.urun?.ad}</h3>
+            <div>
+              <label>Ürün Adı:</label>
+              <input
+                type="text"
+                value={duzenleAd}
+                onChange={(e) => setDuzenleAd(e.target.value)}
+              />
+            </div>
+            <div>
+              <label>Fiyat (₺):</label>
+              <input
+                type="number"
+                value={duzenleFiyat}
+                onChange={(e) => setDuzenleFiyat(e.target.value)}
+              />
+            </div>
+            <div className="modal-buttons">
+              <button onClick={fiyatKaydet} className="modal-btn kaydet">
+                Kaydet
+              </button>
+              <button 
+                onClick={() => setDuzenleModal({ acik: false, urun: null, index: -1, kategori: "" })}
+                className="modal-btn iptal"
+              >
+                İptal
+              </button>
             </div>
           </div>
         </div>

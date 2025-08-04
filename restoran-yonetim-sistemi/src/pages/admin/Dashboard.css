@@ -98,3 +98,50 @@
     padding: 2px 8px;
     border-radius: 12px;
 }
+
+/* Gece modu için ek stiller */
+[data-theme="dark"] .home-page h1 {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .dashboard-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .dashboard-card h3 {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="dark"] .dashboard-card p {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .kat h2 {
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gündüz modu için ek stiller */
+[data-theme="light"] .home-page h1 {
+    color: #333333;
+}
+
+[data-theme="light"] .dashboard-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .dashboard-card h3 {
+    color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="light"] .dashboard-card p {
+    color: #333333;
+}
+
+[data-theme="light"] .kat h2 {
+    color: #333333;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}

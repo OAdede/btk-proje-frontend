@@ -73,20 +73,16 @@ const PersonelEkleme = () => {
   // TODO: Personel Silme ve Düzenleme Fonksiyonları eklenecek (localStorage kullanarak)
 
   return (
-    <div style={{ maxWidth: 1000, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
-      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Personel Yönetimi</h2>
+    <div className="personnel-container">
+      <h2 className="personnel-title">Personel Yönetimi</h2>
 
       {/* Rol Filtresi */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      <div className="role-filter">
         {["Tümü", "Garson", "Kasiyer"].map((role) => (
           <button
             key={role}
             onClick={() => setActiveRole(role)}
-            style={{
-              background: activeRole === role ? "#1a3c34" : "#e0e0e0",
-              color: activeRole === role ? "#fff" : "#1a3c34",
-              border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-            }}
+            className={activeRole === role ? "active" : ""}
           >
             {role}
           </button>
@@ -94,31 +90,31 @@ const PersonelEkleme = () => {
       </div>
 
       {/* Yeni Personel Ekleme Formu */}
-      <div style={{ background: "#fff", borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: "0 1px 6px #0001" }}>
-        <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Yeni Personel Ekle</h3>
-        <form onSubmit={handleAddPerson} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-          <input name="name" value={newPerson.name} onChange={handleInputChange} placeholder="Ad Soyad" required style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }} />
-          <input name="phone" value={newPerson.phone} onChange={handleInputChange} placeholder="Telefon" required style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }} />
-          <input name="email" type="email" value={newPerson.email} onChange={handleInputChange} placeholder="E-posta" required style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }} />
-          <select name="role" value={newPerson.role} onChange={handleInputChange} style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}>
+      <div className="add-personnel-form">
+        <h3 className="add-personnel-title">Yeni Personel Ekle</h3>
+        <form onSubmit={handleAddPerson} className="personnel-form">
+          <input name="name" value={newPerson.name} onChange={handleInputChange} placeholder="Ad Soyad" required />
+          <input name="phone" value={newPerson.phone} onChange={handleInputChange} placeholder="Telefon" required />
+          <input name="email" type="email" value={newPerson.email} onChange={handleInputChange} placeholder="E-posta" required />
+          <select name="role" value={newPerson.role} onChange={handleInputChange}>
             <option value="garson">Garson</option>
             <option value="kasiyer">Kasiyer</option>
           </select>
-          <button type="submit" style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "10px 24px" }}>
+          <button type="submit" className="add-personnel-btn">
             Personel Ekle
           </button>
         </form>
       </div>
 
       {/* Personel Listesi */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div className="personnel-list">
         {filteredPersonnel.map((person) => (
-          <div key={person.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, padding: "16px 20px", gap: 20 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 17, color: "#1a3c34" }}>{person.name}</div>
-              <div style={{ fontSize: 14, color: "#666" }}>{person.phone} • {person.email}</div>
+          <div key={person.id} className="personnel-item">
+            <div className="personnel-info">
+              <div className="personnel-name">{person.name}</div>
+              <div className="personnel-details">{person.phone} • {person.email}</div>
             </div>
-            <div style={{ fontWeight: 600, color: "#fff", background: person.isActive ? "#38b000" : "#6c757d", padding: "4px 12px", borderRadius: 12 }}>
+            <div className={`personnel-status ${person.isActive ? 'active' : 'inactive'}`}>
               {person.isActive ? "Aktif" : "Pasif"}
             </div>
             {/* TODO: Düzenle ve Sil butonları eklenecek */}
