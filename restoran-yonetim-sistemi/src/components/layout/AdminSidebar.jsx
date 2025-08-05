@@ -16,6 +16,19 @@ const AdminSidebar = () => {
         navigate('/login');
     };
 
+    // Tema renklerine göre buton stilleri
+    const buttonStyles = isDarkMode ? {
+        background: '#513653', // Koyu mor arka plan
+        textColor: '#F08080', // Kırmızı-pembe yazı
+        borderColor: '#F08080', // Kırmızı-pembe kenarlık
+        hoverBackground: '#473653'
+    } : {
+        background: '#A294F9', // Açık temada mor arka plan
+        textColor: '#2D1B69', // Koyu mor yazı
+        borderColor: '#2D1B69', // Koyu mor kenarlık
+        hoverBackground: '#CDC1FF'
+    };
+
     return (
         <div className="admin-sidebar" style={{ background: colors.sidebar }}>
             <div className="admin-sidebar-header">
@@ -67,9 +80,9 @@ const AdminSidebar = () => {
                     onClick={() => setShowSettings(!showSettings)}
                     className="admin-settings-btn"
                     style={{
-                        background: '#473653',
-                        color: '#F08080',
-                        border: '1px solid #F08080',
+                        background: buttonStyles.background,
+                        color: buttonStyles.textColor,
+                        border: `1px solid ${buttonStyles.borderColor}`,
                         padding: '12px 20px',
                         borderRadius: '10px',
                         fontSize: '1rem',
@@ -82,6 +95,12 @@ const AdminSidebar = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.background = buttonStyles.hoverBackground;
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.background = buttonStyles.background;
                     }}
                 >
                     <span>⚙️</span>
@@ -96,7 +115,7 @@ const AdminSidebar = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            background: 'rgba(0, 0, 0, 0.5)',
+                            background: isDarkMode ? 'rgba(50, 38, 58, 0.9)' : 'rgba(162, 148, 249, 0.9)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -106,13 +125,13 @@ const AdminSidebar = () => {
                     >
                         <div
                             style={{
-                                background: colors.card,
+                                background: isDarkMode ? '#513653' : '#F5EFFF',
                                 borderRadius: '15px',
                                 padding: '30px',
                                 minWidth: '400px',
                                 maxWidth: '500px',
-                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                                border: `1px solid ${colors.border}`,
+                                boxShadow: isDarkMode ? '0 10px 30px rgba(50, 38, 58, 0.5)' : '0 10px 30px rgba(162, 148, 249, 0.3)',
+                                border: `2px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`,
                                 position: 'relative'
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -126,7 +145,7 @@ const AdminSidebar = () => {
                                     background: 'none',
                                     border: 'none',
                                     fontSize: '24px',
-                                    color: colors.danger,
+                                    color: isDarkMode ? '#F08080' : '#EF4444',
                                     cursor: 'pointer',
                                     fontWeight: 'bold',
                                     width: '30px',
@@ -138,7 +157,7 @@ const AdminSidebar = () => {
                                     transition: 'all 0.3s ease'
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.target.style.background = 'rgba(224, 25, 15, 0.1)';
+                                    e.target.style.background = isDarkMode ? 'rgba(240, 128, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)';
                                 }}
                                 onMouseLeave={(e) => {
                                     e.target.style.background = 'none';
@@ -149,7 +168,7 @@ const AdminSidebar = () => {
                             <div style={{
                                 fontSize: '1.2rem',
                                 fontWeight: '700',
-                                color: colors.text,
+                                color: isDarkMode ? '#ffffff' : '#2D1B69',
                                 marginBottom: '20px',
                                 textAlign: 'center'
                             }}>
@@ -158,7 +177,7 @@ const AdminSidebar = () => {
                             <div style={{
                                 fontSize: '1rem',
                                 fontWeight: '600',
-                                color: colors.text,
+                                color: isDarkMode ? '#e0e0e0' : '#4A3B76',
                                 marginBottom: '15px'
                             }}>
                                 Tema Seçimi
@@ -167,9 +186,9 @@ const AdminSidebar = () => {
                                 <button
                                     onClick={() => toggleTheme()}
                                     style={{
-                                        background: isDarkMode ? colors.success : colors.button,
-                                        color: colors.text,
-                                        border: 'none',
+                                        background: isDarkMode ? '#473653' : '#A294F9',
+                                        color: isDarkMode ? '#ffffff' : '#ffffff',
+                                        border: `2px solid ${isDarkMode ? '#53364D' : '#CDC1FF'}`,
                                         padding: '12px 20px',
                                         borderRadius: '10px',
                                         fontSize: '1rem',
@@ -184,10 +203,12 @@ const AdminSidebar = () => {
                                     }}
                                     onMouseEnter={(e) => {
                                         e.target.style.transform = 'translateY(-2px)';
-                                        e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                                        e.target.style.background = isDarkMode ? '#53364D' : '#CDC1FF';
+                                        e.target.style.boxShadow = isDarkMode ? '0 4px 12px rgba(50, 38, 58, 0.4)' : '0 4px 12px rgba(162, 148, 249, 0.3)';
                                     }}
                                     onMouseLeave={(e) => {
                                         e.target.style.transform = 'translateY(0)';
+                                        e.target.style.background = isDarkMode ? '#473653' : '#A294F9';
                                         e.target.style.boxShadow = 'none';
                                     }}
                                 >
@@ -197,7 +218,7 @@ const AdminSidebar = () => {
                             </div>
                             <div style={{
                                 fontSize: '0.9rem',
-                                color: colors.textSecondary,
+                                color: isDarkMode ? '#b0b0b0' : '#6B5B8A',
                                 textAlign: 'center',
                                 fontStyle: 'italic'
                             }}>
@@ -211,16 +232,25 @@ const AdminSidebar = () => {
                     onClick={handleLogout}
                     className="admin-logout-btn"
                     style={{
-                        background: '#473653',
-                        color: '#F08080',
-                        border: '1px solid #F08080',
+                        background: buttonStyles.background,
+                        color: buttonStyles.textColor,
+                        border: `1px solid ${buttonStyles.borderColor}`,
                         padding: '12px 20px',
                         borderRadius: '10px',
                         fontSize: '1rem',
                         fontWeight: '600',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        width: '100%'
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.background = buttonStyles.hoverBackground;
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.background = buttonStyles.background;
                     }}
                 >
                     Çıkış Yap
