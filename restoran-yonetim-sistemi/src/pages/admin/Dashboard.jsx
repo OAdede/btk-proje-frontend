@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import { TableContext } from "../../context/TableContext";
+import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
 import "./Dashboard.css";
 
@@ -23,9 +24,15 @@ const statusText = {
 
 const Dashboard = () => {
   const { tableStatus, orders, reservations, addReservation, removeReservation } = useContext(TableContext);
+  const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
   const [showReservationModal, setShowReservationModal] = useState(false);
+  const [showTableDetailsModal, setShowTableDetailsModal] = useState(false);
+  const [selectedTableDetails, setSelectedTableDetails] = useState(null);
+
+  // Kat başlıkları için tema renkleri
+  const katHeadingColor = isDarkMode ? '#e0e0e0' : '#4a5568';
 
   // Bugünün tarihini al (sadece gün-ay formatında)
   const getTodayDate = () => {
@@ -47,7 +54,8 @@ const Dashboard = () => {
       name: `${i + 1}`,
       status: hasOrder ? 'occupied' : hasReservation ? 'reserved' : status,
       orderCount: hasOrder ? Object.keys(orders[tableId]).length : 0,
-      reservation: hasReservation
+      reservation: hasReservation,
+      order: hasOrder ? orders[tableId] : null
     };
   });
 
@@ -63,7 +71,8 @@ const Dashboard = () => {
       name: `${i + 9}`,
       status: hasOrder ? 'occupied' : hasReservation ? 'reserved' : status,
       orderCount: hasOrder ? Object.keys(orders[tableId]).length : 0,
-      reservation: hasReservation
+      reservation: hasReservation,
+      order: hasOrder ? orders[tableId] : null
     };
   });
 
@@ -78,17 +87,40 @@ const Dashboard = () => {
     setShowReservationModal(true);
   };
 
+  const handleTableClick = (table) => {
+    if (table.status === 'occupied' || table.status === 'reserved') {
+      setSelectedTableDetails(table);
+      setShowTableDetailsModal(true);
+    } else if (showReservationMode && table.status === 'empty') {
+      handleReservationClick(table.id);
+    }
+  };
+
   const handleReservationSubmit = (formData) => {
     if (selectedTable) {
       addReservation(selectedTable, formData);
       setShowReservationModal(false);
       setSelectedTable(null);
+      setShowReservationMode(false); // Rezervasyon modunu kapat
     }
   };
 
   const handleReservationClose = () => {
     setShowReservationModal(false);
     setSelectedTable(null);
+  };
+
+  const handleTableDetailsClose = () => {
+    setShowTableDetailsModal(false);
+    setSelectedTableDetails(null);
+  };
+
+  // Toplam tutarı hesapla
+  const calculateTotal = (order) => {
+    if (!order) return 0;
+    return Object.values(order).reduce((total, item) => {
+      return total + (item.price * item.count);
+    }, 0);
   };
 
   return (
@@ -180,7 +212,7 @@ const Dashboard = () => {
 
       <div className="katlar-wrapper">
         <div className="kat">
-          <h2>1. Kat</h2>
+          <h2 style={{ color: katHeadingColor }}>1. Kat</h2>
           <div className="tables-list-home">
             {kat1Tables.map((table) => (
               <div
@@ -190,13 +222,9 @@ const Dashboard = () => {
                   background: statusColors[table.status],
                   color: statusTextColor[table.status],
                   position: 'relative',
-                  cursor: showReservationMode && table.status === 'empty' ? 'pointer' : 'default'
+                  cursor: (table.status === 'occupied' || table.status === 'reserved' || (showReservationMode && table.status === 'empty')) ? 'pointer' : 'default'
                 }}
-                onClick={() => {
-                  if (showReservationMode && table.status === 'empty') {
-                    handleReservationClick(table.id);
-                  }
-                }}
+                onClick={() => handleTableClick(table)}
               >
                 {showReservationMode && table.status === 'empty' && (
                   <div style={{
@@ -252,7 +280,7 @@ const Dashboard = () => {
         </div>
         
         <div className="kat">
-          <h2>2. Kat</h2>
+          <h2 style={{ color: katHeadingColor }}>2. Kat</h2>
           <div className="tables-list-home">
             {kat2Tables.map((table) => (
               <div
@@ -262,13 +290,9 @@ const Dashboard = () => {
                   background: statusColors[table.status],
                   color: statusTextColor[table.status],
                   position: 'relative',
-                  cursor: showReservationMode && table.status === 'empty' ? 'pointer' : 'default'
+                  cursor: (table.status === 'occupied' || table.status === 'reserved' || (showReservationMode && table.status === 'empty')) ? 'pointer' : 'default'
                 }}
-                onClick={() => {
-                  if (showReservationMode && table.status === 'empty') {
-                    handleReservationClick(table.id);
-                  }
-                }}
+                onClick={() => handleTableClick(table)}
               >
                 {showReservationMode && table.status === 'empty' && (
                   <div style={{
@@ -332,6 +356,147 @@ const Dashboard = () => {
         onSubmit={handleReservationSubmit}
         defaultDate={getTodayDate()}
       />
+
+      {/* Masa Detayları Modal */}
+      {showTableDetailsModal && selectedTableDetails && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          zIndex: 9998,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#513653',
+            padding: '2rem',
+            borderRadius: '15px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            border: '2px solid #473653'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{ color: '#ffffff', margin: 0 }}>
+                Masa {selectedTableDetails.name} - {selectedTableDetails.status === 'occupied' ? 'Sipariş Detayları' : 'Rezervasyon Detayları'}
+              </h2>
+              <button
+                onClick={handleTableDetailsClose}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#F08080',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  width: '30px',
+                  height: '30px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {selectedTableDetails.status === 'occupied' && selectedTableDetails.order && (
+              <div>
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ color: '#ffffff', marginBottom: '10px' }}>Sipariş Edilen Ürünler:</h3>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {Object.values(selectedTableDetails.order).map((item, index) => (
+                      <div key={index} style={{
+                        background: '#473653',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        marginBottom: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <div style={{ color: '#ffffff', fontWeight: 'bold' }}>{item.name}</div>
+                          <div style={{ color: '#e0e0e0', fontSize: '14px' }}>Adet: {item.count}</div>
+                        </div>
+                        <div style={{ color: '#ffffff', fontWeight: 'bold' }}>
+                          ₺{(item.price * item.count).toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{
+                  background: '#473653',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  textAlign: 'right'
+                }}>
+                  <div style={{ color: '#ffffff', fontSize: '18px', fontWeight: 'bold' }}>
+                    Toplam: ₺{calculateTotal(selectedTableDetails.order).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedTableDetails.status === 'reserved' && selectedTableDetails.reservation && (
+              <div>
+                <div style={{ marginBottom: '20px' }}>
+                  <h3 style={{ color: '#ffffff', marginBottom: '15px' }}>Rezervasyon Bilgileri:</h3>
+                  <div style={{ background: '#473653', padding: '20px', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>Ad Soyad:</span>
+                      <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.adSoyad}</span>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>Telefon:</span>
+                      <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.telefon}</span>
+                    </div>
+                    {selectedTableDetails.reservation.email && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>E-mail:</span>
+                        <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.email}</span>
+                      </div>
+                    )}
+                    <div style={{ marginBottom: '10px' }}>
+                      <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>Tarih:</span>
+                      <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.tarih}</span>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>Saat:</span>
+                      <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.saat}</span>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                      <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>Kişi Sayısı:</span>
+                      <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.kisiSayisi}</span>
+                    </div>
+                    {selectedTableDetails.reservation.not && (
+                      <div style={{ marginBottom: '10px' }}>
+                        <span style={{ color: '#e0e0e0', fontWeight: 'bold' }}>Not:</span>
+                        <span style={{ color: '#ffffff', marginLeft: '10px' }}>{selectedTableDetails.reservation.not}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
