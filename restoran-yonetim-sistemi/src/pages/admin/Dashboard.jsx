@@ -193,15 +193,14 @@ const Dashboard = () => {
 
   return (
     <div className="home-page">
-      <h1>Hoşgeldiniz, Admin!</h1>
-      
       {/* Kontrol Butonları */}
       <div style={{
         display: 'flex',
         gap: '10px',
         marginBottom: '20px',
         padding: '0 20px',
-        flexWrap: 'wrap'
+        flexWrap: 'wrap',
+        justifyContent: 'center'
       }}>
         <button
           onClick={() => setShowReservationMode(!showReservationMode)}
@@ -395,13 +394,13 @@ const Dashboard = () => {
                 )}
               </div>
               
-              <div className="tables-list-home">
+          <div className="tables-list-home">
                 {floorTables.map((table) => (
-                  <div
-                    key={table.id}
-                    className="table-card-home"
-                    style={{
-                      background: statusColors[table.status],
+              <div
+                key={table.id}
+                className="table-card-home"
+                style={{
+                  background: statusColors[table.status],
                       color: statusTextColor[table.status],
                       position: 'relative',
                       cursor: (table.status === 'occupied' || table.status === 'reserved' || (showReservationMode && table.status === 'empty')) ? 'pointer' : 'default'
@@ -742,7 +741,7 @@ const Dashboard = () => {
               >
                 İptal
               </button>
-            </div>
+              </div>
           </div>
         </div>
       )}
