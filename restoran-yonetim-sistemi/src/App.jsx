@@ -21,6 +21,7 @@ import ProductsPage from './pages/products/ProductsPage.jsx';
 import StokUpdate from './components/stock/StokUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 import MenuPage from './pages/menu/MenuPage.jsx';
+import Rezervasyon from './pages/admin/Rezervasyon.jsx';
 
 // Shared Staff Pages (Garson/Kasiyer)
 import WaiterHome from './pages/staff/WaiterHome.jsx';
@@ -87,6 +88,7 @@ function App() {
             <Route path="stock" element={<StokUpdate />} />
             <Route path="personnel" element={<PersonnelPage />} />
             <Route path="menu" element={<MenuPage />} />
+            <Route path="rezervasyon" element={<Rezervasyon />} />
           </Route>
 
           {/* Garson Paneli */}

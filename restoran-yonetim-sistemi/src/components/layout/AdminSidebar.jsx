@@ -55,6 +55,12 @@ const AdminSidebar = () => {
                     Ana Sayfa
                 </NavLink>
                 <NavLink
+                    to="/admin/rezervasyon"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    Rezervasyon
+                </NavLink>
+                <NavLink
                     to="/admin/stock"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
