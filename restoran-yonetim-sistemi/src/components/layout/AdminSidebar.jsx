@@ -6,15 +6,45 @@ import { useTheme } from "../../context/ThemeContext";
 import "./AdminLayout.css";
 
 const AdminSidebar = () => {
-    const { logout, user } = useContext(AuthContext);
+    const { logout, user, updateProfileImage } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const [showSettings, setShowSettings] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const fileInputRef = React.useRef(null);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    // Profil fotoğrafı değiştirme fonksiyonu
+    const handleProfileImageChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            // Dosya türü kontrolü
+            if (!file.type.startsWith('image/')) {
+                alert('Lütfen geçerli bir resim dosyası seçin!');
+                return;
+            }
+            
+            // Dosya boyutu kontrolü (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Dosya boyutu 5MB\'dan küçük olmalıdır!');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageUrl = e.target.result;
+                updateProfileImage(imageUrl);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const openFileSelector = () => {
+        fileInputRef.current?.click();
     };
 
     // Tema renklerine göre buton stilleri
@@ -430,6 +460,7 @@ const AdminSidebar = () => {
                                     )}
                                 </div>
                                 <button
+                                    onClick={openFileSelector}
                                     style={{
                                         background: isDarkMode ? '#473653' : '#A294F9',
                                         color: isDarkMode ? '#ffffff' : '#ffffff',
@@ -450,6 +481,15 @@ const AdminSidebar = () => {
                                 >
                                     📷 Fotoğraf Değiştir
                                 </button>
+                                
+                                {/* Gizli dosya input'u */}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleProfileImageChange}
+                                    style={{ display: 'none' }}
+                                />
                             </div>
 
                             {/* Kullanıcı Bilgileri */}
