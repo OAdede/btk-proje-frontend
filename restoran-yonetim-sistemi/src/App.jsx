@@ -8,7 +8,6 @@ import { ThemeProvider } from './context/ThemeContext.jsx';
 // Layouts
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import StaffLayout from './components/layout/StaffLayout.jsx';
-import WaiterLayout from './components/layout/WaiterLayout.jsx'; // 🔸 EKLENDİ
 
 // Auth Pages
 import Login from './pages/auth/Login.jsx';
@@ -22,10 +21,9 @@ import ProductsPage from './pages/products/ProductsPage.jsx';
 import StokUpdate from './components/stock/StokUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 import MenuPage from './pages/menu/MenuPage.jsx';
-import Kasiyer from "./pages/Kasiyer/Kasiyer.jsx";
 import Rezervasyon from './pages/admin/Rezervasyon.jsx';
 
-// Shared Staff Pages (Garson/Kasiyer)
+// Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
@@ -41,22 +39,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Eğer belirli bir rol veya roller gerekiyorsa kontrol et
-  if (requiredRole) {
-    const userRole = user.role;
-    if (Array.isArray(requiredRole)) {
-      if (!requiredRole.includes(userRole)) {
-        return <Navigate to={`/${user.baseRole}/home`} replace />;
-      }
-    } else {
-      if (userRole !== requiredRole) {
-        return <Navigate to={`/${user.baseRole}/home`} replace />;
-      }
-    }
+  if (requiredRole && user.role !== requiredRole) {
+    const homePath = user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/home`;
+    return <Navigate to={homePath} replace />;
   }
 
   return children;
 };
+
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -94,7 +84,7 @@ function App() {
             path="/garson/*"
             element={
               <ProtectedRoute requiredRole="garson">
-                <WaiterLayout />
+                <StaffLayout />
               </ProtectedRoute>
             }
           >
@@ -113,12 +103,11 @@ function App() {
               </ProtectedRoute>
             }
           >
-
             <Route index element={<Navigate to="home" replace />} />
-            <Route path="home" element={<Kasiyer />} />
+            {/* Kasiyer de WaiterHome'u kullanıyor */}
+            <Route path="home" element={<WaiterHome />} />
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
-
           </Route>
 
           {/* Varsayılan Rota */}
@@ -127,7 +116,7 @@ function App() {
             element={
               user ? (
                 <Navigate
-                  to={`/${user.baseRole === 'admin' ? 'admin/dashboard' : user.baseRole + '/home'}`}
+                  to={user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/home`}
                   replace
                 />
               ) : (

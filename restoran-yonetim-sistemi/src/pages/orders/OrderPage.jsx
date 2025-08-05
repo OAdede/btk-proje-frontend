@@ -1,19 +1,19 @@
 import React, { useState, useContext, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
-import { AuthContext } from "../../context/AuthContext";
 
 export default function OrderPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { saveOrder, products, lastOrders, updateTableStatus } = useContext(TableContext);
-    const { user } = useContext(AuthContext);
 
     const [activeCategory, setActiveCategory] = useState("yemekler");
     const [cart, setCart] = useState({});
 
     useEffect(() => {
-        updateTableStatus?.(tableId, "reserved"); // ? ile undefined hatasından kaçın
+        // Sayfa yüklendiğinde masayı rezerve olarak işaretle
+        updateTableStatus(tableId, "reserved");
+        // Eğer bu masa için daha önceden sepete eklenmiş ama onaylanmamış ürün varsa yükle
         if (lastOrders[tableId]) {
             setCart(lastOrders[tableId]);
         }
@@ -25,7 +25,8 @@ export default function OrderPage() {
             const currentQty = prev[id]?.count || 0;
             const newQty = currentQty + delta;
 
-            if (newQty < 0 || newQty > stock) return prev;
+            if (newQty < 0) return prev;
+            if (newQty > stock) return prev; // Stok kontrolü
 
             const newCart = { ...prev };
             if (newQty === 0) {
@@ -39,8 +40,7 @@ export default function OrderPage() {
 
     const handleNext = () => {
         saveOrder(tableId, cart);
-        const role = user?.role || "garson";
-        navigate(`/${role}/summary/${tableId}`);
+        navigate(`/kasiyer/summary/${tableId}`);
     };
 
     return (
@@ -52,11 +52,7 @@ export default function OrderPage() {
                     <button
                         key={cat}
                         onClick={() => setActiveCategory(cat)}
-                        style={{
-                            ...styles.categoryButton,
-                            backgroundColor: activeCategory === cat ? "#007bff" : "#ddd",
-                            color: activeCategory === cat ? "white" : "black"
-                        }}
+                        style={{ ...styles.categoryButton, backgroundColor: activeCategory === cat ? "#007bff" : "#ddd", color: activeCategory === cat ? "white" : "black" }}
                     >
                         {cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
@@ -78,17 +74,8 @@ export default function OrderPage() {
             </div>
 
             <div style={{ textAlign: "right", marginTop: 30 }}>
-                <button
-                    onClick={() => navigate(-1)}
-                    style={{ ...styles.actionButton, backgroundColor: "#6c757d" }}
-                >
-                    Geri
-                </button>
-                <button
-                    onClick={handleNext}
-                    style={{ ...styles.actionButton, backgroundColor: "#007bff", marginLeft: "10px" }}
-                    disabled={Object.keys(cart).length === 0}
-                >
+                <button onClick={() => navigate(-1)} style={{ ...styles.actionButton, backgroundColor: "#6c757d" }}>Geri</button>
+                <button onClick={handleNext} style={{ ...styles.actionButton, backgroundColor: "#007bff", marginLeft: "10px" }} disabled={Object.keys(cart).length === 0}>
                     Siparişi Özetle
                 </button>
             </div>

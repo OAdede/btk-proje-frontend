@@ -3,21 +3,17 @@ import React, { createContext, useState, useEffect } from "react";
 export const TableContext = createContext();
 
 const initialProducts = {
-    yemekler: [
-        { id: 1, name: "Pizza", price: 120, stock: 10 },
-        { id: 2, name: "Hamburger", price: 90, stock: 8 },
-        { id: 3, name: "Salata", price: 50, stock: 12 },
-        { id: 4, name: "Makarna", price: 80, stock: 7 },
+    "Ana Yemek": [
+        { id: 1, name: "Pizza", price: 120, stock: 10, category: "Ana Yemek" },
+        { id: 2, name: "Hamburger", price: 90, stock: 8, category: "Ana Yemek" },
     ],
-    icecekler: [
-        { id: 101, name: "Kola", price: 20, stock: 15 },
-        { id: 102, name: "Ayran", price: 10, stock: 12 },
-        { id: 103, name: "Su", price: 5, stock: 25 },
+    "İçecekler": [
+        { id: 101, name: "Kola", price: 20, stock: 15, category: "İçecekler" },
+        { id: 102, name: "Ayran", price: 10, stock: 12, category: "İçecekler" },
     ],
-    tatlilar: [
-        { id: 201, name: "Baklava", price: 50, stock: 10 },
-        { id: 202, name: "Künefe", price: 55, stock: 8 },
-        { id: 203, name: "Sütlaç", price: 30, stock: 12 },
+    "Tatlılar": [
+        { id: 201, name: "Baklava", price: 50, stock: 10, category: "Tatlılar" },
+        { id: 202, name: "Künefe", price: 55, stock: 8, category: "Tatlılar" },
     ],
 };
 
@@ -37,50 +33,60 @@ export function TableProvider({ children }) {
     const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
 
-    // Sipariş onaylama mantığını merkezileştir
-    const confirmOrder = (tableId) => {
-        const newItems = lastOrders[tableId] || {};
-        if (Object.keys(newItems).length === 0) return;
+    const updateLastOrder = (tableId, finalCart, initialOrder) => {
+        const changes = {};
+        const allKeys = new Set([...Object.keys(finalCart), ...Object.keys(initialOrder)]);
 
-        // 1. Stokları Güncelle
+        allKeys.forEach(id => {
+            const finalCount = finalCart[id]?.count || 0;
+            const initialCount = initialOrder[id]?.count || 0;
+            if (finalCount !== initialCount) {
+                changes[id] = { ...finalCart[id], count: finalCount - initialCount };
+            }
+        });
+        setLastOrders(prev => ({ ...prev, [tableId]: changes }));
+    };
+
+    const confirmOrder = (tableId) => {
+        const changes = lastOrders[tableId] || {};
+        if (Object.keys(changes).length === 0) return;
+
         setProducts(prevProducts => {
-            const updatedProducts = JSON.parse(JSON.stringify(prevProducts)); // Deep copy
-            Object.values(newItems).forEach(item => {
-                for (const category in updatedProducts) {
+            const updatedProducts = JSON.parse(JSON.stringify(prevProducts));
+            Object.values(changes).forEach(item => {
+                const category = item.category;
+                if (category && updatedProducts[category]) {
                     const productIndex = updatedProducts[category].findIndex(p => p.id === item.id);
                     if (productIndex !== -1) {
                         updatedProducts[category][productIndex].stock -= item.count;
-                        break;
                     }
                 }
             });
             return updatedProducts;
         });
 
-        // 2. Siparişleri Birleştir
         setOrders(prevOrders => {
             const updatedOrders = { ...prevOrders };
             const currentOrder = updatedOrders[tableId] || {};
-            Object.values(newItems).forEach(newItem => {
-                if (currentOrder[newItem.id]) {
-                    currentOrder[newItem.id].count += newItem.count;
+            Object.entries(changes).forEach(([id, item]) => {
+                const currentCount = currentOrder[id]?.count || 0;
+                const newCount = currentCount + item.count;
+                if (newCount > 0) {
+                    currentOrder[id] = { ...item, count: newCount };
                 } else {
-                    currentOrder[newItem.id] = newItem;
+                    delete currentOrder[id];
                 }
             });
-            updatedOrders[tableId] = currentOrder;
+            if (Object.keys(currentOrder).length === 0) {
+                delete updatedOrders[tableId];
+            } else {
+                updatedOrders[tableId] = currentOrder;
+            }
             return updatedOrders;
         });
 
-        // 3. Onaylanan siparişleri temizle
         clearLastOrder(tableId);
-
-        // 4. Masa durumunu güncelle
-        updateTableStatus(tableId, "occupied");
-    };
-
-    const updateLastOrder = (tableId, items) => {
-        setLastOrders(prev => ({ ...prev, [tableId]: items }));
+        updateTableStatus(tableId, Object.keys(orders[tableId] || {}).length > 0 ? "occupied" : "empty");
     };
 
     const clearLastOrder = (tableId) => {
@@ -95,9 +101,7 @@ export function TableProvider({ children }) {
         setTableStatus(prev => ({ ...prev, [tableId]: status }));
     };
 
-    // Ödeme sonrası masayı temizle
     const processPayment = (tableId) => {
-        // Ödenen siparişin stokları geri eklenmez.
         setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
         setOrders(prev => {
             const newOrders = { ...prev };
@@ -106,8 +110,17 @@ export function TableProvider({ children }) {
         });
     };
 
-    // Diğer fonksiyonlar (addProduct, vb.) buraya eklenebilir.
-    // ...
+    // Diğer fonksiyonlar...
+    const decreaseConfirmedOrderItem = (tableId, itemToDecrease) => {
+        // Bu fonksiyonun mantığı artık `updateLastOrder` ve `confirmOrder` içinde
+        // ele alındığı için basitleştirilebilir veya kaldırılabilir.
+        // Şimdilik doğrudan `orders`'ı değiştirmemesi için boş bırakıyorum.
+    };
+
+    const increaseConfirmedOrderItem = (tableId, itemToIncrease) => {
+        // Benzer şekilde, bu da artık yeni akışla yönetiliyor.
+    };
+
 
     useEffect(() => {
         localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
@@ -129,8 +142,9 @@ export function TableProvider({ children }) {
                 processPayment,
                 confirmOrder,
                 updateLastOrder,
-                clearLastOrder
-                // Diğer fonksiyonları da buraya ekleyin
+                clearLastOrder,
+                decreaseConfirmedOrderItem,
+                increaseConfirmedOrderItem,
             }}
         >
             {children}

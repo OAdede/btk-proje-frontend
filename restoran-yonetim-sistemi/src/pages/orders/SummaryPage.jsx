@@ -1,16 +1,11 @@
 import React, { useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
-import { AuthContext } from "../../context/AuthContext";
 
 export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { lastOrders, confirmOrder, clearTable, orders } = useContext(TableContext);
-    const { user } = useContext(AuthContext);
-
-    // ✅ Kullanıcı yüklenmediyse hiç render etme
-    if (!user) return <p>Yükleniyor...</p>;
 
     const newOrderItems = lastOrders[tableId] || {};
     const confirmedOrderItems = orders[tableId] || {};
@@ -25,20 +20,14 @@ export default function SummaryPage() {
 
     const handleConfirm = () => {
         confirmOrder(tableId);
-        if (user.role === "kasiyer") {
-            navigate("/kasiyer/home");
-        } else {
-            navigate("/garson/home");
-        }
+        // Sipariş onaylandıktan sonra bir bildirim gösterilebilir
+        // ve ana sayfaya yönlendirilebilir.
+        navigate("/garson/home");
     };
 
     const handleClearTable = () => {
         clearTable(tableId);
-        if (user.role === "kasiyer") {
-            navigate("/kasiyer/home");
-        } else {
-            navigate("/garson/home");
-        }
+        navigate("/garson/home");
     }
 
     return (
@@ -80,21 +69,13 @@ export default function SummaryPage() {
             </div>
 
             <div style={styles.actions}>
-                <button onClick={() => navigate(-1)} style={{ ...styles.button, backgroundColor: "#6c757d" }}>
-                    Geri
+                <button onClick={() => navigate(-1)} style={{ ...styles.button, backgroundColor: "#6c757d" }}>Geri</button>
+                <button onClick={handleConfirm} style={{ ...styles.button, backgroundColor: "#28a745" }} disabled={Object.keys(newOrderItems).length === 0}>
+                    Yeni Siparişi Onayla
                 </button>
-
-                {(user.role === "kasiyer" || user.role === "garson") && Object.keys(newOrderItems).length > 0 && (
-                    <button onClick={handleConfirm} style={{ ...styles.button, backgroundColor: "#28a745" }}>
-                        Siparişi Onayla
-                    </button>
-                )}
-
-                {Object.keys(confirmedOrderItems).length > 0 && (
-                    <button onClick={handleClearTable} style={{ ...styles.button, backgroundColor: "#dc3545" }}>
-                        Hesabı Kapat & Masayı Temizle
-                    </button>
-                )}
+                <button onClick={handleClearTable} style={{ ...styles.button, backgroundColor: "#dc3545" }}>
+                    Hesabı Kapat & Masayı Temizle
+                </button>
             </div>
         </div>
     );
@@ -111,13 +92,7 @@ const styles = {
         boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
     },
     list: { listStyle: "none", padding: 0 },
-    listItem: {
-        display: "flex",
-        justifyContent: "space-between",
-        marginBottom: "0.5rem",
-        borderBottom: '1px solid #eee',
-        paddingBottom: '0.5rem'
-    },
+    listItem: { display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", borderBottom: '1px solid #eee', paddingBottom: '0.5rem' },
     total: { fontWeight: "bold", textAlign: "right", marginTop: "1rem" },
     grandTotalCard: {
         marginTop: "2rem",
@@ -143,4 +118,3 @@ const styles = {
         cursor: "pointer"
     }
 };
-
