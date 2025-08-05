@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { useTheme } from '../../context/ThemeContext';
+import './SalesChart.css';
 
 ChartJS.register(
   LineElement,
@@ -313,6 +314,7 @@ const SalesChart = () => {
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { 
         position: 'top',
@@ -327,7 +329,7 @@ const SalesChart = () => {
           mode === 'daily'
             ? 'Günlük Satışlar'
             : mode === 'weekly'
-              ? 'Haftalık Satışlar'
+              ? 'Haftalük Satışlar'
               : mode === 'monthly'
                 ? 'Aylık Satışlar'
                 : 'Yıllık Satışlar',
@@ -351,16 +353,30 @@ const SalesChart = () => {
         }
       }
     },
-    backgroundColor: colors.cardBackground
+    backgroundColor: colors.cardBackground,
+    elements: {
+      line: {
+        backgroundColor: colors.cardBackground
+      },
+      point: {
+        backgroundColor: colors.cardBackground
+      }
+    },
+    layout: {
+      padding: {
+        top: 10,
+        bottom: 10
+      }
+    }
   };
 
   return (
-    <Card className="mb-4" style={{ backgroundColor: colors.cardBackground, color: colors.text }}>
+    <Card className="mb-4 sales-chart" style={{ backgroundColor: colors.cardBackground, color: colors.text }}>
       <Card.Body>
-        <Card.Title style={{ color: colors.text }}>Satış Grafiği</Card.Title>
+        <Card.Title className="sales-chart" style={{ color: colors.text }}>Satış Grafiği</Card.Title>
 
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <ButtonGroup>
+          <ButtonGroup className="sales-chart">
             <Button
               variant={mode === 'daily' ? 'primary' : 'outline-primary'}
               onClick={() => setMode('daily')}
@@ -389,6 +405,7 @@ const SalesChart = () => {
 
           {(mode === 'daily' || mode === 'weekly') && (
             <Form.Select
+              className="sales-chart"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
               style={{ width: 'auto', minWidth: '150px' }}
@@ -403,6 +420,7 @@ const SalesChart = () => {
 
           {mode === 'monthly' && (
             <Form.Select
+              className="sales-chart"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
               style={{ width: 'auto', minWidth: '150px' }}
@@ -416,8 +434,10 @@ const SalesChart = () => {
           )}
         </div>
 
-        <div style={{ backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px' }}>
-          <Line data={chartData} options={options} />
+        <div className="chart-container sales-chart" style={{ backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px', height: '400px', border: `2px solid ${colors.border}`, overflow: 'hidden' }}>
+          <div style={{ backgroundColor: colors.cardBackground, width: '100%', height: '100%' }}>
+            <Line data={chartData} options={options} />
+          </div>
         </div>
       </Card.Body>
     </Card>

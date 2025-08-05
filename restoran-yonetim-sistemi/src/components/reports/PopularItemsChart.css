@@ -1,0 +1,160 @@
+/* PopularItemsChart.css */
+
+/* Açık tema için chart stilleri */
+.light-theme .popular-items-chart .card {
+  background-color: #ffffff !important;
+  color: #2c3e50 !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+.light-theme .popular-items-chart .card-title {
+  color: #2c3e50 !important;
+}
+
+.light-theme .popular-items-chart .chart-container {
+  background-color: #ffffff !important;
+}
+
+/* Koyu tema için chart stilleri */
+.dark-theme .popular-items-chart .card {
+  background-color: #2c3e50 !important;
+  color: white !important;
+  border: 1px solid #34495e !important;
+}
+
+.dark-theme .popular-items-chart .card-title {
+  color: white !important;
+}
+
+.dark-theme .popular-items-chart .chart-container {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js canvas için koyu tema stilleri */
+.dark-theme .popular-items-chart canvas {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js legend için koyu tema stilleri */
+.dark-theme .popular-items-chart .chartjs-legend {
+  color: white !important;
+}
+
+/* Chart.js tooltip için koyu tema stilleri */
+.dark-theme .popular-items-chart .chartjs-tooltip {
+  background-color: #34495e !important;
+  color: white !important;
+  border: 1px solid #34495e !important;
+}
+
+/* Chart.js için genel koyu tema stilleri */
+.dark-theme .popular-items-chart .chartjs-render-monitor {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart .chartjs-chart {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart container için ek stiller */
+.dark-theme .popular-items-chart .chart-container {
+  background-color: #2c3e50 !important;
+  border: 1px solid #34495e !important;
+}
+
+/* Chart.js için daha spesifik canvas stilleri */
+.dark-theme .popular-items-chart .chartjs-chart canvas {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart .chartjs-chart-js {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için genel stiller */
+.dark-theme .popular-items-chart canvas {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart .chartjs-chart {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart container için border ve padding */
+.dark-theme .popular-items-chart .chart-container {
+  background-color: #2c3e50 !important;
+  border: 2px solid #34495e !important;
+  border-radius: 8px !important;
+}
+
+/* Chart.js için daha kapsamlı stiller */
+.dark-theme .popular-items-chart .chartjs-chart-container {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart .chartjs-chart-wrapper {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart .chartjs-chart-canvas {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için tüm olası canvas stilleri */
+.dark-theme .popular-items-chart canvas[style*="background"] {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart canvas {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için daha spesifik stil override */
+.dark-theme .popular-items-chart .chartjs-chart,
+.dark-theme .popular-items-chart .chartjs-chart-container,
+.dark-theme .popular-items-chart .chartjs-chart-wrapper,
+.dark-theme .popular-items-chart .chartjs-chart-canvas,
+.dark-theme .popular-items-chart .chartjs-render-monitor {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için canvas ve div elementleri */
+.dark-theme .popular-items-chart div[style*="background"],
+.dark-theme .popular-items-chart canvas[style*="background"] {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için tüm canvas elementleri */
+.dark-theme .popular-items-chart canvas {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için ek spesifik stiller */
+.dark-theme .popular-items-chart .chartjs-chart canvas {
+  background-color: #2c3e50 !important;
+}
+
+.dark-theme .popular-items-chart .chartjs-chart-container canvas {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için inline style override */
+.dark-theme .popular-items-chart canvas[style] {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için tüm olası div elementleri */
+.dark-theme .popular-items-chart div {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için tüm olası elementler */
+.dark-theme .popular-items-chart * {
+  background-color: #2c3e50 !important;
+}
+
+/* Chart.js için canvas ve div elementleri için ek stiller */
+.dark-theme .popular-items-chart canvas,
+.dark-theme .popular-items-chart div {
+  background-color: #2c3e50 !important;
+} 
