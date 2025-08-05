@@ -1,5 +1,6 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { TableContext } from "../../context/TableContext";
+import ReservationModal from "../../components/reservations/ReservationModal";
 import "./Dashboard.css";
 
 const statusColors = {
@@ -21,19 +22,32 @@ const statusText = {
 };
 
 const Dashboard = () => {
-  const { tableStatus, orders } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation } = useContext(TableContext);
+  const [showReservationMode, setShowReservationMode] = useState(false);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [showReservationModal, setShowReservationModal] = useState(false);
+
+  // Bugünün tarihini al (sadece gün-ay formatında)
+  const getTodayDate = () => {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${today.getFullYear()}-${month}-${day}`;
+  };
 
   // 1. Kat masaları (1-1'den 1-8'e kadar)
   const kat1Tables = Array.from({ length: 8 }, (_, i) => {
     const tableId = `1-${i + 1}`;
     const status = tableStatus[tableId] || 'empty';
     const hasOrder = orders[tableId] && Object.keys(orders[tableId]).length > 0;
+    const hasReservation = reservations[tableId];
     
     return {
       id: tableId,
       name: `${i + 1}`,
-      status: hasOrder ? 'occupied' : status,
-      orderCount: hasOrder ? Object.keys(orders[tableId]).length : 0
+      status: hasOrder ? 'occupied' : hasReservation ? 'reserved' : status,
+      orderCount: hasOrder ? Object.keys(orders[tableId]).length : 0,
+      reservation: hasReservation
     };
   });
 
@@ -42,12 +56,14 @@ const Dashboard = () => {
     const tableId = `2-${i + 1}`;
     const status = tableStatus[tableId] || 'empty';
     const hasOrder = orders[tableId] && Object.keys(orders[tableId]).length > 0;
+    const hasReservation = reservations[tableId];
     
     return {
       id: tableId,
       name: `${i + 9}`,
-      status: hasOrder ? 'occupied' : status,
-      orderCount: hasOrder ? Object.keys(orders[tableId]).length : 0
+      status: hasOrder ? 'occupied' : hasReservation ? 'reserved' : status,
+      orderCount: hasOrder ? Object.keys(orders[tableId]).length : 0,
+      reservation: hasReservation
     };
   });
 
@@ -57,9 +73,53 @@ const Dashboard = () => {
   const emptyTables = [...kat1Tables, ...kat2Tables].filter(table => table.status === 'empty').length;
   const reservedTables = [...kat1Tables, ...kat2Tables].filter(table => table.status === 'reserved').length;
 
+  const handleReservationClick = (tableId) => {
+    setSelectedTable(tableId);
+    setShowReservationModal(true);
+  };
+
+  const handleReservationSubmit = (formData) => {
+    if (selectedTable) {
+      addReservation(selectedTable, formData);
+      setShowReservationModal(false);
+      setSelectedTable(null);
+    }
+  };
+
+  const handleReservationClose = () => {
+    setShowReservationModal(false);
+    setSelectedTable(null);
+  };
+
   return (
     <div className="home-page">
       <h1>Hoşgeldiniz, Admin!</h1>
+      
+      {/* Rezervasyon Yap Butonu */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        padding: '0 20px'
+      }}>
+        <button
+          onClick={() => setShowReservationMode(!showReservationMode)}
+          style={{
+            background: showReservationMode ? '#f44336' : '#4caf50',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {showReservationMode ? 'Rezervasyon Modunu Kapat' : 'Rezervasyon Yap'}
+        </button>
+      </div>
       
       {/* İstatistikler */}
       <div style={{
@@ -129,9 +189,35 @@ const Dashboard = () => {
                 style={{
                   background: statusColors[table.status],
                   color: statusTextColor[table.status],
-                  position: 'relative'
+                  position: 'relative',
+                  cursor: showReservationMode && table.status === 'empty' ? 'pointer' : 'default'
+                }}
+                onClick={() => {
+                  if (showReservationMode && table.status === 'empty') {
+                    handleReservationClick(table.id);
+                  }
                 }}
               >
+                {showReservationMode && table.status === 'empty' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '5px',
+                    background: 'rgba(255,255,255,0.9)',
+                    color: '#333',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}>
+                    +
+                  </div>
+                )}
                 <div className="table-number-home">{table.name}</div>
                 <div className="table-status-home">
                   {statusText[table.status]}
@@ -151,6 +237,15 @@ const Dashboard = () => {
                     </span>
                   )}
                 </div>
+                {table.reservation && (
+                  <div style={{
+                    fontSize: '10px',
+                    marginTop: '4px',
+                    opacity: 0.8
+                  }}>
+                    {table.reservation.adSoyad} - {table.reservation.saat}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -166,9 +261,35 @@ const Dashboard = () => {
                 style={{
                   background: statusColors[table.status],
                   color: statusTextColor[table.status],
-                  position: 'relative'
+                  position: 'relative',
+                  cursor: showReservationMode && table.status === 'empty' ? 'pointer' : 'default'
+                }}
+                onClick={() => {
+                  if (showReservationMode && table.status === 'empty') {
+                    handleReservationClick(table.id);
+                  }
                 }}
               >
+                {showReservationMode && table.status === 'empty' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '5px',
+                    background: 'rgba(255,255,255,0.9)',
+                    color: '#333',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}>
+                    +
+                  </div>
+                )}
                 <div className="table-number-home">{table.name}</div>
                 <div className="table-status-home">
                   {statusText[table.status]}
@@ -188,11 +309,29 @@ const Dashboard = () => {
                     </span>
                   )}
                 </div>
+                {table.reservation && (
+                  <div style={{
+                    fontSize: '10px',
+                    marginTop: '4px',
+                    opacity: 0.8
+                  }}>
+                    {table.reservation.adSoyad} - {table.reservation.saat}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Rezervasyon Modal */}
+      <ReservationModal
+        visible={showReservationModal}
+        masaNo={selectedTable}
+        onClose={handleReservationClose}
+        onSubmit={handleReservationSubmit}
+        defaultDate={getTodayDate()}
+      />
     </div>
   );
 };
