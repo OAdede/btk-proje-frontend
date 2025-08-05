@@ -37,31 +37,47 @@ export const ThemeProvider = ({ children }) => {
     isDarkMode,
     toggleTheme,
     colors: isDarkMode ? {
-      // Koyu tema renkleri
-      background: '#1a252f',
-      cardBackground: '#2c3e50',
-      text: '#ffffff',
-      textSecondary: '#bdc3c7',
-      tableRowBackground: '#1b345c',
-      tableHeaderBackground: '#34495e',
-      border: '#34495e',
-      success: '#27ae60',
-      danger: '#e74c3c',
-      primary: '#3498db',
-      warning: '#f39c12'
+      // Yeni koyu tema renkleri - tatlı ve hoş görünüm
+      background: '#32263A', // En koyu arka plan
+      cardBackground: '#473653', // Kart arka planı
+      surfaceBackground: '#513653', // Yüzey arka planı
+      accentBackground: '#53364D', // Vurgu arka planı
+      text: '#ffffff', // Beyaz ana metin
+      textSecondary: '#e0e0e0', // Açık gri ikincil metin
+      textMuted: '#b0b0b0', // Soluk metin
+      tableRowBackground: '#473653', // Tablo satır arka planı
+      tableHeaderBackground: '#513653', // Tablo başlık arka planı
+      border: '#53364D', // Kenarlık rengi
+      borderLight: '#3A2636', // Açık kenarlık
+      success: '#4ade80', // Yeşil - başarı
+      danger: '#f87171', // Kırmızı - tehlike
+      primary: '#a78bfa', // Mor - birincil
+      warning: '#fbbf24', // Sarı - uyarı
+      info: '#60a5fa', // Mavi - bilgi
+      hover: '#53364D', // Hover efekti
+      shadow: 'rgba(50, 38, 58, 0.3)', // Gölge rengi
+      overlay: 'rgba(50, 38, 58, 0.8)' // Overlay rengi
     } : {
-      // Açık tema renkleri
-      background: '#f8f9fa',
-      cardBackground: '#ffffff',
-      text: '#2c3e50',
-      textSecondary: '#6c757d',
-      tableRowBackground: '#ffffff',
-      tableHeaderBackground: '#e9ecef',
-      border: '#dee2e6',
-      success: '#28a745',
-      danger: '#dc3545',
-      primary: '#007bff',
-      warning: '#ffc107'
+      // Yeni açık tema renkleri - Mor paleti
+      background: '#F5EFFF', // En açık mor arka plan
+      cardBackground: '#CBC3E3', // Kart arka planı - güncellendi
+      surfaceBackground: '#E5D9F2', // Açık mor yüzey arka planı
+      accentBackground: '#CDC1FF', // Orta mor vurgu arka planı
+      text: '#2D1B69', // Koyu mor ana metin
+      textSecondary: '#4A3B76', // Orta mor ikincil metin
+      textMuted: '#6B5B8A', // Açık mor soluk metin
+      tableRowBackground: '#CBC3E3', // Tablo satır arka planı - güncellendi
+      tableHeaderBackground: '#E5D9F2', // Açık mor tablo başlık arka planı
+      border: '#CDC1FF', // Orta mor kenarlık
+      borderLight: '#E5D9F2', // Açık mor kenarlık
+      success: '#10B981', // Yeşil - başarı
+      danger: '#EF4444', // Kırmızı - tehlike
+      primary: '#A294F9', // Mor - birincil
+      warning: '#F59E0B', // Sarı - uyarı
+      info: '#3B82F6', // Mavi - bilgi
+      hover: '#CDC1FF', // Hover efekti
+      shadow: 'rgba(162, 148, 249, 0.1)', // Gölge rengi
+      overlay: 'rgba(162, 148, 249, 0.5)' // Overlay rengi
     }
   };
 

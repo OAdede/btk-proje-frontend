@@ -95,12 +95,12 @@ function StokUpdate() {
         {mevcutSayfaUrunleri.map((urun) => {
           const durum = stokDurumu(urun.stock, urun.minStock);
           return (
-            <div key={urun.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, boxShadow: "0 1px 6px #0001", padding: "12px 20px", gap: 20 }}>
+            <div key={urun.id} style={{ display: "flex", alignItems: "center", background: "#32263a", borderRadius: 10, boxShadow: "0 1px 6px #0001", padding: "12px 20px", gap: 20 }}>
               <div style={{ flex: 3, fontWeight: 600 }}>{urun.name}</div>
               <div style={{ flex: 1, fontWeight: 500 }}>{urun.price} ₺</div>
               <div style={{ flex: 1, fontWeight: 500 }}>{urun.stock} adet</div>
               <div style={{ flex: 1, fontWeight: 500 }}>Min: {urun.minStock}</div>
-              <div style={{ flex: 1.5, textAlign: 'center', fontWeight: 600, color: "#fff", background: durum.renk, padding: "4px 12px", borderRadius: 12 }}>{durum.durum}</div>
+              <div style={{ flex: 1.5, textAlign: 'center', fontWeight: 600, color: "#473653", background: durum.renk, padding: "4px 12px", borderRadius: 12 }}>{durum.durum}</div>
               <button onClick={() => urunDuzenle(urun)} style={{ background: "#1a3c34", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontWeight: 600, cursor: "pointer" }}>Düzenle</button>
               <button onClick={() => urunSil(urun)} style={{ background: "#d90429", color: "#fff", border: "none", borderRadius: 6, padding: "7px 18px", fontWeight: 600, cursor: "pointer" }}>Sil</button>
             </div>

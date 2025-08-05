@@ -5,45 +5,105 @@
   box-sizing: border-box;
 }
 
+html, body {
+  background-color: var(--background);
+  color: var(--text);
+  transition: all 0.3s ease;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   transition: all 0.3s ease;
 }
 
-/* Tema değişkenleri */
-:root {
-  /* Gündüz modu varsayılan renkleri */
-  --background: #f8f9fa;
-  --surface: #ffffff;
-  --primary: #1a3c34;
-  --text: #1e293b;
-  --text-secondary: #64748b;
-  --border: #e2e8f0;
-  --sidebar: rgba(255, 255, 255, 0.95);
-  --card: #ffffff;
-  --button: #1a3c34;
-  --button-hover: #e0e0e0;
-  --danger: #d90429;
-  --success: #38b000;
-  --warning: #ff6b35;
+#root {
+  background-color: var(--background);
+  color: var(--text);
+  min-height: 100vh;
 }
 
-/* Gece modu renkleri */
+/* Tema değişkenleri */
+:root {
+  /* Gündüz modu varsayılan renkleri - Yeni mor paleti */
+  --background: #F5EFFF;
+  --surface: #CBC3E3;
+  --primary: #A294F9;
+  --text: #2D1B69;
+  --text-secondary: #4A3B76;
+  --border: #CDC1FF;
+  --sidebar: rgba(255, 255, 255, 0.95);
+  --card: #CBC3E3;
+  --button: #A294F9;
+  --button-hover: #CDC1FF;
+  --danger: #EF4444;
+  --success: #10B981;
+  --warning: #F59E0B;
+}
+
+/* Gece modu renkleri - Yeni tatlı renk paleti */
 [data-theme="dark"] {
-  --background: #040410;
-  --surface: rgba(255, 255, 255, 0.1);
-  --primary: #1e3c72;
+  --background: #32263A;
+  --surface: #473653;
+  --primary: #a78bfa;
   --text: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.8);
-  --border: rgba(255, 255, 255, 0.1);
-  --sidebar: rgba(4, 4, 16, 0.9);
-  --card: rgba(255, 255, 255, 0.1);
-  --button: #1a3c34;
-  --button-hover: rgba(255, 255, 255, 0.2);
-  --danger: #E0190F;
-  --success: #38b000;
-  --warning: #ff6b35;
+  --text-secondary: #e0e0e0;
+  --border: #53364D;
+  --sidebar: rgba(50, 38, 58, 0.95);
+  --card: #473653;
+  --button: #a78bfa;
+  --button-hover: #53364D;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+}
+
+/* Koyu tema için ek renk değişkenleri */
+.dark-theme {
+  --background: #32263A;
+  --surface: #473653;
+  --surface-light: #513653;
+  --accent: #53364D;
+  --text: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #b0b0b0;
+  --border: #53364D;
+  --border-light: #3A2636;
+  --sidebar: rgba(50, 38, 58, 0.95);
+  --card: #473653;
+  --button: #a78bfa;
+  --button-hover: #53364D;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+  --hover: #53364D;
+  --shadow: rgba(50, 38, 58, 0.3);
+  --overlay: rgba(50, 38, 58, 0.8);
+}
+
+/* Açık tema için ek renk değişkenleri */
+.light-theme {
+  --background: #F5EFFF;
+  --surface: #CBC3E3;
+  --surface-light: #E5D9F2;
+  --accent: #CDC1FF;
+  --text: #2D1B69;
+  --text-secondary: #4A3B76;
+  --text-muted: #6B5B8A;
+  --border: #CDC1FF;
+  --border-light: #E5D9F2;
+  --sidebar: rgba(255, 255, 255, 0.95);
+  --card: #CBC3E3;
+  --button: #A294F9;
+  --button-hover: #CDC1FF;
+  --danger: #EF4444;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+  --hover: #CDC1FF;
+  --shadow: rgba(162, 148, 249, 0.1);
+  --overlay: rgba(162, 148, 249, 0.5);
 }
 
 /* Genel container stilleri */
@@ -75,7 +135,7 @@ body {
 .btn-primary:hover {
   background: var(--button-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .btn-danger {
@@ -84,9 +144,9 @@ body {
 }
 
 .btn-danger:hover {
-  background: #c82333;
+  background: #dc2626;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 /* Kart stilleri */
@@ -94,8 +154,9 @@ body {
   background: var(--card);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow);
   border: 1px solid var(--border);
+  color: var(--text);
 }
 
 /* Form stilleri */
@@ -112,7 +173,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+  box-shadow: 0 0 0 3px rgba(162, 148, 249, 0.1);
 }
 
 /* Scrollbar stilleri */
@@ -147,6 +208,60 @@ input:focus, select:focus, textarea:focus {
 
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Koyu tema için özel stiller */
+.dark-theme {
+  background-color: var(--background);
+  color: var(--text);
+}
+
+.dark-theme .card {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.dark-theme input:focus,
+.dark-theme select:focus,
+.dark-theme textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+}
+
+/* Açık tema için özel stiller */
+.light-theme {
+  background-color: var(--background);
+  color: var(--text);
+}
+
+.light-theme .card {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.light-theme input,
+.light-theme select,
+.light-theme textarea {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.light-theme input:focus,
+.light-theme select:focus,
+.light-theme textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(162, 148, 249, 0.2);
 }
 
 /* Responsive tasarım */

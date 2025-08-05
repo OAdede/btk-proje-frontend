@@ -1,101 +1,67 @@
-/* IncomeExpenseTable.css */
-
-/* Açık tema için tablo stilleri (light backgrounds, dark text) */
+/* Açık tema için tablo stilleri - Yeni mor paleti */
 .light-theme .custom-table tbody tr {
-  background-color: #ffffff !important;
-  color: #2c3e50 !important;
+  background-color: #CBC3E3 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
 }
 
 .light-theme .custom-table tbody tr td {
-  background-color: #ffffff !important;
-  color: #2c3e50 !important;
-  border-color: #dee2e6 !important;
+  background-color: #CBC3E3 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
 }
 
 .light-theme .custom-table tbody tr:hover {
-  background-color: #f8f9fa !important;
-  color: #2c3e50 !important;
+  background-color: #F5EFFF !important;
+  color: #2D1B69 !important;
 }
 
 .light-theme .custom-table tbody tr:hover td {
-  background-color: #f8f9fa !important;
-  color: #2c3e50 !important;
+  background-color: #F5EFFF !important;
+  color: #2D1B69 !important;
 }
 
 .light-theme .custom-table thead tr {
-  background-color: #e9ecef !important;
-  color: #2c3e50 !important;
+  background-color: #E5D9F2 !important;
+  color: #2D1B69 !important;
 }
 
 .light-theme .custom-table thead tr th {
-  background-color: #e9ecef !important;
-  color: #2c3e50 !important;
-  border-color: #dee2e6 !important;
+  background-color: #E5D9F2 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
 }
 
-/* Koyu tema için tablo stilleri (dark backgrounds, light text) */
+/* Koyu tema için tablo stilleri - Yeni renk paleti */
 .dark-theme .custom-table tbody tr {
-  background-color: #1b345c !important;
-  color: white !important;
+  background-color: var(--tableRowBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
 .dark-theme .custom-table tbody tr td {
-  background-color: #1b345c !important;
-  color: white !important;
-  border-color: #34495e !important;
+  background-color: var(--tableRowBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
 .dark-theme .custom-table tbody tr:hover {
-  background-color: #2c3e50 !important;
-  color: white !important;
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
 }
 
 .dark-theme .custom-table tbody tr:hover td {
-  background-color: #2c3e50 !important;
-  color: white !important;
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
 }
 
 .dark-theme .custom-table thead tr {
-  background-color: #34495e !important;
-  color: white !important;
+  background-color: var(--tableHeaderBackground) !important;
+  color: var(--text) !important;
 }
 
 .dark-theme .custom-table thead tr th {
-  background-color: #34495e !important;
-  color: white !important;
-  border-color: #34495e !important;
+  background-color: var(--tableHeaderBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
-
-/* Koyu tema için badge stilleri */
-.dark-theme .badge {
-  color: white !important;
-}
-
-.dark-theme .badge.bg-success {
-  background-color: #27ae60 !important;
-}
-
-.dark-theme .badge.bg-danger {
-  background-color: #e74c3c !important;
-}
-
-.dark-theme .badge.bg-secondary {
-  background-color: #6c757d !important;
-}
-
-/* Açık tema için badge stilleri */
-.light-theme .badge {
-  color: white !important;
-}
-
-.light-theme .badge.bg-success {
-  background-color: #28a745 !important;
-}
-
-.light-theme .badge.bg-danger {
-  background-color: #dc3545 !important;
-}
-
-.light-theme .badge.bg-secondary {
-  background-color: #6c757d !important;
-} 

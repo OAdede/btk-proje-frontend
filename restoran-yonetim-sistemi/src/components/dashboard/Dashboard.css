@@ -1,6 +1,7 @@
 .dashboard h1 {
   font-size: 2rem;
   margin-bottom: 32px;
+  color: var(--text);
 }
 
 .dashboard-cards {
@@ -10,23 +11,27 @@
 }
 
 .dashboard-card {
-  background: #fff;
+  background: var(--card);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px var(--shadow);
   padding: 24px 32px;
   min-width: 180px;
   text-align: center;
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .dashboard-card h3 {
   font-size: 1.1rem;
   margin-bottom: 12px;
+  color: var(--text-secondary);
 }
 
 .dashboard-card p {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
+  color: var(--text);
 }
 
 .dashboard-actions {
@@ -34,8 +39,8 @@
 }
 
 .dashboard-actions button {
-  background: #1976d2;
-  color: #fff;
+  background: var(--primary);
+  color: var(--text);
   border: none;
   border-radius: 6px;
   padding: 10px 24px;
@@ -46,5 +51,20 @@
 }
 
 .dashboard-actions button:hover {
-  background: #125ea2;
+  background: var(--hover);
+}
+
+/* Koyu tema için özel stiller */
+.dark-theme .dashboard-card {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.dark-theme .dashboard-card h3 {
+  color: var(--text-secondary);
+}
+
+.dark-theme .dashboard-card p {
+  color: var(--text);
 }
