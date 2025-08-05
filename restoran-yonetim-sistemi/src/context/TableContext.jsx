@@ -75,13 +75,48 @@ export function TableProvider({ children }) {
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [timestamps, setTimestamps] = useState({}); // Sipariş zamanları
 
-    const [dailyOrderCount, setDailyOrderCount] = useState(0);
+    const [dailyOrderCount, setDailyOrderCount] = useState(() => {
+        const stored = localStorage.getItem('dailyOrderCount');
+        if (stored) {
+            const data = JSON.parse(stored);
+            const today = new Date().toDateString();
+            // Eğer farklı bir günse sıfırla
+            if (data.date !== today) {
+                return 0;
+            }
+            return data.count;
+        }
+        return 0;
+    });
     const [monthlyOrderCount, setMonthlyOrderCount] = useState(0);
     const [yearlyOrderCount, setYearlyOrderCount] = useState(0);
 
     // Masa durumunu güncelle
     const updateTableStatus = (tableId, status) => {
         setTableStatus(prev => ({ ...prev, [tableId]: status }));
+    };
+
+    // Mesai saatleri kontrolü (09:00-22:00)
+    const isWorkingHours = () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        return currentHour >= 9 && currentHour < 22;
+    };
+
+    // Günlük sipariş sayısını artır
+    const incrementDailyOrderCount = () => {
+        // Sadece mesai saatlerinde sipariş sayısını artır
+        if (!isWorkingHours()) {
+            return;
+        }
+        
+        const today = new Date().toDateString();
+        const newCount = dailyOrderCount + 1;
+        setDailyOrderCount(newCount);
+        localStorage.setItem('dailyOrderCount', JSON.stringify({
+            date: today,
+            count: newCount
+        }));
     };
 
     // Siparişi kaydet (ürün stoklarını güncelle ve sipariş durumunu ayarla)
@@ -137,6 +172,11 @@ export function TableProvider({ children }) {
 
             updateTableStatus(tableId, "empty");
         } else {
+            // Yeni sipariş eklendiğinde günlük sayıyı artır
+            if (!prevOrder || Object.keys(prevOrder).length === 0) {
+                incrementDailyOrderCount();
+            }
+            
             setOrders(prev => ({ ...prev, [tableId]: finalItems }));
 
             // Sipariş zamanını güncelle
