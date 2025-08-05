@@ -38,9 +38,9 @@ const StaffSidebar = () => {
                     onClick={() => setShowSettings(!showSettings)}
                     className="staff-settings-btn"
                     style={{
-                        background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
-                        color: '#ffffff',
-                        border: 'none',
+                        background: '#473653',
+                        color: '#F08080',
+                        border: '1px solid #F08080',
                         padding: '12px 20px',
                         borderRadius: '10px',
                         fontSize: '1rem',
@@ -187,9 +187,9 @@ const StaffSidebar = () => {
                     onClick={handleLogout}
                     className="staff-logout-btn"
                     style={{
-                        background: colors.danger,
-                        color: '#ffffff',
-                        border: 'none',
+                        background: '#473653',
+                        color: '#F08080',
+                        border: '1px solid #F08080',
                         padding: '12px 20px',
                         borderRadius: '10px',
                         fontSize: '1rem',
