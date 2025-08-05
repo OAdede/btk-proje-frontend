@@ -4,11 +4,11 @@ import App from './App';
 import './index.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext'; // AuthProvider'ı import et
+import { AuthProvider } from './context/AuthContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
-    <AuthProvider> {/* Uygulamayı AuthProvider ile sarmala */}
+    <AuthProvider>
       <App />
     </AuthProvider>
   </BrowserRouter>
