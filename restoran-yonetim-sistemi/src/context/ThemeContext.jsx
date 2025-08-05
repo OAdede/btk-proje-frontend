@@ -63,9 +63,9 @@ export const ThemeProvider = ({ children }) => {
       cardBackground: '#CBC3E3', // Kart arka planı - güncellendi
       surfaceBackground: '#E5D9F2', // Açık mor yüzey arka planı
       accentBackground: '#CDC1FF', // Orta mor vurgu arka planı
-      text: '#2D1B69', // Koyu mor ana metin
-      textSecondary: '#4A3B76', // Orta mor ikincil metin
-      textMuted: '#6B5B8A', // Açık mor soluk metin
+      text: '#1A0B3D', // Daha koyu mor ana metin - daha okunabilir
+      textSecondary: '#2D1B69', // Daha koyu mor ikincil metin - daha okunabilir
+      textMuted: '#4A3B76', // Daha koyu mor soluk metin - daha okunabilir
       tableRowBackground: '#CBC3E3', // Tablo satır arka planı - güncellendi
       tableHeaderBackground: '#E5D9F2', // Açık mor tablo başlık arka planı
       border: '#CDC1FF', // Orta mor kenarlık

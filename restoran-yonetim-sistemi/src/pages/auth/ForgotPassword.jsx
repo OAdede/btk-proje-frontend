@@ -16,12 +16,12 @@ const ForgotPassword = () => {
     surfaceBackground: '#E5D9F2',
     primary: '#A294F9',
     accent: '#CDC1FF',
-    text: '#2D1B69',
-    textSecondary: '#4A3B76',
+    text: '#1A0B3D', // Daha koyu mor - daha okunabilir
+    textSecondary: '#2D1B69', // Daha koyu - daha okunabilir
     border: '#CDC1FF',
     danger: '#EF4444',
     success: '#10B981',
-    textMuted: '#6B5B8A'
+    textMuted: '#4A3B76' // Daha koyu - daha okunabilir
   };
 
   const handleSubmit = async (e) => {
@@ -114,7 +114,7 @@ const ForgotPassword = () => {
             <label style={{
               display: 'block',
               marginBottom: '8px',
-              color: lightColors.primary,
+              color: '#374151', // Koyu gri
               fontWeight: 500,
               fontSize: '14px'
             }}>
