@@ -123,6 +123,10 @@
 }
 
 /* Koyu tema için özel stiller */
+.dark-theme .admin-layout {
+    background-color: var(--background);
+}
+
 .dark-theme .admin-sidebar {
     background: var(--card);
     border-right-color: var(--border);
@@ -148,4 +152,19 @@
 
 .dark-theme .admin-sidebar-bottom {
     border-top-color: var(--border);
+}
+
+.dark-theme .admin-main-content {
+    background: var(--background);
+    color: var(--text);
+}
+
+/* Açık tema için özel stiller */
+.light-theme .admin-layout {
+    background-color: var(--background);
+}
+
+.light-theme .admin-main-content {
+    background: var(--background);
+    color: var(--text);
 }

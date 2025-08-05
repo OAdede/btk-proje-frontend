@@ -56,20 +56,100 @@ const initialProducts = {
     ],
 };
 
+const initialTableStatus = {};
+
+function readFromLocalStorage(key, defaultValue) {
+    try {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : defaultValue;
+    } catch {
+        return defaultValue;
+    }
+}
+
 export function TableProvider({ children }) {
-    const [tableStatus, setTableStatus] = useState({});
-    const [orders, setOrders] = useState({});
-    const [products, setProducts] = useState(initialProducts);
-    const [timestamps, setTimestamps] = useState({}); // ğŸ•’ sipariÅŸ zamanlarÄ±
+    const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', initialTableStatus));
+    const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
+    const [lastOrders, setLastOrders] = useState(() => readFromLocalStorage('lastOrders', {}));
+    const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
+    const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
+    const [timestamps, setTimestamps] = useState({}); // Sipariş zamanları
 
     const [dailyOrderCount, setDailyOrderCount] = useState(0);
     const [monthlyOrderCount, setMonthlyOrderCount] = useState(0);
     const [yearlyOrderCount, setYearlyOrderCount] = useState(0);
 
+    // Masa durumunu güncelle
     const updateTableStatus = (tableId, status) => {
-        setTableStatus((prev) => ({ ...prev, [tableId]: status }));
+        setTableStatus(prev => ({ ...prev, [tableId]: status }));
     };
 
+    // Siparişi kaydet (ürün stoklarını güncelle ve sipariş durumunu ayarla)
+    const saveFinalOrder = (tableId, finalItems) => {
+        const prevOrder = orders[tableId] || {};
+        const updatedProducts = { ...products };
+
+        const totalPrice = Object.values(finalItems).reduce(
+            (sum, item) => sum + item.price * item.count,
+            0
+        );
+        const isOrderEmpty = totalPrice === 0;
+
+        // Stok farklarını güncelle
+        Object.entries(finalItems).forEach(([id, newItem]) => {
+            const prevItem = prevOrder[id];
+            const quantityDifference = (newItem.count || 0) - (prevItem?.count || 0);
+
+            Object.keys(updatedProducts).forEach(category => {
+                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                if (productIndex !== -1) {
+                    const newStock = updatedProducts[category][productIndex].stock - quantityDifference;
+                    updatedProducts[category][productIndex].stock = newStock >= 0 ? newStock : 0;
+                }
+            });
+        });
+
+        // Önceki siparişten kalan ürünleri stok olarak geri ekle
+        Object.keys(prevOrder).forEach(id => {
+            if (!finalItems[id]) {
+                const prevItem = prevOrder[id];
+                Object.keys(updatedProducts).forEach(category => {
+                    const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                    if (productIndex !== -1) {
+                        updatedProducts[category][productIndex].stock += prevItem.count;
+                    }
+                });
+            }
+        });
+
+        setProducts(updatedProducts);
+
+        if (isOrderEmpty) {
+            const updatedOrders = { ...orders };
+            delete updatedOrders[tableId];
+            setOrders(updatedOrders);
+
+            setTimestamps(prev => {
+                const copy = { ...prev };
+                delete copy[tableId];
+                return copy;
+            });
+
+            updateTableStatus(tableId, "empty");
+        } else {
+            setOrders(prev => ({ ...prev, [tableId]: finalItems }));
+
+            // Sipariş zamanını güncelle
+            setTimestamps(prev => ({
+                ...prev,
+                [tableId]: Date.now(),
+            }));
+
+            updateTableStatus(tableId, "occupied");
+        }
+    };
+
+    // Siparişi iptal et ve stokları geri yükle
     const restoreStock = (order) => {
         const updatedProducts = { ...products };
         Object.entries(order).forEach(([id, item]) => {
@@ -92,8 +172,7 @@ export function TableProvider({ children }) {
             setOrders(updatedOrders);
             updateTableStatus(tableId, "empty");
 
-            // zaman damgasÄ±nÄ± da sil
-            setTimestamps((prev) => {
+            setTimestamps(prev => {
                 const copy = { ...prev };
                 delete copy[tableId];
                 return copy;
@@ -101,69 +180,151 @@ export function TableProvider({ children }) {
         }
     };
 
-    const saveFinalOrder = (tableId, finalItems) => {
-        const prevOrder = orders[tableId] || {};
-        const updatedProducts = { ...products };
-
-        const totalPrice = Object.values(finalItems).reduce(
-            (sum, item) => sum + item.price * item.count,
-            0
-        );
-        const isOrderEmpty = totalPrice === 0;
-
-        Object.entries(finalItems).forEach(([id, newItem]) => {
-            const prevItem = prevOrder[id];
-            const quantityDifference = (newItem.count || 0) - (prevItem?.count || 0);
-
-            Object.keys(updatedProducts).forEach(category => {
-                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
-                if (productIndex !== -1) {
-                    const newStock = updatedProducts[category][productIndex].stock - quantityDifference;
-                    updatedProducts[category][productIndex].stock = newStock >= 0 ? newStock : 0;
-                }
-            });
+    // Ödeme işlemi
+    const processPayment = (tableId) => {
+        setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
+        setOrders(prev => {
+            const newOrders = { ...prev };
+            delete newOrders[tableId];
+            return newOrders;
         });
+    };
 
-        Object.keys(prevOrder).forEach(id => {
-            if (!finalItems[id]) {
-                const prevItem = prevOrder[id];
-                Object.keys(updatedProducts).forEach(category => {
-                    const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
-                    if (productIndex !== -1) {
-                        updatedProducts[category][productIndex].stock += prevItem.count;
-                    }
-                });
+    // Sipariş kalemini kaldır
+    const removeConfirmedOrderItem = (tableId, itemToRemove) => {
+        setOrders(prevOrders => {
+            const newOrders = { ...prevOrders };
+            if (!newOrders[tableId]) return prevOrders;
+            delete newOrders[tableId][itemToRemove.id];
+            if (Object.keys(newOrders[tableId]).length === 0) {
+                delete newOrders[tableId];
+                setTableStatus(prevStatus => ({ ...prevStatus, [tableId]: 'empty' }));
             }
+            return newOrders;
         });
+        setProducts(prevProducts => {
+            const newProducts = JSON.parse(JSON.stringify(prevProducts));
+            const category = itemToRemove.category;
+            if (category && newProducts[category]) {
+                const productIndex = newProducts[category].findIndex(p => p.id === itemToRemove.id);
+                if (productIndex > -1) {
+                    newProducts[category][productIndex].stock += itemToRemove.count;
+                }
+            }
+            return newProducts;
+        });
+    };
 
-        setProducts(updatedProducts);
-
-        if (isOrderEmpty) {
-            const updatedOrders = { ...orders };
-            delete updatedOrders[tableId];
-            setOrders(updatedOrders);
-
-            setTimestamps((prev) => {
-                const copy = { ...prev };
-                delete copy[tableId];
-                return copy;
-            });
-
-            updateTableStatus(tableId, "empty");
+    // Sipariş kalemi adet azalt
+    const decreaseConfirmedOrderItem = (tableId, itemToDecrease) => {
+        if (itemToDecrease.count <= 1) {
+            removeConfirmedOrderItem(tableId, itemToDecrease);
         } else {
-            setOrders((prev) => ({ ...prev, [tableId]: finalItems }));
-
-            // â± sipariÅŸin zamanÄ±nÄ± gÃ¼ncelle
-            setTimestamps((prev) => ({
-                ...prev,
-                [tableId]: Date.now(),
-            }));
-
-            updateTableStatus(tableId, "occupied");
+            setOrders(prevOrders => {
+                const newOrders = { ...prevOrders };
+                newOrders[tableId][itemToDecrease.id].count -= 1;
+                return newOrders;
+            });
+            setProducts(prevProducts => {
+                const newProducts = JSON.parse(JSON.stringify(prevProducts));
+                const category = itemToDecrease.category;
+                if (category && newProducts[category]) {
+                    const productIndex = newProducts[category].findIndex(p => p.id === itemToDecrease.id);
+                    if (productIndex > -1) {
+                        newProducts[category][productIndex].stock += 1;
+                    }
+                }
+                return newProducts;
+            });
         }
     };
 
-    // ğŸ” SipariÅŸ sayaÃ§larÄ±nÄ± hesapla
+    // Sipariş kalemi adet artır
+    const increaseConfirmedOrderItem = (tableId, itemToIncrease) => {
+        const category = itemToIncrease.category;
+        const productInStock = products[category]?.find(p => p.id === itemToIncrease.id);
+
+        if (productInStock && productInStock.stock > 0) {
+            setOrders(prevOrders => {
+                const newOrders = { ...prevOrders };
+                newOrders[tableId][itemToIncrease.id].count += 1;
+                return newOrders;
+            });
+            setProducts(prevProducts => {
+                const newProducts = JSON.parse(JSON.stringify(prevProducts));
+                const productIndex = newProducts[category].findIndex(p => p.id === itemToIncrease.id);
+                if (productIndex > -1) {
+                    newProducts[category][productIndex].stock -= 1;
+                }
+                return newProducts;
+            });
+        } else {
+            alert("Stokta yeterli ürün yok!");
+        }
+    };
+
+    // Rezervasyon ekle
+    const addReservation = (tableId, reservationData) => {
+        const reservationId = crypto.randomUUID();
+        const newReservation = {
+            id: reservationId,
+            tableId,
+            ...reservationData,
+            createdAt: new Date().toISOString()
+        };
+
+        setReservations(prev => ({
+            ...prev,
+            [tableId]: newReservation
+        }));
+
+        setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
+
+        return reservationId;
+    };
+
+    // Rezervasyon kaldır
+    const removeReservation = (tableId) => {
+        setReservations(prev => {
+            const newReservations = { ...prev };
+            delete newReservations[tableId];
+            return newReservations;
+        });
+
+        setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
+    };
+
+    // Ürün ekle
+    const addProduct = (category, newProduct) => {
+        setProducts(prevProducts => {
+            const newProducts = { ...prevProducts };
+            if (!newProducts[category]) newProducts[category] = [];
+            const newId = crypto.randomUUID();
+            newProducts[category].push({ ...newProduct, id: newId, category });
+            return newProducts;
+        });
+    };
+
+    // Ürün sil
+    const deleteProduct = (category, productId) => {
+        setProducts(prevProducts => {
+            const newProducts = { ...prevProducts };
+            newProducts[category] = newProducts[category].filter(p => p.id !== productId);
+            return newProducts;
+        });
+    };
+
+    // Ürün güncelle
+    const updateProduct = (category, updatedProduct) => {
+        setProducts(prevProducts => {
+            const newProducts = { ...prevProducts };
+            const productIndex = newProducts[category].findIndex(p => p.id === updatedProduct.id);
+            if (productIndex > -1) newProducts[category][productIndex] = updatedProduct;
+            return newProducts;
+        });
+    };
+
+    // Sipariş sayaçlarını hesapla
     useEffect(() => {
         const now = new Date();
         const todayStr = now.toDateString();
@@ -184,18 +345,38 @@ export function TableProvider({ children }) {
         setYearlyOrderCount(yearly);
     }, [timestamps]);
 
+    // LocalStorage'a kaydet
+    useEffect(() => {
+        localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
+        localStorage.setItem('orders', JSON.stringify(orders));
+        localStorage.setItem('lastOrders', JSON.stringify(lastOrders));
+        localStorage.setItem('products', JSON.stringify(products));
+        localStorage.setItem('reservations', JSON.stringify(reservations));
+    }, [tableStatus, orders, lastOrders, products, reservations]);
+
     return (
         <TableContext.Provider
             value={{
                 tableStatus,
-                updateTableStatus,
                 orders,
+                lastOrders,
                 products,
-                saveFinalOrder,
-                cancelOrder,
+                reservations,
                 dailyOrderCount,
                 monthlyOrderCount,
                 yearlyOrderCount,
+                updateTableStatus,
+                saveFinalOrder,
+                cancelOrder,
+                processPayment,
+                removeConfirmedOrderItem,
+                decreaseConfirmedOrderItem,
+                increaseConfirmedOrderItem,
+                addReservation,
+                removeReservation,
+                addProduct,
+                deleteProduct,
+                updateProduct,
             }}
         >
             {children}
