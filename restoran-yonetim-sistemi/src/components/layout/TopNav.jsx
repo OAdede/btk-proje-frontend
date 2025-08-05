@@ -31,7 +31,22 @@ const TopNav = () => {
     return (
         <div className="top-nav" style={{ background: colors.sidebar }}>
             <div className="top-nav-left">
-                <h2 className="top-nav-title">Restoran Yönetim Sistemi</h2>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                }}>
+                    <img 
+                        src={isDarkMode ? '/logo-dark.png' : '/logo-light.png'} 
+                        alt="Restoran Yönetim Sistemi Logo"
+                        style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%'
+                        }}
+                    />
+                    <h2 className="top-nav-title">Restoran Yönetim Sistemi</h2>
+                </div>
             </div>
 
             {/* Rol değiştirme paneli tamamen kaldırıldı */}

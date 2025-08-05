@@ -85,14 +85,18 @@ function Login() {
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '16px',
-            boxShadow: '0 4px 16px 0 rgba(167, 139, 250, 0.3)'
+            boxShadow: '0 4px 16px 0 rgba(167, 139, 250, 0.3)',
+            overflow: 'hidden'
           }}>
-            <span style={{
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '24px',
-              letterSpacing: '2px'
-            }}>R</span>
+            <img 
+              src="/logo-dark.png" 
+              alt="Restoran Yönetim Sistemi Logo"
+              style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%'
+              }}
+            />
           </div>
           <h1 style={{
             fontSize: '24px',

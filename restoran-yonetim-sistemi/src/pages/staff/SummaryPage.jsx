@@ -1,30 +1,37 @@
 import React, { useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TableContext } from "../../context/TableContext";
-import { AuthContext } from "../../context/AuthContext";
+import { TableContext } from "../../context/TableContext.jsx";
+import { AuthContext } from "../../context/AuthContext.jsx";
 
 export default function SummaryPage() {
+    const { orders, confirmOrder, lastOrders, clearLastOrder } = useContext(TableContext);
+    const { user } = useContext(AuthContext);
     const { tableId } = useParams();
     const navigate = useNavigate();
-    const { lastOrders, confirmOrder, orders } = useContext(TableContext);
-    const { user } = useContext(AuthContext);
 
     if (!user) return <p>Yükleniyor...</p>;
 
-    const newOrderItems = lastOrders[tableId] || {};
     const confirmedOrderItems = orders[tableId] || {};
+    const newOrderItems = lastOrders[tableId] || {};
 
     const calculateTotal = (items) => {
+        if (!items || Object.keys(items).length === 0) return 0;
         return Object.values(items).reduce((sum, item) => sum + item.price * item.count, 0);
     };
 
-    const newOrderTotal = calculateTotal(newOrderItems);
     const confirmedOrderTotal = calculateTotal(confirmedOrderItems);
-    const grandTotal = newOrderTotal + confirmedOrderTotal;
+    const newOrderTotal = calculateTotal(newOrderItems);
+    const grandTotal = confirmedOrderTotal + newOrderTotal;
 
     const handleConfirm = () => {
         confirmOrder(tableId);
-        navigate("/garson/home");
+        navigate(`/garson/home`);
+    };
+
+    const handleBack = () => {
+        // Kullanıcı geri dönmek isterse, onaylanmamış siparişleri temizle
+        clearLastOrder(tableId);
+        navigate(`/staff/order/${tableId}`);
     };
 
     return (
@@ -38,11 +45,11 @@ export default function SummaryPage() {
                         {Object.entries(confirmedOrderItems).map(([id, item]) => (
                             <li key={id} style={styles.listItem}>
                                 <span>{item.name} x {item.count}</span>
-                                <span>{item.price * item.count}₺</span>
+                                <span>{(item.price * item.count).toFixed(2)}₺</span>
                             </li>
                         ))}
                     </ul>
-                    <p style={styles.total}>Ara Toplam: {confirmedOrderTotal}₺</p>
+                    <p style={styles.total}>Ara Toplam: {confirmedOrderTotal.toFixed(2)}₺</p>
                 </div>
             )}
 
@@ -53,26 +60,28 @@ export default function SummaryPage() {
                         {Object.entries(newOrderItems).map(([id, item]) => (
                             <li key={id} style={styles.listItem}>
                                 <span>{item.name} x {item.count}</span>
-                                <span>{item.price * item.count}₺</span>
+                                <span>{(item.price * item.count).toFixed(2)}₺</span>
                             </li>
                         ))}
                     </ul>
-                    <p style={styles.total}>Ara Toplam: {newOrderTotal}₺</p>
+                    <p style={styles.total}>Ara Toplam: {newOrderTotal.toFixed(2)}₺</p>
                 </div>
             )}
 
-            <div style={styles.grandTotalCard}>
-                <h3>Genel Toplam: {grandTotal}₺</h3>
-            </div>
+            {grandTotal > 0 &&
+                <div style={styles.grandTotalCard}>
+                    <h3>Genel Toplam: {grandTotal.toFixed(2)}₺</h3>
+                </div>
+            }
 
             <div style={styles.actions}>
-                <button onClick={() => navigate(-1)} style={{ ...styles.button, backgroundColor: "#6c757d" }}>
-                    Geri
+                <button onClick={handleBack} style={{ ...styles.button, backgroundColor: "#6c757d" }}>
+                    Siparişe Geri Dön
                 </button>
 
                 {Object.keys(newOrderItems).length > 0 && (
                     <button onClick={handleConfirm} style={{ ...styles.button, backgroundColor: "#28a745" }}>
-                        Siparişi Onayla
+                        Yeni Siparişleri Onayla
                     </button>
                 )}
             </div>
@@ -81,7 +90,7 @@ export default function SummaryPage() {
 }
 
 const styles = {
-    container: { padding: "2rem" },
+    container: { padding: "2rem", maxWidth: "800px", margin: "auto", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" },
     title: { marginBottom: "2rem", textAlign: "center" },
     card: {
         marginBottom: "1.5rem",
@@ -96,7 +105,8 @@ const styles = {
         justifyContent: "space-between",
         marginBottom: "0.5rem",
         borderBottom: '1px solid #eee',
-        paddingBottom: '0.5rem'
+        paddingBottom: '0.5rem',
+        fontSize: "18px"
     },
     total: { fontWeight: "bold", textAlign: "right", marginTop: "1rem" },
     grandTotalCard: {
@@ -111,7 +121,7 @@ const styles = {
     actions: {
         marginTop: "2rem",
         display: "flex",
-        justifyContent: "flex-end",
+        justifyContent: "space-between",
         gap: "1rem"
     },
     button: {
@@ -120,6 +130,7 @@ const styles = {
         color: "white",
         border: "none",
         borderRadius: "5px",
-        cursor: "pointer"
+        cursor: "pointer",
+        fontWeight: 'bold'
     }
 };

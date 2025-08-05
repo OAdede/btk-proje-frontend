@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext.jsx';
 // Layouts
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import StaffLayout from './components/layout/StaffLayout.jsx';
+import WaiterLayout from './components/layout/WaiterLayout.jsx'; // 🔸 EKLENDİ
 
 // Auth Pages
 import Login from './pages/auth/Login.jsx';
@@ -21,14 +22,13 @@ import ProductsPage from './pages/products/ProductsPage.jsx';
 import StokUpdate from './components/stock/StokUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 import MenuPage from './pages/menu/MenuPage.jsx';
-import Kasiyer from "./pages/Kasiyer/Kasiyer.jsx"; // ✅ Bu doğru
+import Kasiyer from "./pages/Kasiyer/Kasiyer.jsx";
+import Rezervasyon from './pages/admin/Rezervasyon.jsx';
 
 // Shared Staff Pages (Garson/Kasiyer)
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
-
-
 
 // Stil dosyaları
 import "./App.css";
@@ -44,13 +44,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   // Eğer belirli bir rol veya roller gerekiyorsa kontrol et
   if (requiredRole) {
     const userRole = user.role;
-    // Gerekli rol bir dizi ise içinde olup olmadığını kontrol et
     if (Array.isArray(requiredRole)) {
       if (!requiredRole.includes(userRole)) {
         return <Navigate to={`/${user.baseRole}/home`} replace />;
       }
     } else {
-      // Gerekli rol tek bir string ise eşit olup olmadığını kontrol et
       if (userRole !== requiredRole) {
         return <Navigate to={`/${user.baseRole}/home`} replace />;
       }
@@ -59,7 +57,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
   return children;
 };
-
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -89,6 +86,7 @@ function App() {
             <Route path="stock" element={<StokUpdate />} />
             <Route path="personnel" element={<PersonnelPage />} />
             <Route path="menu" element={<MenuPage />} />
+            <Route path="rezervasyon" element={<Rezervasyon />} />
           </Route>
 
           {/* Garson Paneli */}
@@ -96,7 +94,7 @@ function App() {
             path="/garson/*"
             element={
               <ProtectedRoute requiredRole="garson">
-                <StaffLayout />
+                <WaiterLayout />
               </ProtectedRoute>
             }
           >
@@ -115,12 +113,12 @@ function App() {
               </ProtectedRoute>
             }
           >
-            
+
             <Route index element={<Navigate to="home" replace />} />
-            <Route path="home" element={<WaiterHome />} />
+            <Route path="home" element={<Kasiyer />} />
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
-            
+
           </Route>
 
           {/* Varsayılan Rota */}
