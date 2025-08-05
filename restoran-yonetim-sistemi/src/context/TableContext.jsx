@@ -76,13 +76,15 @@ export const TableProvider = ({ children }) => {
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
     const [lastOrders, setLastOrders] = useState(() => readFromLocalStorage('lastOrders', {}));
     const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
+    const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
 
     useEffect(() => {
         localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
         localStorage.setItem('orders', JSON.stringify(orders));
         localStorage.setItem('lastOrders', JSON.stringify(lastOrders));
         localStorage.setItem('products', JSON.stringify(products));
-    }, [tableStatus, orders, lastOrders, products]);
+        localStorage.setItem('reservations', JSON.stringify(reservations));
+    }, [tableStatus, orders, lastOrders, products, reservations]);
 
     const saveOrder = (tableId, cart) => {
         setLastOrders(prev => ({ ...prev, [tableId]: cart }));
@@ -203,6 +205,36 @@ export const TableProvider = ({ children }) => {
         }
     };
 
+    // Rezervasyon fonksiyonları
+    const addReservation = (tableId, reservationData) => {
+        const reservationId = crypto.randomUUID();
+        const newReservation = {
+            id: reservationId,
+            tableId,
+            ...reservationData,
+            createdAt: new Date().toISOString()
+        };
+        
+        setReservations(prev => ({
+            ...prev,
+            [tableId]: newReservation
+        }));
+        
+        setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
+        
+        return reservationId;
+    };
+
+    const removeReservation = (tableId) => {
+        setReservations(prev => {
+            const newReservations = { ...prev };
+            delete newReservations[tableId];
+            return newReservations;
+        });
+        
+        setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
+    };
+
     const addProduct = (category, newProduct) => {
         setProducts(prevProducts => {
             const newProducts = { ...prevProducts };
@@ -232,10 +264,11 @@ export const TableProvider = ({ children }) => {
 
     return (
         <TableContext.Provider value={{
-            tableStatus, orders, lastOrders, products,
+            tableStatus, orders, lastOrders, products, reservations,
             saveOrder, confirmOrder, processPayment, removeConfirmedOrderItem,
             addProduct, deleteProduct, updateProduct,
-            decreaseConfirmedOrderItem, increaseConfirmedOrderItem
+            decreaseConfirmedOrderItem, increaseConfirmedOrderItem,
+            addReservation, removeReservation
         }}>
             {children}
         </TableContext.Provider>

@@ -1,15 +1,26 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
-  const { colors } = useTheme();
   const navigate = useNavigate();
+
+  // Açık tema renkleri (sabit)
+  const lightColors = {
+    background: '#F5EFFF',
+    cardBackground: '#CBC3E3',
+    surfaceBackground: '#E5D9F2',
+    primary: '#A294F9',
+    accent: '#CDC1FF',
+    text: '#1A0B3D', // Daha koyu mor - daha okunabilir
+    textSecondary: '#2D1B69', // Daha koyu - daha okunabilir
+    border: '#CDC1FF',
+    danger: '#EF4444'
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,7 +57,7 @@ function Login() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: `linear-gradient(135deg, ${colors.primary}20 0%, ${colors.background} 100%)`,
+      background: `linear-gradient(135deg, ${lightColors.primary}20 0%, ${lightColors.background} 100%)`,
       fontFamily: 'Inter, Segoe UI, Arial, sans-serif'
     }}>
       <div style={{
@@ -55,9 +66,9 @@ function Login() {
         maxWidth: 420,
         borderRadius: '20px',
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.13)',
-        background: colors.cardBackground,
+        background: lightColors.cardBackground,
         backdropFilter: 'blur(2px)',
-        border: `1px solid ${colors.border}`
+        border: `1px solid ${lightColors.border}`
       }}>
         <div style={{
           display: 'flex',
@@ -68,7 +79,7 @@ function Login() {
           <div style={{
             width: 70,
             height: 70,
-            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+            background: `linear-gradient(135deg, ${lightColors.primary} 0%, ${lightColors.accent} 100%)`,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
@@ -77,7 +88,7 @@ function Login() {
             boxShadow: '0 4px 16px 0 rgba(167, 139, 250, 0.3)'
           }}>
             <span style={{
-              color: colors.text,
+              color: '#ffffff',
               fontWeight: 800,
               fontSize: '24px',
               letterSpacing: '2px'
@@ -86,7 +97,7 @@ function Login() {
           <h1 style={{
             fontSize: '24px',
             fontWeight: 800,
-            color: colors.primary,
+            color: lightColors.primary,
             textAlign: 'center',
             margin: '0 0 8px 0',
             letterSpacing: '2px'
@@ -95,7 +106,7 @@ function Login() {
           </h1>
           <p style={{
             fontSize: '14px',
-            color: colors.textSecondary,
+            color: lightColors.textSecondary,
             textAlign: 'center',
             margin: '0 0 16px 0',
             fontWeight: 400
@@ -109,7 +120,7 @@ function Login() {
             <label style={{
               display: 'block',
               marginBottom: '8px',
-              color: colors.primary,
+              color: '#374151', // Koyu gri
               fontWeight: 500,
               fontSize: '14px'
             }}>
@@ -124,9 +135,9 @@ function Login() {
                 width: '100%',
                 padding: '12px 16px',
                 borderRadius: '12px',
-                background: colors.surfaceBackground,
-                border: `1px solid ${colors.border}`,
-                color: colors.text,
+                background: lightColors.surfaceBackground,
+                border: `1px solid ${lightColors.border}`,
+                color: lightColors.text,
                 fontSize: '14px',
                 fontWeight: 500,
                 boxSizing: 'border-box'
@@ -139,7 +150,7 @@ function Login() {
             <label style={{
               display: 'block',
               marginBottom: '8px',
-              color: colors.primary,
+              color: '#374151', // Koyu gri
               fontWeight: 500,
               fontSize: '14px'
             }}>
@@ -154,9 +165,9 @@ function Login() {
                 width: '100%',
                 padding: '12px 16px',
                 borderRadius: '12px',
-                background: colors.surfaceBackground,
-                border: `1px solid ${colors.border}`,
-                color: colors.text,
+                background: lightColors.surfaceBackground,
+                border: `1px solid ${lightColors.border}`,
+                color: lightColors.text,
                 fontSize: '14px',
                 fontWeight: 500,
                 boxSizing: 'border-box'
@@ -170,11 +181,11 @@ function Login() {
               margin: '16px 0',
               padding: '12px 16px',
               borderRadius: '8px',
-              background: colors.danger + '20',
-              color: colors.danger,
+              background: lightColors.danger + '20',
+              color: lightColors.danger,
               textAlign: 'center',
               fontSize: '14px',
-              border: `1px solid ${colors.danger}40`
+              border: `1px solid ${lightColors.danger}40`
             }}>
               {error}
             </div>
@@ -190,8 +201,8 @@ function Login() {
               letterSpacing: '1px',
               borderRadius: '12px',
               boxShadow: '0 2px 8px 0 rgba(167, 139, 250, 0.2)',
-              background: `linear-gradient(90deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
-              color: colors.text,
+              background: `linear-gradient(90deg, ${lightColors.primary} 0%, ${lightColors.accent} 100%)`,
+              color: '#ffffff',
               border: 'none',
               cursor: 'pointer',
               fontSize: '14px'
@@ -209,12 +220,12 @@ function Login() {
               marginTop: '8px',
               borderRadius: '12px',
               fontWeight: 500,
-              color: colors.primary,
-              background: colors.surfaceBackground,
+              color: lightColors.primary,
+              background: lightColors.surfaceBackground,
               textDecoration: 'none',
               textAlign: 'center',
               fontSize: '14px',
-              border: `1px solid ${colors.border}`,
+              border: `1px solid ${lightColors.border}`,
               boxSizing: 'border-box'
             }}
           >
