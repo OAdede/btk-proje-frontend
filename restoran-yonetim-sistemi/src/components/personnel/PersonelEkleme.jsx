@@ -1,165 +1,151 @@
-import React, { useState, useEffect } from "react";
-import "./PersonelEkleme.css";
-
-// Başlangıç için varsayılan personel verisi
-const defaultPersonnel = [
-  { id: 1, name: "Ahmet Yılmaz", email: "ahmet@restoran.com", phone: "05321234567", role: "garson", isActive: true },
-  { id: 2, name: "Ayşe Kaya", email: "ayse@restoran.com", phone: "05331234567", role: "kasiyer", isActive: true },
-  { id: 3, name: "Mehmet Demir", email: "mehmet@restoran.com", phone: "05341234567", role: "garson", isActive: false },
-  { id: 4, name: "Fatma Özkan", email: "fatma@restoran.com", phone: "05351234567", role: "kasiyer", isActive: false },
-];
+import React, { useState, useEffect } from 'react';
+import './PersonelEkleme.css';
 
 const PersonelEkleme = () => {
-  const [personnel, setPersonnel] = useState(() => {
-    try {
-      const savedPersonnel = localStorage.getItem('personnel');
-      return savedPersonnel ? JSON.parse(savedPersonnel) : defaultPersonnel;
-    } catch (error) {
-      console.error("Personel verileri okunurken hata:", error);
-      return defaultPersonnel;
+  const [personnel, setPersonnel] = useState([
+    {
+      id: 1,
+      name: "Ahmet Yılmaz",
+      phone: "05321234567",
+      email: "ahmet@restoran.com",
+      role: "garson",
+      isActive: true
+    },
+    {
+      id: 2,
+      name: "Ayşe Kaya",
+      phone: "05331234567",
+      email: "ayse@restoran.com",
+      role: "kasiyer",
+      isActive: true
     }
-  });
-
-  const [filteredPersonnel, setFilteredPersonnel] = useState([]);
-  const [activeRole, setActiveRole] = useState("Tümü");
-  const [activeTab, setActiveTab] = useState("aktif"); // "aktif" veya "gecmis"
+  ]);
 
   const [newPerson, setNewPerson] = useState({
     name: "",
     phone: "",
     email: "",
-    role: "garson",
+    role: "garson"
   });
 
-  // Personel listesi her değiştiğinde localStorage'ı güncelle
-  useEffect(() => {
-    localStorage.setItem('personnel', JSON.stringify(personnel));
-    updateFilteredPersonnel();
-  }, [personnel, activeRole, activeTab]);
+  const [activeTab, setActiveTab] = useState("aktif");
+  const [roleFilter, setRoleFilter] = useState("tümü");
+  const [filteredPersonnel, setFilteredPersonnel] = useState([]);
 
   const updateFilteredPersonnel = () => {
-    let filtered = personnel;
-
-    // Aktif/Pasif filtreleme
-    if (activeTab === "aktif") {
-      filtered = personnel.filter(p => p.isActive);
-    } else {
-      filtered = personnel.filter(p => !p.isActive);
-    }
-
-    // Rol filtreleme
-    if (activeRole !== "Tümü") {
-      filtered = filtered.filter(p => p.role === activeRole.toLowerCase());
-    }
-
+    let filtered = personnel.filter(person => {
+      const matchesTab = activeTab === "aktif" ? person.isActive : !person.isActive;
+      const matchesRole = roleFilter === "tümü" || person.role === roleFilter;
+      return matchesTab && matchesRole;
+    });
     setFilteredPersonnel(filtered);
   };
 
+  useEffect(() => {
+    updateFilteredPersonnel();
+  }, [personnel, activeTab, roleFilter]);
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewPerson(prevState => ({ ...prevState, [name]: value }));
+    setNewPerson({ ...newPerson, [e.target.name]: e.target.value });
   };
 
-  // Yeni personel ekleme
   const handleAddPerson = (e) => {
     e.preventDefault();
-    if (!newPerson.name || !newPerson.email || !newPerson.phone) {
-      alert("Lütfen tüm alanları doldurun.");
-      return;
+    if (newPerson.name && newPerson.phone && newPerson.email) {
+      const newPersonWithId = {
+        ...newPerson,
+        id: Date.now(),
+        isActive: true
+      };
+      setPersonnel([...personnel, newPersonWithId]);
+      setNewPerson({ name: "", phone: "", email: "", role: "garson" });
     }
-
-    const newId = personnel.length > 0 ? Math.max(...personnel.map(p => p.id)) + 1 : 1;
-
-    const personToAdd = {
-      id: newId,
-      ...newPerson,
-      role: newPerson.role.toLowerCase(),
-      isActive: true,
-    };
-
-    setPersonnel(prev => [...prev, personToAdd]);
-    setNewPerson({ name: "", phone: "", email: "", role: "garson" });
-
-    console.log("Yeni personel lokal olarak eklendi:", personToAdd);
-    alert("Personel başarıyla eklendi!");
   };
 
-  // Personel durumunu değiştirme (aktif/pasif)
   const togglePersonStatus = (personId) => {
-    setPersonnel(prev =>
-      prev.map(person =>
-        person.id === personId
-          ? { ...person, isActive: !person.isActive }
-          : person
-      )
-    );
+    setPersonnel(personnel.map(person =>
+      person.id === personId ? { ...person, isActive: !person.isActive } : person
+    ));
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: "32px auto", background: "#f8f9fa", borderRadius: 16, boxShadow: "0 2px 12px #0001", padding: 32 }}>
-      <h2 style={{ margin: "0 0 16px 0", color: "#1a3c34", fontWeight: 700 }}>Personel Yönetimi</h2>
+    <div className="personnel-container">
+      <h1 className="personnel-title">Personel Yönetimi</h1>
 
-      {/* Ana Sekmeler */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+      {/* Tab Filtreleri */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 24, justifyContent: "center" }}>
         <button
           onClick={() => setActiveTab("aktif")}
           style={{
-            background: activeTab === "aktif" ? "#1a3c34" : "#e0e0e0",
-            color: activeTab === "aktif" ? "#fff" : "#1a3c34",
-            border: "none", borderRadius: 8, padding: "12px 24px", cursor: "pointer", fontWeight: 600,
+            background: activeTab === "aktif" ? "var(--success)" : "var(--surface)",
+            color: "var(--text)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "8px 18px",
+            cursor: "pointer",
+            fontWeight: 600
           }}
         >
           Aktif Personel
         </button>
         <button
-          onClick={() => setActiveTab("gecmis")}
+          onClick={() => setActiveTab("geçmiş")}
           style={{
-            background: activeTab === "gecmis" ? "#1a3c34" : "#e0e0e0",
-            color: activeTab === "gecmis" ? "#fff" : "#1a3c34",
-            border: "none", borderRadius: 8, padding: "12px 24px", cursor: "pointer", fontWeight: 600,
+            background: activeTab === "geçmiş" ? "var(--success)" : "var(--surface)",
+            color: "var(--text)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "8px 18px",
+            cursor: "pointer",
+            fontWeight: 600
           }}
         >
           Geçmiş Personel
         </button>
       </div>
 
-      {/* Rol Filtresi */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        {["Tümü", "Garson", "Kasiyer"].map((role) => (
-          <button
-            key={role}
-            onClick={() => setActiveRole(role)}
-            style={{
-              background: activeRole === role ? "#1a3c34" : "#e0e0e0",
-              color: activeRole === role ? "#fff" : "#1a3c34",
-              border: "none", borderRadius: 8, padding: "8px 18px", cursor: "pointer",
-            }}
-          >
-            {role}
-          </button>
-        ))}
+      {/* Rol Filtreleri */}
+      <div className="role-filter">
+        <button
+          onClick={() => setRoleFilter("tümü")}
+          className={roleFilter === "tümü" ? "active" : ""}
+        >
+          Tümü
+        </button>
+        <button
+          onClick={() => setRoleFilter("garson")}
+          className={roleFilter === "garson" ? "active" : ""}
+        >
+          Garson
+        </button>
+        <button
+          onClick={() => setRoleFilter("kasiyer")}
+          className={roleFilter === "kasiyer" ? "active" : ""}
+        >
+          Kasiyer
+        </button>
       </div>
 
-      {/* Yeni Personel Ekleme Formu - Sadece Aktif Personel sekmesinde göster */}
+      {/* Yeni Personel Ekleme Formu */}
       {activeTab === "aktif" && (
-        <div style={{ background: "#fff", borderRadius: 12, padding: 24, marginBottom: 24, boxShadow: "0 1px 6px #0001" }}>
-          <h3 style={{ margin: "0 0 16px 0", color: "#1a3c34" }}>Yeni Personel Ekle</h3>
-          <form onSubmit={handleAddPerson} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div className="add-personnel-form">
+          <h3 className="add-personnel-title">Yeni Personel Ekle</h3>
+          <form onSubmit={handleAddPerson} className="personnel-form">
             <input
               name="name"
+              type="text"
               value={newPerson.name}
               onChange={handleInputChange}
               placeholder="Ad Soyad"
               required
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <input
               name="phone"
+              type="tel"
               value={newPerson.phone}
               onChange={handleInputChange}
               placeholder="Telefon"
               required
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <input
               name="email"
@@ -168,28 +154,16 @@ const PersonelEkleme = () => {
               onChange={handleInputChange}
               placeholder="E-posta"
               required
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             />
             <select
               name="role"
               value={newPerson.role}
               onChange={handleInputChange}
-              style={{ padding: 8, borderRadius: 6, border: "1px solid #bbb" }}
             >
               <option value="garson">Garson</option>
               <option value="kasiyer">Kasiyer</option>
             </select>
-            <button
-              type="submit"
-              style={{
-                background: "#1a3c34",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                padding: "10px 24px",
-                cursor: "pointer"
-              }}
-            >
+            <button type="submit" className="add-personnel-btn">
               Personel Ekle
             </button>
           </form>
@@ -197,56 +171,44 @@ const PersonelEkleme = () => {
       )}
 
       {/* Personel Listesi */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div className="personnel-list">
         {filteredPersonnel.length === 0 ? (
           <div style={{
             textAlign: "center",
             padding: "40px",
-            color: "#666",
-            background: "#fff",
+            color: "var(--text-secondary)",
+            background: "var(--surface)",
             borderRadius: 12,
-            boxShadow: "0 1px 6px #0001"
+            boxShadow: "0 1px 6px var(--shadow)",
+            border: "1px solid var(--border)"
           }}>
             {activeTab === "aktif" ? "Aktif personel bulunamadı." : "Geçmiş personel bulunamadı."}
           </div>
         ) : (
           filteredPersonnel.map((person) => (
-            <div key={person.id} style={{
-              display: "flex",
-              alignItems: "center",
-              background: "#fff",
-              borderRadius: 10,
-              padding: "16px 20px",
-              gap: 20,
-              boxShadow: "0 1px 6px #0001"
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 17, color: "#1a3c34" }}>{person.name}</div>
-                <div style={{ fontSize: 14, color: "#666" }}>
+            <div key={person.id} className="personnel-item">
+              <div className="personnel-info">
+                <div className="personnel-name">{person.name}</div>
+                <div className="personnel-details">
                   {person.phone} • {person.email} • {person.role.charAt(0).toUpperCase() + person.role.slice(1)}
                 </div>
               </div>
 
-              <div style={{
-                fontWeight: 600,
-                color: "#fff",
-                background: person.isActive ? "#38b000" : "#6c757d",
-                padding: "4px 12px",
-                borderRadius: 12
-              }}>
+              <div className={`personnel-status ${person.isActive ? 'active' : 'inactive'}`}>
                 {person.isActive ? "Aktif" : "Pasif"}
               </div>
 
               <button
                 onClick={() => togglePersonStatus(person.id)}
                 style={{
-                  background: person.isActive ? "#ff6b35" : "#38b000",
-                  color: "#fff",
+                  background: person.isActive ? "var(--warning)" : "var(--success)",
+                  color: "var(--text)",
                   border: "none",
                   borderRadius: 6,
                   padding: "6px 12px",
                   cursor: "pointer",
-                  fontSize: "12px"
+                  fontSize: "12px",
+                  fontWeight: 600
                 }}
               >
                 {person.isActive ? "Pasif Yap" : "Aktif Yap"}

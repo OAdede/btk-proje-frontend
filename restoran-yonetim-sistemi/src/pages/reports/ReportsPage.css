@@ -1,10 +1,11 @@
 .reports-page {
     padding: 20px;
+    color: var(--text);
 }
 
 .page-title {
     font-size: 1.8rem;
-    color: #1e293b;
+    color: var(--text);
     font-weight: 600;
     margin-bottom: 24px;
 }
@@ -18,20 +19,20 @@
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
     border-radius: 12px;
     padding: 24px;
-    color: white;
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px var(--shadow);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px var(--shadow);
 }
 
 .stat-icon {
@@ -54,12 +55,14 @@
     font-weight: 500;
     margin: 0 0 8px 0;
     opacity: 0.9;
+    color: var(--text);
 }
 
 .stat-value {
     font-size: 1.8rem;
     font-weight: 700;
     margin: 0;
+    color: var(--text);
 }
 
 .charts-container {
@@ -69,8 +72,22 @@
 }
 
 .chart-wrapper {
-    background-color: #fff;
+    background-color: var(--card);
     border-radius: 10px;
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px var(--shadow);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+/* Koyu tema için özel stiller */
+.dark-theme .stat-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    color: var(--text);
+}
+
+.dark-theme .chart-wrapper {
+    background-color: var(--card);
+    border-color: var(--border);
+    color: var(--text);
 }

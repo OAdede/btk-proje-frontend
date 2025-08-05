@@ -1,7 +1,7 @@
 import { useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { Box, Button, TextField, Typography, Paper, Alert } from '@mui/material';
+import { useTheme } from '../../context/ThemeContext';
 
 const ResetPassword = () => {
     const [password, setPassword] = useState('');
@@ -12,6 +12,7 @@ const ResetPassword = () => {
     const { token } = useParams();
     const navigate = useNavigate();
     const { resetPassword } = useContext(AuthContext);
+    const { colors } = useTheme();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -42,61 +43,182 @@ const ResetPassword = () => {
     };
 
     return (
-        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%)', fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
-            <Paper elevation={16} sx={{
-                p: { xs: 2, sm: 5 },
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: `linear-gradient(135deg, ${colors.primary}20 0%, ${colors.background} 100%)`,
+            fontFamily: 'Inter, Segoe UI, Arial, sans-serif'
+        }}>
+            <div style={{
+                padding: '40px',
                 minWidth: 350,
                 maxWidth: 420,
-                borderRadius: 5,
+                borderRadius: '20px',
                 boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.13)',
-                background: 'rgba(255,255,255,0.98)',
-                backdropFilter: 'blur(2px)'
+                background: colors.cardBackground,
+                backdropFilter: 'blur(2px)',
+                border: `1px solid ${colors.border}`
             }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h4" fontWeight={800} color="#2d8cff" align="center" mb={0.5} letterSpacing={1} sx={{ fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginBottom: '16px'
+                }}>
+                    <div style={{
+                        width: 70,
+                        height: 70,
+                        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '16px',
+                        boxShadow: '0 4px 16px 0 rgba(167, 139, 250, 0.3)'
+                    }}>
+                        <span style={{
+                            color: colors.text,
+                            fontWeight: 800,
+                            fontSize: '24px',
+                            letterSpacing: '2px'
+                        }}>🔑</span>
+                    </div>
+                    <h1 style={{
+                        fontSize: '24px',
+                        fontWeight: 800,
+                        color: colors.primary,
+                        textAlign: 'center',
+                        margin: '0 0 8px 0',
+                        letterSpacing: '2px'
+                    }}>
                         Yeni Şifre Belirle
-                    </Typography>
-                    <Typography variant="subtitle1" color="#6b7280" align="center" mb={2} sx={{ fontWeight: 400, fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>
-                        Lütfen yeni şifrenizi girin.
-                    </Typography>
-                </Box>
-                <Box component="form" onSubmit={handleSubmit}>
-                    <TextField
-                        label="Yeni Şifre"
-                        type="password"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoComplete="new-password"
-                        InputProps={{ style: { borderRadius: 12, background: '#f1f5f9', fontWeight: 500, fontFamily: 'Inter, Segoe UI, Arial, sans-serif' } }}
-                        InputLabelProps={{ style: { color: '#7f9cf5', fontWeight: 500, fontFamily: 'Inter, Segoe UI, Arial, sans-serif' } }}
-                    />
-                    <TextField
-                        label="Yeni Şifreyi Onayla"
-                        type="password"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        autoComplete="new-password"
-                        InputProps={{ style: { borderRadius: 12, background: '#f1f5f9', fontWeight: 500, fontFamily: 'Inter, Segoe UI, Arial, sans-serif' } }}
-                        InputLabelProps={{ style: { color: '#7f9cf5', fontWeight: 500, fontFamily: 'Inter, Segoe UI, Arial, sans-serif' } }}
-                    />
+                    </h1>
+                    <p style={{
+                        fontSize: '14px',
+                        color: colors.textSecondary,
+                        textAlign: 'center',
+                        margin: '0 0 16px 0',
+                        fontWeight: 400
+                    }}>
+                        Yeni şifrenizi belirleyin
+                    </p>
+                </div>
+                
+                <form onSubmit={handleSubmit}>
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            color: colors.primary,
+                            fontWeight: 500,
+                            fontSize: '14px'
+                        }}>
+                            Yeni Şifre
+                        </label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                background: colors.surfaceBackground,
+                                border: `1px solid ${colors.border}`,
+                                color: colors.text,
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                boxSizing: 'border-box'
+                            }}
+                            placeholder="Yeni şifrenizi girin"
+                        />
+                    </div>
+                    
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                            display: 'block',
+                            marginBottom: '8px',
+                            color: colors.primary,
+                            fontWeight: 500,
+                            fontSize: '14px'
+                        }}>
+                            Şifre Tekrar
+                        </label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                background: colors.surfaceBackground,
+                                border: `1px solid ${colors.border}`,
+                                color: colors.text,
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                boxSizing: 'border-box'
+                            }}
+                            placeholder="Şifrenizi tekrar girin"
+                        />
+                    </div>
+                    
                     {error && (
-                        <Alert severity="error" sx={{ mt: 2, borderRadius: 2, textAlign: 'center', fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>{error}</Alert>
+                        <div style={{
+                            margin: '16px 0',
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            background: colors.danger + '20',
+                            color: colors.danger,
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            border: `1px solid ${colors.danger}40`
+                        }}>
+                            {error}
+                        </div>
                     )}
+                    
                     {message && (
-                        <Alert severity="success" sx={{ mt: 2, borderRadius: 2, textAlign: 'center', fontFamily: 'Inter, Segoe UI, Arial, sans-serif' }}>{message}</Alert>
+                        <div style={{
+                            margin: '16px 0',
+                            padding: '12px 16px',
+                            borderRadius: '8px',
+                            background: colors.success + '20',
+                            color: colors.success,
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            border: `1px solid ${colors.success}40`
+                        }}>
+                            {message}
+                        </div>
                     )}
-                    <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 3, fontWeight: 700, letterSpacing: 1, borderRadius: 3, background: 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)' }} disabled={loading}>
+                    
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                            width: '100%',
+                            padding: '12px 24px',
+                            marginTop: '16px',
+                            fontWeight: 700,
+                            letterSpacing: '1px',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 8px 0 rgba(167, 139, 250, 0.2)',
+                            background: loading ? colors.textMuted : `linear-gradient(90deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+                            color: colors.text,
+                            border: 'none',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            opacity: loading ? 0.7 : 1
+                        }}
+                    >
                         {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
-                    </Button>
-                </Box>
-            </Paper>
-        </Box>
+                    </button>
+                </form>
+            </div>
+        </div>
     );
 };
 

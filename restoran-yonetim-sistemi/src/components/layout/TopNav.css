@@ -2,14 +2,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #ffffff;
+    background: var(--card);
     padding: 0 24px;
     height: 70px;
-    border-bottom: 1px solid #e9ecef;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 4px var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+    color: var(--text);
 }
 
 .top-nav-left {
@@ -20,7 +21,7 @@
 .top-nav-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #343a40;
+    color: var(--text);
     margin: 0;
 }
 
@@ -32,17 +33,17 @@
 .role-switcher {
     display: flex;
     gap: 8px;
-    background: #f8f9fa;
+    background: var(--surface);
     padding: 4px;
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border);
 }
 
 .role-btn {
     padding: 8px 16px;
     border: none;
     background: transparent;
-    color: #6c757d;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     font-weight: 500;
     border-radius: 6px;
@@ -51,14 +52,14 @@
 }
 
 .role-btn:hover {
-    background: #e9ecef;
-    color: #495057;
+    background: var(--hover);
+    color: var(--text);
 }
 
 .role-btn.active {
-    background: #007bff;
-    color: #ffffff;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    background: var(--primary);
+    color: var(--text);
+    box-shadow: 0 2px 4px rgba(167, 139, 250, 0.2);
 }
 
 .top-nav-right {
@@ -76,19 +77,19 @@
 .user-name {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #343a40;
+    color: var(--text);
 }
 
 .user-role {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--text-secondary);
 }
 
 .logout-btn {
     padding: 8px 16px;
-    border: 1px solid #dc3545;
-    background: #ffffff;
-    color: #dc3545;
+    border: 1px solid var(--danger);
+    background: transparent;
+    color: var(--danger);
     border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 500;
@@ -97,15 +98,15 @@
 }
 
 .logout-btn:hover {
-    background: #dc3545;
-    color: #ffffff;
+    background: var(--danger);
+    color: var(--text);
 }
 
 .login-btn {
     padding: 8px 16px;
-    border: 1px solid #007bff;
-    background: #007bff;
-    color: #ffffff;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: var(--text);
     border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 500;
@@ -114,8 +115,33 @@
 }
 
 .login-btn:hover {
-    background: #0056b3;
-    border-color: #0056b3;
+    background: var(--hover);
+    border-color: var(--hover);
+}
+
+/* Koyu tema için özel stiller */
+.dark-theme .top-nav {
+    background: var(--card);
+    border-bottom-color: var(--border);
+}
+
+.dark-theme .role-switcher {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.dark-theme .role-btn {
+    color: var(--text-secondary);
+}
+
+.dark-theme .role-btn:hover {
+    background: var(--hover);
+    color: var(--text);
+}
+
+.dark-theme .role-btn.active {
+    background: var(--primary);
+    color: var(--text);
 }
 
 /* Responsive design */

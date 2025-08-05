@@ -2,17 +2,18 @@
 .stok-container {
   max-width: 1200px;
   margin: 32px auto;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--card);
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px var(--shadow);
   padding: 32px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .stok-title {
   margin: 0 0 24px 0;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
   font-size: 1.8rem;
   text-align: center;
@@ -28,9 +29,9 @@
 }
 
 .kategori-filter button {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 18px;
   cursor: pointer;
@@ -40,30 +41,30 @@
 }
 
 .kategori-filter button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--hover);
   transform: translateY(-1px);
 }
 
 .kategori-filter button.active {
-  background: linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
   border-color: transparent;
-  box-shadow: 0 2px 8px rgba(45, 140, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.3);
 }
 
 /* Yeni Ürün Ekleme Formu */
 .yeni-urun-form {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 6px var(--shadow);
+  border: 1px solid var(--border);
   backdrop-filter: blur(10px);
 }
 
 .yeni-urun-title {
   margin: 0 0 16px 0;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 1.3rem;
   text-align: center;
@@ -79,34 +80,34 @@
 .urun-form select {
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   font-size: 14px;
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
 }
 
 .urun-form input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
 }
 
 .urun-form input:focus,
 .urun-form select:focus {
   outline: none;
-  border-color: #2d8cff;
-  box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.2);
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+  background: var(--accent);
 }
 
 .urun-form select option {
-  background: #1a3c34;
-  color: #ffffff;
+  background: var(--background);
+  color: var(--text);
 }
 
 .urun-ekle-btn {
-  background: linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%);
-  color: #ffffff;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  color: var(--text);
   border: none;
   border-radius: 8px;
   padding: 12px 24px;
@@ -120,7 +121,7 @@
 
 .urun-ekle-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(45, 140, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
 }
 
 .urun-ekle-btn:active {
@@ -137,19 +138,19 @@
 .urun-item {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface);
   border-radius: 10px;
   padding: 16px 20px;
   gap: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 
 .urun-item:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--hover);
   transform: translateX(5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow);
 }
 
 .urun-info {
@@ -159,18 +160,18 @@
 .urun-ad {
   font-weight: 600;
   font-size: 17px;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 4px;
 }
 
 .urun-detay {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .urun-stok {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
@@ -179,18 +180,18 @@
 }
 
 .urun-stok.yeterli {
-  background: linear-gradient(90deg, #38b000 0%, #4caf50 100%);
-  box-shadow: 0 2px 8px rgba(56, 176, 0, 0.3);
+  background: linear-gradient(90deg, var(--success) 0%, #4caf50 100%);
+  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
 }
 
 .urun-stok.az {
-  background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
-  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+  background: linear-gradient(90deg, var(--warning) 0%, #ff5722 100%);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
 }
 
 .urun-stok.kritik {
-  background: linear-gradient(90deg, #f44336 0%, #d32f2f 100%);
-  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+  background: linear-gradient(90deg, var(--danger) 0%, #d32f2f 100%);
+  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 }
 
 .urun-actions {
@@ -209,18 +210,18 @@
 }
 
 .urun-btn.duzenle {
-  background: linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%);
-  color: #ffffff;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  color: var(--text);
 }
 
 .urun-btn.sil {
-  background: linear-gradient(90deg, #f44336 0%, #d32f2f 100%);
-  color: #ffffff;
+  background: linear-gradient(90deg, var(--danger) 0%, #d32f2f 100%);
+  color: var(--text);
 }
 
 .urun-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 /* Modal */
@@ -230,7 +231,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,17 +239,18 @@
 }
 
 .modal {
-  background: rgba(4, 4, 16, 0.95);
+  background: var(--card);
   border-radius: 12px;
   padding: 24px;
   min-width: 400px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .modal h3 {
   margin: 0 0 16px 0;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 1.3rem;
 }
@@ -256,7 +258,7 @@
 .modal label {
   display: block;
   margin-bottom: 8px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -264,16 +266,16 @@
   width: 100%;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   margin-bottom: 16px;
 }
 
 .modal input:focus {
   outline: none;
-  border-color: #2d8cff;
-  box-shadow: 0 0 0 2px rgba(45, 140, 255, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
 }
 
 .modal-buttons {
@@ -292,19 +294,19 @@
 }
 
 .modal-btn.iptal {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
 .modal-btn.kaydet {
-  background: linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%);
-  color: #ffffff;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  color: var(--text);
 }
 
 .modal-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 /* Responsive Tasarım */
@@ -354,104 +356,27 @@
   animation: fadeIn 0.5s ease-out;
 }
 
-/* Gece modu için ek stiller */
-[data-theme="dark"] .stok-container {
-  background: rgba(4, 4, 16, 0.8);
+/* Koyu tema için özel stiller */
+.dark-theme .stok-container {
+  background: var(--card);
+  border-color: var(--border);
 }
 
-[data-theme="dark"] .yeni-urun-form {
-  background: rgba(4, 4, 16, 0.6);
+.dark-theme .yeni-urun-form {
+  background: var(--surface);
+  border-color: var(--border);
 }
 
-[data-theme="dark"] .urun-item {
-  background: rgba(4, 4, 16, 0.6);
+.dark-theme .urun-item {
+  background: var(--surface);
+  border-color: var(--border);
 }
 
-[data-theme="dark"] .urun-item:hover {
-  background: rgba(4, 4, 16, 0.8);
+.dark-theme .urun-item:hover {
+  background: var(--hover);
 }
 
-[data-theme="dark"] .modal {
-  background: rgba(4, 4, 16, 0.95);
-}
-
-/* Gündüz modu için ek stiller */
-[data-theme="light"] .stok-container {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .stok-title {
-  color: #333333;
-}
-
-[data-theme="light"] .kategori-filter button {
-  background: rgba(0, 0, 0, 0.1);
-  color: #333333;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] .kategori-filter button:hover {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-[data-theme="light"] .yeni-urun-form {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .yeni-urun-title {
-  color: #333333;
-}
-
-[data-theme="light"] .urun-form input,
-[data-theme="light"] .urun-form select {
-  background: rgba(255, 255, 255, 0.9);
-  color: #333333;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] .urun-form input::placeholder {
-  color: rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="light"] .urun-item {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .urun-item:hover {
-  background: rgba(255, 255, 255, 1);
-}
-
-[data-theme="light"] .urun-ad {
-  color: #333333;
-}
-
-[data-theme="light"] .urun-detay {
-  color: rgba(0, 0, 0, 0.7);
-}
-
-[data-theme="light"] .modal {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-[data-theme="light"] .modal h3 {
-  color: #333333;
-}
-
-[data-theme="light"] .modal label {
-  color: #333333;
-}
-
-[data-theme="light"] .modal input {
-  background: rgba(255, 255, 255, 0.9);
-  color: #333333;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] .modal-btn.iptal {
-  background: rgba(0, 0, 0, 0.1);
-  color: #333333;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+.dark-theme .modal {
+  background: var(--card);
+  border-color: var(--border);
 }

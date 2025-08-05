@@ -2,8 +2,9 @@
     display: flex;
     padding: 2rem;
     gap: 2rem;
-    background: #f8fafc;
+    background: var(--background);
     min-height: 100vh;
+    color: var(--text);
 }
 
 .tables-section {
@@ -13,7 +14,7 @@
 .tables-section h1 {
     font-size: 1.8rem;
     margin-bottom: 24px;
-    color: #1e293b;
+    color: var(--text);
     font-weight: 600;
 }
 
@@ -32,16 +33,18 @@
     font-size: 24px;
     border-radius: 8px;
     cursor: pointer;
-    border: 2px solid #333;
+    border: 2px solid var(--border);
     user-select: none;
-    color: white;
+    color: var(--text);
     font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 2px var(--shadow);
     transition: transform 0.2s;
+    background: var(--card);
 }
 
 .table-box:hover {
     transform: scale(1.05);
+    background: var(--hover);
 }
 
 .floor-selection-section {
@@ -51,7 +54,7 @@
 .floor-selection-section h3 {
     font-size: 1.3rem;
     margin-bottom: 1rem;
-    color: #1e293b;
+    color: var(--text);
     font-weight: 600;
 }
 
@@ -59,22 +62,49 @@
     padding: 1rem;
     margin-bottom: 1rem;
     border-radius: 8px;
-    background-color: #e0e0e0;
-    color: black;
+    background-color: var(--surface);
+    color: var(--text);
     text-align: center;
     cursor: pointer;
     font-weight: bold;
     user-select: none;
     transition: background-color 0.3s, color 0.3s;
+    border: 1px solid var(--border);
 }
 
 .floor-selector-box.active {
-    background-color: #2196F3;
-    color: white;
+    background-color: var(--primary);
+    color: var(--text);
 }
 
 .floor-selector-box:not(.active):hover {
-    background-color: #d5d5d5;
+    background-color: var(--hover);
+}
+
+/* Koyu tema için özel stiller */
+.dark-theme .table-box {
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--text);
+}
+
+.dark-theme .table-box:hover {
+    background: var(--hover);
+}
+
+.dark-theme .floor-selector-box {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.dark-theme .floor-selector-box.active {
+    background-color: var(--primary);
+    color: var(--text);
+}
+
+.dark-theme .floor-selector-box:not(.active):hover {
+    background-color: var(--hover);
 }
 
 /* Modal için mevcut stiller korunabilir veya ayarlanabilir */
