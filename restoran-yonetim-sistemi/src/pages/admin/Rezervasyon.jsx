@@ -7,47 +7,24 @@ const Rezervasyon = () => {
     const [filter, setFilter] = useState('');
 
     const handleDeleteReservation = (tableId) => {
-        console.log('=== REZERVASYON SİLME DEBUG ===');
-        console.log('Silinecek tableId:', tableId);
-        console.log('TableId tipi:', typeof tableId);
-        console.log('Mevcut rezervasyonlar:', reservations);
-        console.log('Rezervasyonlar tipi:', typeof reservations);
-        console.log('Rezervasyonlar anahtarları:', Object.keys(reservations));
-        
-        // TableId'nin mevcut olup olmadığını kontrol et
         if (!reservations[tableId]) {
-            console.error('HATA: Bu tableId rezervasyonlarda bulunamadı:', tableId);
-            console.log('Mevcut anahtarlar:', Object.keys(reservations));
-            console.log('Aranan anahtar:', tableId);
             alert('Rezervasyon bulunamadı!');
             return;
         }
         
         if (window.confirm('Bu rezervasyonu silmek istediğinizden emin misiniz?')) {
-            console.log('Onay verildi, rezervasyon siliniyor...');
             try {
                 removeReservation(tableId);
-                console.log('removeReservation fonksiyonu çağrıldı');
-                
-                // Silme işleminin başarılı olup olmadığını kontrol et
-                setTimeout(() => {
-                    console.log('Silme sonrası rezervasyonlar:', reservations);
-                    console.log('Silme sonrası anahtarlar:', Object.keys(reservations));
-                }, 100);
-                
             } catch (error) {
-                console.error('Silme işleminde hata:', error);
                 alert('Rezervasyon silinirken bir hata oluştu!');
             }
-        } else {
-            console.log('Silme işlemi iptal edildi');
         }
     };
 
     // TableContext'teki reservations objesini array'e çevir
     const reservationsArray = Object.entries(reservations).map(([tableId, reservation]) => ({
-        id: tableId, // Bu tableId olmalı
-        tableId: tableId, // Ek olarak tableId'yi de ekleyelim
+        id: tableId,
+        tableId: tableId,
         masaNo: tableId.split('-')[1], // "1-5" -> "5"
         ...reservation
     }));
@@ -59,19 +36,6 @@ const Rezervasyon = () => {
 
     return (
         <div className="dashboard-container">
-            {/* Debug Bilgisi */}
-            <div style={{
-                background: 'green',
-                color: 'white',
-                padding: '10px',
-                marginBottom: '20px',
-                borderRadius: '5px'
-            }}>
-                Rezervasyon Sayfası: {reservationsArray.length} rezervasyon bulundu
-                <br />
-                <small>TableId'ler: {Object.keys(reservations).join(', ')}</small>
-            </div>
-
             <div className="dashboard-header">
                 <h1>Rezervasyon Yönetimi</h1>
                 <p>Restoran rezervasyonlarını görüntüleyin ve yönetin</p>
