@@ -21,11 +21,13 @@ import ProductsPage from './pages/products/ProductsPage.jsx';
 import StokUpdate from './components/stock/StokUpdate.jsx';
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 import MenuPage from './pages/menu/MenuPage.jsx';
+import Kasiyer from "./pages/Kasiyer/Kasiyer.jsx"; // ✅ Bu doğru
 
 // Shared Staff Pages (Garson/Kasiyer)
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
+
 
 
 // Stil dosyaları
@@ -113,10 +115,12 @@ function App() {
               </ProtectedRoute>
             }
           >
+            
             <Route index element={<Navigate to="home" replace />} />
             <Route path="home" element={<WaiterHome />} />
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
+            
           </Route>
 
           {/* Varsayılan Rota */}
