@@ -1,34 +1,10 @@
 import React, { useState, useContext } from 'react';
 import { TableContext } from '../../context/TableContext';
-import ReservationModal from '../../components/reservations/ReservationModal';
 import './Dashboard.css';
 
 const Rezervasyon = () => {
-    const { reservations, addReservation, removeReservation } = useContext(TableContext);
+    const { reservations, removeReservation } = useContext(TableContext);
     const [filter, setFilter] = useState('');
-    const [showModal, setShowModal] = useState(false);
-    const [selectedTable, setSelectedTable] = useState(null);
-
-    const handleAddReservation = () => {
-        setShowModal(true);
-    };
-
-    const handleSubmitReservation = (formData) => {
-        if (selectedTable) {
-            addReservation(selectedTable, formData);
-        } else {
-            // Eğer masa seçilmemişse rastgele bir masa ata
-            const randomTable = `1-${Math.floor(Math.random() * 8) + 1}`;
-            addReservation(randomTable, formData);
-        }
-        setShowModal(false);
-        setSelectedTable(null);
-    };
-
-    const handleCloseModal = () => {
-        setShowModal(false);
-        setSelectedTable(null);
-    };
 
     const handleDeleteReservation = (tableId) => {
         console.log('=== REZERVASYON SİLME DEBUG ===');
@@ -104,9 +80,6 @@ const Rezervasyon = () => {
             <div className="dashboard-content">
                 <div style={styles.header}>
                     <h2 style={styles.title}>Rezervasyon Listesi</h2>
-                    <button onClick={handleAddReservation} style={styles.addButton}>
-                        + Yeni Rezervasyon Ekle
-                    </button>
                 </div>
 
                 <div style={styles.filterContainer}>
@@ -148,14 +121,6 @@ const Rezervasyon = () => {
                     )}
                 </div>
             </div>
-
-            {/* Rezervasyon Modal */}
-            <ReservationModal
-                visible={showModal}
-                masaNo={selectedTable ? selectedTable.split('-')[1] : Math.floor(Math.random() * 8) + 1}
-                onClose={handleCloseModal}
-                onSubmit={handleSubmitReservation}
-            />
         </div>
     );
 };
@@ -172,16 +137,6 @@ const styles = {
         fontSize: "1.5rem",
         color: "#1e293b",
         fontWeight: 600
-    },
-    addButton: {
-        backgroundColor: "#007bff",
-        color: "white",
-        border: "none",
-        padding: "10px 20px",
-        borderRadius: "8px",
-        fontWeight: 500,
-        cursor: "pointer",
-        transition: "background-color 0.3s ease"
     },
     filterContainer: {
         marginBottom: "20px",
