@@ -13,9 +13,8 @@ export default function OrderPage() {
     const [activeCategory, setActiveCategory] = useState("Ana Yemek");
     const [cart, setCart] = useState({});
 
-    // TableContext'ten GÜNCEL ve DOĞRU fonksiyonları alıyoruz
     const {
-        updateLastOrder, // saveOrder yerine bunu kullanacağız
+        updateLastOrder,
         orders,
         products,
         processPayment,
@@ -31,26 +30,30 @@ export default function OrderPage() {
 
 
     const handleQuantityChange = (product, delta) => {
-        setCart((prev) => {
-            const currentItem = prev[product.id] || { ...product, count: 0 };
+        setCart((prevCart) => {
+            const currentItem = prevCart[product.id] || { ...product, count: 0 };
             const newQty = currentItem.count + delta;
 
-            if (newQty < 0) return prev; // Miktar 0'ın altına düşemez
+            if (newQty < 0) return prevCart;
 
-            // Stok kontrolü
-            const originalStock = products[product.category]?.find(p => p.id === product.id)?.stock ?? 0;
-            if (newQty > originalStock + (orders[tableId]?.[product.id]?.count || 0)) {
-                alert("Stok yetersiz!");
-                return prev;
+            // Stok kontrolünü düzeltiyoruz:
+            // Bir ürünün stoktaki miktarı (`product.stock`) + o masanın o üründen daha önce onayladığı miktar (`initialOrderCount`),
+            // sepete eklenmek istenen yeni miktardan (`newQty`) büyük veya eşit olmalıdır.
+            const initialOrderCount = orders[tableId]?.[product.id]?.count || 0;
+            const availableStock = product.stock + initialOrderCount;
+
+            if (newQty > availableStock) {
+                alert(`Stok yetersiz! Bu üründen en fazla ${availableStock} adet sipariş edebilirsiniz.`);
+                return prevCart;
             }
 
-            const newCart = { ...prev };
+            const newCart = { ...prevCart };
             if (newQty === 0) {
-                // Eğer ürün önceden siparişte yoksa ve miktar 0 ise sepetten sil
-                if (!orders[tableId]?.[product.id]) {
+                // Eğer ürün başlangıçta siparişte yoksa, 0 olunca sepetten tamamen sil.
+                if (!initialOrderCount) {
                     delete newCart[product.id];
-                } else {
-                    newCart[product.id] = { ...product, count: newQty };
+                } else { // Eğer siparişte varsa, miktarını 0 olarak tut ki iptal edildiği anlaşılsın.
+                    newCart[product.id] = { ...product, count: 0 };
                 }
             } else {
                 newCart[product.id] = { ...product, count: newQty };
@@ -60,27 +63,18 @@ export default function OrderPage() {
     };
 
     const handleNext = () => {
-        const existingOrder = orders[tableId] || {};
-        const newItems = {};
+        const initialOrder = orders[tableId] || {};
+        const finalCart = cart;
 
-        // Sadece yeni eklenen veya miktarı değişen ürünleri bul
-        Object.keys(cart).forEach(id => {
-            const initialCount = existingOrder[id]?.count || 0;
-            const currentCount = cart[id]?.count || 0;
+        // Sepette bir değişiklik olup olmadığını kontrol et
+        const hasChanged = JSON.stringify(initialOrder) !== JSON.stringify(finalCart);
 
-            if (currentCount !== initialCount) {
-                newItems[id] = cart[id];
-            }
-        });
-
-        if (Object.keys(newItems).length === 0) {
+        if (!hasChanged) {
             alert("Siparişте herhangi bir değişiklik yapmadınız.");
             return;
         }
 
-        updateLastOrder(tableId, newItems, existingOrder); // lastOrders'ı güncelle
-
-        // App.jsx'teki rota ile uyumlu olacak şekilde yönlendir
+        updateLastOrder(tableId, finalCart, initialOrder);
         navigate(`/${user.role}/summary/${tableId}`);
     };
 
@@ -90,6 +84,7 @@ export default function OrderPage() {
         0
     );
 
+    // Stil ve JSX (değişiklik yok)...
     const isCashier = user && user.role === 'kasiyer';
     const handlePayment = () => {
         processPayment(tableId);
@@ -97,7 +92,6 @@ export default function OrderPage() {
         navigate(`/${user.role}/home`);
     };
 
-    // Stil tanımlamaları (değişiklik yok)
     const categoryButtonStyle = (cat) => ({
         padding: "12px 28px",
         fontSize: "1rem",
@@ -135,31 +129,36 @@ export default function OrderPage() {
                     ))}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: '1.5rem' }}>
-                    {(products[activeCategory] || []).map((product) => (
-                        <div key={product.id} style={{
-                            border: `1px solid #dee2e6`,
-                            borderRadius: '12px',
-                            padding: '1rem',
-                            backgroundColor: product.stock === 0 ? '#f8f9fa' : '#ffffff',
-                            textAlign: "center",
-                            opacity: product.stock === 0 ? 0.6 : 1,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                        }}>
-                            <h3 style={{ color: '#212529', margin: "0 0 0.5rem 0", fontSize: '1.25rem' }}>{product.name}</h3>
-                            <p style={{ color: '#6c757d', margin: "0 0 1rem 0" }}>{product.price}₺ | Stok: {product.stock}</p>
-                            <div style={{ display: "flex", justifyContent: "center", gap: '1rem', alignItems: "center" }}>
-                                <button
-                                    onClick={() => handleQuantityChange(product, -1)}
-                                    style={quantityButtonStyle}
-                                >-</button>
-                                <span style={{ color: '#212529', fontSize: "1.2rem", fontWeight: "bold" }}>{cart[product.id]?.count || 0}</span>
-                                <button
-                                    onClick={() => handleQuantityChange(product, 1)}
-                                    style={quantityButtonStyle}
-                                >+</button>
+                    {(products[activeCategory] || []).map((product) => {
+                        const initialOrderCount = orders[tableId]?.[product.id]?.count || 0;
+                        const displayStock = product.stock + initialOrderCount - (cart[product.id]?.count || 0);
+
+                        return (
+                            <div key={product.id} style={{
+                                border: `1px solid #dee2e6`,
+                                borderRadius: '12px',
+                                padding: '1rem',
+                                backgroundColor: displayStock === 0 ? '#f8f9fa' : '#ffffff',
+                                textAlign: "center",
+                                opacity: displayStock === 0 ? 0.7 : 1,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                            }}>
+                                <h3 style={{ color: '#212529', margin: "0 0 0.5rem 0", fontSize: '1.25rem' }}>{product.name}</h3>
+                                <p style={{ color: '#6c757d', margin: "0 0 1rem 0" }}>{product.price}₺ | Stok: {displayStock}</p>
+                                <div style={{ display: "flex", justifyContent: "center", gap: '1rem', alignItems: "center" }}>
+                                    <button
+                                        onClick={() => handleQuantityChange(product, -1)}
+                                        style={quantityButtonStyle}
+                                    >-</button>
+                                    <span style={{ color: '#212529', fontSize: "1.2rem", fontWeight: "bold" }}>{cart[product.id]?.count || 0}</span>
+                                    <button
+                                        onClick={() => handleQuantityChange(product, 1)}
+                                        style={quantityButtonStyle}
+                                    >+</button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', gap: '1rem' }}>
                     <button onClick={() => navigate(-1)} style={{ padding: "1rem 2.5rem", fontSize: "1rem", fontWeight: '600', backgroundColor: '#6c757d', color: "#ffffff", border: "none", borderRadius: "10px", cursor: "pointer", transition: "all 0.3s ease" }}>Geri</button>
