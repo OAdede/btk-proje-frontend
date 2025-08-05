@@ -1,131 +1,186 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 
 export const TableContext = createContext();
 
 const initialProducts = {
-    "Ana Yemek": [
-        { id: 1, name: "Et Döner", price: 535, stock: 50, minStock: 10, category: "Ana Yemek" },
-        { id: 2, name: "Döner Beyti Sarma", price: 545, stock: 30, minStock: 5, category: "Ana Yemek" },
-        { id: 3, name: "Tereyağlı İskender", price: 560, stock: 25, minStock: 8, category: "Ana Yemek" },
-        { id: 4, name: "Pilav Üstü Döner", price: 550, stock: 40, minStock: 12, category: "Ana Yemek" },
-        { id: 5, name: "SSK Dürüm Döner", price: 560, stock: 35, minStock: 7, category: "Ana Yemek" },
+    yemekler: [
+        { id: 1, name: "Pizza", price: 120, stock: 10 },
+        { id: 2, name: "Hamburger", price: 90, stock: 8 },
+        { id: 3, name: "Salata", price: 50, stock: 12 },
+        { id: 4, name: "Makarna", price: 80, stock: 7 },
+        { id: 5, name: "Köfte", price: 95, stock: 6 },
+        { id: 6, name: "Lahmacun", price: 40, stock: 15 },
+        { id: 7, name: "Adana Kebap", price: 130, stock: 5 },
+        { id: 8, name: "Tavuk Şiş", price: 100, stock: 9 },
+        { id: 9, name: "İskender", price: 110, stock: 4 },
+        { id: 10, name: "Döner", price: 85, stock: 8 },
+        { id: 11, name: "Balık", price: 140, stock: 6 },
+        { id: 12, name: "Mantı", price: 70, stock: 10 },
+        { id: 13, name: "Çorba", price: 35, stock: 20 },
+        { id: 14, name: "Pilav", price: 30, stock: 14 },
+        { id: 15, name: "Zeytinyağlı", price: 60, stock: 13 },
     ],
-    "Aparatifler": [
-        { id: 6, name: "Çiğköfte", price: 140, stock: 20, minStock: 5, category: "Aparatifler" },
-        { id: 7, name: "Soğan Halkası", price: 130, stock: 15, minStock: 3, category: "Aparatifler" },
-        { id: 8, name: "Patates Kızartması", price: 140, stock: 30, minStock: 8, category: "Aparatifler" },
-        { id: 9, name: "Börek Çeşitleri", price: 140, stock: 25, minStock: 6, category: "Aparatifler" },
-        { id: 10, name: "Salata Çeşitleri", price: 120, stock: 18, minStock: 4, category: "Aparatifler" },
+    icecekler: [
+        { id: 101, name: "Kola", price: 20, stock: 15 },
+        { id: 102, name: "Ayran", price: 10, stock: 12 },
+        { id: 103, name: "Su", price: 5, stock: 25 },
+        { id: 104, name: "Fanta", price: 20, stock: 10 },
+        { id: 105, name: "Sprite", price: 20, stock: 10 },
+        { id: 106, name: "Meyve Suyu", price: 18, stock: 11 },
+        { id: 107, name: "Soda", price: 8, stock: 14 },
+        { id: 108, name: "Ice Tea", price: 15, stock: 9 },
+        { id: 109, name: "Kahve", price: 25, stock: 10 },
+        { id: 110, name: "Çay", price: 6, stock: 30 },
+        { id: 111, name: "Limonata", price: 16, stock: 13 },
+        { id: 112, name: "Milkshake", price: 22, stock: 7 },
+        { id: 113, name: "Karpuz Suyu", price: 17, stock: 5 },
+        { id: 114, name: "Buzlu Kahve", price: 28, stock: 8 },
+        { id: 115, name: "Türk Kahvesi", price: 20, stock: 12 },
     ],
-    "Fırın": [
-        { id: 11, name: "Kuşbaşılı Pide", price: 540, stock: 12, minStock: 3, category: "Fırın" },
-        { id: 12, name: "Karışık Pide", price: 550, stock: 15, minStock: 4, category: "Fırın" },
-        { id: 13, name: "Kaşarlı Pide", price: 470, stock: 20, minStock: 5, category: "Fırın" },
-        { id: 14, name: "Kıymalı Pide", price: 490, stock: 18, minStock: 4, category: "Fırın" },
-        { id: 15, name: "Lahmacun", price: 170, stock: 30, minStock: 8, category: "Fırın" },
-    ],
-    "Izgaralar": [
-        { id: 16, name: "Patlıcan Kebap", price: 610, stock: 15, minStock: 5, category: "Izgaralar" },
-        { id: 17, name: "Special Kebap", price: 570, stock: 20, minStock: 6, category: "Izgaralar" },
-        { id: 18, name: "Beyti Sarma", price: 560, stock: 18, minStock: 5, category: "Izgaralar" },
-        { id: 19, name: "Tavuk Pirzola", price: 540, stock: 22, minStock: 7, category: "Izgaralar" },
-        { id: 20, name: "Izgara Köfte", price: 550, stock: 25, minStock: 8, category: "Izgaralar" },
-    ],
-    "Kahvaltılıklar": [
-        { id: 21, name: "Kahvaltı Tabağı", price: 450, stock: 10, minStock: 3, category: "Kahvaltılıklar" },
-        { id: 22, name: "Serpme Kahvaltı", price: 600, stock: 8, minStock: 2, category: "Kahvaltılıklar" },
-        { id: 23, name: "Menemen", price: 200, stock: 15, minStock: 5, category: "Kahvaltılıklar" },
-        { id: 24, name: "Kuymak", price: 250, stock: 12, minStock: 4, category: "Kahvaltılıklar" },
-        { id: 25, name: "Avakado yumurta", price: 130, stock: 20, minStock: 6, category: "Kahvaltılıklar" },
-    ],
-    "İçecekler": [
-        { id: 26, name: "Kola", price: 85, stock: 48, minStock: 12, category: "İçecekler" },
-        { id: 27, name: "Fanta", price: 85, stock: 45, minStock: 10, category: "İçecekler" },
-        { id: 28, name: "Sprite", price: 85, stock: 42, minStock: 10, category: "İçecekler" },
-        { id: 29, name: "Tea", price: 85, stock: 60, minStock: 15, category: "İçecekler" },
-        { id: 30, name: "Ayran", price: 75, stock: 35, minStock: 8, category: "İçecekler" },
-        { id: 31, name: "Su", price: 30, stock: 100, minStock: 20, category: "İçecekler" },
-    ],
-    "Tatlılar": [
-        { id: 32, name: "Künefe", price: 120, stock: 15, minStock: 5, category: "Tatlılar" },
-        { id: 33, name: "Baklava", price: 150, stock: 20, minStock: 6, category: "Tatlılar" },
-        { id: 34, name: "Sütlaç", price: 80, stock: 25, minStock: 8, category: "Tatlılar" },
-        { id: 35, name: "Kazandibi", price: 100, stock: 18, minStock: 5, category: "Tatlılar" },
-        { id: 36, name: "Tiramisu", price: 130, stock: 12, minStock: 4, category: "Tatlılar" },
-        { id: 37, name: "Cheesecake", price: 140, stock: 10, minStock: 3, category: "Tatlılar" },
+    tatlilar: [
+        { id: 201, name: "Baklava", price: 50, stock: 10 },
+        { id: 202, name: "Künefe", price: 55, stock: 8 },
+        { id: 203, name: "Sütlaç", price: 30, stock: 12 },
+        { id: 204, name: "Kazandibi", price: 35, stock: 9 },
+        { id: 205, name: "Dondurma", price: 20, stock: 15 },
+        { id: 206, name: "Profiterol", price: 40, stock: 11 },
+        { id: 207, name: "Tiramisu", price: 45, stock: 7 },
+        { id: 208, name: "Cheesecake", price: 48, stock: 6 },
+        { id: 209, name: "Mousse", price: 42, stock: 10 },
+        { id: 210, name: "Magnolia", price: 38, stock: 9 },
+        { id: 211, name: "Revani", price: 36, stock: 13 },
+        { id: 212, name: "İrmik Helvası", price: 34, stock: 14 },
+        { id: 213, name: "Şekerpare", price: 33, stock: 11 },
+        { id: 214, name: "Trileçe", price: 44, stock: 10 },
+        { id: 215, name: "Meyve Tabağı", price: 25, stock: 16 },
     ],
 };
 
-const initialTableStatus = {
-    '1-1': 'empty', '1-2': 'empty', '1-3': 'empty', '1-4': 'empty', '1-5': 'empty', '1-6': 'empty', '1-7': 'empty', '1-8': 'empty',
-    '2-1': 'empty', '2-2': 'empty', '2-3': 'empty', '2-4': 'empty', '2-5': 'empty', '2-6': 'empty', '2-7': 'empty', '2-8': 'empty'
-};
+const initialTableStatus = {};
 
-export const TableProvider = ({ children }) => {
-    const readFromLocalStorage = (key, defaultValue) => {
-        try {
-            const savedData = localStorage.getItem(key);
-            return savedData ? JSON.parse(savedData) : defaultValue;
-        } catch (error) {
-            console.error(`Error reading ${key} from localStorage`, error);
-            return defaultValue;
-        }
-    };
+function readFromLocalStorage(key, defaultValue) {
+    try {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : defaultValue;
+    } catch {
+        return defaultValue;
+    }
+}
 
+export function TableProvider({ children }) {
     const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', initialTableStatus));
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
     const [lastOrders, setLastOrders] = useState(() => readFromLocalStorage('lastOrders', {}));
     const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
+    const [timestamps, setTimestamps] = useState({}); // Sipariş zamanları
 
-    useEffect(() => {
-        localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
-        localStorage.setItem('orders', JSON.stringify(orders));
-        localStorage.setItem('lastOrders', JSON.stringify(lastOrders));
-        localStorage.setItem('products', JSON.stringify(products));
-        localStorage.setItem('reservations', JSON.stringify(reservations));
-    }, [tableStatus, orders, lastOrders, products, reservations]);
+    const [dailyOrderCount, setDailyOrderCount] = useState(0);
+    const [monthlyOrderCount, setMonthlyOrderCount] = useState(0);
+    const [yearlyOrderCount, setYearlyOrderCount] = useState(0);
 
-    const saveOrder = (tableId, cart) => {
-        setLastOrders(prev => ({ ...prev, [tableId]: cart }));
+    // Masa durumunu güncelle
+    const updateTableStatus = (tableId, status) => {
+        setTableStatus(prev => ({ ...prev, [tableId]: status }));
     };
 
-    const confirmOrder = (tableId) => {
-        const newOrder = lastOrders[tableId];
-        if (!newOrder) return;
-        setOrders(prev => {
-            const existingOrder = prev[tableId] || {};
-            const updatedOrder = { ...existingOrder };
-            Object.keys(newOrder).forEach(key => {
-                if (updatedOrder[key]) {
-                    updatedOrder[key].count += newOrder[key].count;
-                } else {
-                    updatedOrder[key] = newOrder[key];
+    // Siparişi kaydet (ürün stoklarını güncelle ve sipariş durumunu ayarla)
+    const saveFinalOrder = (tableId, finalItems) => {
+        const prevOrder = orders[tableId] || {};
+        const updatedProducts = { ...products };
+
+        const totalPrice = Object.values(finalItems).reduce(
+            (sum, item) => sum + item.price * item.count,
+            0
+        );
+        const isOrderEmpty = totalPrice === 0;
+
+        // Stok farklarını güncelle
+        Object.entries(finalItems).forEach(([id, newItem]) => {
+            const prevItem = prevOrder[id];
+            const quantityDifference = (newItem.count || 0) - (prevItem?.count || 0);
+
+            Object.keys(updatedProducts).forEach(category => {
+                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                if (productIndex !== -1) {
+                    const newStock = updatedProducts[category][productIndex].stock - quantityDifference;
+                    updatedProducts[category][productIndex].stock = newStock >= 0 ? newStock : 0;
                 }
             });
-            return { ...prev, [tableId]: updatedOrder };
         });
-        setProducts(prevProducts => {
-            const newProducts = JSON.parse(JSON.stringify(prevProducts));
-            Object.values(newOrder).forEach(item => {
-                const category = Object.keys(newProducts).find(cat => newProducts[cat].some(p => p.id === item.id));
-                if (category) {
-                    const productIndex = newProducts[category].findIndex(p => p.id === item.id);
-                    if (productIndex > -1) {
-                        newProducts[category][productIndex].stock -= item.count;
+
+        // Önceki siparişten kalan ürünleri stok olarak geri ekle
+        Object.keys(prevOrder).forEach(id => {
+            if (!finalItems[id]) {
+                const prevItem = prevOrder[id];
+                Object.keys(updatedProducts).forEach(category => {
+                    const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                    if (productIndex !== -1) {
+                        updatedProducts[category][productIndex].stock += prevItem.count;
                     }
-                }
+                });
+            }
+        });
+
+        setProducts(updatedProducts);
+
+        if (isOrderEmpty) {
+            const updatedOrders = { ...orders };
+            delete updatedOrders[tableId];
+            setOrders(updatedOrders);
+
+            setTimestamps(prev => {
+                const copy = { ...prev };
+                delete copy[tableId];
+                return copy;
             });
-            return newProducts;
-        });
-        setTableStatus(prev => ({ ...prev, [tableId]: 'occupied' }));
-        setLastOrders(prev => {
-            const newLastOrders = { ...prev };
-            delete newLastOrders[tableId];
-            return newLastOrders;
-        });
+
+            updateTableStatus(tableId, "empty");
+        } else {
+            setOrders(prev => ({ ...prev, [tableId]: finalItems }));
+
+            // Sipariş zamanını güncelle
+            setTimestamps(prev => ({
+                ...prev,
+                [tableId]: Date.now(),
+            }));
+
+            updateTableStatus(tableId, "occupied");
+        }
     };
 
+    // Siparişi iptal et ve stokları geri yükle
+    const restoreStock = (order) => {
+        const updatedProducts = { ...products };
+        Object.entries(order).forEach(([id, item]) => {
+            Object.keys(updatedProducts).forEach(category => {
+                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                if (productIndex !== -1) {
+                    updatedProducts[category][productIndex].stock += item.count;
+                }
+            });
+        });
+        setProducts(updatedProducts);
+    };
+
+    const cancelOrder = (tableId) => {
+        const currentOrder = orders[tableId];
+        if (currentOrder) {
+            restoreStock(currentOrder);
+            const updatedOrders = { ...orders };
+            delete updatedOrders[tableId];
+            setOrders(updatedOrders);
+            updateTableStatus(tableId, "empty");
+
+            setTimestamps(prev => {
+                const copy = { ...prev };
+                delete copy[tableId];
+                return copy;
+            });
+        }
+    };
+
+    // Ödeme işlemi
     const processPayment = (tableId) => {
         setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
         setOrders(prev => {
@@ -135,6 +190,7 @@ export const TableProvider = ({ children }) => {
         });
     };
 
+    // Sipariş kalemini kaldır
     const removeConfirmedOrderItem = (tableId, itemToRemove) => {
         setOrders(prevOrders => {
             const newOrders = { ...prevOrders };
@@ -159,6 +215,7 @@ export const TableProvider = ({ children }) => {
         });
     };
 
+    // Sipariş kalemi adet azalt
     const decreaseConfirmedOrderItem = (tableId, itemToDecrease) => {
         if (itemToDecrease.count <= 1) {
             removeConfirmedOrderItem(tableId, itemToDecrease);
@@ -182,6 +239,7 @@ export const TableProvider = ({ children }) => {
         }
     };
 
+    // Sipariş kalemi adet artır
     const increaseConfirmedOrderItem = (tableId, itemToIncrease) => {
         const category = itemToIncrease.category;
         const productInStock = products[category]?.find(p => p.id === itemToIncrease.id);
@@ -205,7 +263,7 @@ export const TableProvider = ({ children }) => {
         }
     };
 
-    // Rezervasyon fonksiyonları
+    // Rezervasyon ekle
     const addReservation = (tableId, reservationData) => {
         const reservationId = crypto.randomUUID();
         const newReservation = {
@@ -214,27 +272,29 @@ export const TableProvider = ({ children }) => {
             ...reservationData,
             createdAt: new Date().toISOString()
         };
-        
+
         setReservations(prev => ({
             ...prev,
             [tableId]: newReservation
         }));
-        
+
         setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
-        
+
         return reservationId;
     };
 
+    // Rezervasyon kaldır
     const removeReservation = (tableId) => {
         setReservations(prev => {
             const newReservations = { ...prev };
             delete newReservations[tableId];
             return newReservations;
         });
-        
+
         setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
     };
 
+    // Ürün ekle
     const addProduct = (category, newProduct) => {
         setProducts(prevProducts => {
             const newProducts = { ...prevProducts };
@@ -245,6 +305,7 @@ export const TableProvider = ({ children }) => {
         });
     };
 
+    // Ürün sil
     const deleteProduct = (category, productId) => {
         setProducts(prevProducts => {
             const newProducts = { ...prevProducts };
@@ -253,6 +314,7 @@ export const TableProvider = ({ children }) => {
         });
     };
 
+    // Ürün güncelle
     const updateProduct = (category, updatedProduct) => {
         setProducts(prevProducts => {
             const newProducts = { ...prevProducts };
@@ -262,15 +324,62 @@ export const TableProvider = ({ children }) => {
         });
     };
 
+    // Sipariş sayaçlarını hesapla
+    useEffect(() => {
+        const now = new Date();
+        const todayStr = now.toDateString();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        let daily = 0, monthly = 0, yearly = 0;
+
+        Object.values(timestamps).forEach((ts) => {
+            const d = new Date(ts);
+            if (d.toDateString() === todayStr) daily++;
+            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) monthly++;
+            if (d.getFullYear() === currentYear) yearly++;
+        });
+
+        setDailyOrderCount(daily);
+        setMonthlyOrderCount(monthly);
+        setYearlyOrderCount(yearly);
+    }, [timestamps]);
+
+    // LocalStorage'a kaydet
+    useEffect(() => {
+        localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
+        localStorage.setItem('orders', JSON.stringify(orders));
+        localStorage.setItem('lastOrders', JSON.stringify(lastOrders));
+        localStorage.setItem('products', JSON.stringify(products));
+        localStorage.setItem('reservations', JSON.stringify(reservations));
+    }, [tableStatus, orders, lastOrders, products, reservations]);
+
     return (
-        <TableContext.Provider value={{
-            tableStatus, orders, lastOrders, products, reservations,
-            saveOrder, confirmOrder, processPayment, removeConfirmedOrderItem,
-            addProduct, deleteProduct, updateProduct,
-            decreaseConfirmedOrderItem, increaseConfirmedOrderItem,
-            addReservation, removeReservation
-        }}>
+        <TableContext.Provider
+            value={{
+                tableStatus,
+                orders,
+                lastOrders,
+                products,
+                reservations,
+                dailyOrderCount,
+                monthlyOrderCount,
+                yearlyOrderCount,
+                updateTableStatus,
+                saveFinalOrder,
+                cancelOrder,
+                processPayment,
+                removeConfirmedOrderItem,
+                decreaseConfirmedOrderItem,
+                increaseConfirmedOrderItem,
+                addReservation,
+                removeReservation,
+                addProduct,
+                deleteProduct,
+                updateProduct,
+            }}
+        >
             {children}
         </TableContext.Provider>
     );
-};
+}
