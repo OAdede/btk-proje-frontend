@@ -4,7 +4,7 @@ import ReservationModal from '../../components/reservations/ReservationModal';
 import './Dashboard.css';
 
 const Rezervasyon = () => {
-    const { reservations, addReservation } = useContext(TableContext);
+    const { reservations, addReservation, removeReservation } = useContext(TableContext);
     const [filter, setFilter] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedTable, setSelectedTable] = useState(null);
@@ -30,9 +30,48 @@ const Rezervasyon = () => {
         setSelectedTable(null);
     };
 
+    const handleDeleteReservation = (tableId) => {
+        console.log('=== REZERVASYON SİLME DEBUG ===');
+        console.log('Silinecek tableId:', tableId);
+        console.log('TableId tipi:', typeof tableId);
+        console.log('Mevcut rezervasyonlar:', reservations);
+        console.log('Rezervasyonlar tipi:', typeof reservations);
+        console.log('Rezervasyonlar anahtarları:', Object.keys(reservations));
+        
+        // TableId'nin mevcut olup olmadığını kontrol et
+        if (!reservations[tableId]) {
+            console.error('HATA: Bu tableId rezervasyonlarda bulunamadı:', tableId);
+            console.log('Mevcut anahtarlar:', Object.keys(reservations));
+            console.log('Aranan anahtar:', tableId);
+            alert('Rezervasyon bulunamadı!');
+            return;
+        }
+        
+        if (window.confirm('Bu rezervasyonu silmek istediğinizden emin misiniz?')) {
+            console.log('Onay verildi, rezervasyon siliniyor...');
+            try {
+                removeReservation(tableId);
+                console.log('removeReservation fonksiyonu çağrıldı');
+                
+                // Silme işleminin başarılı olup olmadığını kontrol et
+                setTimeout(() => {
+                    console.log('Silme sonrası rezervasyonlar:', reservations);
+                    console.log('Silme sonrası anahtarlar:', Object.keys(reservations));
+                }, 100);
+                
+            } catch (error) {
+                console.error('Silme işleminde hata:', error);
+                alert('Rezervasyon silinirken bir hata oluştu!');
+            }
+        } else {
+            console.log('Silme işlemi iptal edildi');
+        }
+    };
+
     // TableContext'teki reservations objesini array'e çevir
     const reservationsArray = Object.entries(reservations).map(([tableId, reservation]) => ({
-        id: tableId,
+        id: tableId, // Bu tableId olmalı
+        tableId: tableId, // Ek olarak tableId'yi de ekleyelim
         masaNo: tableId.split('-')[1], // "1-5" -> "5"
         ...reservation
     }));
@@ -53,6 +92,8 @@ const Rezervasyon = () => {
                 borderRadius: '5px'
             }}>
                 Rezervasyon Sayfası: {reservationsArray.length} rezervasyon bulundu
+                <br />
+                <small>TableId'ler: {Object.keys(reservations).join(', ')}</small>
             </div>
 
             <div className="dashboard-header">
@@ -83,8 +124,17 @@ const Rezervasyon = () => {
                         filteredReservations.map(res => (
                             <div key={res.id} style={styles.card}>
                                 <div style={styles.cardHeader}>
-                                    <strong>Masa {res.masaNo} - {res.adSoyad}</strong>
-                                    <span>{res.tarih} @ {res.saat}</span>
+                                    <div style={styles.cardHeaderLeft}>
+                                        <strong>Masa {res.masaNo} - {res.adSoyad}</strong>
+                                        <span style={styles.dateTime}>{res.tarih} @ {res.saat}</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleDeleteReservation(res.tableId)}
+                                        style={styles.deleteButton}
+                                        title="Rezervasyonu Sil"
+                                    >
+                                        🗑️
+                                    </button>
                                 </div>
                                 <div style={styles.cardBody}>
                                     <p>📞 {res.telefon}</p>
@@ -130,7 +180,8 @@ const styles = {
         padding: "10px 20px",
         borderRadius: "8px",
         fontWeight: 500,
-        cursor: "pointer"
+        cursor: "pointer",
+        transition: "background-color 0.3s ease"
     },
     filterContainer: {
         marginBottom: "20px",
@@ -153,14 +204,35 @@ const styles = {
         padding: "15px 20px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         border: "1px solid #e2e8f0",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease"
     },
     cardHeader: {
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: "flex-start",
         marginBottom: "10px",
         paddingBottom: "10px",
         borderBottom: "1px solid #f0f0f0"
+    },
+    cardHeaderLeft: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px"
+    },
+    dateTime: {
+        fontSize: "0.85rem",
+        color: "#666",
+        fontWeight: "normal"
+    },
+    deleteButton: {
+        background: "none",
+        border: "none",
+        fontSize: "18px",
+        cursor: "pointer",
+        padding: "4px",
+        borderRadius: "4px",
+        transition: "background-color 0.2s ease",
+        color: "#dc3545"
     },
     cardBody: {
         fontSize: "0.95rem",
