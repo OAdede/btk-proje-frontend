@@ -3,12 +3,16 @@ import { useTheme } from '../../context/ThemeContext';
 
 // Örnek ürün verileri - görüntüdeki gibi
 const sampleProducts = [
-    { id: 1, name: 'Burger', category: 'Ana Yemek', price: 250, stock: 15, minStock: 10, status: 'Yeterli' },
-    { id: 2, name: 'Pizza', category: 'Ana Yemek', price: 300, stock: 19, minStock: 15, status: 'Yeterli' },
-    { id: 3, name: 'Makarna', category: 'Ana Yemek', price: 200, stock: 23, minStock: 12, status: 'Yeterli' },
-    { id: 4, name: 'Kola', category: 'İçecek', price: 50, stock: 50, minStock: 20, status: 'Yeterli' },
-    { id: 5, name: 'Ayran', category: 'İçecek', price: 40, stock: 40, minStock: 25, status: 'Yeterli' },
-    { id: 6, name: 'Su', category: 'İçecek', price: 20, stock: 100, minStock: 30, status: 'Yeterli' },
+    { id: 1, name: 'Et Döner', category: 'Ana Yemek', price: 535, stock: 50, minStock: 10, status: 'Yeterli' },
+    { id: 2, name: 'Döner Beyti Sarma', category: 'Ana Yemek', price: 545, stock: 30, minStock: 5, status: 'Yeterli' },
+    { id: 3, name: 'Tereyağlı İskender', category: 'Ana Yemek', price: 560, stock: 25, minStock: 8, status: 'Yeterli' },
+    { id: 4, name: 'Pilav Üstü Döner', category: 'Ana Yemek', price: 550, stock: 40, minStock: 12, status: 'Yeterli' },
+    { id: 5, name: 'SSK Dürüm Döner', category: 'Ana Yemek', price: 560, stock: 35, minStock: 7, status: 'Yeterli' },
+    { id: 6, name: 'Çiğköfte', category: 'Aparatifler', price: 140, stock: 20, minStock: 5, status: 'Yeterli' },
+    { id: 7, name: 'Soğan Halkası', category: 'Aparatifler', price: 130, stock: 15, minStock: 3, status: 'Yeterli' },
+    { id: 8, name: 'Patates Kızartması', category: 'Aparatifler', price: 140, stock: 30, minStock: 8, status: 'Yeterli' },
+    { id: 9, name: 'Börek Çeşitleri', category: 'Fırın', price: 140, stock: 25, minStock: 6, status: 'Yeterli' },
+    { id: 10, name: 'Salata Çeşitleri', category: 'Aparatifler', price: 120, stock: 18, minStock: 4, status: 'Yeterli' },
 ];
 
 const categories = [
@@ -39,45 +43,40 @@ const ProductsPage = () => {
 
     return (
         <div style={{
-            padding: '24px',
-            background: 'var(--background)',
-            color: 'var(--text)',
-            minHeight: '100vh'
+            maxWidth: '1000px',
+            margin: '32px auto',
+            background: '#473653',
+            borderRadius: '16px',
+            boxShadow: 'rgba(0, 0, 0, 0.3) 0px 2px 12px',
+            padding: '32px'
         }}>
-            {/* Başlık */}
-            <h1 style={{
-                fontSize: '2rem',
-                color: 'var(--text)',
-                fontWeight: 700,
-                textAlign: 'center',
-                marginBottom: '32px',
-                marginTop: '0'
+            <h2 style={{
+                margin: '0px 0px 16px',
+                color: '#ffffff',
+                fontWeight: 700
             }}>
                 Ürün & Stok Yönetimi
-            </h1>
+            </h2>
 
             {/* Kategori Filtreleri */}
             <div style={{
                 display: 'flex',
-                gap: '12px',
-                marginBottom: '32px',
-                flexWrap: 'wrap',
-                justifyContent: 'center'
+                gap: '8px',
+                marginBottom: '24px',
+                flexWrap: 'wrap'
             }}>
                 {categories.map((category) => (
                     <button
                         key={category}
                         onClick={() => setSelectedCategory(category)}
                         style={{
-                            background: selectedCategory === category ? 'var(--primary)' : 'var(--surface)',
-                            color: selectedCategory === category ? '#ffffff' : 'var(--text)',
-                            border: '1px solid var(--border)',
+                            background: selectedCategory === category ? '#10B981' : '#53364D',
+                            color: selectedCategory === category ? '#ffffff' : '#ffffff',
+                            border: 'none',
                             borderRadius: '8px',
-                            padding: '12px 20px',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: '14px',
-                            transition: 'all 0.3s ease'
+                            padding: '8px 18px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
                         }}
                     >
                         {category}
@@ -89,130 +88,112 @@ const ProductsPage = () => {
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '16px'
+                gap: '14px',
+                marginTop: '8px',
+                minHeight: '550px'
             }}>
                 {filteredProducts.map((product) => (
                     <div
                         key={product.id}
                         style={{
-                            background: 'var(--surface)',
-                            borderRadius: '12px',
-                            padding: '20px',
-                            border: '1px solid var(--border)',
-                            boxShadow: '0 2px 8px var(--shadow)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexWrap: 'wrap',
-                            gap: '16px',
-                            transition: 'all 0.3s ease'
+                            background: '#513653',
+                            borderRadius: '10px',
+                            boxShadow: 'rgba(0, 0, 0, 0.3) 0px 1px 6px',
+                            padding: '12px 20px',
+                            gap: '20px'
                         }}
                     >
-                        {/* Ürün Bilgileri */}
                         <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '24px',
-                            flex: 1,
-                            minWidth: '300px'
+                            flex: '3 1 0%',
+                            fontWeight: 600,
+                            color: '#ffffff'
                         }}>
-                            <div style={{
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                color: 'var(--text)',
-                                minWidth: '120px'
-                            }}>
-                                {product.name}
-                            </div>
-                            
-                            <div style={{
-                                color: 'var(--text)',
-                                fontWeight: 600,
-                                minWidth: '80px'
-                            }}>
-                                {product.price} ₺
-                            </div>
-                            
-                            <div style={{
-                                color: 'var(--text)',
-                                minWidth: '80px'
-                            }}>
-                                {product.stock} adet
-                            </div>
-                            
-                            <div style={{
-                                color: 'var(--text)',
-                                minWidth: '60px'
-                            }}>
-                                Min: {product.minStock}
-                            </div>
+                            {product.name}
                         </div>
-
-                        {/* Durum ve Butonlar */}
+                        
                         <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            flexWrap: 'wrap'
+                            flex: '1 1 0%',
+                            fontWeight: 500,
+                            color: '#ffffff'
                         }}>
-                            <span style={{
-                                background: 'var(--success)',
+                            {product.price} ₺
+                        </div>
+                        
+                        <div style={{
+                            flex: '1 1 0%',
+                            fontWeight: 500,
+                            color: '#ffffff'
+                        }}>
+                            {product.stock} adet
+                        </div>
+                        
+                        <div style={{
+                            flex: '1 1 0%',
+                            fontWeight: 500,
+                            color: '#ffffff'
+                        }}>
+                            Min: {product.minStock}
+                        </div>
+                        
+                        <div style={{
+                            flex: '1.5 1 0%',
+                            textAlign: 'center',
+                            fontWeight: 600,
+                            color: '#ffffff',
+                            background: '#10B981',
+                            padding: '4px 12px',
+                            borderRadius: '12px'
+                        }}>
+                            {product.status}
+                        </div>
+                        
+                        <button
+                            onClick={() => handleEditProduct(product.id)}
+                            style={{
+                                background: '#A294F9',
                                 color: '#ffffff',
-                                padding: '6px 12px',
+                                border: 'none',
                                 borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: 600
-                            }}>
-                                {product.status}
-                            </span>
-                            
-                            <button
-                                onClick={() => handleEditProduct(product.id)}
-                                style={{
-                                    background: 'var(--primary)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    padding: '8px 16px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    fontSize: '12px',
-                                    transition: 'all 0.3s ease'
-                                }}
-                            >
-                                Düzenle
-                            </button>
-                            
-                            <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                style={{
-                                    background: 'var(--danger)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    padding: '8px 16px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    fontSize: '12px',
-                                    transition: 'all 0.3s ease'
-                                }}
-                            >
-                                Sil
-                            </button>
-                        </div>
+                                padding: '7px 18px',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Düzenle
+                        </button>
+                        
+                        <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            style={{
+                                background: '#EF4444',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '7px 18px',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Sil
+                        </button>
                     </div>
                 ))}
             </div>
 
             {/* Yeni Ürün Ekleme Butonu */}
             <div style={{
-                textAlign: 'center',
-                marginTop: '32px'
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '8px',
+                marginTop: '24px'
             }}>
                 <button
                     onClick={handleAddProduct}
                     style={{
-                        background: 'linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%)',
+                        background: 'linear-gradient(90deg, #A294F9 0%, #CDC1FF 100%)',
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '12px',
@@ -220,7 +201,7 @@ const ProductsPage = () => {
                         cursor: 'pointer',
                         fontWeight: 700,
                         fontSize: '16px',
-                        boxShadow: '0 4px 12px var(--shadow)',
+                        boxShadow: '0 4px 12px rgba(162, 148, 249, 0.3)',
                         transition: 'all 0.3s ease'
                     }}
                 >
