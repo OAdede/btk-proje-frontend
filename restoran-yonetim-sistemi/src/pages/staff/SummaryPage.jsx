@@ -1,88 +1,86 @@
-import React, { useContext, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { TableContext } from "../../context/TableContext";
-import { AuthContext } from "../../context/AuthContext";
+import React, { useContext } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { TableContext } from "../../context/TableContext.jsx";
 
 export default function SummaryPage() {
+    const { saveFinalOrder, orders } = useContext(TableContext);
+
     const { tableId } = useParams();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
-    const { orders, lastOrders, confirmOrder } = useContext(TableContext);
+    const location = useLocation();
 
-    const isNewOrder = lastOrders[tableId] && Object.keys(lastOrders[tableId]).length > 0;
-    const currentOrder = isNewOrder ? lastOrders[tableId] : (orders[tableId] || {});
+    const updatedOrder = location.state?.updatedOrder || {};
+    const orderItems = Object.entries(updatedOrder);
 
-    const totalPrice = useMemo(() =>
-        Object.values(currentOrder).reduce(
-            (sum, item) => sum + item.price * item.count,
-            0
-        ), [currentOrder]);
+    const total = orderItems.reduce(
+        (sum, [id, item]) => sum + item.price * item.count,
+        0
+    );
 
     const handleConfirm = () => {
-        confirmOrder(tableId);
-        // Onay sonrası aktif role göre doğru ana sayfaya yönlendir
-        navigate(`/${user.role}/home`);
+        console.log("Onay sonrası sepet içeriği:", updatedOrder);
+        saveFinalOrder(tableId, updatedOrder);
+        navigate("/");
     };
 
-    // Kasiyer ise ödeme al butonu gösterilir, değilse sipariş onayı
-    const isCashier = user && user.role === 'kasiyer';
-    // Garson yeni sipariş onayı yapabilir
-    const canConfirm = user && user.role === 'garson' && isNewOrder;
-
-    // Geri butonunun hangi sayfaya döneceğini belirle
-    const handleGoBack = () => {
-        // Eğer yeni bir sipariş onayı ekranındaysa, sipariş sayfasına dön
-        if (isNewOrder) {
-            navigate(`/${user.role}/order/${tableId}`);
-        } else {
-            // Değilse, masaların olduğu ana ekrana dön
-            navigate(`/${user.role}/home`);
-        }
+    const handleCancel = () => {
+        navigate(`/order/${tableId}`);
     };
-
-    const pageTitle = isNewOrder ? `Masa ${tableId} - Yeni Sipariş Özeti` : `Masa ${tableId} - Mevcut Sipariş`;
 
     return (
-        <div style={{ padding: 30, maxWidth: '600px', margin: 'auto', border: '1px solid #ddd', borderRadius: '10px' }}>
-            <h1>{pageTitle}</h1>
+        <div style={{ padding: "3rem", maxWidth: "800px", margin: "auto" }}>
+            <h2 style={{ marginBottom: "2rem" }}>Masa {tableId} - Sipariş Özeti</h2>
 
-            {Object.keys(currentOrder).length === 0 ? (
-                <div style={{ textAlign: "center" }}>
-                    <p>Bu masaya ait görüntülenecek bir sipariş yok.</p>
-                    <button onClick={() => navigate(`/${user.role}/home`)} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", backgroundColor: "#007bff", color: "white", cursor: "pointer" }}>
-                        Masalara Dön
-                    </button>
-                </div>
-            ) : (
-                <>
-                    <ul style={{ listStyleType: 'none', padding: 0 }}>
-                        {Object.entries(currentOrder).map(([id, item]) => (
-                            <li key={id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
+            <div style={{ border: "1px solid #ccc", borderRadius: "10px", padding: "2rem", marginBottom: "2rem" }}>
+                <h3 style={{ marginBottom: "1rem" }}>Ürünler</h3>
+                {orderItems.length > 0 ? (
+                    <ul style={{ listStyle: "none", padding: 0 }}>
+                        {orderItems.map(([id, item]) => (
+                            <li key={id} style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", fontSize: "18px" }}>
                                 <span>{item.name} x {item.count}</span>
-                                <span>{item.count * item.price}₺</span>
+                                <span>{item.price * item.count} ₺</span>
                             </li>
                         ))}
                     </ul>
-                    <p style={{ textAlign: 'right', fontSize: '1.2em', fontWeight: 'bold', marginTop: '20px' }}>
-                        <strong>Toplam: {totalPrice}₺</strong>
-                    </p>
-                    <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between' }}>
-                        <button onClick={handleGoBack} style={{ backgroundColor: "#6c757d", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}>
-                            Geri
-                        </button>
+                ) : (
+                    <p>Henüz siparişiniz yok.</p>
+                )}
+            </div>
 
-                        {/* Garson yeni siparişi onaylayabilir */}
-                        {canConfirm && (
-                            <button
-                                onClick={handleConfirm}
-                                style={{ backgroundColor: "green", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
-                            >
-                                Siparişi Onayla
-                            </button>
-                        )}
-                    </div>
-                </>
-            )}
+            <div style={{ textAlign: "right", fontSize: "24px", fontWeight: "bold", marginBottom: "2rem" }}>
+                Toplam: {total} ₺
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
+                <button
+                    onClick={handleConfirm}
+                    style={{
+                        padding: "15px 40px",
+                        fontSize: "18px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                    }}
+                >
+                    Siparişi Onayla
+                </button>
+                <button
+                    onClick={handleCancel}
+                    style={{
+                        padding: "15px 40px",
+                        fontSize: "18px",
+                        backgroundColor: "#dc3545",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                    }}
+                >
+                    İptal Et
+                </button>
+            </div>
         </div>
     );
 }

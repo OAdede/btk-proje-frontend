@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext.jsx';
 // Layouts
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import StaffLayout from './components/layout/StaffLayout.jsx';
+import WaiterLayout from './components/layout/WaiterLayout.jsx'; // 🔸 EKLENDİ
 
 // Auth Pages
 import Login from './pages/auth/Login.jsx';
@@ -27,7 +28,6 @@ import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
 
-
 // Stil dosyaları
 import "./App.css";
 
@@ -42,13 +42,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   // Eğer belirli bir rol veya roller gerekiyorsa kontrol et
   if (requiredRole) {
     const userRole = user.role;
-    // Gerekli rol bir dizi ise içinde olup olmadığını kontrol et
     if (Array.isArray(requiredRole)) {
       if (!requiredRole.includes(userRole)) {
         return <Navigate to={`/${user.baseRole}/home`} replace />;
       }
     } else {
-      // Gerekli rol tek bir string ise eşit olup olmadığını kontrol et
       if (userRole !== requiredRole) {
         return <Navigate to={`/${user.baseRole}/home`} replace />;
       }
@@ -57,7 +55,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 
   return children;
 };
-
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -94,7 +91,7 @@ function App() {
             path="/garson/*"
             element={
               <ProtectedRoute requiredRole="garson">
-                <StaffLayout />
+                <WaiterLayout />
               </ProtectedRoute>
             }
           >

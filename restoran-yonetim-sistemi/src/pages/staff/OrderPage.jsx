@@ -1,188 +1,244 @@
-import React, { useState, useContext, useEffect, useMemo } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { TableContext } from "../../context/TableContext";
-import { AuthContext } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
+import { TableContext } from "../../context/TableContext.jsx";
+
 
 export default function OrderPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
-    const { colors } = useTheme();
-
-    const [activeCategory, setActiveCategory] = useState("Ana Yemek");
+    const [activeCategory, setActiveCategory] = useState("yemekler");
     const [cart, setCart] = useState({});
+    const { orders, products, cancelOrder } = useContext(TableContext);
 
-    const {
-        saveOrder,
-        orders,
-        products,
-        processPayment,
-        decreaseConfirmedOrderItem,
-        increaseConfirmedOrderItem
-    } = useContext(TableContext);
-
-    const filteredProducts = useMemo(() => {
-        if (!products || !products[activeCategory]) return [];
-        return products[activeCategory];
-    }, [products, activeCategory]);
+    const isExistingOrderRef = useRef(false);
 
     useEffect(() => {
-        setCart({});
-    }, [tableId]);
+        const existingOrder = orders[tableId] || {};
+        isExistingOrderRef.current = Object.keys(existingOrder).length > 0;
 
-    const handleQuantityChange = (product, delta) => {
-        setCart((prev) => {
-            const currentQty = prev[product.id]?.count || 0;
-            const newQty = currentQty + delta;
-            if (newQty < 0 || newQty > product.stock) return prev;
-            const newCart = { ...prev };
-            if (newQty === 0) {
-                delete newCart[product.id];
-            } else {
-                newCart[product.id] = { ...product, count: newQty };
+        const initialCart = {};
+        Object.entries(existingOrder).forEach(([id, item]) => {
+            initialCart[id] = item.count;
+        });
+
+        setCart(initialCart);
+    }, [tableId, orders]);
+
+    const handleQuantityChange = (id, delta) => {
+        let product = null;
+
+        for (const cat of ["yemekler", "icecekler", "tatlilar"]) {
+            const found = products[cat].find((p) => p.id === id);
+            if (found) {
+                product = found;
+                break;
             }
-            return newCart;
+        }
+
+        if (!product) return;
+
+        setCart((prev) => {
+            const currentQty = prev[id] || 0;
+            const newQty = currentQty + delta;
+
+            if (newQty < 0) return prev;
+
+            const prevOrderQty = orders[tableId]?.[id.toString()]?.count || 0;
+            if (newQty > product.stock + prevOrderQty) return prev;
+
+            return { ...prev, [id]: newQty };
         });
     };
 
     const handleNext = () => {
-        if (Object.keys(cart).length === 0) {
-            alert("Lütfen siparişe ürün ekleyin.");
-            return;
+        const finalItems = {};
+
+        Object.entries(cart).forEach(([id, qty]) => {
+            if (qty > 0) {
+                let product = null;
+                for (const cat of ["yemekler", "icecekler", "tatlilar"]) {
+                    const found = products[cat].find((p) => p.id === parseInt(id));
+                    if (found) {
+                        product = found;
+                        break;
+                    }
+                }
+
+                if (product) {
+                    finalItems[id] = {
+                        name: product.name,
+                        price: product.price,
+                        count: qty,
+                    };
+                }
+            }
+        });
+
+        navigate(`/summary/${tableId}`, { state: { updatedOrder: finalItems } });
+    };
+
+    const handleBack = () => {
+        if (isExistingOrderRef.current) {
+            // SipariÅŸ zaten vardÄ±, iptal etmeden dÃ¶n
+            navigate("/");
+        } else {
+            // Yeni sipariÅŸti, iptal et ve dÃ¶n
+            cancelOrder(tableId);
+            navigate("/");
         }
-        saveOrder(tableId, cart);
-        navigate(`/${user.role}/summary/${tableId}`);
     };
 
-    const confirmedOrders = orders[tableId] || {};
-    const totalConfirmedPrice = Object.values(confirmedOrders).reduce(
-        (sum, item) => sum + item.price * item.count,
-        0
-    );
-
-    const isCashier = user && user.role === 'kasiyer';
-    const handlePayment = () => {
-        processPayment(tableId);
-        alert(`Masa ${tableId} için ödeme alındı.`);
-        navigate(`/${user.role}/home`);
-    };
-
-    const categoryButtonStyle = (cat) => ({
-        padding: "12px 28px",
-        fontSize: "1rem",
-        fontWeight: "600",
-        borderRadius: "12px",
-        border: "none",
-        cursor: "pointer",
-        transition: "all 0.3s ease",
-        backgroundColor: activeCategory === cat ? colors.primary : '#e9ecef',
-        color: activeCategory === cat ? '#ffffff' : '#343a40',
-    });
-
-    const quantityButtonStyle = {
-        background: '#343a40',
-        color: "#ffffff",
-        border: "none",
-        borderRadius: "8px",
-        width: "32px",
-        height: "32px",
-        fontSize: "1.2rem",
-        fontWeight: 'bold',
-        cursor: "pointer",
-        transition: "background-color 0.2s ease",
-    };
+    const currentOrders = orders[tableId] || {};
 
     return (
-        <div style={{ padding: '2rem', display: "flex", gap: '3rem', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+        <div style={{ padding: 30, display: "flex", gap: 50 }}>
+            {/* Sol Panel */}
             <div style={{ flex: 3 }}>
-                <h2 style={{ marginBottom: '1.5rem', color: '#212529', fontSize: '2rem' }}>Masa {tableId} - Sipariş</h2>
-                <div style={{ display: "flex", gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-                    {products && Object.keys(products).map((cat) => (
-                        <button key={cat} onClick={() => setActiveCategory(cat)} style={categoryButtonStyle(cat)}>
-                            {cat}
+                <h2>Masa {tableId} - Sipariş</h2>
+
+                {/* Kategori SeÃ§imi */}
+                <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
+                    {["yemekler", "icecekler", "tatlilar"].map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            style={{
+                                padding: "10px 20px",
+                                backgroundColor: activeCategory === cat ? "#007bff" : "#ddd",
+                                color: activeCategory === cat ? "white" : "black",
+                                borderRadius: 10,
+                                border: "none",
+                                cursor: "pointer",
+                            }}
+                        >
+                            {cat === "yemekler"
+                                ? "Yemekler"
+                                : cat === "icecekler"
+                                    ? "İçecekler"
+                                    : "Tatlılar"}
                         </button>
                     ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: '1.5rem' }}>
-                    {filteredProducts.map((product) => (
-                        <div key={product.id} style={{
-                            border: `1px solid #dee2e6`,
-                            borderRadius: '12px',
-                            padding: '1rem',
-                            backgroundColor: product.stock === 0 ? '#f8f9fa' : '#ffffff',
-                            textAlign: "center",
-                            opacity: product.stock === 0 ? 0.6 : 1,
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                        }}>
-                            <h3 style={{ color: '#212529', margin: "0 0 0.5rem 0", fontSize: '1.25rem' }}>{product.name}</h3>
-                            <p style={{ color: '#6c757d', margin: "0 0 1rem 0" }}>{product.price}₺ | Stok: {product.stock}</p>
-                            <div style={{ display: "flex", justifyContent: "center", gap: '1rem', alignItems: "center" }}>
-                                <button
-                                    onClick={() => handleQuantityChange(product, -1)}
-                                    disabled={product.stock === 0}
-                                    style={quantityButtonStyle}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#495057'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#343a40'}
-                                >-</button>
-                                <span style={{ color: '#212529', fontSize: "1.2rem", fontWeight: "bold" }}>{cart[product.id]?.count || 0}</span>
-                                <button
-                                    onClick={() => handleQuantityChange(product, 1)}
-                                    disabled={product.stock === 0 || (cart[product.id]?.count || 0) >= product.stock}
-                                    style={quantityButtonStyle}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#495057'}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#343a40'}
-                                >+</button>
+
+                {/* ÃœrÃ¼n Listesi */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+                    {products[activeCategory].map((product) => {
+                        const existingQty = currentOrders[product.id]?.count || 0;
+                        const cartQty = cart[product.id] || 0;
+                        const availableStock = product.stock + existingQty;
+                        const displayStock = availableStock - cartQty;
+
+                        return (
+                            <div
+                                key={product.id}
+                                style={{
+                                    padding: 15,
+                                    border: "1px solid #ccc",
+                                    borderRadius: 10,
+                                    textAlign: "center",
+                                    backgroundColor: "#f8f8f8",
+                                }}
+                            >
+                                <h3>{product.name}</h3>
+                                <p>
+                                    {product.price}â‚º | Stok: {displayStock >= 0 ? displayStock : 0}
+                                </p>
+                                <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+                                    <button onClick={() => handleQuantityChange(product.id, -1)}>-</button>
+                                    <span>{cart[product.id] || 0}</span>
+                                    <button onClick={() => handleQuantityChange(product.id, 1)}>+</button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', gap: '1rem' }}>
-                    <button onClick={() => navigate(-1)} style={{ padding: "1rem 2.5rem", fontSize: "1rem", fontWeight: '600', backgroundColor: '#6c757d', color: "#ffffff", border: "none", borderRadius: "10px", cursor: "pointer", transition: "all 0.3s ease" }}>Geri</button>
-                    <button onClick={handleNext} style={{ padding: "1rem 2.5rem", fontSize: "1rem", fontWeight: '600', backgroundColor: colors.primary, color: "#ffffff", border: "none", borderRadius: "10px", cursor: "pointer", transition: "all 0.3s ease" }}>İleri</button>
+
+                {/* Ä°leri / Geri ButonlarÄ± */}
+                <div style={{ textAlign: "right", marginTop: 30 }}>
+                    <button
+                        onClick={handleNext}
+                        style={{
+                            padding: "12px 30px",
+                            backgroundColor: "#28a745",
+                            color: "white",
+                            fontSize: "16px",
+                            border: "none",
+                            borderRadius: 8,
+                            marginRight: 10,
+                            cursor: "pointer",
+                        }}
+                    >
+                        Ä°leri
+                    </button>
+                    <button
+                        onClick={handleBack}
+                        style={{
+                            padding: "12px 30px",
+                            backgroundColor: "#6c757d",
+                            color: "white",
+                            fontSize: "16px",
+                            border: "none",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                        }}
+                    >
+                        Geri
+                    </button>
                 </div>
             </div>
-            <div style={{
-                flex: 2,
-                border: `1px solid #dee2e6`,
-                borderRadius: '12px',
-                padding: '1.5rem',
-                backgroundColor: '#ffffff',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                height: "fit-content",
-                maxHeight: "80vh",
-                overflowY: "auto",
-                position: "sticky",
-                top: "2rem",
-            }}>
-                <h3 style={{ color: '#212529', marginBottom: '1.5rem', borderBottom: '1px solid #dee2e6', paddingBottom: '1rem' }}>Onaylanmış Siparişler</h3>
-                {Object.keys(confirmedOrders).length > 0 ? (
+
+            {/* SaÄŸ Panel - SipariÅŸ Ã–zeti */}
+            <div
+                style={{
+                    flex: 2,
+                    border: "1px solid #ccc",
+                    borderRadius: 10,
+                    padding: 15,
+                    backgroundColor: "#fafafa",
+                    maxHeight: "600px",
+                    overflowY: "auto",
+                }}
+            >
+                <h3>Mevcut SipariÅŸ</h3>
+                {Object.keys(cart).length > 0 ? (
                     <>
-                        <ul style={{ listStyle: "none", padding: 0 }}>
-                            {Object.values(confirmedOrders).map((item) => (
-                                <li key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', fontSize: '1rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <span style={{ fontWeight: "600", color: '#495057' }}>{item.name}</span>
-                                        <span style={{ color: '#212529', marginLeft: '10px', display: 'block', fontSize: '0.9rem' }}>{item.count} x {item.price}₺ = {item.price * item.count}₺</span>
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <button onClick={() => decreaseConfirmedOrderItem(tableId, item)} style={{ ...quantityButtonStyle, width: '28px', height: '28px' }}>-</button>
-                                        <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{item.count}</span>
-                                        <button onClick={() => increaseConfirmedOrderItem(tableId, item)} style={{ ...quantityButtonStyle, width: '28px', height: '28px' }}>+</button>
-                                    </div>
-                                </li>
-                            ))}
+                        <ul>
+                            {Object.entries(cart).map(([id, count]) => {
+                                if (count <= 0) return null;
+
+                                let item = null;
+                                for (const cat of ["yemekler", "icecekler", "tatlilar"]) {
+                                    const found = products[cat].find((p) => p.id === parseInt(id));
+                                    if (found) {
+                                        item = found;
+                                        break;
+                                    }
+                                }
+
+                                return item ? (
+                                    <li key={id}>
+                                        {item.name} x {count} = {item.price * count}â‚º
+                                    </li>
+                                ) : null;
+                            })}
                         </ul>
-                        <p style={{ fontWeight: "bold", marginTop: '1.5rem', fontSize: "1.25rem", color: '#212529', borderTop: '1px solid #dee2e6', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Toplam Hesap:</span>
-                            <span>{totalConfirmedPrice}₺</span>
+                        <p style={{ fontWeight: "bold", marginTop: 10 }}>
+                            Toplam:{" "}
+                            {Object.entries(cart).reduce((total, [id, count]) => {
+                                let item = null;
+                                for (const cat of ["yemekler", "icecekler", "tatlilar"]) {
+                                    const found = products[cat].find((p) => p.id === parseInt(id));
+                                    if (found) {
+                                        item = found;
+                                        break;
+                                    }
+                                }
+                                return total + (item ? item.price * count : 0);
+                            }, 0)}â‚º
                         </p>
-                        {isCashier && (
-                            <button onClick={handlePayment} style={{ width: "100%", padding: "1rem", fontSize: "1rem", fontWeight: '600', backgroundColor: colors.success, color: "#ffffff", border: "none", borderRadius: "10px", cursor: "pointer", marginTop: "1rem", transition: "all 0.3s ease" }}>Ödeme Al ve Masayı Kapat</button>
-                        )}
                     </>
                 ) : (
-                    <p style={{ color: '#6c757d' }}>Henüz onaylanmış sipariş yok.</p>
+                    <p>Mevcut sipariş yok.</p>
                 )}
             </div>
         </div>
