@@ -16,7 +16,7 @@ function Login() {
     setError('');
 
     if (!email || !password) {
-      setError('E-posta ve şifre zorunludur.');
+      setError('Kullanıcı adı ve şifre zorunludur.');
       return;
     }
 
@@ -113,13 +113,13 @@ function Login() {
               fontWeight: 500,
               fontSize: '14px'
             }}>
-              E-posta Adresi
+              Kullanıcı Adı
             </label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              autoComplete="username"
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -131,7 +131,7 @@ function Login() {
                 fontWeight: 500,
                 boxSizing: 'border-box'
               }}
-              placeholder="E-posta adresinizi girin"
+              placeholder="Kullanıcı adınızı girin (admin, garson, kasiyer)"
             />
           </div>
           
