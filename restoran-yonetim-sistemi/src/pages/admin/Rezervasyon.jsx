@@ -1,29 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { TableContext } from '../../context/TableContext';
+import ReservationModal from '../../components/reservations/ReservationModal';
 import './Dashboard.css';
 
-// Örnek veri, normalde API'den veya context'ten gelir
-const sampleReservations = [
-    { id: 1, masaNo: 5, adSoyad: 'Ali Veli', telefon: '555 123 4567', tarih: '2024-08-15', saat: '19:30', kisiSayisi: 4, not: 'Pencere kenarı isteniyor.' },
-    { id: 2, masaNo: 2, adSoyad: 'Ayşe Yılmaz', telefon: '555 987 6543', tarih: '2024-08-15', saat: '20:00', kisiSayisi: 2, not: 'Doğum günü kutlaması.' },
-    { id: 3, masaNo: 8, adSoyad: 'Fatma Kaya', telefon: '555 111 2233', tarih: '2024-08-16', saat: '18:45', kisiSayisi: 5, not: '' },
-];
-
 const Rezervasyon = () => {
-    const [reservations, setReservations] = useState(sampleReservations);
+    const { reservations, addReservation } = useContext(TableContext);
     const [filter, setFilter] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [selectedTable, setSelectedTable] = useState(null);
 
     const handleAddReservation = () => {
-        console.log("Yeni rezervasyon ekleme modalı açılacak...");
-        // Burada ReservationModal açılabilir.
+        setShowModal(true);
     };
 
-    const filteredReservations = reservations.filter(res =>
+    const handleSubmitReservation = (formData) => {
+        if (selectedTable) {
+            addReservation(selectedTable, formData);
+        } else {
+            // Eğer masa seçilmemişse rastgele bir masa ata
+            const randomTable = `1-${Math.floor(Math.random() * 8) + 1}`;
+            addReservation(randomTable, formData);
+        }
+        setShowModal(false);
+        setSelectedTable(null);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedTable(null);
+    };
+
+    // TableContext'teki reservations objesini array'e çevir
+    const reservationsArray = Object.entries(reservations).map(([tableId, reservation]) => ({
+        id: tableId,
+        masaNo: tableId.split('-')[1], // "1-5" -> "5"
+        ...reservation
+    }));
+
+    const filteredReservations = reservationsArray.filter(res =>
         res.adSoyad.toLowerCase().includes(filter.toLowerCase()) ||
         res.telefon.includes(filter)
     );
 
     return (
         <div className="dashboard-container">
+            {/* Debug Bilgisi */}
+            <div style={{
+                background: 'green',
+                color: 'white',
+                padding: '10px',
+                marginBottom: '20px',
+                borderRadius: '5px'
+            }}>
+                Rezervasyon Sayfası: {reservationsArray.length} rezervasyon bulundu
+            </div>
+
             <div className="dashboard-header">
                 <h1>Rezervasyon Yönetimi</h1>
                 <p>Restoran rezervasyonlarını görüntüleyin ve yönetin</p>
@@ -67,6 +98,14 @@ const Rezervasyon = () => {
                     )}
                 </div>
             </div>
+
+            {/* Rezervasyon Modal */}
+            <ReservationModal
+                visible={showModal}
+                masaNo={selectedTable ? selectedTable.split('-')[1] : Math.floor(Math.random() * 8) + 1}
+                onClose={handleCloseModal}
+                onSubmit={handleSubmitReservation}
+            />
         </div>
     );
 };
