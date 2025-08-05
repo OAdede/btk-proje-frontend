@@ -81,7 +81,7 @@ const Rezervasyon = () => {
                             </div>
                         ))
                     ) : (
-                        <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
+                        <p style={styles.noResults}>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
                     )}
                 </div>
             </div>
@@ -89,7 +89,7 @@ const Rezervasyon = () => {
     );
 };
 
-// Stiller
+// Stiller - CSS değişkenleri kullanarak tema desteği
 const styles = {
     header: {
         display: "flex",
@@ -99,7 +99,7 @@ const styles = {
     },
     title: {
         fontSize: "1.5rem",
-        color: "#1e293b",
+        color: "var(--text)",
         fontWeight: 600
     },
     filterContainer: {
@@ -109,8 +109,12 @@ const styles = {
         width: "100%",
         padding: "12px",
         borderRadius: "8px",
-        border: "1px solid #e2e8f0",
-        fontSize: "1rem"
+        border: "1px solid var(--border)",
+        fontSize: "1rem",
+        backgroundColor: "var(--card)",
+        color: "var(--text)",
+        outline: "none",
+        transition: "border-color 0.2s ease"
     },
     listContainer: {
         display: "flex",
@@ -118,12 +122,13 @@ const styles = {
         gap: "15px"
     },
     card: {
-        backgroundColor: "#fff",
+        backgroundColor: "var(--card)",
         borderRadius: "10px",
         padding: "15px 20px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        border: "1px solid #e2e8f0",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease"
+        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        border: "1px solid var(--border)",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+        color: "var(--text)"
     },
     cardHeader: {
         display: "flex",
@@ -131,7 +136,7 @@ const styles = {
         alignItems: "flex-start",
         marginBottom: "10px",
         paddingBottom: "10px",
-        borderBottom: "1px solid #f0f0f0"
+        borderBottom: "1px solid var(--border)"
     },
     cardHeaderLeft: {
         display: "flex",
@@ -140,7 +145,7 @@ const styles = {
     },
     dateTime: {
         fontSize: "0.85rem",
-        color: "#666",
+        color: "var(--text-secondary)",
         fontWeight: "normal"
     },
     deleteButton: {
@@ -155,7 +160,12 @@ const styles = {
     },
     cardBody: {
         fontSize: "0.95rem",
-        color: "#334155"
+        color: "var(--text)"
+    },
+    noResults: {
+        color: "var(--text-secondary)",
+        textAlign: "center",
+        padding: "20px"
     }
 }
 
