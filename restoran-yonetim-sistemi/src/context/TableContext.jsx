@@ -2,10 +2,44 @@ import React, { createContext, useState, useEffect } from "react";
 
 export const TableContext = createContext();
 
-// ... initialProducts, initialTableStatus ve readFromLocalStorage kısmı değişmedi
+const initialProducts = {
+    "Sıcak İçecekler": [
+        { id: 101, name: "Türk Kahvesi", price: 50, stock: 100, category: "Sıcak İçecekler" },
+        { id: 102, name: "Filtre Kahve", price: 70, stock: 100, category: "Sıcak İçecekler" },
+        { id: 103, name: "Espresso", price: 60, stock: 100, category: "Sıcak İçecekler" },
+        { id: 104, name: "Çay", price: 30, stock: 200, category: "Sıcak İçecekler" }
+    ],
+    "Soğuk İçecekler": [
+        { id: 201, name: "Kola", price: 50, stock: 150, category: "Soğuk İçecekler" },
+        { id: 202, name: "Ayran", price: 40, stock: 150, category: "Soğuk İçecekler" },
+        { id: 203, name: "Su", price: 20, stock: 300, category: "Soğuk İçecekler" }
+    ],
+    "Tatlılar": [
+        { id: 301, name: "Cheesecake", price: 120, stock: 50, category: "Tatlılar" },
+        { id: 302, name: "Tiramisu", price: 110, stock: 50, category: "Tatlılar" },
+        { id: 303, name: "Sufle", price: 130, stock: 40, category: "Tatlılar" }
+    ]
+};
+
+const initialTableStatus = Array.from({ length: 10 }, (_, i) => ({
+    id: i + 1,
+    status: 'empty',
+})).reduce((acc, table) => {
+    acc[table.id] = table.status;
+    return acc;
+}, {});
+
+const readFromLocalStorage = (key, initialValue) => {
+    try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+        console.error("Error reading from localStorage", error);
+        return initialValue;
+    }
+};
 
 export function TableProvider({ children }) {
-    // State tanımlamaları
     const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', initialTableStatus));
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
     const [lastOrders, setLastOrders] = useState(() => readFromLocalStorage('lastOrders', {}));
@@ -16,10 +50,14 @@ export function TableProvider({ children }) {
     const [dailyOrderCount, setDailyOrderCount] = useState(() => {
         const stored = localStorage.getItem('dailyOrderCount');
         if (stored) {
-            const data = JSON.parse(stored);
-            const today = new Date().toDateString();
-            if (data.date !== today) return 0;
-            return data.count;
+            try {
+                const data = JSON.parse(stored);
+                const today = new Date().toDateString();
+                if (data.date !== today) return 0;
+                return data.count;
+            } catch (e) {
+                return 0;
+            }
         }
         return 0;
     });
