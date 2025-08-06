@@ -3,12 +3,12 @@
 /* Açık tema için chart stilleri */
 .light-theme .popular-items-chart .card {
   background-color: #ffffff !important;
-  color: #2c3e50 !important;
+  color: #2D1B69 !important;
   border: 1px solid #dee2e6 !important;
 }
 
 .light-theme .popular-items-chart .card-title {
-  color: #2c3e50 !important;
+  color: #2D1B69 !important;
 }
 
 .light-theme .popular-items-chart .chart-container {
@@ -17,9 +17,9 @@
 
 /* Koyu tema için chart stilleri */
 .dark-theme .popular-items-chart .card {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
   color: white !important;
-  border: 1px solid #34495e !important;
+  border: 1px solid #2D1B69 !important;
 }
 
 .dark-theme .popular-items-chart .card-title {
@@ -27,12 +27,12 @@
 }
 
 .dark-theme .popular-items-chart .chart-container {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 /* Chart.js canvas için koyu tema stilleri */
 .dark-theme .popular-items-chart canvas {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 /* Chart.js legend için koyu tema stilleri */
@@ -42,48 +42,48 @@
 
 /* Chart.js tooltip için koyu tema stilleri */
 .dark-theme .popular-items-chart .chartjs-tooltip {
-  background-color: #34495e !important;
+  background-color: #2D1B69 !important;
   color: white !important;
-  border: 1px solid #34495e !important;
+  border: 1px solid #2D1B69 !important;
 }
 
 /* Chart.js için genel koyu tema stilleri */
 .dark-theme .popular-items-chart .chartjs-render-monitor {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 .dark-theme .popular-items-chart .chartjs-chart {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 /* Chart container için ek stiller */
 .dark-theme .popular-items-chart .chart-container {
-  background-color: #2c3e50 !important;
-  border: 1px solid #34495e !important;
+  background-color: #2D1B69 !important;
+  border: 1px solid #2D1B69 !important;
 }
 
 /* Chart.js için daha spesifik canvas stilleri */
 .dark-theme .popular-items-chart .chartjs-chart canvas {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 .dark-theme .popular-items-chart .chartjs-chart-js {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 /* Chart.js için genel stiller */
 .dark-theme .popular-items-chart canvas {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 .dark-theme .popular-items-chart .chartjs-chart {
-  background-color: #2c3e50 !important;
+  background-color: #2D1B69 !important;
 }
 
 /* Chart container için border ve padding */
 .dark-theme .popular-items-chart .chart-container {
-  background-color: #2c3e50 !important;
-  border: 2px solid #34495e !important;
+  background-color: #2D1B69 !important;
+  border: 2px solid #2D1B69 !important;
   border-radius: 8px !important;
 }
 

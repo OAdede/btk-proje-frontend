@@ -3,13 +3,22 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { TableContext } from "../../context/TableContext";
 import "./AdminLayout.css";
 
 const AdminSidebar = () => {
     const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
+    const { reservations, removeReservation } = useContext(TableContext);
     const [showSettings, setShowSettings] = useState(false);
+    const [showReservations, setShowReservations] = useState(false);
+
+    // Kat harflerini belirle
+    const getFloorLetter = (floorIndex) => {
+        if (floorIndex === 0) return 'Z'; // Zemin kat
+        return String.fromCharCode(64 + floorIndex); // A, B, C, D...
+    };
 
     const handleLogout = () => {
         logout();
@@ -17,20 +26,18 @@ const AdminSidebar = () => {
     };
 
     return (
-        <div className="admin-sidebar" style={{ background: colors.sidebar }}>
+        <div className="admin-sidebar">
             <div className="admin-sidebar-header">
                 <div className="admin-user-info">
                     <div className="admin-user-name" style={{
                         fontFamily: '00623 Sans Serif Bold, sans-serif',
                         fontWeight: '700',
-                        fontSize: '1.4rem',
-                        color: colors.text
+                        fontSize: '1.4rem'
                     }}>Betül</div>
                     <div className="admin-user-role" style={{
                         fontFamily: '00623 Sans Serif Bold, sans-serif',
                         fontWeight: '700',
-                        fontSize: '1.2rem',
-                        color: colors.textSecondary
+                        fontSize: '1.2rem'
                     }}>Admin</div>
                 </div>
             </div>
@@ -60,6 +67,132 @@ const AdminSidebar = () => {
                     Rapor
                 </NavLink>
             </nav>
+
+            {/* Rezervasyonlar Bölümü */}
+            <div style={{
+                padding: '15px',
+                borderTop: `1px solid ${colors.border}`,
+                borderBottom: `1px solid ${colors.border}`
+            }}>
+                <button
+                    onClick={() => setShowReservations(!showReservations)}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        color: colors.text,
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}
+                >
+                    <span>📅 Rezervasyonlar</span>
+                    <span style={{
+                        background: Object.keys(reservations).length > 0 ? colors.success : colors.textSecondary,
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                    }}>
+                        {Object.keys(reservations).length}
+                    </span>
+                </button>
+
+                {showReservations && (
+                    <div style={{
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        marginTop: '10px'
+                    }}>
+                        {Object.keys(reservations).length === 0 ? (
+                            <div style={{
+                                color: colors.textSecondary,
+                                fontSize: '0.9rem',
+                                textAlign: 'center',
+                                padding: '10px',
+                                fontStyle: 'italic'
+                            }}>
+                                Henüz rezervasyon yok
+                            </div>
+                        ) : (
+                            Object.entries(reservations).map(([tableId, reservation]) => (
+                                <div key={tableId} style={{
+                                    background: colors.card,
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    marginBottom: '8px',
+                                    border: `1px solid ${colors.border}`,
+                                    position: 'relative'
+                                }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-start',
+                                        marginBottom: '8px'
+                                    }}>
+                                        <div style={{
+                                            color: colors.text,
+                                            fontWeight: 'bold',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            Masa {getFloorLetter(parseInt(tableId.split('-')[0]))}{tableId.split('-')[1]}
+                                        </div>
+                                        <button
+                                            onClick={() => removeReservation(tableId)}
+                                            style={{
+                                                background: colors.danger,
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '20px',
+                                                height: '20px',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                            title="Rezervasyonu İptal Et"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                    <div style={{
+                                        color: colors.textSecondary,
+                                        fontSize: '0.8rem',
+                                        marginBottom: '4px'
+                                    }}>
+                                        {reservation.adSoyad}
+                                    </div>
+                                    <div style={{
+                                        color: colors.textSecondary,
+                                        fontSize: '0.8rem',
+                                        marginBottom: '4px'
+                                    }}>
+                                        {reservation.tarih} - {reservation.saat}
+                                    </div>
+                                    <div style={{
+                                        color: colors.textSecondary,
+                                        fontSize: '0.8rem'
+                                    }}>
+                                        {reservation.kisiSayisi} kişi
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Alt kısım - Ayarlar ve Çıkış */}
             <div className="admin-sidebar-bottom">

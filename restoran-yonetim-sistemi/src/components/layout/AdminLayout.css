@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: #f8f9fa;
+    background-color: var(--background);
 }
 
 .admin-content-wrapper {
@@ -12,11 +12,11 @@
 
 .admin-sidebar {
     width: 260px;
-    background: #ffffff;
-    border-right: 1px solid #e9ecef;
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
     padding: 24px 16px;
     box-sizing: border-box;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px var(--shadow);
     display: flex;
     flex-direction: column;
     height: 100vh;
@@ -31,7 +31,7 @@
 
 .admin-sidebar-header h2 {
     font-size: 1.5rem;
-    color: #343a40;
+    color: var(--text);
     font-weight: 700;
     margin: 0;
     margin-bottom: 16px;
@@ -39,19 +39,19 @@
 
 .admin-user-info {
     padding: 12px 0;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--border);
 }
 
 .admin-user-name {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #343a40;
+    color: var(--text);
     margin-bottom: 4px;
 }
 
 .admin-user-role {
     font-size: 0.85rem;
-    color: #6c757d;
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -66,7 +66,7 @@
     display: block;
     padding: 12px 16px;
     text-decoration: none;
-    color: #495057;
+    color: var(--text-secondary);
     font-size: 1rem;
     font-weight: 500;
     border-radius: 8px;
@@ -79,43 +79,87 @@
 }
 
 .admin-nav-item:hover {
-    background: #f1f3f5;
-    color: #007bff;
+    background: var(--hover);
+    color: var(--primary);
 }
 
 .admin-nav-item.active {
-    background: #007bff;
+    background: var(--primary);
     color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 4px 12px var(--primary-shadow);
 }
 
 .admin-sidebar-bottom {
     margin-top: auto;
     padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border);
 }
 
 .admin-settings-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px var(--shadow);
 }
 
 .admin-logout-btn {
     margin-top: 10px;
-    background: #dc3545 !important;
+    background: var(--danger) !important;
     color: #ffffff !important;
 }
 
 .admin-logout-btn:hover {
-    background: #c82333 !important;
+    background: var(--danger-hover) !important;
     color: #ffffff !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    box-shadow: 0 4px 12px var(--danger-shadow);
 }
 
 .admin-main-content {
     flex: 1;
     padding: 40px;
     min-width: 0;
-    /* Flexbox'ın daralmasını sağlar */
+    background: var(--background);
+}
+
+/* Light theme variables */
+.light-theme {
+    --background: #F5EFFF;
+    --sidebar: #E5D9F2;
+    --text: #1A0B3D;
+    --text-secondary: #2D1B69;
+    --text-muted: #4A3B76;
+    --border: #CDC1FF;
+    --border-light: #E5D9F2;
+    --primary: #A294F9;
+    --primary-shadow: rgba(162, 148, 249, 0.2);
+    --success: #10B981;
+    --danger: #EF4444;
+    --danger-hover: #DC2626;
+    --danger-shadow: rgba(239, 68, 68, 0.3);
+    --warning: #F59E0B;
+    --info: #3B82F6;
+    --hover: #CDC1FF;
+    --shadow: rgba(162, 148, 249, 0.1);
+    --overlay: rgba(162, 148, 249, 0.5);
+}
+
+/* Dark theme variables */
+.dark-theme {
+    --background: #32263A;
+    --sidebar: #473653;
+    --text: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-muted: #b0b0b0;
+    --border: #53364D;
+    --border-light: #3A2636;
+    --primary: #a78bfa;
+    --primary-shadow: rgba(167, 139, 250, 0.2);
+    --success: #4ade80;
+    --danger: #f87171;
+    --danger-hover: #ef4444;
+    --danger-shadow: rgba(248, 113, 113, 0.3);
+    --warning: #fbbf24;
+    --info: #60a5fa;
+    --hover: #53364D;
+    --shadow: rgba(50, 38, 58, 0.3);
+    --overlay: rgba(50, 38, 58, 0.8);
 }

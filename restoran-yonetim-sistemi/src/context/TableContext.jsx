@@ -121,6 +121,56 @@ export function TableProvider({ children }) {
         // Benzer şekilde, bu da artık yeni akışla yönetiliyor.
     };
 
+    // Rezervasyon ekleme fonksiyonu
+    const addReservation = (tableId, reservationData) => {
+        setReservations(prev => ({
+            ...prev,
+            [tableId]: reservationData
+        }));
+        // Rezervasyon eklendiğinde masa durumunu rezerve olarak güncelle
+        updateTableStatus(tableId, 'reserved');
+    };
+
+    // Rezervasyon silme fonksiyonu
+    const removeReservation = (tableId) => {
+        console.log('Rezervasyon siliniyor:', tableId);
+
+        setReservations(prev => {
+            const newReservations = { ...prev };
+            delete newReservations[tableId];
+            console.log('Güncellenmiş rezervasyonlar:', newReservations);
+            return newReservations;
+        });
+
+        // Rezervasyon silindiğinde masa durumunu boş olarak güncelle
+        updateTableStatus(tableId, 'empty');
+
+        // localStorage'ı da temizle
+        const currentReservations = JSON.parse(localStorage.getItem('reservations') || '{}');
+        delete currentReservations[tableId];
+        localStorage.setItem('reservations', JSON.stringify(currentReservations));
+    };
+
+    // Tüm rezervasyonları temizleme fonksiyonu (debug için)
+    const clearAllReservations = () => {
+        setReservations({});
+        localStorage.setItem('reservations', JSON.stringify({}));
+        
+        // Tüm masaları boş duruma getir
+        setTableStatus(prev => {
+            const newTableStatus = { ...prev };
+            Object.keys(newTableStatus).forEach(tableId => {
+                // Sadece rezerve olan masaları boş yap, dolu masaları etkileme
+                if (newTableStatus[tableId] === 'reserved') {
+                    newTableStatus[tableId] = 'empty';
+                }
+            });
+            return newTableStatus;
+        });
+        
+        console.log('Tüm rezervasyonlar temizlendi ve masalar boş duruma getirildi');
+    };
+
 
     useEffect(() => {
         localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
@@ -145,6 +195,9 @@ export function TableProvider({ children }) {
                 clearLastOrder,
                 decreaseConfirmedOrderItem,
                 increaseConfirmedOrderItem,
+                addReservation,
+                removeReservation,
+                clearAllReservations,
             }}
         >
             {children}

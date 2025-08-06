@@ -9,24 +9,20 @@ export default function TablesGridPage() {
 
     const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
 
-    const getColor = (status) => {
-        switch (status) {
-            case "empty":
-                return "#8BC34A"; // yeşil
-            case "occupied":
-                return "#F44336"; // kırmızı
-            case "reserved":
-                return "#FFC107"; // sarı
-            default:
-                return "#8BC34A";
-        }
+    const statusInfo = {
+        "empty": { text: "Boş", color: "#4caf50", textColor: "#fff" },
+        "bos": { text: "Boş", color: "#4caf50", textColor: "#fff" },
+        "occupied": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
+        "dolu": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
+        "reserved": { text: "Rezerve", color: "#ffc107", textColor: "#212529" },
     };
 
-    // Test amaçlı bir masayı rezerve yapalım
-    React.useEffect(() => {
-        updateTableStatus("1-3", "reserved");
-        updateTableStatus("1-5", "occupied");
-    }, []);
+    const getStatus = (tableId) => {
+        const status = tableStatus[tableId] || "empty";
+        return statusInfo[status] || statusInfo["empty"];
+    };
+
+
 
     const handleTableClick = (tableId) => {
         const status = tableStatus[tableId] || "empty";
@@ -38,56 +34,69 @@ export default function TablesGridPage() {
     }
 
     return (
-        <div style={{ padding: "2rem", display: "flex", gap: "2rem", height: '100%' }}>
-            <div style={{ flexGrow: 1 }}>
-                <h2 style={{ fontWeight: 'bold', fontSize: '2rem', color: '#333' }}>Kat {selectedFloor} - Masa Seçimi</h2>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "1.5rem" }}>
-                    {tables.map((tableId) => (
-                        <div
-                            key={tableId}
-                            style={{
-                                width: "140px",
-                                height: "140px",
-                                backgroundColor: getColor(tableStatus[tableId] || "empty"),
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                fontSize: "36px",
-                                color: (tableStatus[tableId] === 'reserved' ? 'black' : 'white'),
-                                borderRadius: "12px",
-                                cursor: "pointer",
-                                border: "4px solid #555",
-                                userSelect: "none",
-                                fontWeight: 'bold',
-                                boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
-                            }}
-                            onClick={() => handleTableClick(tableId)}
-                            title={`Masa ${tableId}`}
-                        >
-                            {tableId.split("-")[1]}
-                        </div>
-                    ))}
+        <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+            <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: "2rem", color: "#343a40", marginBottom: "1.5rem" }}>
+                    Kat {selectedFloor} - Masa Seçimi
+                </h2>
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "1.5rem"
+                }}>
+                    {tables.map((tableId) => {
+                        const status = getStatus(tableId);
+                        return (
+                            <div
+                                key={tableId}
+                                style={{
+                                    backgroundColor: status.color,
+                                    color: status.textColor,
+                                    height: "140px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: "12px",
+                                    cursor: "pointer",
+                                    userSelect: "none",
+                                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                }}
+                                onClick={() => handleTableClick(tableId)}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                title={`Masa ${tableId}`}
+                            >
+                                <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
+                                    {tableId.split("-")[1]}
+                                </div>
+                                <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
+                                    {status.text}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
-            <div style={{ width: "180px", flexShrink: 0 }}>
-                <h3 style={{ fontWeight: 'bold', fontSize: '1.5rem', color: '#333' }}>Katlar</h3>
+            <div style={{ width: "150px", flexShrink: 0 }}>
+                <h3 style={{ fontSize: "1.25rem", color: "#495057", marginBottom: "1rem" }}>Katlar</h3>
                 {[1, 2].map((floor) => (
                     <div
                         key={floor}
                         onClick={() => setSelectedFloor(floor)}
                         style={{
-                            padding: "1.2rem",
+                            padding: "1rem",
                             marginBottom: "1rem",
-                            borderRadius: "10px",
+                            borderRadius: "8px",
                             backgroundColor: selectedFloor === floor ? "#007bff" : "#e9ecef",
-                            color: selectedFloor === floor ? "white" : "black",
+                            color: selectedFloor === floor ? "white" : "#495057",
                             textAlign: "center",
                             cursor: "pointer",
                             fontWeight: "bold",
                             userSelect: "none",
-                            fontSize: '1.1rem',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            transition: "background-color 0.2s ease",
                         }}
                     >
                         Kat {floor}

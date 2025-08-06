@@ -39,6 +39,7 @@ export const ThemeProvider = ({ children }) => {
     colors: isDarkMode ? {
       // Yeni koyu tema renkleri - tatlı ve hoş görünüm
       background: '#32263A', // En koyu arka plan
+      sidebar: '#473653', // Sidebar arka planı
       cardBackground: '#473653', // Kart arka planı
       surfaceBackground: '#513653', // Yüzey arka planı
       accentBackground: '#53364D', // Vurgu arka planı
@@ -60,6 +61,7 @@ export const ThemeProvider = ({ children }) => {
     } : {
       // Yeni açık tema renkleri - Mor paleti
       background: '#F5EFFF', // En açık mor arka plan
+      sidebar: '#E5D9F2', // Sidebar arka planı
       cardBackground: '#CBC3E3', // Kart arka planı - güncellendi
       surfaceBackground: '#E5D9F2', // Açık mor yüzey arka planı
       accentBackground: '#CDC1FF', // Orta mor vurgu arka planı
