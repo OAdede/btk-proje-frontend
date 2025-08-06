@@ -27,27 +27,27 @@ function Login() {
     setError('');
 
     if (!email || !password) {
-      setError('Kullanıcı adı ve şifre zorunludur.');
+      setError('Email ve şifre zorunludur.');
       return;
     }
 
     try {
-      const role = await login(email, password);
-      if (role) {
-        // Role göre doğru ana sayfaya yönlendir
-        if (role === 'admin') {
+      const roleId = await login(email, password);
+
+      if (roleId !== null && roleId !== undefined) {
+        if (roleId === 0) {
           navigate('/admin/dashboard');
-        } else if (role === 'garson') {
+        } else if (roleId === 1) {
           navigate('/garson/home');
-        } else if (role === 'kasiyer') {
+        } else if (roleId === 2) {
           navigate('/kasiyer/home');
         } else {
-          // Varsayılan bir rota (genellikle olmamalı)
+          // Varsayılan bir rota veya hata yönetimi
           navigate('/');
         }
       }
     } catch (err) {
-      setError(err.message || 'Bir hata oluştu.');
+      setError(err.message || 'Giriş sırasında bir hata oluştu.');
     }
   };
 
@@ -88,8 +88,8 @@ function Login() {
             boxShadow: '0 4px 16px 0 rgba(167, 139, 250, 0.3)',
             overflow: 'hidden'
           }}>
-            <img 
-              src="/logo-dark.png" 
+            <img
+              src="/logo-dark.png"
               alt="Restoran Yönetim Sistemi Logo"
               style={{
                 width: '50px',
@@ -118,7 +118,7 @@ function Login() {
             Restoran Yönetim Sistemine Hoş Geldiniz
           </p>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{
@@ -128,13 +128,13 @@ function Login() {
               fontWeight: 500,
               fontSize: '14px'
             }}>
-              Kullanıcı Adı
+              Email
             </label>
             <input
-              type="text"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
+              autoComplete="email"
               style={{
                 width: '100%',
                 padding: '12px 16px',
@@ -146,10 +146,10 @@ function Login() {
                 fontWeight: 500,
                 boxSizing: 'border-box'
               }}
-              placeholder="Kullanıcı adınızı girin (admin, garson, kasiyer)"
+              placeholder="Email adresinizi girin"
             />
           </div>
-          
+
           <div style={{ marginBottom: '16px' }}>
             <label style={{
               display: 'block',
@@ -179,7 +179,7 @@ function Login() {
               placeholder="Şifrenizi girin"
             />
           </div>
-          
+
           {error && (
             <div style={{
               margin: '16px 0',
@@ -194,7 +194,7 @@ function Login() {
               {error}
             </div>
           )}
-          
+
           <button
             type="submit"
             style={{
@@ -214,7 +214,7 @@ function Login() {
           >
             Giriş Yap
           </button>
-          
+
           <Link
             to="/forgot-password"
             style={{

@@ -2,103 +2,143 @@ import React, { createContext, useState, useEffect } from "react";
 
 export const TableContext = createContext();
 
-const initialProducts = {
-    "Ana Yemek": [
-        { id: 1, name: "Pizza", price: 120, stock: 10, category: "Ana Yemek" },
-        { id: 2, name: "Hamburger", price: 90, stock: 8, category: "Ana Yemek" },
-    ],
-    "İçecekler": [
-        { id: 101, name: "Kola", price: 20, stock: 15, category: "İçecekler" },
-        { id: 102, name: "Ayran", price: 10, stock: 12, category: "İçecekler" },
-    ],
-    "Tatlılar": [
-        { id: 201, name: "Baklava", price: 50, stock: 10, category: "Tatlılar" },
-        { id: 202, name: "Künefe", price: 55, stock: 8, category: "Tatlılar" },
-    ],
-};
-
-function readFromLocalStorage(key, defaultValue) {
-    try {
-        const stored = localStorage.getItem(key);
-        return stored ? JSON.parse(stored) : defaultValue;
-    } catch {
-        return defaultValue;
-    }
-}
+// ... initialProducts, initialTableStatus ve readFromLocalStorage kısmı değişmedi
 
 export function TableProvider({ children }) {
-    const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', {}));
+    // State tanımlamaları
+    const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', initialTableStatus));
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
     const [lastOrders, setLastOrders] = useState(() => readFromLocalStorage('lastOrders', {}));
     const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
+    const [timestamps, setTimestamps] = useState({});
 
-    const updateLastOrder = (tableId, finalCart, initialOrder) => {
-        const changes = {};
-        const allKeys = new Set([...Object.keys(finalCart), ...Object.keys(initialOrder)]);
-
-        allKeys.forEach(id => {
-            const finalCount = finalCart[id]?.count || 0;
-            const initialCount = initialOrder[id]?.count || 0;
-            if (finalCount !== initialCount) {
-                changes[id] = { ...finalCart[id], count: finalCount - initialCount };
-            }
-        });
-        setLastOrders(prev => ({ ...prev, [tableId]: changes }));
-    };
-
-    const confirmOrder = (tableId) => {
-        const changes = lastOrders[tableId] || {};
-        if (Object.keys(changes).length === 0) return;
-
-        setProducts(prevProducts => {
-            const updatedProducts = JSON.parse(JSON.stringify(prevProducts));
-            Object.values(changes).forEach(item => {
-                const category = item.category;
-                if (category && updatedProducts[category]) {
-                    const productIndex = updatedProducts[category].findIndex(p => p.id === item.id);
-                    if (productIndex !== -1) {
-                        updatedProducts[category][productIndex].stock -= item.count;
-                    }
-                }
-            });
-            return updatedProducts;
-        });
-
-        setOrders(prevOrders => {
-            const updatedOrders = { ...prevOrders };
-            const currentOrder = updatedOrders[tableId] || {};
-            Object.entries(changes).forEach(([id, item]) => {
-                const currentCount = currentOrder[id]?.count || 0;
-                const newCount = currentCount + item.count;
-                if (newCount > 0) {
-                    currentOrder[id] = { ...item, count: newCount };
-                } else {
-                    delete currentOrder[id];
-                }
-            });
-            if (Object.keys(currentOrder).length === 0) {
-                delete updatedOrders[tableId];
-            } else {
-                updatedOrders[tableId] = currentOrder;
-            }
-            return updatedOrders;
-        });
-
-        clearLastOrder(tableId);
-        updateTableStatus(tableId, Object.keys(orders[tableId] || {}).length > 0 ? "occupied" : "empty");
-    };
-
-    const clearLastOrder = (tableId) => {
-        setLastOrders(prev => {
-            const newLastOrders = { ...prev };
-            delete newLastOrders[tableId];
-            return newLastOrders;
-        });
-    };
+    const [dailyOrderCount, setDailyOrderCount] = useState(() => {
+        const stored = localStorage.getItem('dailyOrderCount');
+        if (stored) {
+            const data = JSON.parse(stored);
+            const today = new Date().toDateString();
+            if (data.date !== today) return 0;
+            return data.count;
+        }
+        return 0;
+    });
+    const [monthlyOrderCount, setMonthlyOrderCount] = useState(0);
+    const [yearlyOrderCount, setYearlyOrderCount] = useState(0);
 
     const updateTableStatus = (tableId, status) => {
         setTableStatus(prev => ({ ...prev, [tableId]: status }));
+    };
+
+    const isWorkingHours = () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        return currentHour >= 9 && currentHour < 22;
+    };
+
+    const incrementDailyOrderCount = () => {
+        if (!isWorkingHours()) return;
+        const today = new Date().toDateString();
+        const newCount = dailyOrderCount + 1;
+        setDailyOrderCount(newCount);
+        localStorage.setItem('dailyOrderCount', JSON.stringify({
+            date: today,
+            count: newCount
+        }));
+    };
+
+    const saveFinalOrder = (tableId, finalItems) => {
+        const prevOrder = orders[tableId] || {};
+        const updatedProducts = { ...products };
+
+        const totalPrice = Object.values(finalItems).reduce(
+            (sum, item) => sum + item.price * item.count,
+            0
+        );
+        const isOrderEmpty = totalPrice === 0;
+
+        Object.entries(finalItems).forEach(([id, newItem]) => {
+            const prevItem = prevOrder[id];
+            const quantityDifference = (newItem.count || 0) - (prevItem?.count || 0);
+            Object.keys(updatedProducts).forEach(category => {
+                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                if (productIndex !== -1) {
+                    const newStock = updatedProducts[category][productIndex].stock - quantityDifference;
+                    updatedProducts[category][productIndex].stock = newStock >= 0 ? newStock : 0;
+                }
+            });
+        });
+
+        Object.keys(prevOrder).forEach(id => {
+            if (!finalItems[id]) {
+                const prevItem = prevOrder[id];
+                Object.keys(updatedProducts).forEach(category => {
+                    const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                    if (productIndex !== -1) {
+                        updatedProducts[category][productIndex].stock += prevItem.count;
+                    }
+                });
+            }
+        });
+
+        setProducts(updatedProducts);
+
+        if (isOrderEmpty) {
+            const updatedOrders = { ...orders };
+            delete updatedOrders[tableId];
+            setOrders(updatedOrders);
+
+            setTimestamps(prev => {
+                const copy = { ...prev };
+                delete copy[tableId];
+                return copy;
+            });
+
+            updateTableStatus(tableId, "empty");
+        } else {
+            if (!prevOrder || Object.keys(prevOrder).length === 0) {
+                incrementDailyOrderCount();
+            }
+
+            setOrders(prev => ({ ...prev, [tableId]: finalItems }));
+
+            setTimestamps(prev => ({
+                ...prev,
+                [tableId]: Date.now(),
+            }));
+
+            updateTableStatus(tableId, "occupied");
+        }
+    };
+
+    const restoreStock = (order) => {
+        const updatedProducts = { ...products };
+        Object.entries(order).forEach(([id, item]) => {
+            Object.keys(updatedProducts).forEach(category => {
+                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
+                if (productIndex !== -1) {
+                    updatedProducts[category][productIndex].stock += item.count;
+                }
+            });
+        });
+        setProducts(updatedProducts);
+    };
+
+    const cancelOrder = (tableId) => {
+        const currentOrder = orders[tableId];
+        if (currentOrder) {
+            restoreStock(currentOrder);
+            const updatedOrders = { ...orders };
+            delete updatedOrders[tableId];
+            setOrders(updatedOrders);
+            updateTableStatus(tableId, "empty");
+
+            setTimestamps(prev => {
+                const copy = { ...prev };
+                delete copy[tableId];
+                return copy;
+            });
+        }
     };
 
     const processPayment = (tableId) => {
@@ -110,67 +150,158 @@ export function TableProvider({ children }) {
         });
     };
 
-    // Diğer fonksiyonlar...
+    const removeConfirmedOrderItem = (tableId, itemToRemove) => {
+        setOrders(prevOrders => {
+            const newOrders = { ...prevOrders };
+            if (!newOrders[tableId]) return prevOrders;
+            delete newOrders[tableId][itemToRemove.id];
+            if (Object.keys(newOrders[tableId]).length === 0) {
+                delete newOrders[tableId];
+                setTableStatus(prevStatus => ({ ...prevStatus, [tableId]: 'empty' }));
+            }
+            return newOrders;
+        });
+        setProducts(prevProducts => {
+            const newProducts = JSON.parse(JSON.stringify(prevProducts));
+            const category = itemToRemove.category;
+            if (category && newProducts[category]) {
+                const productIndex = newProducts[category].findIndex(p => p.id === itemToRemove.id);
+                if (productIndex > -1) {
+                    newProducts[category][productIndex].stock += itemToRemove.count;
+                }
+            }
+            return newProducts;
+        });
+    };
+
     const decreaseConfirmedOrderItem = (tableId, itemToDecrease) => {
-        // Bu fonksiyonun mantığı artık `updateLastOrder` ve `confirmOrder` içinde
-        // ele alındığı için basitleştirilebilir veya kaldırılabilir.
-        // Şimdilik doğrudan `orders`'ı değiştirmemesi için boş bırakıyorum.
+        if (itemToDecrease.count <= 1) {
+            removeConfirmedOrderItem(tableId, itemToDecrease);
+        } else {
+            setOrders(prevOrders => {
+                const newOrders = { ...prevOrders };
+                newOrders[tableId][itemToDecrease.id].count -= 1;
+                return newOrders;
+            });
+            setProducts(prevProducts => {
+                const newProducts = JSON.parse(JSON.stringify(prevProducts));
+                const category = itemToDecrease.category;
+                const productIndex = newProducts[category].findIndex(p => p.id === itemToDecrease.id);
+                if (productIndex > -1) {
+                    newProducts[category][productIndex].stock += 1;
+                }
+                return newProducts;
+            });
+        }
     };
 
     const increaseConfirmedOrderItem = (tableId, itemToIncrease) => {
-        // Benzer şekilde, bu da artık yeni akışla yönetiliyor.
+        const category = itemToIncrease.category;
+        const productInStock = products[category]?.find(p => p.id === itemToIncrease.id);
+        if (productInStock && productInStock.stock > 0) {
+            setOrders(prevOrders => {
+                const newOrders = { ...prevOrders };
+                newOrders[tableId][itemToIncrease.id].count += 1;
+                return newOrders;
+            });
+            setProducts(prevProducts => {
+                const newProducts = JSON.parse(JSON.stringify(prevProducts));
+                const productIndex = newProducts[category].findIndex(p => p.id === itemToIncrease.id);
+                if (productIndex > -1) {
+                    newProducts[category][productIndex].stock -= 1;
+                }
+                return newProducts;
+            });
+        } else {
+            alert("Stokta yeterli ürün yok!");
+        }
     };
 
-    // Rezervasyon ekleme fonksiyonu
     const addReservation = (tableId, reservationData) => {
+        const reservationId = crypto.randomUUID();
+        const newReservation = {
+            id: reservationId,
+            tableId,
+            ...reservationData,
+            createdAt: new Date().toISOString()
+        };
         setReservations(prev => ({
             ...prev,
-            [tableId]: reservationData
+            [tableId]: newReservation
         }));
-        // Rezervasyon eklendiğinde masa durumunu rezerve olarak güncelle
-        updateTableStatus(tableId, 'reserved');
+        setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
+        return reservationId;
     };
 
-    // Rezervasyon silme fonksiyonu
     const removeReservation = (tableId) => {
-        console.log('Rezervasyon siliniyor:', tableId);
-
         setReservations(prev => {
             const newReservations = { ...prev };
             delete newReservations[tableId];
-            console.log('Güncellenmiş rezervasyonlar:', newReservations);
             return newReservations;
         });
-
-        // Rezervasyon silindiğinde masa durumunu boş olarak güncelle
-        updateTableStatus(tableId, 'empty');
-
-        // localStorage'ı da temizle
-        const currentReservations = JSON.parse(localStorage.getItem('reservations') || '{}');
-        delete currentReservations[tableId];
-        localStorage.setItem('reservations', JSON.stringify(currentReservations));
+        setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
     };
 
-    // Tüm rezervasyonları temizleme fonksiyonu (debug için)
     const clearAllReservations = () => {
         setReservations({});
         localStorage.setItem('reservations', JSON.stringify({}));
-        
-        // Tüm masaları boş duruma getir
         setTableStatus(prev => {
             const newTableStatus = { ...prev };
             Object.keys(newTableStatus).forEach(tableId => {
-                // Sadece rezerve olan masaları boş yap, dolu masaları etkileme
                 if (newTableStatus[tableId] === 'reserved') {
                     newTableStatus[tableId] = 'empty';
                 }
             });
             return newTableStatus;
         });
-        
-        console.log('Tüm rezervasyonlar temizlendi ve masalar boş duruma getirildi');
     };
 
+    const addProduct = (category, newProduct) => {
+        setProducts(prevProducts => {
+            const newProducts = { ...prevProducts };
+            if (!newProducts[category]) newProducts[category] = [];
+            const newId = crypto.randomUUID();
+            newProducts[category].push({ ...newProduct, id: newId, category });
+            return newProducts;
+        });
+    };
+
+    const deleteProduct = (category, productId) => {
+        setProducts(prevProducts => {
+            const newProducts = { ...prevProducts };
+            newProducts[category] = newProducts[category].filter(p => p.id !== productId);
+            return newProducts;
+        });
+    };
+
+    const updateProduct = (category, updatedProduct) => {
+        setProducts(prevProducts => {
+            const newProducts = { ...prevProducts };
+            const productIndex = newProducts[category].findIndex(p => p.id === updatedProduct.id);
+            if (productIndex > -1) newProducts[category][productIndex] = updatedProduct;
+            return newProducts;
+        });
+    };
+
+    useEffect(() => {
+        const now = new Date();
+        const todayStr = now.toDateString();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        let daily = 0, monthly = 0, yearly = 0;
+
+        Object.values(timestamps).forEach((ts) => {
+            const d = new Date(ts);
+            if (d.toDateString() === todayStr) daily++;
+            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) monthly++;
+            if (d.getFullYear() === currentYear) yearly++;
+        });
+
+        setDailyOrderCount(daily);
+        setMonthlyOrderCount(monthly);
+        setYearlyOrderCount(yearly);
+    }, [timestamps]);
 
     useEffect(() => {
         localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
@@ -188,16 +319,22 @@ export function TableProvider({ children }) {
                 lastOrders,
                 products,
                 reservations,
+                dailyOrderCount,
+                monthlyOrderCount,
+                yearlyOrderCount,
                 updateTableStatus,
+                saveFinalOrder,
+                cancelOrder,
                 processPayment,
-                confirmOrder,
-                updateLastOrder,
-                clearLastOrder,
+                removeConfirmedOrderItem,
                 decreaseConfirmedOrderItem,
                 increaseConfirmedOrderItem,
                 addReservation,
                 removeReservation,
                 clearAllReservations,
+                addProduct,
+                deleteProduct,
+                updateProduct
             }}
         >
             {children}
