@@ -123,7 +123,7 @@ export const AuthProvider = ({ children }) => {
             await new Promise(resolve => setTimeout(resolve, 1500));
             
             // Demo email kontrolü
-            const validEmails = ['admin@example.com', 'user@example.com', 'test@example.com'];
+            const validEmails = ['admin@test.com', 'garson@test.com', 'kasiyer@test.com',];
             
             if (!validEmails.includes(email)) {
                 throw new Error('Bu e-posta adresi sistemde bulunamadı.');
