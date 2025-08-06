@@ -14,7 +14,7 @@ export default function OrderPage() {
     const [cart, setCart] = useState({});
 
     const {
-        updateLastOrder,
+        saveFinalOrder,
         orders,
         products,
         processPayment,
@@ -63,18 +63,8 @@ export default function OrderPage() {
     };
 
     const handleNext = () => {
-        const initialOrder = orders[tableId] || {};
         const finalCart = cart;
-
-        // Sepette bir değişiklik olup olmadığını kontrol et
-        const hasChanged = JSON.stringify(initialOrder) !== JSON.stringify(finalCart);
-
-        if (!hasChanged) {
-            alert("Siparişте herhangi bir değişiklik yapmadınız.");
-            return;
-        }
-
-        updateLastOrder(tableId, finalCart, initialOrder);
+        saveFinalOrder(tableId, finalCart);
         navigate(`/${user.role}/summary/${tableId}`);
     };
 

@@ -7,10 +7,9 @@ export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { orders, lastOrders, confirmOrder } = useContext(TableContext);
+    const { orders, saveFinalOrder } = useContext(TableContext);
 
-    const isNewOrder = lastOrders[tableId] && Object.keys(lastOrders[tableId]).length > 0;
-    const currentOrder = isNewOrder ? lastOrders[tableId] : (orders[tableId] || {});
+    const currentOrder = orders[tableId] || {};
 
     const totalPrice = useMemo(() =>
         Object.values(currentOrder).reduce(
@@ -19,28 +18,16 @@ export default function SummaryPage() {
         ), [currentOrder]);
 
     const handleConfirm = () => {
-        confirmOrder(tableId);
-        // Onay sonrası aktif role göre doğru ana sayfaya yönlendir
+        saveFinalOrder(tableId, currentOrder);
+        alert('Sipariş başarıyla onaylandı!');
         navigate(`/${user.role}/home`);
     };
 
-    // Kasiyer ise ödeme al butonu gösterilir, değilse sipariş onayı
-    const isCashier = user && user.role === 'kasiyer';
-    // Garson yeni sipariş onayı yapabilir
-    const canConfirm = user && user.role === 'garson' && isNewOrder;
-
-    // Geri butonunun hangi sayfaya döneceğini belirle
     const handleGoBack = () => {
-        // Eğer yeni bir sipariş onayı ekranındaysa, sipariş sayfasına dön
-        if (isNewOrder) {
-            navigate(`/${user.role}/order/${tableId}`);
-        } else {
-            // Değilse, masaların olduğu ana ekrana dön
-            navigate(`/${user.role}/home`);
-        }
+        navigate(`/${user.role}/order/${tableId}`);
     };
 
-    const pageTitle = isNewOrder ? `Masa ${tableId} - Yeni Sipariş Özeti` : `Masa ${tableId} - Mevcut Sipariş`;
+    const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
     return (
         <div style={{ padding: 30, maxWidth: '600px', margin: 'auto', border: '1px solid #ddd', borderRadius: '10px' }}>
@@ -70,16 +57,12 @@ export default function SummaryPage() {
                         <button onClick={handleGoBack} style={{ backgroundColor: "#6c757d", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}>
                             Geri
                         </button>
-
-                        {/* Garson yeni siparişi onaylayabilir */}
-                        {canConfirm && (
-                            <button
-                                onClick={handleConfirm}
-                                style={{ backgroundColor: "green", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
-                            >
-                                Siparişi Onayla
-                            </button>
-                        )}
+                        <button
+                            onClick={handleConfirm}
+                            style={{ backgroundColor: "green", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
+                        >
+                            Siparişleri Onayla
+                        </button>
                     </div>
                 </>
             )}

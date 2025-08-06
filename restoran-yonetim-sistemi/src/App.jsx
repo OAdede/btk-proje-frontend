@@ -33,7 +33,11 @@ import "./App.css";
 
 // Yetkilendirme için korumalı rota bileşeni
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { user } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return <div>Yükleniyor...</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -114,14 +118,16 @@ function App() {
           <Route
             path="*"
             element={
-              user ? (
-                <Navigate
-                  to={user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/home`}
-                  replace
-                />
-              ) : (
-                <Navigate to="/login" replace />
-              )
+              <ProtectedRoute>
+                {user ? (
+                  <Navigate
+                    to={user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/home`}
+                    replace
+                  />
+                ) : (
+                  <Navigate to="/login" replace />
+                )}
+              </ProtectedRoute>
             }
           />
         </Routes>

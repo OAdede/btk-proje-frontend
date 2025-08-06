@@ -13,6 +13,7 @@ const getRoleFromId = (id) => roleMapping[id];
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const storedToken = localStorage.getItem('token');
@@ -29,9 +30,11 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
             }
         }
+        setLoading(false);
     }, []);
 
     const login = async (email, password) => {
+        setLoading(true);
         try {
             const response = await axios.post('/api/auth/login', { email, password });
             const data = response.data;
@@ -50,11 +53,14 @@ export const AuthProvider = ({ children }) => {
                 axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
                 setUser(userData);
+                setLoading(false);
                 return data.roleId;
             } else {
+                setLoading(false);
                 throw new Error(data.message || 'Geçersiz email veya şifre');
             }
         } catch (error) {
+            setLoading(false);
             const errorMessage = error.response?.data?.message || error.message || 'Bir hata oluştu.';
             console.error('Login failed:', errorMessage);
             throw new Error(errorMessage);
@@ -192,6 +198,7 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={{
             user,
+            loading,
             login,
             logout,
             switchRole,
