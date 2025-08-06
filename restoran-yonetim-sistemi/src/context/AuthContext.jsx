@@ -114,6 +114,81 @@ export const AuthProvider = ({ children }) => {
         });
     };
 
+    const requestPasswordReset = async (email) => {
+        try {
+            // Geliştirme aşamasında demo veriler - production'da gerçek API çağrısı yapılacak
+            console.log('Password reset requested for:', email);
+            
+            // Simüle edilmiş gecikme
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Demo email kontrolü
+            const validEmails = ['admin@example.com', 'user@example.com', 'test@example.com'];
+            
+            if (!validEmails.includes(email)) {
+                throw new Error('Bu e-posta adresi sistemde bulunamadı.');
+            }
+            
+            return 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. E-postanızı kontrol edin.';
+            
+            /* Production için API çağrısı:
+            const response = await axios.post('/api/auth/forgot-password', { email });
+            const data = response.data;
+
+            if (data.success) {
+                return data.message || 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.';
+            } else {
+                throw new Error(data.message || 'Şifre sıfırlama isteği başarısız oldu.');
+            }
+            */
+        } catch (error) {
+            const errorMessage = error.message || 'Bir hata oluştu.';
+            console.error('Password reset request failed:', errorMessage);
+            throw new Error(errorMessage);
+        }
+    };
+
+    const resetPassword = async (token, newPassword) => {
+        try {
+            // Geliştirme aşamasında demo veriler - production'da gerçek API çağrısı yapılacak
+            console.log('Password reset attempted with token:', token);
+            
+            // Simüle edilmiş gecikme
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Demo token kontrolü
+            const validTokens = ['demo-token-123', 'test-token-456'];
+            
+            if (!validTokens.includes(token)) {
+                throw new Error('Geçersiz veya süresi dolmuş token. Lütfen yeni bir şifre sıfırlama isteği gönderin.');
+            }
+            
+            if (newPassword.length < 6) {
+                throw new Error('Şifre en az 6 karakter olmalıdır.');
+            }
+            
+            return 'Şifreniz başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...';
+            
+            /* Production için API çağrısı:
+            const response = await axios.post('/api/auth/reset-password', { 
+                token, 
+                password: newPassword 
+            });
+            const data = response.data;
+
+            if (data.success) {
+                return data.message || 'Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz...';
+            } else {
+                throw new Error(data.message || 'Şifre sıfırlama başarısız oldu.');
+            }
+            */
+        } catch (error) {
+            const errorMessage = error.message || 'Bir hata oluştu.';
+            console.error('Password reset failed:', errorMessage);
+            throw new Error(errorMessage);
+        }
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -122,7 +197,9 @@ export const AuthProvider = ({ children }) => {
             switchRole,
             updateProfileImage,
             updatePhone,
-            updateEmail
+            updateEmail,
+            requestPasswordReset,
+            resetPassword
         }}>
             {children}
         </AuthContext.Provider>
