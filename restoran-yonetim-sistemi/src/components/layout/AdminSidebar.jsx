@@ -234,28 +234,40 @@ const AdminSidebar = () => {
             </div>
             <nav className="admin-sidebar-nav">
                 <NavLink
-                    to="/admin/dashboard"
-                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                >
-                    Ana Sayfa
-                </NavLink>
-                <NavLink
-                    to="/admin/stock"
-                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                >
-                    Ürün Yönetimi
-                </NavLink>
-                <NavLink
                     to="/admin/personnel"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Personel
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>👤</span>
+                        <span>Personel</span>
+                    </div>
                 </NavLink>
                 <NavLink
                     to="/admin/reports"
                     className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                 >
-                    Rapor
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📊</span>
+                        <span>Rapor</span>
+                    </div>
+                </NavLink>
+                <NavLink
+                    to="/admin/stock"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>🍽</span>
+                        <span>Ürün Yönetimi</span>
+                    </div>
+                </NavLink>
+                <NavLink
+                    to="/admin/dashboard"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📍</span>
+                        <span>Ana Sayfa</span>
+                    </div>
                 </NavLink>
                 <NavLink
                     to="/admin/reservations"
@@ -282,6 +294,15 @@ const AdminSidebar = () => {
                                 {getTodayReservationsCount()}
                             </span>
                         )}
+                    </div>
+                </NavLink>
+                <NavLink
+                    to="/admin/order-history"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📋</span>
+                        <span>Sipariş Geçmişi</span>
                     </div>
                 </NavLink>
             </nav>

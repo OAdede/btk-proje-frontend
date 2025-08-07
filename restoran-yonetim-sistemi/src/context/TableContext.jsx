@@ -46,6 +46,7 @@ export function TableProvider({ children }) {
     const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [timestamps, setTimestamps] = useState({});
+    const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
 
     const [dailyOrderCount, setDailyOrderCount] = useState(() => {
         const stored = localStorage.getItem('dailyOrderCount');
@@ -334,6 +335,48 @@ export function TableProvider({ children }) {
         });
     };
 
+    // Order History Functions
+    const addOrderHistoryEntry = (orderData, action, personnelName, personnelRole) => {
+        const timestamp = new Date().toLocaleString('tr-TR');
+        const newEntry = {
+            id: crypto.randomUUID(),
+            orderContent: orderData.orderContent,
+            action: action,
+            personnelName: personnelName,
+            personnelRole: personnelRole,
+            financialImpact: orderData.financialImpact,
+            timestamp: timestamp,
+            tableId: orderData.tableId
+        };
+
+        setOrderHistory(prev => {
+            const newHistory = [newEntry, ...prev];
+            localStorage.setItem('orderHistory', JSON.stringify(newHistory));
+            return newHistory;
+        });
+    };
+
+    const getOrderContent = (orderItems) => {
+        if (!orderItems || Object.keys(orderItems).length === 0) return "Boş sipariş";
+        
+        return Object.values(orderItems)
+            .map(item => `${item.name} x${item.count}`)
+            .join(', ');
+    };
+
+    const calculateFinancialImpact = (orderItems, action) => {
+        if (!orderItems || Object.keys(orderItems).length === 0) return "0 TL";
+        
+        const total = Object.values(orderItems)
+            .reduce((sum, item) => sum + (item.price * item.count), 0);
+        
+        if (action === "Sipariş Eklendi" || action === "Sipariş Onaylandı") {
+            return `+${total} TL`;
+        } else {
+            return `-${total} TL`;
+        }
+    };
+
     useEffect(() => {
         const now = new Date();
         const todayStr = now.toDateString();
@@ -360,7 +403,8 @@ export function TableProvider({ children }) {
         localStorage.setItem('lastOrders', JSON.stringify(lastOrders));
         localStorage.setItem('products', JSON.stringify(products));
         localStorage.setItem('reservations', JSON.stringify(reservations));
-    }, [tableStatus, orders, lastOrders, products, reservations]);
+        localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
+    }, [tableStatus, orders, lastOrders, products, reservations, orderHistory]);
 
     return (
         <TableContext.Provider
@@ -370,6 +414,7 @@ export function TableProvider({ children }) {
                 lastOrders,
                 products,
                 reservations,
+                orderHistory,
                 dailyOrderCount,
                 monthlyOrderCount,
                 yearlyOrderCount,
@@ -386,7 +431,10 @@ export function TableProvider({ children }) {
                 clearAllReservations,
                 addProduct,
                 deleteProduct,
-                updateProduct
+                updateProduct,
+                addOrderHistoryEntry,
+                getOrderContent,
+                calculateFinancialImpact
             }}
         >
             {children}
