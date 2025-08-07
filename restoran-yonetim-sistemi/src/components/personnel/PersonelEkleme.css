@@ -136,10 +136,10 @@
 .personnel-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   background: var(--surface);
   border-radius: 10px;
   padding: 16px 20px;
-  gap: 20px;
   border: 1px solid var(--border);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
@@ -153,6 +153,7 @@
 
 .personnel-info {
   flex: 1;
+  margin-right: 20px;
 }
 
 .personnel-name {
@@ -175,6 +176,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  margin-left: auto;
 }
 
 .personnel-status.active {

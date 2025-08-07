@@ -560,6 +560,7 @@ const Dashboard = () => {
         {floors.map((floor) => (
           <div
             key={floor}
+            onClick={() => setSelectedFloor(floor)}
             style={{
               padding: "1rem",
               marginBottom: "1rem",
@@ -574,17 +575,17 @@ const Dashboard = () => {
               position: 'relative'
             }}
           >
-            <div
-              onClick={() => setSelectedFloor(floor)}
-              style={{ cursor: 'pointer' }}
-            >
+            <div style={{ cursor: 'pointer' }}>
               {getFloorName(floor)}
             </div>
             
             {/* Kat düzeni modunda silme butonu */}
             {showFloorLayoutMode && floors.length > 1 && (
               <button
-                onClick={() => openDeleteFloorModal(floor)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDeleteFloorModal(floor);
+                }}
                 style={{
                   position: 'absolute',
                   top: '5px',
@@ -601,7 +602,8 @@ const Dashboard = () => {
                   fontSize: '12px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  zIndex: 10
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.background = 'rgba(255,0,0,0.3)';
