@@ -40,6 +40,16 @@ const StaffSidebar = () => {
                 >
                     Masalar
                 </NavLink>
+
+                {/* SADECE GARSON ROLÜNDE GÖZÜKMESİ İÇİN KISITLAMA */}
+                {user?.role === 'garson' && (
+                    <NavLink
+                        to={`/${user?.role}/orders`}
+                        className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
+                    >
+                        Siparişlerim
+                    </NavLink>
+                )}
             </nav>
 
             {/* Rezervasyonlar Bölümü */}

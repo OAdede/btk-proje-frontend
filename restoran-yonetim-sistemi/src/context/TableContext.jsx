@@ -42,27 +42,15 @@ const readFromLocalStorage = (key, initialValue) => {
 export function TableProvider({ children }) {
     const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', initialTableStatus));
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
-    const [lastOrders, setLastOrders] = useState(() => readFromLocalStorage('lastOrders', {}));
+    const [completedOrders, setCompletedOrders] = useState(() => readFromLocalStorage('completedOrders', {}));
     const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [timestamps, setTimestamps] = useState({});
 
-    const [dailyOrderCount, setDailyOrderCount] = useState(() => {
-        const stored = localStorage.getItem('dailyOrderCount');
-        if (stored) {
-            try {
-                const data = JSON.parse(stored);
-                const today = new Date().toDateString();
-                if (data.date !== today) return 0;
-                return data.count;
-            } catch (e) {
-                return 0;
-            }
-        }
-        return 0;
-    });
-    const [monthlyOrderCount, setMonthlyOrderCount] = useState(0);
-    const [yearlyOrderCount, setYearlyOrderCount] = useState(0);
+    // Günlük, Aylık, Yıllık sipariş sayılarını doğrudan hesaplayacağız, bu state'leri silebilirsiniz.
+    // const [dailyOrderCount, setDailyOrderCount] = useState(0);
+    // const [monthlyOrderCount, setMonthlyOrderCount] = useState(0);
+    // const [yearlyOrderCount, setYearlyOrderCount] = useState(0);
 
     const updateTableStatus = (tableId, status) => {
         setTableStatus(prev => ({ ...prev, [tableId]: status }));
@@ -75,6 +63,7 @@ export function TableProvider({ children }) {
     };
 
     const incrementDailyOrderCount = () => {
+        // Bu fonksiyon artık kullanılmayacak, çünkü sayılar useEffect ile hesaplanacak
         if (!isWorkingHours()) return;
         const today = new Date().toDateString();
         const newCount = dailyOrderCount + 1;
@@ -134,9 +123,9 @@ export function TableProvider({ children }) {
 
             updateTableStatus(tableId, "empty");
         } else {
-            if (!prevOrder || Object.keys(prevOrder).length === 0) {
-                incrementDailyOrderCount();
-            }
+            // if (!prevOrder || Object.keys(prevOrder).length === 0) {
+            //     incrementDailyOrderCount(); // Bu satır artık kullanılmayacak
+            // }
 
             setOrders(prev => ({ ...prev, [tableId]: finalItems }));
 
@@ -180,12 +169,26 @@ export function TableProvider({ children }) {
     };
 
     const processPayment = (tableId) => {
-        setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
-        setOrders(prev => {
-            const newOrders = { ...prev };
-            delete newOrders[tableId];
-            return newOrders;
-        });
+        const orderToComplete = orders[tableId];
+        if (orderToComplete) {
+            const completedOrderId = `completed-${Date.now()}`;
+            const completedOrderDetails = {
+                ...orderToComplete,
+                tableId: tableId,
+                creationDate: new Date().toISOString()
+            };
+            setCompletedOrders(prev => ({
+                ...prev,
+                [completedOrderId]: completedOrderDetails
+            }));
+            
+            setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
+            setOrders(prev => {
+                const newOrders = { ...prev };
+                delete newOrders[tableId];
+                return newOrders;
+            });
+        }
     };
 
     const removeConfirmedOrderItem = (tableId, itemToRemove) => {
@@ -321,45 +324,69 @@ export function TableProvider({ children }) {
         });
     };
 
+    // YENİ EKLEDİĞİMİZ VE DÜZENLEDİĞİMİZ KISIM
     useEffect(() => {
+        // Bu kısım artık completedOrders'ı izleyerek sayımları güncelleyecek.
         const now = new Date();
-        const todayStr = now.toDateString();
+        const todayStr = now.toLocaleDateString();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
-        let daily = 0, monthly = 0, yearly = 0;
+        let daily = 0;
+        let monthly = 0;
+        let yearly = 0;
 
-        Object.values(timestamps).forEach((ts) => {
-            const d = new Date(ts);
-            if (d.toDateString() === todayStr) daily++;
+        Object.values(completedOrders).forEach((order) => {
+            const d = new Date(order.creationDate);
+            if (d.toLocaleDateString() === todayStr) daily++;
             if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) monthly++;
             if (d.getFullYear() === currentYear) yearly++;
         });
 
-        setDailyOrderCount(daily);
-        setMonthlyOrderCount(monthly);
-        setYearlyOrderCount(yearly);
-    }, [timestamps]);
+        // Artık bu state'leri local state olarak kullanmıyoruz, provider içinden doğrudan değerleri döndüreceğiz.
+        // setDailyOrderCount(daily);
+        // setMonthlyOrderCount(monthly);
+        // setYearlyOrderCount(yearly);
+    }, [completedOrders]);
+
 
     useEffect(() => {
         localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
         localStorage.setItem('orders', JSON.stringify(orders));
-        localStorage.setItem('lastOrders', JSON.stringify(lastOrders));
+        localStorage.setItem('completedOrders', JSON.stringify(completedOrders));
         localStorage.setItem('products', JSON.stringify(products));
         localStorage.setItem('reservations', JSON.stringify(reservations));
-    }, [tableStatus, orders, lastOrders, products, reservations]);
+    }, [tableStatus, orders, completedOrders, products, reservations]);
+
+
+    // Bu kısım, `useEffect`'te hesaplanan değerleri döndürecek
+    const now = new Date();
+    const todayStr = now.toLocaleDateString();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let dailyCount = 0;
+    let monthlyCount = 0;
+    let yearlyCount = 0;
+    
+    Object.values(completedOrders).forEach((order) => {
+        const d = new Date(order.creationDate);
+        if (d.toLocaleDateString() === todayStr) dailyCount++;
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) monthlyCount++;
+        if (d.getFullYear() === currentYear) yearlyCount++;
+    });
 
     return (
         <TableContext.Provider
             value={{
                 tableStatus,
                 orders,
-                lastOrders,
+                completedOrders,
                 products,
                 reservations,
-                dailyOrderCount,
-                monthlyOrderCount,
-                yearlyOrderCount,
+                dailyOrderCount: dailyCount,
+                monthlyOrderCount: monthlyCount,
+                yearlyOrderCount: yearlyCount,
                 updateTableStatus,
                 saveFinalOrder,
                 cancelOrder,
