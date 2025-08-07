@@ -467,7 +467,7 @@ const ReservationsPage = () => {
                                          key={floor}
                                          onClick={() => setSelectedFloor(floor)}
                                          style={{
-                                             background: selectedFloor === floor ? colors.primary : (isDarkMode ? '#4a4a4a' : '#f0f0f0'),
+                                                                                           background: selectedFloor === floor ? (isDarkMode ? colors.primary : '#513653') : (isDarkMode ? '#4a4a4a' : '#f0f0f0'),
                                              color: selectedFloor === floor ? 'white' : (isDarkMode ? '#ffffff' : '#333333'),
                                              border: 'none',
                                              padding: '10px 20px',

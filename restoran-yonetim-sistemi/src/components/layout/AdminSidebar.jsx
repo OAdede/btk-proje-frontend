@@ -294,7 +294,7 @@ const AdminSidebar = () => {
                     onClick={() => setShowSettings(!showSettings)}
                     className="admin-settings-btn"
                     style={{
-                        background: isDarkMode ? '#2a2a2a' : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
+                        background: isDarkMode ? '#2a2a2a' : '#513653',
                         color: '#ffffff',
                         border: 'none',
                         padding: '12px 20px',
