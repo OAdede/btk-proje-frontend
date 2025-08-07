@@ -26,6 +26,9 @@ const StaffSidebar = () => {
 
     const homePath = `/${user?.role}/home`;
 
+    // Stok durumunu görmeye yetkili roller
+    const canViewStock = user?.role === 'garson' || user?.role === 'kasiyer';
+
     return (
         <div className="staff-sidebar">
             <div className="staff-sidebar-header">
@@ -45,6 +48,16 @@ const StaffSidebar = () => {
                         className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
                     >
                         Siparişlerim
+                    </NavLink>
+                )}
+                
+                {/* GÜNCELLENDİ: Stok durumu menüsü artık kasiyer ve garsonlar için görünür */}
+                {canViewStock && (
+                    <NavLink
+                        to={`/${user?.role}/stock`}
+                        className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
+                    >
+                        Stok Durumu
                     </NavLink>
                 )}
             </nav>
@@ -128,7 +141,6 @@ const StaffSidebar = () => {
                                         }}>
                                             Masa {getFloorLetter(parseInt(tableId.split('-')[0]))}{tableId.split('-')[1]}
                                         </div>
-                                        {/* SADECE ADMİN GÖREBİLSİN */}
                                         {user?.role === 'admin' && (
                                             <button
                                                 onClick={() => removeReservation(tableId)}
