@@ -7,9 +7,28 @@ export default function WaiterHome() {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const { tableStatus } = useContext(TableContext);
-    const [selectedFloor, setSelectedFloor] = useState(1);
+    const [selectedFloor, setSelectedFloor] = useState(0); // Başlangıç katı Zemin
+    const [tableCounts, setTableCounts] = useState({ 0: 8, 1: 8, 2: 8 }); // Her kattaki masa sayısı
+    const floors = [0, 1, 2]; // Mevcut katlar
 
-    const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
+    // Kat adını döndüren fonksiyon
+    const getFloorName = (floorNumber) => {
+        if (floorNumber === 0) return "Zemin";
+        return `Kat ${floorNumber}`;
+    };
+
+    // Masa numarasını oluşturan fonksiyon
+    const getTableNumber = (floorNumber, tableIndex) => {
+        if (floorNumber === 0) return `Z${tableIndex + 1}`;
+        const letter = String.fromCharCode(65 + floorNumber - 1); // A, B, C, ...
+        return `${letter}${tableIndex + 1}`;
+    };
+
+    // Mevcut kattaki masaları oluştur
+    const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => ({
+        id: `${selectedFloor}-${i + 1}`,
+        displayNumber: getTableNumber(selectedFloor, i)
+    }));
 
     const handleTableClick = (tableId) => {
         navigate(`/${user.role}/order/${tableId}`);
@@ -35,18 +54,18 @@ export default function WaiterHome() {
         <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
             <div style={{ flex: 1 }}>
                 <h2 style={{ fontSize: "2rem", color: "#343a40", marginBottom: "1.5rem" }}>
-                    Kat {selectedFloor} - Masa Seçimi
+                    {getFloorName(selectedFloor)} - Masa Seçimi
                 </h2>
                 <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                     gap: "1.5rem"
                 }}>
-                    {tables.map((tableId) => {
-                        const status = getStatus(tableId);
+                    {tables.map((table) => {
+                        const status = getStatus(table.id);
                         return (
                             <div
-                                key={tableId}
+                                key={table.id}
                                 style={{
                                     backgroundColor: status.color,
                                     color: status.textColor,
@@ -62,13 +81,13 @@ export default function WaiterHome() {
                                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                 }}
-                                onClick={() => handleTableClick(tableId)}
+                                onClick={() => handleTableClick(table.id)}
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                title={`Masa ${tableId}`}
+                                title={`Masa ${table.displayNumber}`}
                             >
                                 <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
-                                    {tableId.split("-")[1]}
+                                    {table.displayNumber}
                                 </div>
                                 <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
                                     {status.text}
@@ -81,7 +100,7 @@ export default function WaiterHome() {
 
             <div style={{ width: "150px", flexShrink: 0 }}>
                 <h3 style={{ fontSize: "1.25rem", color: "#495057", marginBottom: "1rem" }}>Katlar</h3>
-                {[1, 2].map((floor) => (
+                {floors.map((floor) => (
                     <div
                         key={floor}
                         onClick={() => setSelectedFloor(floor)}
@@ -89,8 +108,8 @@ export default function WaiterHome() {
                             padding: "1rem",
                             marginBottom: "1rem",
                             borderRadius: "8px",
-                                            backgroundColor: selectedFloor === floor ? "#513653" : "#e9ecef",
-                color: selectedFloor === floor ? "white" : "#495057",
+                            backgroundColor: selectedFloor === floor ? "#513653" : "#e9ecef",
+                            color: selectedFloor === floor ? "white" : "#495057",
                             textAlign: "center",
                             cursor: "pointer",
                             fontWeight: "bold",
@@ -98,7 +117,7 @@ export default function WaiterHome() {
                             transition: "background-color 0.2s ease",
                         }}
                     >
-                        Kat {floor}
+                        {getFloorName(floor)}
                     </div>
                 ))}
             </div>
