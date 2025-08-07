@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TableContext } from '../../context/TableContext';
 import { useTheme } from '../../context/ThemeContext';
+import ReservationModal from '../../components/reservations/ReservationModal';
 
 const ReservationsPage = () => {
     const navigate = useNavigate();
@@ -10,13 +11,51 @@ const ReservationsPage = () => {
     const [filter, setFilter] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [reservationToDelete, setReservationToDelete] = useState(null);
+    const [showReservationModal, setShowReservationModal] = useState(false);
+    const [selectedTable, setSelectedTable] = useState(null);
+    const [showTableSelectionModal, setShowTableSelectionModal] = useState(false);
+    const [selectedFloor, setSelectedFloor] = useState(0);
 
     // Gerçek rezervasyon verilerini kullan
     const actualReservations = reservations;
 
+    // Bugünün tarihini al
+    const getTodayDate = () => {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+    };
+
+    // Kat adını al
+    const getFloorName = (floorNumber) => {
+        return floorNumber === 0 ? "Zemin" : `Kat ${floorNumber}`;
+    };
+
+    // Masa numarasını al
+    const getTableNumber = (floorNumber, tableIndex) => {
+        const floorPrefix = floorNumber === 0 ? "Z" : String.fromCharCode(65 + floorNumber - 1);
+        return `${floorPrefix}${tableIndex + 1}`;
+    };
+
     const handleAddReservation = () => {
-        console.log("Yeni rezervasyon ekleme modalı açılacak...");
-        // Burada ReservationModal açılabilir.
+        setShowTableSelectionModal(true);
+    };
+
+    const handleTableSelection = (floorNumber, tableIndex) => {
+        const tableNumber = getTableNumber(floorNumber, tableIndex);
+        setSelectedTable(tableNumber);
+        setShowTableSelectionModal(false);
+        setShowReservationModal(true);
+    };
+
+    const handleReservationClose = () => {
+        setShowReservationModal(false);
+        setSelectedTable(null);
+    };
+
+    const handleReservationSubmit = (formData) => {
+        addReservation(selectedTable, formData);
+        setShowReservationModal(false);
+        setSelectedTable(null);
     };
 
 
@@ -375,6 +414,150 @@ const ReservationsPage = () => {
                      </div>
                  </div>
              )}
+
+             {/* Kat/Masa Seçim Modal */}
+             {showTableSelectionModal && (
+                 <div style={{
+                     position: 'fixed',
+                     top: 0,
+                     left: 0,
+                     width: '100vw',
+                     height: '100vh',
+                     backgroundColor: 'rgba(0,0,0,0.7)',
+                     zIndex: 9998,
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center'
+                 }}>
+                     <div style={{
+                         backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
+                         padding: '2rem',
+                         borderRadius: '15px',
+                         boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                         zIndex: 9999,
+                         maxWidth: '600px',
+                         width: '90%',
+                         textAlign: 'center',
+                         border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+                     }}>
+                         <h3 style={{ 
+                             color: isDarkMode ? '#ffffff' : '#333333', 
+                             marginBottom: '20px',
+                             fontSize: '1.5rem'
+                         }}>
+                             🏢 Kat ve Masa Seçimi
+                         </h3>
+                         
+                         {/* Kat Seçimi */}
+                         <div style={{ marginBottom: '20px' }}>
+                             <h4 style={{ 
+                                 color: isDarkMode ? '#cccccc' : '#666666', 
+                                 marginBottom: '10px'
+                             }}>
+                                 Kat Seçin:
+                             </h4>
+                             <div style={{
+                                 display: 'flex',
+                                 gap: '10px',
+                                 justifyContent: 'center',
+                                 flexWrap: 'wrap'
+                             }}>
+                                 {[0, 1, 2].map((floor) => (
+                                     <button
+                                         key={floor}
+                                         onClick={() => setSelectedFloor(floor)}
+                                         style={{
+                                             background: selectedFloor === floor ? colors.primary : (isDarkMode ? '#4a4a4a' : '#f0f0f0'),
+                                             color: selectedFloor === floor ? 'white' : (isDarkMode ? '#ffffff' : '#333333'),
+                                             border: 'none',
+                                             padding: '10px 20px',
+                                             borderRadius: '8px',
+                                             cursor: 'pointer',
+                                             fontSize: '14px',
+                                             fontWeight: 'bold',
+                                             transition: 'all 0.3s ease'
+                                         }}
+                                     >
+                                         {getFloorName(floor)}
+                                     </button>
+                                 ))}
+                             </div>
+                         </div>
+
+                         {/* Masa Seçimi */}
+                         <div style={{ marginBottom: '20px' }}>
+                             <h4 style={{ 
+                                 color: isDarkMode ? '#cccccc' : '#666666', 
+                                 marginBottom: '10px'
+                             }}>
+                                 {getFloorName(selectedFloor)} - Masa Seçin:
+                             </h4>
+                             <div style={{
+                                 display: 'grid',
+                                 gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                                 gap: '10px',
+                                 maxWidth: '400px',
+                                 margin: '0 auto'
+                             }}>
+                                 {[0, 1, 2, 3, 4, 5, 6, 7].map((tableIndex) => (
+                                     <button
+                                         key={tableIndex}
+                                         onClick={() => handleTableSelection(selectedFloor, tableIndex)}
+                                         style={{
+                                             background: colors.success,
+                                             color: 'white',
+                                             border: 'none',
+                                             padding: '15px 10px',
+                                             borderRadius: '8px',
+                                             cursor: 'pointer',
+                                             fontSize: '14px',
+                                             fontWeight: 'bold',
+                                             transition: 'all 0.3s ease'
+                                         }}
+                                         onMouseEnter={(e) => {
+                                             e.target.style.transform = 'scale(1.05)';
+                                             e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                                         }}
+                                         onMouseLeave={(e) => {
+                                             e.target.style.transform = 'scale(1)';
+                                             e.target.style.boxShadow = 'none';
+                                         }}
+                                     >
+                                         {getTableNumber(selectedFloor, tableIndex)}
+                                     </button>
+                                 ))}
+                             </div>
+                         </div>
+
+                         {/* İptal Butonu */}
+                         <button
+                             onClick={() => setShowTableSelectionModal(false)}
+                             style={{
+                                 background: isDarkMode ? '#4a4a4a' : '#e0e0e0',
+                                 color: isDarkMode ? '#ffffff' : '#333333',
+                                 border: 'none',
+                                 padding: '12px 24px',
+                                 borderRadius: '8px',
+                                 cursor: 'pointer',
+                                 fontSize: '16px',
+                                 fontWeight: 'bold',
+                                 transition: 'all 0.3s ease'
+                             }}
+                         >
+                             ❌ İptal
+                         </button>
+                     </div>
+                 </div>
+             )}
+
+             {/* Rezervasyon Modal */}
+             <ReservationModal
+                 visible={showReservationModal}
+                 masaNo={selectedTable}
+                 onClose={handleReservationClose}
+                 onSubmit={handleReservationSubmit}
+                 defaultDate={getTodayDate()}
+             />
          </div>
      );
  };
