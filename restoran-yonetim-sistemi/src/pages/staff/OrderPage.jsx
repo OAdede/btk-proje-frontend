@@ -22,39 +22,44 @@ export default function OrderPage() {
         increaseConfirmedOrderItem
     } = useContext(TableContext);
 
-    // Mevcut siparişleri sepete yükle
+    const confirmedOrders = orders[tableId] || {};
+
+    // ✅ Benzersiz sipariş key'i
+    const orderKey = useMemo(() => {
+        const itemIds = Object.keys(confirmedOrders || {}).sort().join("-");
+        return `${tableId}-${itemIds}`;
+    }, [tableId, confirmedOrders]);
+
+    const localNoteKey = `generalNote-${orderKey}`;
+
+    const [generalNote, setGeneralNote] = useState(() => {
+        return localStorage.getItem(localNoteKey) || '';
+    });
+
+    useEffect(() => {
+        localStorage.setItem(localNoteKey, generalNote);
+    }, [generalNote, localNoteKey]);
+
     useEffect(() => {
         const existingOrder = orders[tableId] || {};
         setCart(existingOrder);
     }, [tableId, orders]);
 
-
     const handleQuantityChange = (product, delta) => {
+        const initialOrderCount = orders[tableId]?.[product.id]?.count || 0;
+        const availableStock = product.stock + initialOrderCount;
+
         setCart((prevCart) => {
             const currentItem = prevCart[product.id] || { ...product, count: 0 };
             const newQty = currentItem.count + delta;
-
-            if (newQty < 0) return prevCart;
-
-            // Stok kontrolünü düzeltiyoruz:
-            // Bir ürünün stoktaki miktarı (`product.stock`) + o masanın o üründen daha önce onayladığı miktar (`initialOrderCount`),
-            // sepete eklenmek istenen yeni miktardan (`newQty`) büyük veya eşit olmalıdır.
-            const initialOrderCount = orders[tableId]?.[product.id]?.count || 0;
-            const availableStock = product.stock + initialOrderCount;
-
-            if (newQty > availableStock) {
+            if (newQty < 0 || newQty > availableStock) {
                 alert(`Stok yetersiz! Bu üründen en fazla ${availableStock} adet sipariş edebilirsiniz.`);
                 return prevCart;
             }
 
             const newCart = { ...prevCart };
-            if (newQty === 0) {
-                // Eğer ürün başlangıçta siparişte yoksa, 0 olunca sepetten tamamen sil.
-                if (!initialOrderCount) {
-                    delete newCart[product.id];
-                } else { // Eğer siparişte varsa, miktarını 0 olarak tut ki iptal edildiği anlaşılsın.
-                    newCart[product.id] = { ...product, count: 0 };
-                }
+            if (newQty === 0 && !initialOrderCount) {
+                delete newCart[product.id];
             } else {
                 newCart[product.id] = { ...product, count: newQty };
             }
@@ -63,22 +68,21 @@ export default function OrderPage() {
     };
 
     const handleNext = () => {
-        const finalCart = cart;
-        saveFinalOrder(tableId, finalCart);
+        saveFinalOrder(tableId, cart);
         navigate(`/${user.role}/summary/${tableId}`);
     };
 
-    const confirmedOrders = orders[tableId] || {};
     const totalConfirmedPrice = Object.values(confirmedOrders).reduce(
         (sum, item) => sum + item.price * item.count,
         0
     );
 
-    // Stil ve JSX (değişiklik yok)...
     const isCashier = user && user.role === 'kasiyer';
+
     const handlePayment = () => {
         processPayment(tableId);
-        alert(`Masa ${tableId} için ödeme alındı.`);
+        alert(`Masa ${tableId} için ödeme alındı.\nNot: ${generalNote || 'Yok'}`);
+        localStorage.removeItem(localNoteKey);
         navigate(`/${user.role}/home`);
     };
 
@@ -136,18 +140,12 @@ export default function OrderPage() {
                                 <h3 style={{ color: '#212529', margin: "0 0 0.5rem 0", fontSize: '1.25rem' }}>{product.name}</h3>
                                 <p style={{ color: '#6c757d', margin: "0 0 1rem 0" }}>{product.price}₺ | Stok: {displayStock}</p>
                                 <div style={{ display: "flex", justifyContent: "center", gap: '1rem', alignItems: "center" }}>
-                                    <button
-                                        onClick={() => handleQuantityChange(product, -1)}
-                                        style={quantityButtonStyle}
-                                    >-</button>
+                                    <button onClick={() => handleQuantityChange(product, -1)} style={quantityButtonStyle}>-</button>
                                     <span style={{ color: '#212529', fontSize: "1.2rem", fontWeight: "bold" }}>{cart[product.id]?.count || 0}</span>
-                                    <button
-                                        onClick={() => handleQuantityChange(product, 1)}
-                                        style={quantityButtonStyle}
-                                    >+</button>
+                                    <button onClick={() => handleQuantityChange(product, 1)} style={quantityButtonStyle}>+</button>
                                 </div>
                             </div>
-                        )
+                        );
                     })}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem', gap: '1rem' }}>
@@ -186,12 +184,62 @@ export default function OrderPage() {
                                 </li>
                             ))}
                         </ul>
-                        <p style={{ fontWeight: "bold", marginTop: '1.5rem', fontSize: "1.25rem", color: '#212529', borderTop: '1px solid #dee2e6', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <p style={{
+                            fontWeight: "bold", marginTop: '1.5rem', fontSize: "1.25rem", color: '#212529',
+                            borderTop: '1px solid #dee2e6', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between'
+                        }}>
                             <span>Toplam Hesap:</span>
                             <span>{totalConfirmedPrice}₺</span>
                         </p>
+
+                        {/* 📝 Not Alanı */}
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <label htmlFor="generalNote" style={{ fontWeight: '600', display: 'block', marginBottom: '0.5rem', color: '#495057' }}>Genel Not</label>
+                            <textarea
+                                id="generalNote"
+                                value={generalNote}
+                                onChange={(e) => setGeneralNote(e.target.value)}
+                                placeholder="Not ekle (örn: Acılı olsun, servis hızlı gelsin...)"
+                                rows={3}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid #ced4da',
+                                    fontSize: '1rem',
+                                    resize: 'none',
+                                }}
+                            />
+                            <button
+                                onClick={() => {
+                                    localStorage.setItem(localNoteKey, generalNote);
+                                    alert("Not kaydedildi.");
+                                }}
+                                style={{
+                                    marginTop: '0.5rem',
+                                    padding: '0.5rem 1rem',
+                                    fontSize: '0.95rem',
+                                    fontWeight: '600',
+                                    backgroundColor: '#0d6efd',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Notu Kaydet
+                            </button>
+                        </div>
+
                         {isCashier && (
-                            <button onClick={handlePayment} style={{ width: "100%", padding: "1rem", fontSize: "1rem", fontWeight: '600', backgroundColor: colors.success, color: "#ffffff", border: "none", borderRadius: "10px", cursor: "pointer", marginTop: "1rem", transition: "all 0.3s ease" }}>Ödeme Al ve Masayı Kapat</button>
+                            <button onClick={handlePayment} style={{
+                                width: "100%", padding: "1rem", fontSize: "1rem", fontWeight: '600',
+                                backgroundColor: colors.success, color: "#ffffff", border: "none",
+                                borderRadius: "10px", cursor: "pointer", marginTop: "1rem",
+                                transition: "all 0.3s ease"
+                            }}>
+                                Ödeme Al ve Masayı Kapat
+                            </button>
                         )}
                     </>
                 ) : (
