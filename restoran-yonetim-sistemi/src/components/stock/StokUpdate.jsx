@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { TableContext } from "../../context/TableContext";
 import { useTheme } from "../../context/ThemeContext";
+import { AuthContext } from "../../context/AuthContext"; // AuthContext'i import ettik
 
 const kategoriler = ["Tümü", "Ana Yemek", "Aparatifler", "Fırın", "Izgaralar", "Kahvaltılıklar", "İçecekler", "Tatlılar"];
 
@@ -9,11 +10,14 @@ const URUN_SAYFASI = 10;
 function StokUpdate() {
   const { products, addProduct, deleteProduct, updateProduct } = useContext(TableContext);
   const { isDarkMode } = useTheme();
+  const { user } = useContext(AuthContext); // Kullanıcı rolünü alıyoruz
 
   const [aktifKategori, setAktifKategori] = useState("Tümü");
   const [mevcutSayfa, setMevcutSayfa] = useState(1);
   const [yeniUrun, setYeniUrun] = useState({ name: "", price: "", stock: "", minStock: "" });
   const [duzenleModal, setDuzenleModal] = useState({ acik: false, urun: null });
+  
+  const isAdmin = user.role === 'admin'; // Admin rolünü kontrol ediyoruz
 
   // Renk paletleri
   const colors = isDarkMode ? {
@@ -40,9 +44,6 @@ function StokUpdate() {
     warning: "#F59E0B"
   };
 
-  // DOĞRU FİLTRELEME MANTIĞI:
-  // "Tümü" seçiliyse tüm kategorileri birleştirip göster,
-  // değilse sadece aktif olan kategorinin ürünlerini göster.
   const gosterilecekUrunler =
     aktifKategori === "Tümü"
       ? Object.entries(products).flatMap(([category, productList]) =>
@@ -137,7 +138,7 @@ function StokUpdate() {
         ))}
       </div>
       
-      {aktifKategori !== "Tümü" && (
+      {isAdmin && aktifKategori !== "Tümü" && ( // Sadece admin için görünür
         <div style={{ display: "flex", gap: 12, margin: "20px 0 28px 0", alignItems: "center" }}>
           <input 
             type="text" 
@@ -244,36 +245,40 @@ function StokUpdate() {
               }}>
                 {durum.durum}
               </div>
-              <button 
-                onClick={() => urunDuzenle(urun)} 
-                style={{ 
-                  background: colors.primary, 
-                  color: "#ffffff", 
-                  border: "none", 
-                  borderRadius: 6, 
-                  padding: "7px 18px", 
-                  fontWeight: 600, 
-                  cursor: "pointer",
-                  transition: "all 0.3s ease"
-                }}
-              >
-                Düzenle
-              </button>
-              <button 
-                onClick={() => urunSil(urun)} 
-                style={{ 
-                  background: colors.danger, 
-                  color: "#ffffff", 
-                  border: "none", 
-                  borderRadius: 6, 
-                  padding: "7px 18px", 
-                  fontWeight: 600, 
-                  cursor: "pointer",
-                  transition: "all 0.3s ease"
-                }}
-              >
-                Sil
-              </button>
+              {isAdmin && ( // Sadece admin için görünür
+                <>
+                  <button 
+                    onClick={() => urunDuzenle(urun)} 
+                    style={{ 
+                      background: colors.primary, 
+                      color: "#ffffff", 
+                      border: "none", 
+                      borderRadius: 6, 
+                      padding: "7px 18px", 
+                      fontWeight: 600, 
+                      cursor: "pointer",
+                      transition: "all 0.3s ease"
+                    }}
+                  >
+                    Düzenle
+                  </button>
+                  <button 
+                    onClick={() => urunSil(urun)} 
+                    style={{ 
+                      background: colors.danger, 
+                      color: "#ffffff", 
+                      border: "none", 
+                      borderRadius: 6, 
+                      padding: "7px 18px", 
+                      fontWeight: 600, 
+                      cursor: "pointer",
+                      transition: "all 0.3s ease"
+                    }}
+                  >
+                    Sil
+                  </button>
+                </>
+              )}
             </div>
           );
         })}
@@ -285,7 +290,7 @@ function StokUpdate() {
         </div>
       )}
       
-      {duzenleModal.acik && (
+      {isAdmin && duzenleModal.acik && ( // Sadece admin için görünür
         <div style={{ 
           position: "fixed", 
           top: 0, 

@@ -14,10 +14,9 @@ const StaffSidebar = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [showReservations, setShowReservations] = useState(false);
 
-    // Kat harflerini belirle
     const getFloorLetter = (floorIndex) => {
-        if (floorIndex === 0) return 'Z'; // Zemin kat
-        return String.fromCharCode(64 + floorIndex); // A, B, C, D...
+        if (floorIndex === 0) return 'Z';
+        return String.fromCharCode(64 + floorIndex);
     };
 
     const handleLogout = () => {
@@ -25,7 +24,6 @@ const StaffSidebar = () => {
         navigate('/login');
     };
 
-    // Mevcut role göre ana sayfa yolunu belirle
     const homePath = `/${user?.role}/home`;
 
     return (
@@ -40,6 +38,15 @@ const StaffSidebar = () => {
                 >
                     Masalar
                 </NavLink>
+
+                {user?.role === 'garson' && (
+                    <NavLink
+                        to={`/${user?.role}/orders`}
+                        className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
+                    >
+                        Siparişlerim
+                    </NavLink>
+                )}
             </nav>
 
             {/* Rezervasyonlar Bölümü */}
@@ -121,25 +128,28 @@ const StaffSidebar = () => {
                                         }}>
                                             Masa {getFloorLetter(parseInt(tableId.split('-')[0]))}{tableId.split('-')[1]}
                                         </div>
-                                        <button
-                                            onClick={() => removeReservation(tableId)}
-                                            style={{
-                                                background: colors.danger,
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '50%',
-                                                width: '20px',
-                                                height: '20px',
-                                                cursor: 'pointer',
-                                                fontSize: '12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                            title="Rezervasyonu İptal Et"
-                                        >
-                                            ✕
-                                        </button>
+                                        {/* SADECE ADMİN GÖREBİLSİN */}
+                                        {user?.role === 'admin' && (
+                                            <button
+                                                onClick={() => removeReservation(tableId)}
+                                                style={{
+                                                    background: colors.danger,
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '50%',
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                                title="Rezervasyonu İptal Et"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
                                     </div>
                                     <div style={{
                                         color: colors.textSecondary,

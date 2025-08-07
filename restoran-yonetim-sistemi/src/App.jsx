@@ -18,7 +18,7 @@ import ResetPassword from './pages/auth/ResetPassword.jsx';
 import AdminDashboard from './pages/admin/Dashboard.jsx';
 import ReportsPage from './pages/reports/ReportsPage.jsx';
 import ProductsPage from './pages/products/ProductsPage.jsx';
-import StokUpdate from './components/stock/StokUpdate.jsx';
+import StokUpdate from './components/stock/StokUpdate.jsx'; // Tek dosyayı kullanıyoruz
 import PersonnelPage from './pages/personnel/PersonnelPage.jsx';
 import MenuPage from './pages/menu/MenuPage.jsx';
 import Rezervasyon from './pages/admin/Rezervasyon.jsx';
@@ -30,6 +30,9 @@ import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
+// YENİ EKLENEN IMPORT (DOĞRU YOL İLE)
+import OrdersPage from "./components/layout/OrdersPage.jsx";
+
 
 // Stil dosyaları
 import "./App.css";
@@ -102,6 +105,9 @@ function App() {
             <Route path="home" element={<WaiterHome />} />
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
+            <Route path="stock" element={<StokUpdate />} />
+            {/* YENİ EKLENEN ROUTE */}
+            <Route path="orders" element={<OrdersPage />} />
           </Route>
 
           {/* Kasiyer Paneli */}
@@ -114,10 +120,12 @@ function App() {
             }
           >
             <Route index element={<Navigate to="home" replace />} />
-            {/* Kasiyer de WaiterHome'u kullanıyor */}
             <Route path="home" element={<WaiterHome />} />
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
+            <Route path="stock" element={<StokUpdate />} />
+            {/* YENİ EKLENEN ROUTE */}
+            <Route path="orders" element={<OrdersPage />} />
           </Route>
 
           {/* Varsayılan Rota */}
