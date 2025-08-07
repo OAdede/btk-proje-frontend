@@ -10,15 +10,18 @@ const AdminSidebar = () => {
     const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
-    const { reservations, removeReservation } = useContext(TableContext);
+    const { reservations } = useContext(TableContext);
     const [showSettings, setShowSettings] = useState(false);
-    const [showReservations, setShowReservations] = useState(false);
 
-    // Kat harflerini belirle
-    const getFloorLetter = (floorIndex) => {
-        if (floorIndex === 0) return 'Z'; // Zemin kat
-        return String.fromCharCode(64 + floorIndex); // A, B, C, D...
+    // Bugünkü rezervasyon sayısını hesapla
+    const getTodayReservationsCount = () => {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugün
+        return Object.values(reservations).filter(reservation => 
+            reservation.tarih === today
+        ).length;
     };
+
+
 
     const handleLogout = () => {
         logout();
@@ -66,133 +69,36 @@ const AdminSidebar = () => {
                 >
                     Rapor
                 </NavLink>
-            </nav>
-
-            {/* Rezervasyonlar Bölümü */}
-            <div style={{
-                padding: '15px',
-                borderTop: `1px solid ${colors.border}`,
-                borderBottom: `1px solid ${colors.border}`
-            }}>
-                <button
-                    onClick={() => setShowReservations(!showReservations)}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        color: colors.text,
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '10px 0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                    }}
+                <NavLink
+                    to="/admin/reservations"
+                    className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                    style={{ position: 'relative' }}
                 >
-                    <span>📅 Rezervasyonlar</span>
-                    <span style={{
-                        background: Object.keys(reservations).length > 0 ? colors.success : colors.textSecondary,
-                        color: 'white',
-                        borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                    }}>
-                        {Object.keys(reservations).length}
-                    </span>
-                </button>
-
-                {showReservations && (
-                    <div style={{
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        marginTop: '10px'
-                    }}>
-                        {Object.keys(reservations).length === 0 ? (
-                            <div style={{
-                                color: colors.textSecondary,
-                                fontSize: '0.9rem',
-                                textAlign: 'center',
-                                padding: '10px',
-                                fontStyle: 'italic'
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>📅</span>
+                        <span>Rezervasyonlar</span>
+                        {getTodayReservationsCount() > 0 && (
+                            <span style={{
+                                backgroundColor: '#28a745',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '20px',
+                                height: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold',
+                                marginLeft: 'auto'
                             }}>
-                                Henüz rezervasyon yok
-                            </div>
-                        ) : (
-                            Object.entries(reservations).map(([tableId, reservation]) => (
-                                <div key={tableId} style={{
-                                    background: colors.card,
-                                    padding: '12px',
-                                    borderRadius: '8px',
-                                    marginBottom: '8px',
-                                    border: `1px solid ${colors.border}`,
-                                    position: 'relative'
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'flex-start',
-                                        marginBottom: '8px'
-                                    }}>
-                                        <div style={{
-                                            color: colors.text,
-                                            fontWeight: 'bold',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            Masa {getFloorLetter(parseInt(tableId.split('-')[0]))}{tableId.split('-')[1]}
-                                        </div>
-                                        <button
-                                            onClick={() => removeReservation(tableId)}
-                                            style={{
-                                                background: colors.danger,
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '50%',
-                                                width: '20px',
-                                                height: '20px',
-                                                cursor: 'pointer',
-                                                fontSize: '12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                            title="Rezervasyonu İptal Et"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                    <div style={{
-                                        color: colors.textSecondary,
-                                        fontSize: '0.8rem',
-                                        marginBottom: '4px'
-                                    }}>
-                                        {reservation.adSoyad}
-                                    </div>
-                                    <div style={{
-                                        color: colors.textSecondary,
-                                        fontSize: '0.8rem',
-                                        marginBottom: '4px'
-                                    }}>
-                                        {reservation.tarih} - {reservation.saat}
-                                    </div>
-                                    <div style={{
-                                        color: colors.textSecondary,
-                                        fontSize: '0.8rem'
-                                    }}>
-                                        {reservation.kisiSayisi} kişi
-                                    </div>
-                                </div>
-                            ))
+                                {getTodayReservationsCount()}
+                            </span>
                         )}
                     </div>
-                )}
-            </div>
+                </NavLink>
+            </nav>
+
+
 
             {/* Alt kısım - Ayarlar ve Çıkış */}
             <div className="admin-sidebar-bottom">
@@ -200,7 +106,7 @@ const AdminSidebar = () => {
                     onClick={() => setShowSettings(!showSettings)}
                     className="admin-settings-btn"
                     style={{
-                        background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
+                        background: isDarkMode ? '#2a2a2a' : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
                         color: '#ffffff',
                         border: 'none',
                         padding: '12px 20px',
@@ -237,17 +143,17 @@ const AdminSidebar = () => {
                         }}
                         onClick={() => setShowSettings(false)}
                     >
-                        <div
-                            style={{
-                                background: colors.card,
-                                borderRadius: '15px',
-                                padding: '30px',
-                                minWidth: '400px',
-                                maxWidth: '500px',
-                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                                border: `1px solid ${colors.border}`,
-                                position: 'relative'
-                            }}
+                                                 <div
+                             style={{
+                                 background: isDarkMode ? '#2a2a2a' : '#ffffff',
+                                 borderRadius: '15px',
+                                 padding: '30px',
+                                 minWidth: '400px',
+                                 maxWidth: '500px',
+                                 boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                 border: `1px solid ${colors.border}`,
+                                 position: 'relative'
+                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <button
@@ -279,23 +185,23 @@ const AdminSidebar = () => {
                             >
                                 ✕
                             </button>
-                            <div style={{
-                                fontSize: '1.2rem',
-                                fontWeight: '700',
-                                color: colors.text,
-                                marginBottom: '20px',
-                                textAlign: 'center'
-                            }}>
-                                ⚙️ Ayarlar
-                            </div>
-                            <div style={{
-                                fontSize: '1rem',
-                                fontWeight: '600',
-                                color: colors.text,
-                                marginBottom: '15px'
-                            }}>
-                                Tema Seçimi
-                            </div>
+                                                         <div style={{
+                                 fontSize: '1.2rem',
+                                 fontWeight: '700',
+                                 color: isDarkMode ? '#ffffff' : '#333333',
+                                 marginBottom: '20px',
+                                 textAlign: 'center'
+                             }}>
+                                 ⚙️ Ayarlar
+                             </div>
+                             <div style={{
+                                 fontSize: '1rem',
+                                 fontWeight: '600',
+                                 color: isDarkMode ? '#ffffff' : '#333333',
+                                 marginBottom: '15px'
+                             }}>
+                                 Tema Seçimi
+                             </div>
                             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                                 <button
                                     onClick={() => toggleTheme()}
@@ -328,14 +234,14 @@ const AdminSidebar = () => {
                                     {isDarkMode ? 'Gece Modu' : 'Gündüz Modu'}
                                 </button>
                             </div>
-                            <div style={{
-                                fontSize: '0.9rem',
-                                color: colors.textSecondary,
-                                textAlign: 'center',
-                                fontStyle: 'italic'
-                            }}>
-                                Tema tercihiniz kaydedildi ve otomatik olarak uygulanacak.
-                            </div>
+                                                         <div style={{
+                                 fontSize: '0.9rem',
+                                 color: isDarkMode ? '#cccccc' : '#666666',
+                                 textAlign: 'center',
+                                 fontStyle: 'italic'
+                             }}>
+                                 Tema tercihiniz kaydedildi ve otomatik olarak uygulanacak.
+                             </div>
                         </div>
                     </div>,
                     document.body

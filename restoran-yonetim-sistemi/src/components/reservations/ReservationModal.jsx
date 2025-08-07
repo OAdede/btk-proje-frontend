@@ -4,7 +4,8 @@ import { ThemeContext } from "../../context/ThemeContext";
 export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate }) {
   const { isDarkMode } = useContext(ThemeContext);
   const [formData, setFormData] = useState({
-    adSoyad: "",
+    ad: "",
+    soyad: "",
     telefon: "",
     email: "",
     tarih: defaultDate || "",
@@ -12,6 +13,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     kisiSayisi: "",
     not: "",
   });
+
 
   // Tarih alanını otomatik doldur
   useEffect(() => {
@@ -22,14 +24,112 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === 'telefon') {
+      // Sadece rakamları al
+      const numbers = value.replace(/\D/g, '');
+      
+      // İlk rakam 5 değilse kabul etme
+      if (numbers.length > 0 && numbers[0] !== '5') {
+        return;
+      }
+      
+      // Maksimum 10 rakam
+      if (numbers.length > 10) {
+        return;
+      }
+      
+      // Format: 555 555 55 55
+      let formatted = '';
+      if (numbers.length > 0) {
+        formatted = numbers[0];
+        if (numbers.length > 1) {
+          formatted += numbers[1];
+          if (numbers.length > 2) {
+            formatted += numbers[2];
+            if (numbers.length > 3) {
+              formatted += ' ' + numbers[3];
+              if (numbers.length > 4) {
+                formatted += numbers[4];
+                if (numbers.length > 5) {
+                  formatted += numbers[5];
+                  if (numbers.length > 6) {
+                    formatted += ' ' + numbers[6];
+                    if (numbers.length > 7) {
+                      formatted += numbers[7];
+                      if (numbers.length > 8) {
+                        formatted += ' ' + numbers[8];
+                        if (numbers.length > 9) {
+                          formatted += numbers[9];
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      setFormData((prev) => ({ ...prev, [name]: formatted }));
+    } else if (name === 'email') {
+      // E-mail validasyonu - sadece yazma sırasında kontrol etme, submit sırasında kontrol edeceğiz
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Telefon numarası validasyonu
+    const phoneNumbers = formData.telefon.replace(/\D/g, '');
+    if (phoneNumbers.length !== 10 || phoneNumbers[0] !== '5') {
+      alert('Lütfen geçerli bir telefon numarası girin (0(5XX XXX XX XX) formatında)');
+      return;
+    }
+    
+    // E-mail validasyonu (eğer e-mail girilmişse)
+    if (formData.email && (!formData.email.includes('@') || !formData.email.includes('.com'))) {
+      alert('Lütfen geçerli bir e-mail adresi girin (@ ve .com içermeli)');
+      return;
+    }
+    
+    // Tarih validasyonu - bugünden önceki tarihleri kabul etme
+    const selectedDate = new Date(formData.tarih);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Bugünün başlangıcını al
+    
+    if (selectedDate < today) {
+      alert('Geçmiş tarihler için rezervasyon yapılamaz. Lütfen bugün veya gelecek bir tarih seçin.');
+      return;
+    }
+    
+    // Saat validasyonu
+    if (!formData.saat) {
+      alert('Lütfen önce tarih seçin, sonra saat seçin.');
+      return;
+    }
+    
+    // Bugün için saat kontrolü
+    if (selectedDate.getTime() === today.getTime()) {
+      const currentTime = new Date();
+      const selectedTime = new Date();
+      const [hours, minutes] = formData.saat.split(':');
+      selectedTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      if (selectedTime <= currentTime) {
+        alert('Bugün için sadece şu anki saatten sonraki saatler seçilebilir.');
+        return;
+      }
+    }
+    
+    // Formu temizle
     setFormData({
-      adSoyad: "",
+      ad: "",
+      soyad: "",
       telefon: "",
       email: "",
       tarih: defaultDate || "",
@@ -37,6 +137,9 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       kisiSayisi: "",
       not: "",
     });
+    
+    // onSubmit'i çağır
+    onSubmit(formData);
   };
 
   // Tema renklerini dinamik olarak belirle
@@ -100,33 +203,62 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
           📅 Masa {masaNo} - Yeni Rezervasyon
         </h2>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-            <label style={{ 
-              fontWeight: "bold", 
-              color: colors.labelColor, 
-              fontSize: "14px" 
-            }}>
-              Ad Soyad:
-            </label>
-            <input
-              type="text"
-              name="adSoyad"
-              placeholder="Ad Soyad"
-              value={formData.adSoyad}
-              onChange={handleChange}
-              required
-              style={{
-                padding: "12px",
-                border: `2px solid ${colors.inputBorder}`,
-                borderRadius: "8px",
-                fontSize: "14px",
-                transition: "border-color 0.3s ease",
-                outline: "none",
-                backgroundColor: colors.inputBg,
-                color: colors.textColor
-              }}
-            />
-          </div>
+                     <div style={{ display: "flex", gap: "10px" }}>
+             <div style={{ display: "flex", flexDirection: "column", gap: "5px", flex: 1 }}>
+               <label style={{ 
+                 fontWeight: "bold", 
+                 color: colors.labelColor, 
+                 fontSize: "14px" 
+               }}>
+                 Ad:
+               </label>
+               <input
+                 type="text"
+                 name="ad"
+                 placeholder="Ad"
+                 value={formData.ad}
+                 onChange={handleChange}
+                 required
+                 style={{
+                   padding: "12px",
+                   border: `2px solid ${colors.inputBorder}`,
+                   borderRadius: "8px",
+                   fontSize: "14px",
+                   transition: "border-color 0.3s ease",
+                   outline: "none",
+                   backgroundColor: colors.inputBg,
+                   color: colors.textColor
+                 }}
+               />
+             </div>
+             <div style={{ display: "flex", flexDirection: "column", gap: "5px", flex: 1 }}>
+               <label style={{ 
+                 fontWeight: "bold", 
+                 color: colors.labelColor, 
+                 fontSize: "14px" 
+               }}>
+                 Soyad:
+               </label>
+               <input
+                 type="text"
+                 name="soyad"
+                 placeholder="Soyad"
+                 value={formData.soyad}
+                 onChange={handleChange}
+                 required
+                 style={{
+                   padding: "12px",
+                   border: `2px solid ${colors.inputBorder}`,
+                   borderRadius: "8px",
+                   fontSize: "14px",
+                   transition: "border-color 0.3s ease",
+                   outline: "none",
+                   backgroundColor: colors.inputBg,
+                   color: colors.textColor
+                 }}
+               />
+             </div>
+           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
             <label style={{ 
@@ -139,7 +271,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
             <input
               type="tel"
               name="telefon"
-              placeholder="Telefon Numarası"
+              placeholder="5XX XXX XX XX"
               value={formData.telefon}
               onChange={handleChange}
               required
@@ -191,23 +323,24 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
             }}>
               Tarih:
             </label>
-            <input
-              type="date"
-              name="tarih"
-              value={formData.tarih}
-              onChange={handleChange}
-              required
-              style={{
-                padding: "12px",
-                border: `2px solid ${colors.inputBorder}`,
-                borderRadius: "8px",
-                fontSize: "14px",
-                transition: "border-color 0.3s ease",
-                outline: "none",
-                backgroundColor: colors.inputBg,
-                color: colors.textColor
-              }}
-            />
+                         <input
+               type="date"
+               name="tarih"
+               value={formData.tarih}
+               onChange={handleChange}
+               required
+               min={new Date().toISOString().split('T')[0]}
+               style={{
+                 padding: "12px",
+                 border: `2px solid ${colors.inputBorder}`,
+                 borderRadius: "8px",
+                 fontSize: "14px",
+                 transition: "border-color 0.3s ease",
+                 outline: "none",
+                 backgroundColor: colors.inputBg,
+                 color: colors.textColor
+               }}
+             />
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -218,23 +351,27 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
             }}>
               Saat:
             </label>
-            <input
-              type="time"
-              name="saat"
-              value={formData.saat}
-              onChange={handleChange}
-              required
-              style={{
-                padding: "12px",
-                border: `2px solid ${colors.inputBorder}`,
-                borderRadius: "8px",
-                fontSize: "14px",
-                transition: "border-color 0.3s ease",
-                outline: "none",
-                backgroundColor: colors.inputBg,
-                color: colors.textColor
-              }}
-            />
+                         <input
+               type="time"
+               name="saat"
+               value={formData.saat}
+               onChange={handleChange}
+               required
+               disabled={!formData.tarih}
+               min={formData.tarih === new Date().toISOString().split('T')[0] ? new Date().toTimeString().slice(0, 5) : undefined}
+               placeholder={formData.tarih ? "Saat seçin" : "Önce tarih seçin"}
+               style={{
+                 padding: "12px",
+                 border: `2px solid ${colors.inputBorder}`,
+                 borderRadius: "8px",
+                 fontSize: "14px",
+                 transition: "border-color 0.3s ease",
+                 outline: "none",
+                 backgroundColor: formData.tarih ? colors.inputBg : (isDarkMode ? "#2a2a2a" : "#f5f5f5"),
+                 color: formData.tarih ? colors.textColor : (isDarkMode ? "#666666" : "#999999"),
+                 cursor: formData.tarih ? "text" : "not-allowed"
+               }}
+             />
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -325,8 +462,8 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               ❌ İptal
             </button>
           </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+                 </form>
+       </div>
+     </div>
+   );
+ }

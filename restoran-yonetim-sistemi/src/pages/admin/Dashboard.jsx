@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
+import SuccessNotification from "../../components/reservations/SuccessNotification";
 import "./Dashboard.css";
 
 
@@ -9,7 +10,7 @@ import "./Dashboard.css";
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, clearAllReservations } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -17,6 +18,8 @@ const Dashboard = () => {
   const [showTableDetailsModal, setShowTableDetailsModal] = useState(false);
   const [selectedTableDetails, setSelectedTableDetails] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(1); // Varsayılan olarak 1. kat
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successData, setSuccessData] = useState(null);
 
 
 
@@ -56,8 +59,9 @@ const Dashboard = () => {
     setSelectedTable(null);
     setShowReservationMode(false); // Rezervasyon modunu kapat
     
-    // Başarı mesajı göster
-    alert(`✅ Masa ${selectedTable} için rezervasyon başarıyla oluşturuldu!\n\nMüşteri: ${formData.adSoyad}\nTarih: ${formData.tarih}\nSaat: ${formData.saat}\nKişi Sayısı: ${formData.kisiSayisi}`);
+    // Başarı bildirimi göster
+    setSuccessData({ ...formData, masaNo: selectedTable });
+    setShowSuccess(true);
   };
 
   const handleReservationClose = () => {
@@ -77,9 +81,17 @@ const Dashboard = () => {
   // Rezervasyon silme fonksiyonu
   const handleReservationDelete = () => {
     if (selectedTableDetails && selectedTableDetails.status === 'reserved') {
-      removeReservation(selectedTableDetails.id);
-      setShowTableDetailsModal(false);
-      setSelectedTableDetails(null);
+      // Rezervasyonu bul
+      const reservationEntry = Object.entries(reservations).find(([id, reservation]) => 
+        reservation.tableId === selectedTableDetails.id
+      );
+      
+      if (reservationEntry) {
+        const [reservationId] = reservationEntry;
+        removeReservation(reservationId);
+        setShowTableDetailsModal(false);
+        setSelectedTableDetails(null);
+      }
     }
   };
 
@@ -115,7 +127,13 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+    <>
+      <SuccessNotification 
+        visible={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        reservationData={successData}
+      />
+      <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
       {/* Ana İçerik */}
       <div style={{ flex: 1 }}>
         {/* Kontrol Butonları */}
@@ -143,29 +161,6 @@ const Dashboard = () => {
             }}
           >
             {showReservationMode ? 'Rezervasyon Modunu Kapat' : 'Rezervasyon Yap'}
-          </button>
-
-          
-
-          {/* Debug: Tüm rezervasyonları temizle */}
-          <button
-            onClick={() => {
-              clearAllReservations();
-              alert('Tüm rezervasyonlar temizlendi!');
-            }}
-            style={{
-              background: '#9c27b0',
-              color: 'white',
-              border: 'none',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            🧹 Rezervasyonları Temizle
           </button>
         </div>
         
@@ -227,7 +222,7 @@ const Dashboard = () => {
         </div>
 
         {/* Kat Başlığı */}
-        <h2 style={{ fontSize: "2rem", color: "#343a40", marginBottom: "1.5rem" }}>
+                 <h2 style={{ fontSize: "2rem", color: isDarkMode ? "#e0e0e0" : "#343a40", marginBottom: "1.5rem" }}>
           Kat {selectedFloor} - Masa Seçimi
           {showReservationMode && (
             <span style={{
@@ -330,7 +325,7 @@ const Dashboard = () => {
                      marginTop: '4px',
                      opacity: 0.8
                    }}>
-                     {reservation.adSoyad} - {reservation.saat}
+                     {reservation.ad} {reservation.soyad} - {reservation.saat}
                    </div>
                  )}
                </div>
@@ -343,23 +338,23 @@ const Dashboard = () => {
 
       {/* Sağ Panel - Kat Seçimi */}
       <div style={{ width: "150px", flexShrink: 0 }}>
-        <h3 style={{ fontSize: "1.25rem", color: "#495057", marginBottom: "1rem" }}>Katlar</h3>
+                 <h3 style={{ fontSize: "1.25rem", color: isDarkMode ? "#e0e0e0" : "#495057", marginBottom: "1rem" }}>Katlar</h3>
         {[1, 2].map((floor) => (
           <div
             key={floor}
             onClick={() => setSelectedFloor(floor)}
-            style={{
-              padding: "1rem",
-              marginBottom: "1rem",
-              borderRadius: "8px",
-              backgroundColor: selectedFloor === floor ? "#007bff" : "#e9ecef",
-              color: selectedFloor === floor ? "white" : "#495057",
-              textAlign: "center",
-              cursor: "pointer",
-              fontWeight: "bold",
-              userSelect: "none",
-              transition: "background-color 0.2s ease",
-            }}
+                         style={{
+               padding: "1rem",
+               marginBottom: "1rem",
+               borderRadius: "8px",
+               backgroundColor: selectedFloor === floor ? "#007bff" : (isDarkMode ? "#4a4a4a" : "#e9ecef"),
+               color: selectedFloor === floor ? "white" : (isDarkMode ? "#e0e0e0" : "#495057"),
+               textAlign: "center",
+               cursor: "pointer",
+               fontWeight: "bold",
+               userSelect: "none",
+               transition: "background-color 0.2s ease",
+             }}
           >
             Kat {floor}
           </div>
@@ -480,7 +475,7 @@ const Dashboard = () => {
                   marginBottom: '15px'
                 }}>
                   <p style={{ color: '#ffffff', margin: '5px 0' }}>
-                    <strong>Müşteri:</strong> {selectedTableDetails.reservation.adSoyad}
+                    <strong>Müşteri:</strong> {selectedTableDetails.reservation.ad} {selectedTableDetails.reservation.soyad}
                   </p>
                   <p style={{ color: '#ffffff', margin: '5px 0' }}>
                     <strong>Tarih:</strong> {selectedTableDetails.reservation.tarih}
@@ -517,6 +512,7 @@ const Dashboard = () => {
 
       
     </div>
+    </>
   );
 };
 

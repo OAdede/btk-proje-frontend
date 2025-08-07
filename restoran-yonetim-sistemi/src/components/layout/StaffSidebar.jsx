@@ -173,8 +173,8 @@ const StaffSidebar = () => {
                     onClick={() => setShowSettings(!showSettings)}
                     className="staff-settings-btn"
                     style={{
-                        background: isDarkMode ? colors.button : 'linear-gradient(90deg, #2d8cff 0%, #7f9cf5 100%)',
-                        color: '#ffffff',
+                        background: isDarkMode ? '#513653' : 'linear-gradient(90deg,rgb(83, 34, 112) 0%,rgb(54, 16, 98) 100%)',
+                        color: '#513653',
                         border: 'none',
                         padding: '12px 20px',
                         borderRadius: '10px',
