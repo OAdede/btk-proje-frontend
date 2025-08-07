@@ -25,8 +25,14 @@ const PersonelEkleme = () => {
     name: "",
     phone: "",
     email: "",
-    role: "garson"
+    role: "garson",
+    photo: null
   });
+
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [tempImage, setTempImage] = useState(null);
 
   const [activeTab, setActiveTab] = useState("aktif");
   const [roleFilter, setRoleFilter] = useState("tümü");
@@ -58,8 +64,91 @@ const PersonelEkleme = () => {
         isActive: true
       };
       setPersonnel([...personnel, newPersonWithId]);
-      setNewPerson({ name: "", phone: "", email: "", role: "garson" });
+      setNewPerson({ name: "", phone: "", email: "", role: "garson", photo: null });
+      setCapturedImage(null);
     }
+  };
+
+  // Fotoğraf modalını açma
+  const openPhotoModal = () => {
+    setShowPhotoModal(true);
+    setTempImage(null);
+  };
+
+  // Fotoğraf modalını kapatma
+  const closePhotoModal = () => {
+    setShowPhotoModal(false);
+    setTempImage(null);
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  // Kamera açma
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraStream(stream);
+    } catch (error) {
+      alert('Kamera erişimi sağlanamadı: ' + error.message);
+    }
+  };
+
+  // Kamera kapatma
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  // Fotoğraf çekme
+  const capturePhoto = () => {
+    if (cameraStream) {
+      const video = document.getElementById('camera-video');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const imageData = canvas.toDataURL('image/jpeg');
+      setTempImage(imageData);
+      stopCamera();
+    }
+  };
+
+  // Dosyadan fotoğraf seçme
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target.result;
+        setTempImage(imageData);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Fotoğrafı kabul etme
+  const acceptPhoto = () => {
+    if (tempImage) {
+      setCapturedImage(tempImage);
+      setNewPerson({ ...newPerson, photo: tempImage });
+    }
+    closePhotoModal();
+  };
+
+  // Fotoğrafı reddetme
+  const rejectPhoto = () => {
+    setTempImage(null);
+  };
+
+  // Fotoğrafı kaldırma
+  const removePhoto = () => {
+    setCapturedImage(null);
+    setNewPerson({ ...newPerson, photo: null });
   };
 
   const togglePersonStatus = (personId) => {
@@ -128,7 +217,7 @@ const PersonelEkleme = () => {
 
       {/* Yeni Personel Ekleme Formu */}
       {activeTab === "aktif" && (
-        <div className="add-personnel-form">
+        <div className="add-personnel-form" style={{ position: 'relative' }}>
           <h3 className="add-personnel-title">Yeni Personel Ekle</h3>
           <form onSubmit={handleAddPerson} className="personnel-form">
             <input
@@ -163,10 +252,335 @@ const PersonelEkleme = () => {
               <option value="garson">Garson</option>
               <option value="kasiyer">Kasiyer</option>
             </select>
+
+            {/* Fotoğraf Ekleme Bölümü */}
+            {capturedImage ? (
+              <div style={{ marginBottom: '15px', textAlign: 'center' }}>
+                <img 
+                  src={capturedImage} 
+                  alt="Seçilen fotoğraf" 
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '3px solid #ddd',
+                    marginBottom: '10px'
+                  }}
+                />
+                <div>
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    style={{
+                      background: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                  >
+                    ❌ Kaldır
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openPhotoModal}
+                style={{
+                  background: '#513653',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: '500'
+                }}
+              >
+                📷 Fotoğraf Ekle
+              </button>
+            )}
+
             <button type="submit" className="add-personnel-btn">
               Personel Ekle
             </button>
           </form>
+
+          {/* Fotoğraf Ekleme Modal */}
+          {showPhotoModal && (
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'var(--card)',
+              color: 'var(--text)',
+              padding: '20px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              width: '300px',
+              border: '1px solid var(--border)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              zIndex: 1000
+            }}>
+              {/* Kapatma butonu */}
+              <button
+                onClick={closePhotoModal}
+                style={{
+                  position: 'absolute',
+                  top: '5px',
+                  right: '10px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '18px',
+                  color: '#dc3545',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  width: '25px',
+                  height: '25px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(220, 53, 69, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'none';
+                }}
+              >
+                ✕
+              </button>
+
+              <h3 style={{ margin: '0 0 15px 0', color: 'var(--text)', fontSize: '16px' }}>Fotoğraf Ekle</h3>
+
+              {/* Fotoğraf önizlemesi */}
+              {tempImage && (
+                <div style={{ marginBottom: '15px' }}>
+                  <img 
+                    src={tempImage} 
+                    alt="Önizleme" 
+                    style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '3px solid var(--border)',
+                      margin: '0 auto'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Kamera görüntüsü */}
+              {cameraStream && !tempImage && (
+                <div style={{ marginBottom: '15px' }}>
+                  <video
+                    id="camera-video"
+                    autoPlay
+                    playsInline
+                    style={{
+                      width: '200px',
+                      height: '150px',
+                      borderRadius: '8px',
+                      margin: '0 auto',
+                      border: '2px solid var(--border)'
+                    }}
+                    ref={(video) => {
+                      if (video && cameraStream) {
+                        video.srcObject = cameraStream;
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Butonlar */}
+              {!tempImage && !cameraStream && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', marginBottom: '15px' }}>
+                  <button
+                    onClick={startCamera}
+                    style={{
+                      background: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(0, 123, 255, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    📷 Kamera ile Çek
+                  </button>
+                  <label style={{
+                    background: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }}>
+                    📁 Dosyadan Seç
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Kamera butonları */}
+              {cameraStream && !tempImage && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', marginBottom: '15px' }}>
+                  <button
+                    onClick={capturePhoto}
+                    style={{
+                      background: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    📸 Fotoğraf Çek
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    style={{
+                      background: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    ❌ İptal
+                  </button>
+                </div>
+              )}
+
+              {/* Kabul/Ret butonları */}
+              {tempImage && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                  <button
+                    onClick={acceptPhoto}
+                    style={{
+                      background: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    ✅ Kabul Et
+                  </button>
+                  <button
+                    onClick={rejectPhoto}
+                    style={{
+                      background: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    ❌ Reddet
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -187,15 +601,24 @@ const PersonelEkleme = () => {
         ) : (
           filteredPersonnel.map((person) => (
             <div key={person.id} className="personnel-item">
-              <div className="personnel-info">
-                <div className="personnel-name">{person.name}</div>
-                <div className="personnel-details">
-                  {person.phone} • {person.email} • {person.role.charAt(0).toUpperCase() + person.role.slice(1)}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <img 
+                  src={person.photo || '/default-avatar.png'} 
+                  alt={person.name}
+                  style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid #ddd'
+                  }}
+                />
+                <div className="personnel-info">
+                  <div className="personnel-name">{person.name}</div>
+                  <div className="personnel-details">
+                    {person.phone} • {person.email} • {person.role.charAt(0).toUpperCase() + person.role.slice(1)}
+                  </div>
                 </div>
-              </div>
-
-              <div className={`personnel-status ${person.isActive ? 'active' : 'inactive'}`}>
-                {person.isActive ? "Aktif" : "Pasif"}
               </div>
 
               <button
@@ -213,6 +636,10 @@ const PersonelEkleme = () => {
               >
                 {person.isActive ? "Pasif Yap" : "Aktif Yap"}
               </button>
+
+              <div className={`personnel-status ${person.isActive ? 'active' : 'inactive'}`}>
+                {person.isActive ? "Aktif" : "Pasif"}
+              </div>
             </div>
           ))
         )}
