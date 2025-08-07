@@ -268,19 +268,32 @@ export function TableProvider({ children }) {
         };
         setReservations(prev => ({
             ...prev,
-            [tableId]: newReservation
+            [reservationId]: newReservation
         }));
         setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
         return reservationId;
     };
 
-    const removeReservation = (tableId) => {
+    const removeReservation = (reservationId) => {
         setReservations(prev => {
             const newReservations = { ...prev };
-            delete newReservations[tableId];
+            const reservation = newReservations[reservationId];
+            if (reservation) {
+                delete newReservations[reservationId];
+                setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: 'empty' }));
+            }
             return newReservations;
         });
-        setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
+    };
+
+    const updateReservation = (reservationId, updatedData) => {
+        setReservations(prev => ({
+            ...prev,
+            [reservationId]: {
+                ...prev[reservationId],
+                ...updatedData
+            }
+        }));
     };
 
     const clearAllReservations = () => {
@@ -396,6 +409,7 @@ export function TableProvider({ children }) {
                 increaseConfirmedOrderItem,
                 addReservation,
                 removeReservation,
+                updateReservation,
                 clearAllReservations,
                 addProduct,
                 deleteProduct,

@@ -8,7 +8,7 @@ import './TopNav.css';
 const TopNav = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
-    const { colors } = useTheme();
+    const { colors, isDarkMode } = useTheme();
 
     const handleLogout = () => {
         logout();
@@ -18,6 +18,17 @@ const TopNav = () => {
     return (
         <div className="top-nav" style={{ background: colors.cardBackground, borderBottom: `1px solid ${colors.border}` }}>
             <div className="top-nav-left">
+                <img 
+                    src={isDarkMode ? "/logo-dark.png" : "/logo-light.png"} 
+                    alt="Logo" 
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        marginRight: '15px'
+                    }}
+                />
                 <h2 className="top-nav-title" style={{ color: colors.text }}>Restoran Yönetim Sistemi</h2>
             </div>
 

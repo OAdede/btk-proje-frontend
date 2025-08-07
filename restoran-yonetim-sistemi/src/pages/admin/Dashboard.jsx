@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
+import SuccessNotification from "../../components/reservations/SuccessNotification";
 import "./Dashboard.css";
 
 
@@ -9,14 +10,24 @@ import "./Dashboard.css";
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, clearAllReservations } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [showTableDetailsModal, setShowTableDetailsModal] = useState(false);
   const [selectedTableDetails, setSelectedTableDetails] = useState(null);
-  const [selectedFloor, setSelectedFloor] = useState(1); // Varsayılan olarak 1. kat
+  const [selectedFloor, setSelectedFloor] = useState(0); // 0 = Zemin kat, 1 = 1. kat, 2 = 2. kat
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successData, setSuccessData] = useState(null);
+  const [showTableLayoutMode, setShowTableLayoutMode] = useState(false);
+  const [showFloorLayoutMode, setShowFloorLayoutMode] = useState(false);
+  const [tableCounts, setTableCounts] = useState({ 0: 8, 1: 8, 2: 8 }); // Her kattaki masa sayısı
+  const [floors, setFloors] = useState([0, 1, 2]); // Mevcut katlar
+  const [showDeleteFloorModal, setShowDeleteFloorModal] = useState(false);
+  const [floorToDelete, setFloorToDelete] = useState(null);
+  const [showDeleteTableModal, setShowDeleteTableModal] = useState(false);
+  const [tableToDelete, setTableToDelete] = useState(null);
 
 
 
@@ -30,8 +41,24 @@ const Dashboard = () => {
     return `${today.getFullYear()}-${month}-${day}`;
   };
 
-  // Waiter ile aynı masa sistemi
-  const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
+  // Kat adını döndüren fonksiyon
+  const getFloorName = (floorNumber) => {
+    if (floorNumber === 0) return "Zemin";
+    return `Kat ${floorNumber}`;
+  };
+
+  // Masa numarasını oluşturan fonksiyon
+  const getTableNumber = (floorNumber, tableIndex) => {
+    if (floorNumber === 0) return `Z${tableIndex + 1}`;
+    const letter = String.fromCharCode(65 + floorNumber - 1); // A, B, C, ...
+    return `${letter}${tableIndex + 1}`;
+  };
+
+  // Mevcut kattaki masaları oluştur
+  const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => ({
+    id: `${selectedFloor}-${i + 1}`,
+    displayNumber: getTableNumber(selectedFloor, i)
+  }));
 
   const handleReservationClick = (tableId) => {
     setSelectedTable(tableId);
@@ -56,8 +83,9 @@ const Dashboard = () => {
     setSelectedTable(null);
     setShowReservationMode(false); // Rezervasyon modunu kapat
     
-    // Başarı mesajı göster
-    alert(`✅ Masa ${selectedTable} için rezervasyon başarıyla oluşturuldu!\n\nMüşteri: ${formData.adSoyad}\nTarih: ${formData.tarih}\nSaat: ${formData.saat}\nKişi Sayısı: ${formData.kisiSayisi}`);
+    // Başarı bildirimi göster
+    setSuccessData({ ...formData, masaNo: selectedTable });
+    setShowSuccess(true);
   };
 
   const handleReservationClose = () => {
@@ -77,9 +105,17 @@ const Dashboard = () => {
   // Rezervasyon silme fonksiyonu
   const handleReservationDelete = () => {
     if (selectedTableDetails && selectedTableDetails.status === 'reserved') {
-      removeReservation(selectedTableDetails.id);
-      setShowTableDetailsModal(false);
-      setSelectedTableDetails(null);
+      // Rezervasyonu bul
+      const reservationEntry = Object.entries(reservations).find(([id, reservation]) => 
+        reservation.tableId === selectedTableDetails.id
+      );
+      
+      if (reservationEntry) {
+        const [reservationId] = reservationEntry;
+        removeReservation(reservationId);
+        setShowTableDetailsModal(false);
+        setSelectedTableDetails(null);
+      }
     }
   };
 
@@ -91,9 +127,9 @@ const Dashboard = () => {
     }, 0);
   };
 
-  // İstatistikleri hesapla - Waiter ile aynı sistem
-  const allTables = [1, 2].flatMap(floor => 
-    Array.from({ length: 8 }, (_, i) => `${floor}-${i + 1}`)
+  // İstatistikleri hesapla - Yeni kat sistemi ile
+  const allTables = floors.flatMap(floor => 
+    Array.from({ length: tableCounts[floor] || 0 }, (_, i) => `${floor}-${i + 1}`)
   );
   const emptyTables = allTables.filter(tableId => (tableStatus[tableId] || 'empty') === 'empty').length;
   const occupiedTables = allTables.filter(tableId => (tableStatus[tableId] || 'empty') === 'occupied').length;
@@ -114,8 +150,76 @@ const Dashboard = () => {
     return statusInfo[status] || statusInfo["empty"];
   };
 
+  // Masa ekleme fonksiyonu
+  const addTable = () => {
+    setTableCounts(prev => ({
+      ...prev,
+      [selectedFloor]: prev[selectedFloor] + 1
+    }));
+  };
+
+  // Kat ekleme fonksiyonu
+  const addFloor = () => {
+    const newFloorNumber = Math.max(...floors) + 1;
+    setFloors(prev => [...prev, newFloorNumber]);
+    setTableCounts(prev => ({
+      ...prev,
+      [newFloorNumber]: 0 // Yeni katta başlangıçta 0 masa
+    }));
+  };
+
+  // Kat silme fonksiyonu
+  const deleteFloor = () => {
+    if (floorToDelete !== null) {
+      setFloors(prev => prev.filter(floor => floor !== floorToDelete));
+      setTableCounts(prev => {
+        const newCounts = { ...prev };
+        delete newCounts[floorToDelete];
+        return newCounts;
+      });
+      
+      // Eğer silinen kat seçili kattaysa, ilk kata geç
+      if (selectedFloor === floorToDelete) {
+        setSelectedFloor(floors[0]);
+      }
+      
+      setShowDeleteFloorModal(false);
+      setFloorToDelete(null);
+    }
+  };
+
+  // Kat silme modalını aç
+  const openDeleteFloorModal = (floorNumber) => {
+    setFloorToDelete(floorNumber);
+    setShowDeleteFloorModal(true);
+  };
+
+  // Masa silme fonksiyonu
+  const deleteTable = () => {
+    if (tableToDelete !== null) {
+      setTableCounts(prev => ({
+        ...prev,
+        [selectedFloor]: Math.max(0, prev[selectedFloor] - 1)
+      }));
+      setShowDeleteTableModal(false);
+      setTableToDelete(null);
+    }
+  };
+
+  // Masa silme modalını aç
+  const openDeleteTableModal = (tableId) => {
+    setTableToDelete(tableId);
+    setShowDeleteTableModal(true);
+  };
+
   return (
-    <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+    <>
+      <SuccessNotification 
+        visible={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        reservationData={successData}
+      />
+      <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
       {/* Ana İçerik */}
       <div style={{ flex: 1 }}>
         {/* Kontrol Butonları */}
@@ -126,10 +230,10 @@ const Dashboard = () => {
           flexWrap: 'wrap',
           justifyContent: 'center'
         }}>
-                     <button
-             onClick={() => {
-               setShowReservationMode(!showReservationMode);
-             }}
+          <button
+            onClick={() => {
+              setShowReservationMode(!showReservationMode);
+            }}
             style={{
               background: showReservationMode ? '#f44336' : '#4caf50',
               color: 'white',
@@ -144,17 +248,14 @@ const Dashboard = () => {
           >
             {showReservationMode ? 'Rezervasyon Modunu Kapat' : 'Rezervasyon Yap'}
           </button>
-
           
-
-          {/* Debug: Tüm rezervasyonları temizle */}
           <button
             onClick={() => {
-              clearAllReservations();
-              alert('Tüm rezervasyonlar temizlendi!');
+              setShowTableLayoutMode(!showTableLayoutMode);
+              setShowFloorLayoutMode(false);
             }}
             style={{
-              background: '#9c27b0',
+              background: showTableLayoutMode ? '#ff9800' : '#2196f3',
               color: 'white',
               border: 'none',
               padding: '12px 24px',
@@ -165,7 +266,27 @@ const Dashboard = () => {
               transition: 'all 0.3s ease'
             }}
           >
-            🧹 Rezervasyonları Temizle
+            {showTableLayoutMode ? 'Masa Düzenini Kapat' : 'Masa Düzeni'}
+          </button>
+          
+          <button
+            onClick={() => {
+              setShowFloorLayoutMode(!showFloorLayoutMode);
+              setShowTableLayoutMode(false);
+            }}
+            style={{
+              background: showFloorLayoutMode ? '#9c27b0' : '#673ab7',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {showFloorLayoutMode ? 'Kat Düzenini Kapat' : 'Kat Düzeni'}
           </button>
         </div>
         
@@ -227,8 +348,8 @@ const Dashboard = () => {
         </div>
 
         {/* Kat Başlığı */}
-        <h2 style={{ fontSize: "2rem", color: "#343a40", marginBottom: "1.5rem" }}>
-          Kat {selectedFloor} - Masa Seçimi
+        <h2 style={{ fontSize: "2rem", color: isDarkMode ? "#e0e0e0" : "#343a40", marginBottom: "1.5rem" }}>
+          {getFloorName(selectedFloor)} - Masa Seçimi
           {showReservationMode && (
             <span style={{
               background: '#4caf50',
@@ -242,109 +363,201 @@ const Dashboard = () => {
               📅 Rezervasyon Modu Aktif
             </span>
           )}
+          {showTableLayoutMode && (
+            <span style={{
+              background: '#2196f3',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '1rem',
+              marginLeft: '15px',
+              fontWeight: 'bold'
+            }}>
+              🏠 Masa Düzeni Modu Aktif
+            </span>
+          )}
+          {showFloorLayoutMode && (
+            <span style={{
+              background: '#673ab7',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '1rem',
+              marginLeft: '15px',
+              fontWeight: 'bold'
+            }}>
+              🏢 Kat Düzeni Modu Aktif
+            </span>
+          )}
         </h2>
 
-                 {/* Masalar Grid */}
-         <div style={{
-           display: "grid",
-           gridTemplateColumns: "repeat(4, 1fr)",
-           gap: "1.5rem"
-         }}>
-           {tables.map((tableId) => {
-             const status = getStatus(tableId);
-             const order = orders[tableId] || {};
-             const reservation = reservations[tableId];
-             
-             return (
-               <div
-                 key={tableId}
-                 style={{
-                   backgroundColor: status.color,
-                   color: status.textColor,
-                   height: "140px",
-                   display: "flex",
-                   flexDirection: "column",
-                   justifyContent: "center",
-                   alignItems: "center",
-                   borderRadius: "12px",
-                   cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
-                   userSelect: "none",
-                   transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                   position: 'relative'
-                 }}
-                 onClick={() => handleTableClick({ id: tableId, name: tableId.split("-")[1], status: tableStatus[tableId] || 'empty', orderCount: Object.keys(order).length, reservation: reservation })}
-                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                 title={showReservationMode && status.text === 'Boş' ? `Masa ${tableId.split("-")[1]} - Rezervasyon Yap` : `Masa ${tableId.split("-")[1]}`}
-               >
-                 {/* Rezervasyon modunda + işareti */}
-                 {showReservationMode && status.text === 'Boş' && (
-                   <div style={{
-                     position: 'absolute',
-                     top: '5px',
-                     right: '5px',
-                     background: 'rgba(255,255,255,0.9)',
-                     color: '#333',
-                     borderRadius: '50%',
-                     width: '24px',
-                     height: '24px',
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     fontSize: '16px',
-                     fontWeight: 'bold',
-                     cursor: 'pointer',
-                     animation: 'pulse 2s infinite'
-                   }}>
-                     +
-                   </div>
-                 )}
+                         {/* Masalar Grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "1.5rem"
+        }}>
+          {tables.map((table) => {
+            const status = getStatus(table.id);
+            const order = orders[table.id] || {};
+            const reservation = reservations[table.id];
+            
+            return (
+              <div
+                key={table.id}
+                style={{
+                  backgroundColor: status.color,
+                  color: status.textColor,
+                  height: "140px",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderRadius: "12px",
+                  cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
+                  userSelect: "none",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  position: 'relative'
+                }}
+                onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: reservation })}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
+              >
+                {/* Rezervasyon modunda + işareti */}
+                {showReservationMode && status.text === 'Boş' && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '5px',
+                    background: 'rgba(255,255,255,0.9)',
+                    color: '#333',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    animation: 'pulse 2s infinite'
+                  }}>
+                    +
+                  </div>
+                )}
 
+                {/* Masa düzeni modunda çarpı işareti */}
+                {showTableLayoutMode && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteTableModal(table.id);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '5px',
+                      right: '5px',
+                      background: 'rgba(255,0,0,0.8)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease',
+                      zIndex: 10
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(255,0,0,1)';
+                      e.target.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(255,0,0,0.8)';
+                      e.target.style.transform = 'scale(1)';
+                    }}
+                    title={`Masa ${table.displayNumber} Sil`}
+                  >
+                    ✕
+                  </button>
+                )}
 
+                <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
+                  {table.displayNumber}
+                </div>
+                <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
+                  {status.text}
+                  {Object.keys(order).length > 0 && (
+                    <span style={{
+                      background: 'rgba(255,255,255,0.2)',
+                      borderRadius: '50%',
+                      width: '20px',
+                      height: '20px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      marginLeft: '8px'
+                    }}>
+                      {Object.keys(order).length}
+                    </span>
+                  )}
+                </div>
+                {reservation && (
+                  <div style={{
+                    fontSize: '10px',
+                    marginTop: '4px',
+                    opacity: 0.8
+                  }}>
+                    {reservation.ad} {reservation.soyad} - {reservation.saat}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-                 <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
-                   {tableId.split("-")[1]}
-                 </div>
-                 <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
-                   {status.text}
-                   {Object.keys(order).length > 0 && (
-                     <span style={{
-                       background: 'rgba(255,255,255,0.2)',
-                       borderRadius: '50%',
-                       width: '20px',
-                       height: '20px',
-                       display: 'inline-flex',
-                       alignItems: 'center',
-                       justifyContent: 'center',
-                       fontSize: '12px',
-                       marginLeft: '8px'
-                     }}>
-                       {Object.keys(order).length}
-                     </span>
-                   )}
-                 </div>
-                 {reservation && (
-                   <div style={{
-                     fontSize: '10px',
-                     marginTop: '4px',
-                     opacity: 0.8
-                   }}>
-                     {reservation.adSoyad} - {reservation.saat}
-                   </div>
-                 )}
-               </div>
-             );
-           })}
-
-          
+          {/* Masa düzeni modunda + butonu */}
+          {showTableLayoutMode && (
+            <div
+              onClick={addTable}
+              style={{
+                backgroundColor: '#2196f3',
+                color: 'white',
+                height: "140px",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                borderRadius: "12px",
+                cursor: 'pointer',
+                userSelect: "none",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                border: '2px dashed rgba(255,255,255,0.5)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              title="Yeni Masa Ekle"
+            >
+              <div style={{ fontSize: "3rem", fontWeight: "bold" }}>+</div>
+              <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
+                Masa Ekle
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Sağ Panel - Kat Seçimi */}
       <div style={{ width: "150px", flexShrink: 0 }}>
-        <h3 style={{ fontSize: "1.25rem", color: "#495057", marginBottom: "1rem" }}>Katlar</h3>
-        {[1, 2].map((floor) => (
+        <h3 style={{ fontSize: "1.25rem", color: isDarkMode ? "#e0e0e0" : "#495057", marginBottom: "1rem" }}>Katlar</h3>
+        {floors.map((floor) => (
           <div
             key={floor}
             onClick={() => setSelectedFloor(floor)}
@@ -352,20 +565,86 @@ const Dashboard = () => {
               padding: "1rem",
               marginBottom: "1rem",
               borderRadius: "8px",
-              backgroundColor: selectedFloor === floor ? "#007bff" : "#e9ecef",
-              color: selectedFloor === floor ? "white" : "#495057",
+                              backgroundColor: selectedFloor === floor ? (isDarkMode ? "#007bff" : "#513653") : (isDarkMode ? "#4a4a4a" : "#e9ecef"),
+                color: selectedFloor === floor ? "white" : (isDarkMode ? "#e0e0e0" : "#495057"),
               textAlign: "center",
               cursor: "pointer",
               fontWeight: "bold",
               userSelect: "none",
               transition: "background-color 0.2s ease",
+              position: 'relative'
             }}
           >
-            Kat {floor}
+            <div style={{ cursor: 'pointer' }}>
+              {getFloorName(floor)}
+            </div>
+            
+            {/* Kat düzeni modunda silme butonu */}
+            {showFloorLayoutMode && floors.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDeleteFloorModal(floor);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: '5px',
+                  right: '5px',
+                  background: 'rgba(255,255,255,0.2)',
+                  color: selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057'),
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  transition: 'all 0.3s ease',
+                  zIndex: 10
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'rgba(255,0,0,0.3)';
+                  e.target.style.color = 'white';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'rgba(255,255,255,0.2)';
+                  e.target.style.color = selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
+                }}
+                title={`${getFloorName(floor)} Katını Sil`}
+              >
+                ✕
+              </button>
+            )}
           </div>
         ))}
 
-        
+        {/* Kat düzeni modunda + butonu */}
+        {showFloorLayoutMode && (
+          <div
+            onClick={addFloor}
+            style={{
+              padding: "1rem",
+              marginBottom: "1rem",
+              borderRadius: "8px",
+              backgroundColor: '#673ab7',
+              color: 'white',
+              textAlign: "center",
+              cursor: "pointer",
+              fontWeight: "bold",
+              userSelect: "none",
+              transition: "all 0.3s ease",
+              border: '2px dashed rgba(255,255,255,0.5)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            title="Yeni Kat Ekle"
+          >
+            + Yeni Kat
+          </div>
+        )}
       </div>
 
       {/* Rezervasyon Modal */}
@@ -377,8 +656,184 @@ const Dashboard = () => {
         defaultDate={getTodayDate()}
       />
 
-      {/* Masa Detayları Modal */}
-      {showTableDetailsModal && selectedTableDetails && (
+             {/* Masa Silme Modal */}
+       {showDeleteTableModal && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           width: '100vw',
+           height: '100vh',
+           backgroundColor: 'rgba(0,0,0,0.7)',
+           zIndex: 9998,
+           display: 'flex',
+           alignItems: 'center',
+           justifyContent: 'center'
+         }}>
+           <div style={{
+             backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
+             padding: '2rem',
+             borderRadius: '15px',
+             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+             zIndex: 9999,
+             maxWidth: '400px',
+             width: '90%',
+             textAlign: 'center',
+             border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+           }}>
+             <h3 style={{ 
+               color: isDarkMode ? '#ffffff' : '#333333', 
+               marginBottom: '20px',
+               fontSize: '1.5rem'
+             }}>
+               Masa Silme Onayı
+             </h3>
+             <p style={{ 
+               color: isDarkMode ? '#cccccc' : '#666666', 
+               marginBottom: '30px',
+               fontSize: '1rem'
+             }}>
+               <strong>Masa {tableToDelete ? getTableNumber(selectedFloor, parseInt(tableToDelete.split('-')[1]) - 1) : ''}</strong> masasını silmek istediğinizden emin misiniz?
+               <br />
+               <small style={{ color: '#ff6b6b' }}>
+                 Bu işlem geri alınamaz!
+               </small>
+             </p>
+             <div style={{
+               display: 'flex',
+               gap: '15px',
+               justifyContent: 'center'
+             }}>
+               <button
+                 onClick={deleteTable}
+                 style={{
+                   background: '#f44336',
+                   color: 'white',
+                   border: 'none',
+                   padding: '12px 24px',
+                   borderRadius: '8px',
+                   cursor: 'pointer',
+                   fontSize: '16px',
+                   fontWeight: 'bold',
+                   transition: 'all 0.3s ease'
+                 }}
+               >
+                 Evet, Sil
+               </button>
+               <button
+                 onClick={() => {
+                   setShowDeleteTableModal(false);
+                   setTableToDelete(null);
+                 }}
+                 style={{
+                   background: isDarkMode ? '#4a4a4a' : '#e0e0e0',
+                   color: isDarkMode ? '#ffffff' : '#333333',
+                   border: 'none',
+                   padding: '12px 24px',
+                   borderRadius: '8px',
+                   cursor: 'pointer',
+                   fontSize: '16px',
+                   fontWeight: 'bold',
+                   transition: 'all 0.3s ease'
+                 }}
+               >
+                 Hayır, İptal
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Kat Silme Modal */}
+       {showDeleteFloorModal && (
+         <div style={{
+           position: 'fixed',
+           top: 0,
+           left: 0,
+           width: '100vw',
+           height: '100vh',
+           backgroundColor: 'rgba(0,0,0,0.7)',
+           zIndex: 9998,
+           display: 'flex',
+           alignItems: 'center',
+           justifyContent: 'center'
+         }}>
+           <div style={{
+             backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
+             padding: '2rem',
+             borderRadius: '15px',
+             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+             zIndex: 9999,
+             maxWidth: '400px',
+             width: '90%',
+             textAlign: 'center',
+             border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+           }}>
+             <h3 style={{ 
+               color: isDarkMode ? '#ffffff' : '#333333', 
+               marginBottom: '20px',
+               fontSize: '1.5rem'
+             }}>
+               Kat Silme Onayı
+             </h3>
+             <p style={{ 
+               color: isDarkMode ? '#cccccc' : '#666666', 
+               marginBottom: '30px',
+               fontSize: '1rem'
+             }}>
+               <strong>{getFloorName(floorToDelete)}</strong> katını silmek istediğinizden emin misiniz?
+               <br />
+               <small style={{ color: '#ff6b6b' }}>
+                 Bu işlem geri alınamaz!
+               </small>
+             </p>
+             <div style={{
+               display: 'flex',
+               gap: '15px',
+               justifyContent: 'center'
+             }}>
+               <button
+                 onClick={deleteFloor}
+                 style={{
+                   background: '#f44336',
+                   color: 'white',
+                   border: 'none',
+                   padding: '12px 24px',
+                   borderRadius: '8px',
+                   cursor: 'pointer',
+                   fontSize: '16px',
+                   fontWeight: 'bold',
+                   transition: 'all 0.3s ease'
+                 }}
+               >
+                 Evet, Sil
+               </button>
+               <button
+                 onClick={() => {
+                   setShowDeleteFloorModal(false);
+                   setFloorToDelete(null);
+                 }}
+                 style={{
+                   background: isDarkMode ? '#4a4a4a' : '#e0e0e0',
+                   color: isDarkMode ? '#ffffff' : '#333333',
+                   border: 'none',
+                   padding: '12px 24px',
+                   borderRadius: '8px',
+                   cursor: 'pointer',
+                   fontSize: '16px',
+                   fontWeight: 'bold',
+                   transition: 'all 0.3s ease'
+                 }}
+               >
+                 Hayır, İptal
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* Masa Detayları Modal */}
+       {showTableDetailsModal && selectedTableDetails && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -480,7 +935,7 @@ const Dashboard = () => {
                   marginBottom: '15px'
                 }}>
                   <p style={{ color: '#ffffff', margin: '5px 0' }}>
-                    <strong>Müşteri:</strong> {selectedTableDetails.reservation.adSoyad}
+                    <strong>Müşteri:</strong> {selectedTableDetails.reservation.ad} {selectedTableDetails.reservation.soyad}
                   </p>
                   <p style={{ color: '#ffffff', margin: '5px 0' }}>
                     <strong>Tarih:</strong> {selectedTableDetails.reservation.tarih}
@@ -517,6 +972,7 @@ const Dashboard = () => {
 
       
     </div>
+    </>
   );
 };
 
