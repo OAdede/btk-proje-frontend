@@ -4,8 +4,12 @@ import React from 'react';
 import PersonelEkleme from '../../components/personnel/PersonelEkleme';
 
 const PersonnelPage = () => {
+    console.log('PersonnelPage component is rendering');
+    
     return (
-        <div>
+        <div style={{ padding: '20px' }}>
+            <h1>Personnel Page Test</h1>
+            <p>If you can see this, the page is loading correctly.</p>
             <PersonelEkleme />
         </div>
     );

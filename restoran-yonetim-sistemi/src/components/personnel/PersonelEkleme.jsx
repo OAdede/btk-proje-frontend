@@ -25,6 +25,7 @@ const PersonelEkleme = () => {
     name: "",
     phone: "",
     email: "",
+    password: "",
     role: "garson",
     photo: null
   });
@@ -37,6 +38,11 @@ const PersonelEkleme = () => {
   const [activeTab, setActiveTab] = useState("aktif");
   const [roleFilter, setRoleFilter] = useState("tümü");
   const [filteredPersonnel, setFilteredPersonnel] = useState([]);
+  
+  // API states
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const updateFilteredPersonnel = () => {
     let filtered = personnel.filter(person => {
@@ -53,19 +59,134 @@ const PersonelEkleme = () => {
 
   const handleInputChange = (e) => {
     setNewPerson({ ...newPerson, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError(null);
   };
 
-  const handleAddPerson = (e) => {
+  const validateForm = () => {
+    if (!newPerson.name.trim()) {
+      setError("Ad Soyad alanı zorunludur");
+      return false;
+    }
+    if (!newPerson.phone.trim()) {
+      setError("Telefon alanı zorunludur");
+      return false;
+    }
+    if (!newPerson.email.trim()) {
+      setError("E-posta alanı zorunludur");
+      return false;
+    }
+    if (!newPerson.password.trim()) {
+      setError("Şifre alanı zorunludur");
+      return false;
+    }
+    if (newPerson.password.length < 6) {
+      setError("Şifre en az 6 karakter olmalıdır");
+      return false;
+    }
+    // Password complexity validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!passwordRegex.test(newPerson.password)) {
+      setError("Şifre en az bir küçük harf, bir büyük harf, bir rakam ve bir özel karakter içermelidir");
+      return false;
+    }
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newPerson.email)) {
+      setError("Geçerli bir e-posta adresi giriniz");
+      return false;
+    }
+    // Phone validation (Turkish format)
+    const phoneRegex = /^05[0-9]{9}$/;
+    if (!phoneRegex.test(newPerson.phone)) {
+      setError("Geçerli bir telefon numarası giriniz (05xxxxxxxxx)");
+      return false;
+    }
+    return true;
+  };
+
+  const handleAddPerson = async (e) => {
     e.preventDefault();
-    if (newPerson.name && newPerson.phone && newPerson.email) {
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Prepare the request data according to your API specification
+      const requestData = {
+        name: newPerson.name.trim(),
+        email: newPerson.email.trim(),
+        password: newPerson.password,
+        phoneNumber: newPerson.phone.trim(),
+        photoUrl: "https://example.com/default-photo.jpg", // Use default URL to avoid base64 length issues
+        createdAt: new Date().toISOString()
+      };
+
+      console.log('Sending request data:', requestData);
+      console.log('Request JSON string:', JSON.stringify(requestData));
+
+      const response = await fetch('http://192.168.232.113:8080/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Personel eklenirken bir hata oluştu';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.log('Server error details:', errorData);
+        } catch (parseError) {
+          // Try to get the response as text if JSON parsing fails
+          try {
+            const errorText = await response.text();
+            console.log('Server error text:', errorText);
+            errorMessage = errorText || errorMessage;
+          } catch (textError) {
+            console.log('Could not parse error response as text:', textError);
+          }
+        }
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        throw new Error(errorMessage);
+      }
+
+      const responseData = await response.json();
+      
+      // Add the new person to local state with the response data
       const newPersonWithId = {
-        ...newPerson,
-        id: Date.now(),
+        id: responseData.id || Date.now(),
+        name: newPerson.name,
+        phone: newPerson.phone,
+        email: newPerson.email,
+        role: newPerson.role,
+        photo: capturedImage,
         isActive: true
       };
+
       setPersonnel([...personnel, newPersonWithId]);
-      setNewPerson({ name: "", phone: "", email: "", role: "garson", photo: null });
+      
+      // Reset form
+      setNewPerson({ name: "", phone: "", email: "", password: "", role: "garson", photo: null });
       setCapturedImage(null);
+      setSuccess("Personel başarıyla eklendi!");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+
+    } catch (err) {
+      setError(err.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -244,6 +365,14 @@ const PersonelEkleme = () => {
               placeholder="E-posta"
               required
             />
+            <input
+              name="password"
+              type="password"
+              value={newPerson.password}
+              onChange={handleInputChange}
+              placeholder="Şifre (aA1@)"
+              required
+            />
             <select
               name="role"
               value={newPerson.role}
@@ -305,8 +434,15 @@ const PersonelEkleme = () => {
               </button>
             )}
 
-            <button type="submit" className="add-personnel-btn">
-              Personel Ekle
+            {error && (
+              <div style={{ color: 'red', marginTop: '10px', fontSize: '14px', textAlign: 'center' }}>{error}</div>
+            )}
+            {success && (
+              <div style={{ color: 'green', marginTop: '10px', fontSize: '14px', textAlign: 'center' }}>{success}</div>
+            )}
+
+            <button type="submit" className="add-personnel-btn" disabled={isLoading}>
+              {isLoading ? "Eklemek için bekleyin..." : "Personel Ekle"}
             </button>
           </form>
 

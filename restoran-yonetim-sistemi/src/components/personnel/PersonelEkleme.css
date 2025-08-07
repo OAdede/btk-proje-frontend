@@ -126,6 +126,19 @@
   transform: translateY(0);
 }
 
+.add-personnel-btn:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.add-personnel-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 /* Personel Listesi */
 .personnel-list {
   display: flex;
