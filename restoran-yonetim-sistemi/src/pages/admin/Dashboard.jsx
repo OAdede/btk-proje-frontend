@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
@@ -143,12 +143,36 @@ const Dashboard = () => {
     "occupied": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
     "dolu": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
     "reserved": { text: "Rezerve", color: "#ffc107", textColor: "#212529" },
+    "reserved-future": { text: "Rezerve", color: "#4caf50", textColor: "#fff" }, // Uzak rezervasyon için yeşil
   };
 
   const getStatus = (tableId) => {
     const status = tableStatus[tableId] || "empty";
+
+    if (status === 'reserved') {
+      const reservation = Object.values(reservations).find(res => res.tableId === tableId);
+      if (reservation) {
+        const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
+        const now = new Date();
+        const oneHour = 60 * 60 * 1000;
+
+        if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+          return statusInfo["reserved-future"];
+        }
+      }
+    }
+
     return statusInfo[status] || statusInfo["empty"];
   };
+
+  // Periyodik olarak durumu yeniden render etmek için
+  const [, setForceRender] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setForceRender(prev => prev + 1);
+    }, 60000); // Her dakika kontrol et
+    return () => clearInterval(interval);
+  }, []);
 
   // Masa ekleme fonksiyonu
   const addTable = () => {
@@ -400,7 +424,7 @@ const Dashboard = () => {
             {tables.map((table) => {
               const status = getStatus(table.id);
               const order = orders[table.id] || {};
-              const reservation = reservations[table.id];
+              const reservation = Object.values(reservations).find(res => res.tableId === table.id);
 
               return (
                 <div

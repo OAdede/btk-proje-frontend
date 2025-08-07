@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext";
@@ -6,7 +6,7 @@ import { AuthContext } from "../../context/AuthContext";
 export default function WaiterHome() {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { tableStatus } = useContext(TableContext);
+    const { tableStatus, reservations } = useContext(TableContext);
     const [selectedFloor, setSelectedFloor] = useState(0); // Başlangıç katı Zemin
     const [tableCounts, setTableCounts] = useState({ 0: 8, 1: 8, 2: 8 }); // Her kattaki masa sayısı
     const floors = [0, 1, 2]; // Mevcut katlar
@@ -43,12 +43,36 @@ export default function WaiterHome() {
         "occupied": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
         "dolu": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
         "reserved": { text: "Rezerve", color: "#ffc107", textColor: "#212529" },
+        "reserved-future": { text: "Rezerve", color: "#4caf50", textColor: "#fff" }, // Uzak rezervasyon için yeşil
     };
 
     const getStatus = (tableId) => {
         const status = tableStatus[tableId] || "empty";
+
+        if (status === 'reserved') {
+            const reservation = Object.values(reservations).find(res => res.tableId === tableId);
+            if (reservation) {
+                const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
+                const now = new Date();
+                const oneHour = 60 * 60 * 1000;
+
+                if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+                    return statusInfo["reserved-future"];
+                }
+            }
+        }
+
         return statusInfo[status] || statusInfo["empty"];
     };
+
+    // Periyodik olarak durumu yeniden render etmek için
+    const [, setForceRender] = useState(0);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setForceRender(prev => prev + 1);
+        }, 60000); // Her dakika kontrol et
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div style={{ padding: "2rem", display: "flex", gap: "2rem", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
@@ -63,6 +87,7 @@ export default function WaiterHome() {
                 }}>
                     {tables.map((table) => {
                         const status = getStatus(table.id);
+                        const reservation = Object.values(reservations).find(res => res.tableId === table.id);
                         return (
                             <div
                                 key={table.id}
@@ -92,6 +117,15 @@ export default function WaiterHome() {
                                 <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
                                     {status.text}
                                 </div>
+                                {reservation && (
+                                    <div style={{
+                                        fontSize: '10px',
+                                        marginTop: '4px',
+                                        opacity: 0.8
+                                    }}>
+                                        {reservation.ad} {reservation.soyad} - {reservation.saat}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
