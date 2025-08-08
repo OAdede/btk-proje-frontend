@@ -56,7 +56,7 @@ const Dashboard = () => {
 
   // Mevcut kattaki masaları oluştur
   const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => ({
-    id: `${selectedFloor}-${i + 1}`,
+    id: getTableNumber(selectedFloor, i), // Masa ID'sini rezervasyonlar sayfasıyla uyumlu hale getir
     displayNumber: getTableNumber(selectedFloor, i)
   }));
 

@@ -1,382 +1,231 @@
-/* StokUpdate bileşenine özel stiller */
-.stok-container {
-  max-width: 1200px;
+/* StokUpdate.css */
+.stok-update-container {
+  max-width: 1000px;
   margin: 32px auto;
-  background: var(--card);
+  background-color: var(--background);
   border-radius: 16px;
-  box-shadow: 0 2px 12px var(--shadow);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   padding: 32px;
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
   color: var(--text);
 }
 
-.stok-title {
-  margin: 0 0 24px 0;
-  color: var(--text);
+.stok-update-title {
+  margin: 0 0 16px 0;
   font-weight: 700;
-  font-size: 1.8rem;
-  text-align: center;
 }
 
-/* Kategori Filtresi */
-.kategori-filter {
+.category-filter-buttons {
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  justify-content: center;
   flex-wrap: wrap;
 }
 
-.kategori-filter button {
-  background: var(--surface);
+.category-filter-button {
+  background-color: var(--card-background);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 8px;
   padding: 8px 18px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-weight: 600;
-  font-size: 14px;
 }
 
-.kategori-filter button:hover {
-  background: var(--hover);
-  transform: translateY(-1px);
-}
-
-.kategori-filter button.active {
-  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(167, 139, 250, 0.3);
-}
-
-/* Yeni Ürün Ekleme Formu */
-.yeni-urun-form {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 6px var(--shadow);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-}
-
-.yeni-urun-title {
-  margin: 0 0 16px 0;
-  color: var(--text);
-  font-weight: 600;
-  font-size: 1.3rem;
-  text-align: center;
-}
-
-.urun-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.urun-form input,
-.urun-form select {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 14px;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(5px);
-}
-
-.urun-form input::placeholder {
-  color: var(--text-muted);
-}
-
-.urun-form input:focus,
-.urun-form select:focus {
-  outline: none;
+.category-filter-button.active {
+  background-color: var(--primary);
+  color: #ffffff;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-  background: var(--accent);
 }
 
-.urun-form select option {
-  background: var(--background);
-  color: var(--text);
-}
-
-.urun-ekle-btn {
-  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--text);
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.urun-ekle-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
-}
-
-.urun-ekle-btn:active {
-  transform: translateY(0);
-}
-
-/* Ürün Listesi */
-.urun-listesi {
+.add-product-form {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.urun-item {
-  display: flex;
+  gap: 12px;
+  margin: 20px 0 28px 0;
   align-items: center;
-  background: var(--surface);
-  border-radius: 10px;
-  padding: 16px 20px;
-  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.add-product-form input {
+  padding: 8px;
+  border-radius: 6px;
   border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  background-color: var(--surface-background);
+  color: var(--text);
+  flex-grow: 1;
 }
 
-.urun-item:hover {
-  background: var(--hover);
-  transform: translateX(5px);
-  box-shadow: 0 4px 12px var(--shadow);
+.add-product-form .product-name-input {
+  flex: 2;
 }
 
-.urun-info {
+.add-product-form .product-price-input {
   flex: 1;
 }
 
-.urun-ad {
-  font-weight: 600;
-  font-size: 17px;
-  color: var(--text);
-  margin-bottom: 4px;
+.add-product-form .product-stock-input {
+  flex: 1;
 }
 
-.urun-detay {
-  font-size: 14px;
-  color: var(--text-secondary);
+.add-product-form .product-minstock-input {
+  flex: 1;
 }
 
-.urun-stok {
-  font-weight: 600;
-  color: var(--text);
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.urun-stok.yeterli {
-  background: linear-gradient(90deg, var(--success) 0%, #4caf50 100%);
-  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
-}
-
-.urun-stok.az {
-  background: linear-gradient(90deg, var(--warning) 0%, #ff5722 100%);
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-}
-
-.urun-stok.kritik {
-  background: linear-gradient(90deg, var(--danger) 0%, #d32f2f 100%);
-  box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
-}
-
-.urun-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.urun-btn {
-  padding: 6px 12px;
+.add-product-button {
+  background-color: var(--primary);
+  color: #ffffff;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
+  padding: 8px 24px;
   font-weight: 600;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.urun-btn.duzenle {
-  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--text);
+.product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+  min-height: 550px;
 }
 
-.urun-btn.sil {
-  background: linear-gradient(90deg, var(--danger) 0%, #d32f2f 100%);
-  color: var(--text);
+.product-list-item {
+  display: flex;
+  align-items: center;
+  background-color: var(--card-background);
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  padding: 12px 20px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.urun-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px var(--shadow);
+.product-list-item>div {
+  font-weight: 500;
 }
 
-/* Modal */
-.modal-overlay {
+.product-list-item .item-name {
+  flex: 3;
+  font-weight: 600;
+  min-width: 150px;
+}
+
+.product-list-item .item-price {
+  flex: 1;
+  min-width: 60px;
+}
+
+.product-list-item .item-stock {
+  flex: 1;
+  min-width: 60px;
+}
+
+.product-list-item .item-min-stock {
+  flex: 1;
+  min-width: 80px;
+}
+
+.product-list-item .item-status {
+  flex: 1.5;
+  text-align: center;
+  font-weight: 600;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  min-width: 80px;
+}
+
+.product-list-item .item-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.product-list-item .item-actions button {
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-button {
+  background-color: var(--primary);
+}
+
+.delete-button {
+  background-color: var(--danger);
+}
+
+.edit-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--overlay);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 
-.modal {
-  background: var(--card);
+.edit-modal-content {
+  background-color: var(--card-background);
   border-radius: 12px;
-  padding: 24px;
+  padding: 32px;
   min-width: 400px;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   border: 1px solid var(--border);
-  color: var(--text);
 }
 
-.modal h3 {
-  margin: 0 0 16px 0;
-  color: var(--text);
+.edit-modal-content h3 {
+  margin: 0 0 20px 0;
+}
+
+.edit-modal-form div {
+  margin-bottom: 20px;
+}
+
+.edit-modal-form label {
   font-weight: 600;
-  font-size: 1.3rem;
-}
-
-.modal label {
-  display: block;
   margin-bottom: 8px;
-  color: var(--text);
-  font-weight: 500;
+  display: block;
 }
 
-.modal input {
+.edit-modal-form input {
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  padding: 8px;
+  margin-bottom: 12px;
+  background-color: var(--surface-background);
   color: var(--text);
-  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
-.modal input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-}
-
-.modal-buttons {
+.edit-modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
 }
 
-.modal-btn {
-  padding: 10px 20px;
+.edit-modal-actions button {
   border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  border-radius: 6px;
+  padding: 8px 20px;
   font-weight: 600;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.modal-btn.iptal {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
+.cancel-button {
+  background-color: #6c757d;
+  color: #ffffff;
 }
 
-.modal-btn.kaydet {
-  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--text);
-}
-
-.modal-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px var(--shadow);
-}
-
-/* Responsive Tasarım */
-@media (max-width: 768px) {
-  .stok-container {
-    margin: 16px;
-    padding: 20px;
-  }
-  
-  .urun-form {
-    grid-template-columns: 1fr;
-  }
-  
-  .kategori-filter {
-    flex-wrap: wrap;
-  }
-  
-  .urun-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 10px;
-  }
-  
-  .urun-info {
-    text-align: center;
-  }
-  
-  .modal {
-    min-width: 300px;
-    margin: 16px;
-  }
-}
-
-/* Animasyonlar */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.urun-item {
-  animation: fadeIn 0.5s ease-out;
-}
-
-/* Koyu tema için özel stiller */
-.dark-theme .stok-container {
-  background: var(--card);
-  border-color: var(--border);
-}
-
-.dark-theme .yeni-urun-form {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-.dark-theme .urun-item {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-.dark-theme .urun-item:hover {
-  background: var(--hover);
-}
-
-.dark-theme .modal {
-  background: var(--card);
-  border-color: var(--border);
+.save-button {
+  background-color: var(--primary);
+  color: #ffffff;
 }
