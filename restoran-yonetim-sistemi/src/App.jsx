@@ -31,12 +31,8 @@ import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
-// YENİ EKLENEN IMPORT (DOĞRU YOL İLE)
 import OrdersPage from "./components/layout/OrdersPage.jsx";
 import FastOrderPage from "./pages/staff/FastOrderPage";
-
-
-
 
 
 // Stil dosyaları
@@ -113,8 +109,9 @@ function App() {
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
             <Route path="stock" element={<StokUpdate />} />
-            {/* YENİ EKLENEN ROUTE */}
             <Route path="orders" element={<OrdersPage />} />
+            {/* YENİ EKLENEN ROUTE */}
+            <Route path="reservations" element={<ReservationsPage />} />
           </Route>
 
           {/* Kasiyer Paneli */}
@@ -132,9 +129,9 @@ function App() {
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
             <Route path="stock" element={<StokUpdate />} />
-            {/* YENİ EKLENEN ROUTE */}
             <Route path="orders" element={<OrdersPage />} />
-
+            {/* YENİ EKLENEN ROUTE */}
+            <Route path="reservations" element={<ReservationsPage />} />
           </Route>
 
           {/* Varsayılan Rota */}

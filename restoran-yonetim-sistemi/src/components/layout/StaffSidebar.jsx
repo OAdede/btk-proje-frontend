@@ -12,7 +12,7 @@ const StaffSidebar = () => {
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const { reservations, removeReservation } = useContext(TableContext);
     const [showSettings, setShowSettings] = useState(false);
-    const [showReservations, setShowReservations] = useState(false);
+    // Rezervasyon listesini göstermek için kullanılan state kaldırıldı
     const [showProfileSettings, setShowProfileSettings] = useState(false);
     const [profileImage, setProfileImage] = useState(localStorage.getItem('profileImage') || '/default-avatar.png');
     const [phoneNumber, setPhoneNumber] = useState(localStorage.getItem('phoneNumber') || '');
@@ -62,6 +62,7 @@ const StaffSidebar = () => {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             setCameraStream(stream);
         } catch (error) {
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert('Kamera erişimi sağlanamadı: ' + error.message);
         }
     };
@@ -123,6 +124,7 @@ const StaffSidebar = () => {
             localStorage.setItem('profileImage', tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert('Profil fotoğrafı başarıyla güncellendi!');
         }
     };
@@ -139,6 +141,7 @@ const StaffSidebar = () => {
             setShowPhoneVerification(true);
             // SMS doğrulama kodu gönder (simülasyon)
             const code = Math.floor(100000 + Math.random() * 900000);
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`SMS doğrulama kodu: ${code}`);
         }
     };
@@ -153,8 +156,10 @@ const StaffSidebar = () => {
             setShowPhoneVerification(false);
             setTempPhone('');
             setPhoneVerificationCode('');
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert('Telefon numarası başarıyla güncellendi!');
         } else {
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`Yanlış doğrulama kodu! Doğru kod: ${expectedCode}`);
         }
     };
@@ -165,6 +170,7 @@ const StaffSidebar = () => {
             setShowEmailVerification(true);
             // E-posta doğrulama kodu gönder (simülasyon)
             const code = Math.floor(100000 + Math.random() * 900000);
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`E-posta doğrulama kodu: ${code}`);
         }
     };
@@ -179,8 +185,10 @@ const StaffSidebar = () => {
             setShowEmailVerification(false);
             setTempEmail('');
             setEmailVerificationCode('');
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert('E-posta adresi başarıyla güncellendi!');
         } else {
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`Yanlış doğrulama kodu! Doğru kod: ${expectedCode}`);
         }
     };
@@ -189,12 +197,65 @@ const StaffSidebar = () => {
 
     // Stok durumunu görmeye yetkili roller
     const canViewStock = user?.role === 'garson' || user?.role === 'kasiyer';
+    // Rezervasyonları görmeye yetkili roller
+    const canViewReservations = user?.role === 'garson' || user?.role === 'kasiyer';
+
 
     return (
         <div className="staff-sidebar">
             <div className="staff-sidebar-header">
                 <h2>Personel Paneli</h2>
             </div>
+            
+            {/* YENİ EKLENEN KISIM: Profil bilgileri */}
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '20px',
+                    backgroundColor: colors.card,
+                    borderRadius: '15px',
+                    margin: '10px 15px',
+                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+                    border: `1px solid ${colors.border}`
+                }}
+            >
+                <img
+                    src={profileImage}
+                    alt="Profil"
+                    style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: `3px solid ${colors.primary}`,
+                        marginBottom: '10px'
+                    }}
+                />
+                <div
+                    style={{
+                        fontSize: '1.2rem',
+                        fontWeight: '700',
+                        color: colors.text,
+                        textAlign: 'center'
+                    }}
+                >
+                    {user ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1) : 'Kullanıcı'}
+                </div>
+                <div
+                    style={{
+                        fontSize: '0.9rem',
+                        color: colors.textSecondary,
+                        textAlign: 'center',
+                        fontWeight: '500',
+                        marginTop: '5px'
+                    }}
+                >
+                    {user ? (user.role === 'garson' ? 'Garson' : user.role === 'kasiyer' ? 'Kasiyer' : 'Yönetici') : 'Rol Belirtilmemiş'}
+                </div>
+            </div>
+
             <nav className="staff-sidebar-nav">
                 <NavLink
                     to={homePath}
@@ -211,16 +272,25 @@ const StaffSidebar = () => {
                         Siparişlerim
                     </NavLink>
                 )}
-{user?.role === "kasiyer" && (
-  <NavLink
-    to="/kasiyer/fast-order"
-    className={({ isActive }) =>
-      isActive ? "staff-nav-item active" : "staff-nav-item"
-    }
-  >
-    🧾 Hızlı Sipariş
-  </NavLink>
-)}
+                {user?.role === "kasiyer" && (
+                    <NavLink
+                        to="/kasiyer/fast-order"
+                        className={({ isActive }) =>
+                            isActive ? "staff-nav-item active" : "staff-nav-item"
+                        }
+                    >
+                        🧾 Hızlı Sipariş
+                    </NavLink>
+                )}
+                {/* YENİ EKLENDİ: Rezervasyonları görüntüleme menüsü */}
+                {canViewReservations && (
+                    <NavLink
+                        to={`/${user?.role}/reservations`}
+                        className={({ isActive }) => isActive ? "staff-nav-item active" : "staff-nav-item"}
+                    >
+                        📅 Rezervasyonlar
+                    </NavLink>
+                )}
 
                 {/* GÜNCELLENDİ: Stok durumu menüsü artık kasiyer ve garsonlar için görünür */}
                 {canViewStock && (
@@ -233,133 +303,7 @@ const StaffSidebar = () => {
                 )}
             </nav>
 
-            {/* Rezervasyonlar Bölümü */}
-            <div style={{
-                padding: '15px',
-                borderTop: `1px solid ${colors.border}`,
-                borderBottom: `1px solid ${colors.border}`
-            }}>
-                <button
-                    onClick={() => setShowReservations(!showReservations)}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        color: colors.text,
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '10px 0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                    }}
-                >
-                    <span>📅 Rezervasyonlar</span>
-                    <span style={{
-                        background: Object.keys(reservations).length > 0 ? colors.success : colors.textSecondary,
-                        color: 'white',
-                        borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                    }}>
-                        {Object.keys(reservations).length}
-                    </span>
-                </button>
-
-                {showReservations && (
-                    <div style={{
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        marginTop: '10px'
-                    }}>
-                        {Object.keys(reservations).length === 0 ? (
-                            <div style={{
-                                color: colors.textSecondary,
-                                fontSize: '0.9rem',
-                                textAlign: 'center',
-                                padding: '10px',
-                                fontStyle: 'italic'
-                            }}>
-                                Henüz rezervasyon yok
-                            </div>
-                        ) : (
-                            Object.entries(reservations).map(([tableId, reservation]) => (
-                                <div key={tableId} style={{
-                                    background: colors.card,
-                                    padding: '12px',
-                                    borderRadius: '8px',
-                                    marginBottom: '8px',
-                                    border: `1px solid ${colors.border}`,
-                                    position: 'relative'
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'flex-start',
-                                        marginBottom: '8px'
-                                    }}>
-                                        <div style={{
-                                            color: colors.text,
-                                            fontWeight: 'bold',
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            Masa {getFloorLetter(parseInt(tableId.split('-')[0]))}{tableId.split('-')[1]}
-                                        </div>
-                                        {user?.role === 'admin' && (
-                                            <button
-                                                onClick={() => removeReservation(tableId)}
-                                                style={{
-                                                    background: colors.danger,
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '50%',
-                                                    width: '20px',
-                                                    height: '20px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '12px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center'
-                                                }}
-                                                title="Rezervasyonu İptal Et"
-                                            >
-                                                ✕
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div style={{
-                                        color: colors.textSecondary,
-                                        fontSize: '0.8rem',
-                                        marginBottom: '4px'
-                                    }}>
-                                        {reservation.adSoyad}
-                                    </div>
-                                    <div style={{
-                                        color: colors.textSecondary,
-                                        fontSize: '0.8rem',
-                                        marginBottom: '4px'
-                                    }}>
-                                        {reservation.tarih} - {reservation.saat}
-                                    </div>
-                                    <div style={{
-                                        color: colors.textSecondary,
-                                        fontSize: '0.8rem'
-                                    }}>
-                                        {reservation.kisiSayisi} kişi
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
-            </div>
+            {/* Bu bölüm kullanıcı isteği üzerine kaldırıldı. */}
 
             <div className="staff-sidebar-bottom">
                 <button
@@ -367,7 +311,7 @@ const StaffSidebar = () => {
                     className="staff-settings-btn"
                     style={{
                         background: isDarkMode ? '#513653' : 'linear-gradient(90deg,rgb(83, 34, 112) 0%,rgb(54, 16, 98) 100%)',
-                        color: '#513653',
+                        color: isDarkMode ? '#eee' : '#fff',
                         border: 'none',
                         padding: '12px 20px',
                         borderRadius: '10px',
@@ -579,12 +523,7 @@ const StaffSidebar = () => {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                marginBottom: '20px'
-                            }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                 <button
                                     onClick={() => {
                                         setShowProfileSettings(false);
@@ -614,6 +553,9 @@ const StaffSidebar = () => {
                                 <button
                                     onClick={() => setShowProfileSettings(false)}
                                     style={{
+                                        position: 'absolute',
+                                        top: '15px',
+                                        right: '20px',
                                         background: 'none',
                                         border: 'none',
                                         fontSize: '24px',
@@ -651,31 +593,14 @@ const StaffSidebar = () => {
 
                             {/* Profil Fotoğrafı */}
                             <div style={{ marginBottom: '25px' }}>
-                                <label style={{
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    marginBottom: '10px',
-                                    display: 'block'
-                                }}>
+                                <label style={{ fontSize: '1rem', fontWeight: '600', color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '10px', display: 'block' }}>
                                     Profil Fotoğrafı
                                 </label>
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '20px',
-                                    marginBottom: '15px'
-                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '15px' }}>
                                     <img
                                         src={tempProfileImage || profileImage}
                                         alt="Profil"
-                                        style={{
-                                            width: '80px',
-                                            height: '80px',
-                                            borderRadius: '50%',
-                                            objectFit: 'cover',
-                                            border: '3px solid #ddd'
-                                        }}
+                                        style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #ddd' }}
                                     />
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                         <button
@@ -736,13 +661,7 @@ const StaffSidebar = () => {
 
                             {/* İsim Soyisim (Değiştirilemez) */}
                             <div style={{ marginBottom: '25px' }}>
-                                <label style={{
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    marginBottom: '10px',
-                                    display: 'block'
-                                }}>
+                                <label style={{ fontSize: '1rem', fontWeight: '600', color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '10px', display: 'block' }}>
                                     İsim Soyisim
                                 </label>
                                 <input
@@ -767,18 +686,12 @@ const StaffSidebar = () => {
 
                             {/* Rol (Gösterilir ama değiştirilemez) */}
                             <div style={{ marginBottom: '25px' }}>
-                                <label style={{
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    marginBottom: '10px',
-                                    display: 'block'
-                                }}>
+                                <label style={{ fontSize: '1rem', fontWeight: '600', color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '10px', display: 'block' }}>
                                     Rol
                                 </label>
                                 <input
                                     type="text"
-                                    value={user ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''}
+                                    value={user ? (user.role === 'garson' ? 'Garson' : 'Kasiyer') : ''}
                                     disabled
                                     style={{
                                         background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
@@ -795,305 +708,148 @@ const StaffSidebar = () => {
 
                             {/* Telefon Numarası */}
                             <div style={{ marginBottom: '25px' }}>
-                                <label style={{
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    marginBottom: '10px',
-                                    display: 'block'
-                                }}>
+                                <label style={{ fontSize: '1rem', fontWeight: '600', color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '10px', display: 'block' }}>
                                     Telefon Numarası
                                 </label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <input
-                                        type="tel"
-                                        placeholder="5XX XXX XX XX"
-                                        value={tempPhone || phoneNumber}
-                                        onChange={(e) => setTempPhone(e.target.value)}
-                                        style={{
-                                            background: isDarkMode ? '#3a3a3a' : '#ffffff',
-                                            color: isDarkMode ? '#ffffff' : '#333333',
-                                            border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-                                            padding: '12px',
-                                            borderRadius: '8px',
-                                            fontSize: '1rem',
-                                            flex: 1
-                                        }}
-                                    />
-                                    <button
-                                        onClick={handlePhoneChange}
-                                        disabled={!tempPhone || tempPhone.length !== 10}
-                                        style={{
-                                            background: tempPhone && tempPhone.length === 10 ? '#28a745' : '#6c757d',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '12px 20px',
-                                            borderRadius: '8px',
-                                            fontSize: '1rem',
-                                            fontWeight: '600',
-                                            cursor: tempPhone && tempPhone.length === 10 ? 'pointer' : 'not-allowed',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                    >
-                                        Değiştir
-                                    </button>
-                                </div>
+                                {showPhoneVerification ? (
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Doğrulama kodunu girin"
+                                            value={phoneVerificationCode}
+                                            onChange={(e) => setPhoneVerificationCode(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
+                                                color: isDarkMode ? '#eee' : '#333',
+                                                border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                flex: 1
+                                            }}
+                                        />
+                                        <button
+                                            onClick={verifyPhone}
+                                            style={{
+                                                background: '#28a745',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem'
+                                            }}
+                                        >
+                                            Doğrula
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Yeni telefon numaranızı girin"
+                                            value={tempPhone}
+                                            onChange={(e) => setTempPhone(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
+                                                color: isDarkMode ? '#eee' : '#333',
+                                                border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                flex: 1
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handlePhoneChange}
+                                            style={{
+                                                background: '#007bff',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem'
+                                            }}
+                                        >
+                                            Değiştir
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* E-posta */}
+                            {/* E-posta Adresi */}
                             <div style={{ marginBottom: '25px' }}>
-                                <label style={{
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    marginBottom: '10px',
-                                    display: 'block'
-                                }}>
+                                <label style={{ fontSize: '1rem', fontWeight: '600', color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '10px', display: 'block' }}>
                                     E-posta Adresi
                                 </label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <input
-                                        type="email"
-                                        placeholder="ornek@email.com"
-                                        value={tempEmail || email}
-                                        onChange={(e) => setTempEmail(e.target.value)}
-                                        style={{
-                                            background: isDarkMode ? '#3a3a3a' : '#ffffff',
-                                            color: isDarkMode ? '#ffffff' : '#333333',
-                                            border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-                                            padding: '12px',
-                                            borderRadius: '8px',
-                                            fontSize: '1rem',
-                                            flex: 1
-                                        }}
-                                    />
-                                    <button
-                                        onClick={handleEmailChange}
-                                        disabled={!tempEmail || !tempEmail.includes('@')}
-                                        style={{
-                                            background: tempEmail && tempEmail.includes('@') ? '#007bff' : '#6c757d',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '12px 20px',
-                                            borderRadius: '8px',
-                                            fontSize: '1rem',
-                                            fontWeight: '600',
-                                            cursor: tempEmail && tempEmail.includes('@') ? 'pointer' : 'not-allowed',
-                                            transition: 'all 0.3s ease'
-                                        }}
-                                    >
-                                        Değiştir
-                                    </button>
-                                </div>
+                                {showEmailVerification ? (
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Doğrulama kodunu girin"
+                                            value={emailVerificationCode}
+                                            onChange={(e) => setEmailVerificationCode(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
+                                                color: isDarkMode ? '#eee' : '#333',
+                                                border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                flex: 1
+                                            }}
+                                        />
+                                        <button
+                                            onClick={verifyEmail}
+                                            style={{
+                                                background: '#28a745',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem'
+                                            }}
+                                        >
+                                            Doğrula
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Yeni e-posta adresinizi girin"
+                                            value={tempEmail}
+                                            onChange={(e) => setTempEmail(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
+                                                color: isDarkMode ? '#eee' : '#333',
+                                                border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                flex: 1
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleEmailChange}
+                                            style={{
+                                                background: '#007bff',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '1rem'
+                                            }}
+                                        >
+                                            Değiştir
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    </div>,
-                    document.body
-                )}
 
-                {/* Telefon Doğrulama Modal */}
-                {showPhoneVerification && createPortal(
-                    <div
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: 'rgba(0, 0, 0, 0.5)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 999999
-                        }}
-                        onClick={() => setShowPhoneVerification(false)}
-                    >
-                        <div
-                            style={{
-                                background: isDarkMode ? '#2a2a2a' : '#ffffff',
-                                borderRadius: '15px',
-                                padding: '30px',
-                                minWidth: '400px',
-                                maxWidth: '500px',
-                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                                border: `1px solid ${colors.border}`,
-                                position: 'relative'
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div style={{
-                                fontSize: '1.3rem',
-                                fontWeight: '700',
-                                color: isDarkMode ? '#ffffff' : '#333333',
-                                marginBottom: '20px',
-                                textAlign: 'center'
-                            }}>
-                                📱 SMS Doğrulama
-                            </div>
-                            <p style={{
-                                color: isDarkMode ? '#cccccc' : '#666666',
-                                marginBottom: '20px',
-                                textAlign: 'center'
-                            }}>
-                                {tempPhone} numarasına gönderilen 6 haneli doğrulama kodunu girin
-                            </p>
-                            <input
-                                type="text"
-                                placeholder="000000"
-                                value={phoneVerificationCode}
-                                onChange={(e) => setPhoneVerificationCode(e.target.value)}
-                                maxLength={6}
-                                style={{
-                                    background: isDarkMode ? '#3a3a3a' : '#ffffff',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-                                    padding: '15px',
-                                    borderRadius: '8px',
-                                    fontSize: '1.2rem',
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    letterSpacing: '5px',
-                                    marginBottom: '20px'
-                                }}
-                            />
-                            <div style={{ display: 'flex', gap: '15px' }}>
-                                <button
-                                    onClick={verifyPhone}
-                                    style={{
-                                        background: '#28a745',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px 24px',
-                                        borderRadius: '8px',
-                                        fontSize: '1rem',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        flex: 1
-                                    }}
-                                >
-                                    Doğrula
-                                </button>
-                                <button
-                                    onClick={() => setShowPhoneVerification(false)}
-                                    style={{
-                                        background: '#6c757d',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px 24px',
-                                        borderRadius: '8px',
-                                        fontSize: '1rem',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        flex: 1
-                                    }}
-                                >
-                                    İptal
-                                </button>
-                            </div>
-                        </div>
-                    </div>,
-                    document.body
-                )}
-
-                {/* E-posta Doğrulama Modal */}
-                {showEmailVerification && createPortal(
-                    <div
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: 'rgba(0, 0, 0, 0.5)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 999999
-                        }}
-                        onClick={() => setShowEmailVerification(false)}
-                    >
-                        <div
-                            style={{
-                                background: isDarkMode ? '#2a2a2a' : '#ffffff',
-                                borderRadius: '15px',
-                                padding: '30px',
-                                minWidth: '400px',
-                                maxWidth: '500px',
-                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                                border: `1px solid ${colors.border}`,
-                                position: 'relative'
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div style={{
-                                fontSize: '1.3rem',
-                                fontWeight: '700',
-                                color: isDarkMode ? '#ffffff' : '#333333',
-                                marginBottom: '20px',
-                                textAlign: 'center'
-                            }}>
-                                📧 E-posta Doğrulama
-                            </div>
-                            <p style={{
-                                color: isDarkMode ? '#cccccc' : '#666666',
-                                marginBottom: '20px',
-                                textAlign: 'center'
-                            }}>
-                                {tempEmail} adresine gönderilen 6 haneli doğrulama kodunu girin
-                            </p>
-                            <input
-                                type="text"
-                                placeholder="000000"
-                                value={emailVerificationCode}
-                                onChange={(e) => setEmailVerificationCode(e.target.value)}
-                                maxLength={6}
-                                style={{
-                                    background: isDarkMode ? '#3a3a3a' : '#ffffff',
-                                    color: isDarkMode ? '#ffffff' : '#333333',
-                                    border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
-                                    padding: '15px',
-                                    borderRadius: '8px',
-                                    fontSize: '1.2rem',
-                                    width: '100%',
-                                    textAlign: 'center',
-                                    letterSpacing: '5px',
-                                    marginBottom: '20px'
-                                }}
-                            />
-                            <div style={{ display: 'flex', gap: '15px' }}>
-                                <button
-                                    onClick={verifyEmail}
-                                    style={{
-                                        background: '#007bff',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px 24px',
-                                        borderRadius: '8px',
-                                        fontSize: '1rem',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        flex: 1
-                                    }}
-                                >
-                                    Doğrula
-                                </button>
-                                <button
-                                    onClick={() => setShowEmailVerification(false)}
-                                    style={{
-                                        background: '#6c757d',
-                                        color: 'white',
-                                        border: 'none',
-                                        padding: '12px 24px',
-                                        borderRadius: '8px',
-                                        fontSize: '1rem',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        flex: 1
-                                    }}
-                                >
-                                    İptal
-                                </button>
-                            </div>
                         </div>
                     </div>,
                     document.body
@@ -1106,9 +862,9 @@ const StaffSidebar = () => {
                             position: 'fixed',
                             top: 0,
                             left: 0,
-                            width: '100vw',
-                            height: '100vh',
-                            background: 'rgba(0, 0, 0, 0.8)',
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0, 0, 0, 0.5)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1119,209 +875,205 @@ const StaffSidebar = () => {
                         <div
                             style={{
                                 background: isDarkMode ? '#2a2a2a' : '#ffffff',
-                                padding: '2rem',
                                 borderRadius: '15px',
-                                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                                zIndex: 1000000,
+                                padding: '30px',
+                                minWidth: '400px',
                                 maxWidth: '500px',
-                                width: '90%',
-                                textAlign: 'center',
-                                border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${colors.border}`,
+                                position: 'relative'
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Kapatma butonu */}
-                            <button
-                                onClick={closePhotoModal}
-                                style={{
-                                    position: 'absolute',
-                                    top: '15px',
-                                    right: '20px',
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '24px',
-                                    color: '#dc3545',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold',
-                                    width: '30px',
-                                    height: '30px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderRadius: '50%',
-                                    transition: 'all 0.3s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.background = 'rgba(220, 53, 69, 0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.background = 'none';
-                                }}
-                            >
-                                ✕
-                            </button>
+                            <div style={{
+                                fontSize: '1.2rem',
+                                fontWeight: '700',
+                                color: isDarkMode ? '#ffffff' : '#333333',
+                                marginBottom: '20px',
+                                textAlign: 'center'
+                            }}>
+                                📷 Profil Fotoğrafı
+                            </div>
 
-                            <h3 style={{ margin: '0 0 20px 0', color: isDarkMode ? '#ffffff' : '#333333', fontSize: '1.5rem' }}>Fotoğraf Ekle</h3>
-
-                            {/* Fotoğraf önizlemesi */}
-                            {tempImage && (
-                                <div style={{ marginBottom: '20px' }}>
-                                    <img
-                                        src={tempImage}
-                                        alt="Önizleme"
-                                        style={{
-                                            width: '200px',
-                                            height: '200px',
-                                            borderRadius: '50%',
-                                            objectFit: 'cover',
-                                            border: '3px solid #ddd',
-                                            margin: '0 auto'
-                                        }}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Kamera görüntüsü */}
-                            {cameraStream && !tempImage && (
-                                <div style={{ marginBottom: '20px' }}>
-                                    <video
-                                        id="camera-video"
-                                        autoPlay
-                                        playsInline
-                                        style={{
-                                            width: '300px',
-                                            height: '225px',
-                                            borderRadius: '8px',
-                                            margin: '0 auto'
-                                        }}
-                                        ref={(video) => {
-                                            if (video && cameraStream) {
-                                                video.srcObject = cameraStream;
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Butonlar */}
-                            {!tempImage && !cameraStream && (
-                                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
-                                    <button
-                                        onClick={startCamera}
-                                        style={{
-                                            background: '#007bff',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
-                                        📷 Kamera ile Çek
-                                    </button>
-                                    <label style={{
-                                        background: '#28a745',
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '15px'
+                            }}>
+                                <button
+                                    onClick={startCamera}
+                                    style={{
+                                        background: '#513653',
                                         color: 'white',
                                         border: 'none',
-                                        padding: '10px 20px',
-                                        borderRadius: '6px',
+                                        padding: '12px 20px',
+                                        borderRadius: '10px',
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
                                         cursor: 'pointer',
-                                        fontSize: '14px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px'
-                                    }}>
-                                        📁 Dosyadan Seç
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handlePhotoUpload}
-                                            style={{ display: 'none' }}
-                                        />
-                                    </label>
-                                </div>
-                            )}
+                                        transition: 'all 0.3s ease',
+                                        width: '100%'
+                                    }}
+                                >
+                                    Kamera İle Fotoğraf Çek
+                                </button>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handlePhotoUpload}
+                                    style={{ display: 'none' }}
+                                    id="file-upload"
+                                />
+                                <label htmlFor="file-upload" style={{
+                                    background: '#007bff',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 20px',
+                                    borderRadius: '10px',
+                                    fontSize: '1rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    width: '100%',
+                                    textAlign: 'center'
+                                }}>
+                                    Dosyadan Fotoğraf Yükle
+                                </label>
+                            </div>
 
-                            {/* Kamera butonları */}
-                            {cameraStream && !tempImage && (
-                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '20px' }}>
+                            {cameraStream && (
+                                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                    <video id="camera-video" autoPlay playsInline style={{ width: '100%', borderRadius: '10px', border: `1px solid ${colors.border}` }} ref={videoRef => { if (videoRef) videoRef.srcObject = cameraStream; }} />
                                     <button
                                         onClick={capturePhoto}
                                         style={{
+                                            marginTop: '15px',
                                             background: '#28a745',
                                             color: 'white',
                                             border: 'none',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
+                                            padding: '12px 20px',
+                                            borderRadius: '10px',
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
                                             cursor: 'pointer',
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
+                                            transition: 'all 0.3s ease'
                                         }}
                                     >
-                                        📸 Fotoğraf Çek
-                                    </button>
-                                    <button
-                                        onClick={stopCamera}
-                                        style={{
-                                            background: '#dc3545',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '14px'
-                                        }}
-                                    >
-                                        ❌ İptal
+                                        Fotoğraf Çek
                                     </button>
                                 </div>
                             )}
 
-                            {/* Kabul/Ret butonları */}
                             {tempImage && (
-                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                                    <button
-                                        onClick={acceptPhoto}
-                                        style={{
-                                            background: '#28a745',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
-                                        ✅ Kabul Et
-                                    </button>
-                                    <button
-                                        onClick={rejectPhoto}
-                                        style={{
-                                            background: '#dc3545',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '10px 20px',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '14px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '6px'
-                                        }}
-                                    >
-                                        ❌ Reddet
-                                    </button>
+                                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                    <img src={tempImage} alt="Çekilen Fotoğraf" style={{ width: '100%', borderRadius: '10px', border: `1px solid ${colors.border}` }} />
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '15px' }}>
+                                        <button
+                                            onClick={acceptPhoto}
+                                            style={{
+                                                background: '#28a745',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '10px',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        >
+                                            ✅ Kabul Et
+                                        </button>
+                                        <button
+                                            onClick={rejectPhoto}
+                                            style={{
+                                                background: '#dc3545',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '10px',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        >
+                                            ❌ Reddet
+                                        </button>
+                                    </div>
                                 </div>
                             )}
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+                {/* Onay Ekranı */}
+                {showProfileImageConfirm && createPortal(
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0, 0, 0, 0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 999999
+                        }}
+                        onClick={cancelProfileImage}
+                    >
+                        <div
+                            style={{
+                                background: colors.card,
+                                borderRadius: '15px',
+                                padding: '30px',
+                                minWidth: '400px',
+                                maxWidth: '500px',
+                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${colors.border}`,
+                                position: 'relative',
+                                textAlign: 'center'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 style={{ color: colors.text, marginBottom: '20px' }}>Bu fotoğrafı profil resmi yapmak istediğinize emin misiniz?</h3>
+                            <img src={tempProfileImage} alt="Yeni Profil" style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '5px solid #28a745', marginBottom: '20px' }} />
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+                                <button
+                                    onClick={confirmProfileImage}
+                                    style={{
+                                        background: '#28a745',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px 20px',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontSize: '1rem',
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    Evet, Onayla
+                                </button>
+                                <button
+                                    onClick={cancelProfileImage}
+                                    style={{
+                                        background: '#dc3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px 20px',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontSize: '1rem',
+                                        fontWeight: '600'
+                                    }}
+                                >
+                                    Hayır, İptal
+                                </button>
+                            </div>
                         </div>
                     </div>,
                     document.body
