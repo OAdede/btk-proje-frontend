@@ -10,7 +10,7 @@ export const personnelService = {
         email: personnelData.email.trim(),
         password: personnelData.password,
         phoneNumber: personnelData.phone.trim(),
-        photoUrl: "https://example.com/default-photo.jpg", // Use default URL to avoid base64 length issues
+        photo: "string", // Default photo string as per new API specification
         createdAt: new Date().toISOString()
       };
 
