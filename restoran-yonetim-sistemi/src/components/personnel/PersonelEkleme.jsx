@@ -1,24 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { personnelService } from '../../services/personnelService';
+import { validationUtils } from '../../utils/validation';
+import { cameraUtils } from '../../utils/cameraUtils';
 import './PersonelEkleme.css';
 
 const PersonelEkleme = () => {
   const [personnel, setPersonnel] = useState([
-    {
-      id: 1,
-      name: "Ahmet Yılmaz",
-      phone: "05321234567",
-      email: "ahmet@restoran.com",
-      role: "garson",
-      isActive: true
-    },
-    {
-      id: 2,
-      name: "Ayşe Kaya",
-      phone: "05331234567",
-      email: "ayse@restoran.com",
-      role: "kasiyer",
-      isActive: true
-    }
+  
   ]);
 
   const [newPerson, setNewPerson] = useState({
@@ -64,42 +52,9 @@ const PersonelEkleme = () => {
   };
 
   const validateForm = () => {
-    if (!newPerson.name.trim()) {
-      setError("Ad Soyad alanı zorunludur");
-      return false;
-    }
-    if (!newPerson.phone.trim()) {
-      setError("Telefon alanı zorunludur");
-      return false;
-    }
-    if (!newPerson.email.trim()) {
-      setError("E-posta alanı zorunludur");
-      return false;
-    }
-    if (!newPerson.password.trim()) {
-      setError("Şifre alanı zorunludur");
-      return false;
-    }
-    if (newPerson.password.length < 6) {
-      setError("Şifre en az 6 karakter olmalıdır");
-      return false;
-    }
-    // Password complexity validation
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
-    if (!passwordRegex.test(newPerson.password)) {
-      setError("Şifre en az bir küçük harf, bir büyük harf, bir rakam ve bir özel karakter içermelidir");
-      return false;
-    }
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newPerson.email)) {
-      setError("Geçerli bir e-posta adresi giriniz");
-      return false;
-    }
-    // Phone validation (Turkish format)
-    const phoneRegex = /^05[0-9]{9}$/;
-    if (!phoneRegex.test(newPerson.phone)) {
-      setError("Geçerli bir telefon numarası giriniz (05xxxxxxxxx)");
+    const validation = validationUtils.validatePersonnelForm(newPerson);
+    if (!validation.isValid) {
+      setError(validation.errors[0]); // Show first error
       return false;
     }
     return true;
@@ -117,50 +72,7 @@ const PersonelEkleme = () => {
     setSuccess(null);
 
     try {
-      // Prepare the request data according to your API specification
-      const requestData = {
-        name: newPerson.name.trim(),
-        email: newPerson.email.trim(),
-        password: newPerson.password,
-        phoneNumber: newPerson.phone.trim(),
-        photoUrl: "https://example.com/default-photo.jpg", // Use default URL to avoid base64 length issues
-        createdAt: new Date().toISOString()
-      };
-
-      console.log('Sending request data:', requestData);
-      console.log('Request JSON string:', JSON.stringify(requestData));
-
-      const response = await fetch('http://192.168.232.113:8080/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Personel eklenirken bir hata oluştu';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.log('Server error details:', errorData);
-        } catch (parseError) {
-          // Try to get the response as text if JSON parsing fails
-          try {
-            const errorText = await response.text();
-            console.log('Server error text:', errorText);
-            errorMessage = errorText || errorMessage;
-          } catch (textError) {
-            console.log('Could not parse error response as text:', textError);
-          }
-        }
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers);
-        throw new Error(errorMessage);
-      }
-
-      const responseData = await response.json();
+      const responseData = await personnelService.registerPersonnel(newPerson);
       
       // Add the new person to local state with the response data
       const newPersonWithId = {
@@ -200,55 +112,52 @@ const PersonelEkleme = () => {
   const closePhotoModal = () => {
     setShowPhotoModal(false);
     setTempImage(null);
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
+    cameraUtils.stopCamera(cameraStream);
+    setCameraStream(null);
   };
 
   // Kamera açma
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await cameraUtils.startCamera();
       setCameraStream(stream);
     } catch (error) {
-      alert('Kamera erişimi sağlanamadı: ' + error.message);
+      alert(error.message);
     }
   };
 
   // Kamera kapatma
   const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
+    cameraUtils.stopCamera(cameraStream);
+    setCameraStream(null);
   };
 
   // Fotoğraf çekme
   const capturePhoto = () => {
     if (cameraStream) {
       const video = document.getElementById('camera-video');
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      const imageData = canvas.toDataURL('image/jpeg');
-      setTempImage(imageData);
-      stopCamera();
+      try {
+        const imageData = cameraUtils.capturePhoto(video);
+        setTempImage(imageData);
+        stopCamera();
+      } catch (error) {
+        alert(error.message);
+      }
     }
   };
 
   // Dosyadan fotoğraf seçme
-  const handlePhotoUpload = (event) => {
+  const handlePhotoUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageData = e.target.result;
-        setTempImage(imageData);
-      };
-      reader.readAsDataURL(file);
+      try {
+        cameraUtils.validateImageFile(file);
+        const imageData = await cameraUtils.handlePhotoUpload(file);
+        const resizedImage = await cameraUtils.resizeImage(imageData);
+        setTempImage(resizedImage);
+      } catch (error) {
+        alert(error.message);
+      }
     }
   };
 
