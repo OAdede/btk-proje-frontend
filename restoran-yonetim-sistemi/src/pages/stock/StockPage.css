@@ -1,0 +1,84 @@
+/* StockPage.css */
+.stock-page-container {
+    max-width: 1000px;
+    margin: 32px auto;
+    background-color: var(--card, #473653);
+    border-radius: 16px;
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 12px;
+    padding: 32px;
+}
+
+.stock-page-title {
+    margin: 0px 0px 16px;
+    color: var(--text, #f6e9ff);
+    font-weight: 700;
+}
+
+.stock-table-wrapper {
+    background-color: var(--surface, #513653);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border, #32263a);
+}
+
+.stock-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stock-table thead tr {
+    background-color: var(--background, #32263a);
+}
+
+.stock-table th {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--surface, #473653);
+    font-weight: 600;
+    color: var(--text, #f6e9ff);
+}
+
+.stock-table tbody tr:nth-child(odd) {
+    background-color: var(--surface, #513653);
+}
+
+.stock-table tbody tr:nth-child(even) {
+    background-color: var(--card, #473653);
+}
+
+.stock-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border, #32263a);
+    color: var(--text, #f6e9ff);
+}
+
+.stock-actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stock-input {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border, #32263a);
+    background-color: var(--surface, #473653);
+    color: var(--text, #f6e9ff);
+    width: 80px;
+}
+
+.stock-add-button {
+    padding: 8px 16px;
+    cursor: pointer;
+    background-color: var(--button-hover, #edd2ff);
+    color: var(--text, #32263a);
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.stock-add-button:hover {
+    opacity: 0.9;
+}

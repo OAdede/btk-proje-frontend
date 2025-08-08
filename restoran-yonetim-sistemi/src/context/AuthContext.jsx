@@ -16,20 +16,8 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-
-        if (storedToken && storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-                axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-            } catch (error) {
-                console.error("Failed to parse user data from local storage:", error);
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUser(null);
-            }
-        }
+        // Sayfa yüklendiğinde token veya local user var mı diye kontrol edilebilir.
+        // Şimdilik geliştirme modundaki otomatik girişi kaldırdık.
         setLoading(false);
     }, []);
 
@@ -74,21 +62,33 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    const switchRole = (newRole) => {
+    const switchRole = (newRole, navigate) => {
         setUser(currentUser => {
-            if (currentUser && currentUser.roleId === 0) {
-                const roleIdMap = Object.entries(roleMapping).reduce((acc, [key, value]) => {
-                    acc[value] = parseInt(key, 10);
-                    return acc;
-                }, {});
-                const newRoleId = roleIdMap[newRole];
+            if (!currentUser) return null;
 
-                if (newRoleId !== undefined) {
-                    const updatedUser = { ...currentUser, role: newRole, roleId: newRoleId };
+            const roleIdMap = Object.entries(roleMapping).reduce((acc, [key, value]) => {
+                acc[value] = parseInt(key, 10);
+                return acc;
+            }, {});
+            const newRoleId = roleIdMap[newRole];
+
+            if (newRoleId !== undefined) {
+                const updatedUser = { ...currentUser, role: newRole, roleId: newRoleId };
+
+                if (import.meta.env.DEV) {
+                    // Geliştirme modunda sadece state'i güncelle ve yönlendir
+                    if (navigate) {
+                        const homePath = newRole === 'admin' ? '/admin/dashboard' : `/${newRole}/home`;
+                        navigate(homePath);
+                    }
+                } else {
+                    // Production modunda localStorage'a da yaz
                     localStorage.setItem('user', JSON.stringify(updatedUser));
-                    return updatedUser;
                 }
+
+                return updatedUser;
             }
+
             return currentUser;
         });
     };
@@ -124,19 +124,19 @@ export const AuthProvider = ({ children }) => {
         try {
             // Geliştirme aşamasında demo veriler - production'da gerçek API çağrısı yapılacak
             console.log('Password reset requested for:', email);
-            
+
             // Simüle edilmiş gecikme
             await new Promise(resolve => setTimeout(resolve, 1500));
-            
+
             // Demo email kontrolü
             const validEmails = ['admin@test.com', 'garson@test.com', 'kasiyer@test.com',];
-            
+
             if (!validEmails.includes(email)) {
                 throw new Error('Bu e-posta adresi sistemde bulunamadı.');
             }
-            
+
             return 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. E-postanızı kontrol edin.';
-            
+
             /* Production için API çağrısı:
             const response = await axios.post('/api/auth/forgot-password', { email });
             const data = response.data;
@@ -158,23 +158,23 @@ export const AuthProvider = ({ children }) => {
         try {
             // Geliştirme aşamasında demo veriler - production'da gerçek API çağrısı yapılacak
             console.log('Password reset attempted with token:', token);
-            
+
             // Simüle edilmiş gecikme
             await new Promise(resolve => setTimeout(resolve, 1500));
-            
+
             // Demo token kontrolü
             const validTokens = ['demo-token-123', 'test-token-456'];
-            
+
             if (!validTokens.includes(token)) {
                 throw new Error('Geçersiz veya süresi dolmuş token. Lütfen yeni bir şifre sıfırlama isteği gönderin.');
             }
-            
+
             if (newPassword.length < 6) {
                 throw new Error('Şifre en az 6 karakter olmalıdır.');
             }
-            
+
             return 'Şifreniz başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...';
-            
+
             /* Production için API çağrısı:
             const response = await axios.post('/api/auth/reset-password', { 
                 token, 

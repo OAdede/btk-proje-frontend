@@ -1,48 +1,21 @@
 import React, { useState, useContext } from "react";
 import { TableContext } from "../../context/TableContext";
-import { useTheme } from "../../context/ThemeContext";
-import { AuthContext } from "../../context/AuthContext"; // AuthContext'i import ettik
+import { AuthContext } from "../../context/AuthContext.jsx";
+import './StokUpdate.css'; // Stil dosyasını import et
 
 const kategoriler = ["Tümü", "Ana Yemek", "Aparatifler", "Fırın", "Izgaralar", "Kahvaltılıklar", "İçecekler", "Tatlılar"];
-
 const URUN_SAYFASI = 10;
 
 function StokUpdate() {
   const { products, addProduct, deleteProduct, updateProduct } = useContext(TableContext);
-  const { isDarkMode } = useTheme();
-  const { user } = useContext(AuthContext); // Kullanıcı rolünü alıyoruz
+  const { user } = useContext(AuthContext);
 
   const [aktifKategori, setAktifKategori] = useState("Tümü");
   const [mevcutSayfa, setMevcutSayfa] = useState(1);
   const [yeniUrun, setYeniUrun] = useState({ name: "", price: "", stock: "", minStock: "" });
   const [duzenleModal, setDuzenleModal] = useState({ acik: false, urun: null });
-  
-  const isAdmin = user.role === 'admin'; // Admin rolünü kontrol ediyoruz
 
-  // Renk paletleri
-  const colors = isDarkMode ? {
-    background: "#513653",
-    cardBackground: "#473653",
-    surfaceBackground: "#32263A",
-    text: "#ffffff",
-    textSecondary: "#e0e0e0",
-    border: "#32263A",
-    primary: "#A294F9",
-    success: "#10B981",
-    danger: "#EF4444",
-    warning: "#F59E0B"
-  } : {
-    background: "#F5EFFF",
-    cardBackground: "#E5D9F2",
-    surfaceBackground: "#CDC1FF",
-    text: "#2D1B69",
-    textSecondary: "#4A3B76",
-    border: "#A294F9",
-    primary: "#A294F9",
-    success: "#10B981",
-    danger: "#EF4444",
-    warning: "#F59E0B"
-  };
+  const isAdmin = user.role === 'admin';
 
   const gosterilecekUrunler =
     aktifKategori === "Tümü"
@@ -57,9 +30,9 @@ function StokUpdate() {
   const toplamSayfaSayisi = Math.ceil(gosterilecekUrunler.length / URUN_SAYFASI);
 
   const stokDurumu = (miktar, minStok) => {
-    if (miktar <= 0) return { durum: "Tükendi", renk: colors.danger };
-    if (miktar <= minStok) return { durum: "Kritik", renk: colors.warning };
-    return { durum: "Yeterli", renk: colors.success };
+    if (miktar <= 0) return { durum: "Tükendi", renk: 'var(--danger)' };
+    if (miktar <= minStok) return { durum: "Kritik", renk: 'var(--warning)' };
+    return { durum: "Yeterli", renk: 'var(--success)' };
   };
 
   const urunEkle = () => {
@@ -101,294 +74,120 @@ function StokUpdate() {
   }
 
   return (
-    <div style={{ 
-      maxWidth: 1000, 
-      margin: "32px auto", 
-      background: colors.background, 
-      borderRadius: 16, 
-      boxShadow: "0 2px 12px rgba(0, 0, 0, 0.3)", 
-      padding: 32 
-    }}>
-      <h2 style={{ 
-        margin: "0 0 16px 0", 
-        color: colors.text, 
-        fontWeight: 700 
-      }}>
-        Ürün & Stok Yönetimi
-      </h2>
-      
-      <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+    <div className="stok-update-container">
+      <h2 className="stok-update-title">Ürün & Stok Yönetimi</h2>
+
+      <div className="category-filter-buttons">
         {kategoriler.map((kategori) => (
-          <button 
-            key={kategori} 
-            onClick={() => setAktifKategori(kategori)} 
-            style={{ 
-              background: aktifKategori === kategori ? colors.primary : colors.cardBackground, 
-              color: aktifKategori === kategori ? "#ffffff" : colors.text, 
-              border: "none", 
-              borderRadius: 8, 
-              padding: "8px 18px", 
-              fontWeight: 700, 
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
+          <button
+            key={kategori}
+            onClick={() => setAktifKategori(kategori)}
+            className={`category-filter-button ${aktifKategori === kategori ? 'active' : ''}`}
           >
             {kategori}
           </button>
         ))}
       </div>
-      
-      {isAdmin && aktifKategori !== "Tümü" && ( // Sadece admin için görünür
-        <div style={{ display: "flex", gap: 12, margin: "20px 0 28px 0", alignItems: "center" }}>
-          <input 
-            type="text" 
-            placeholder="Ürün Adı" 
-            value={yeniUrun.name} 
-            onChange={e => setYeniUrun({ ...yeniUrun, name: e.target.value })} 
-            style={{ 
-              padding: 8, 
-              borderRadius: 6, 
-              border: `1px solid ${colors.border}`, 
-              background: colors.surfaceBackground,
-              color: colors.text,
-              flex: 2 
-            }} 
+
+      {isAdmin && aktifKategori !== "Tümü" && (
+        <div className="add-product-form">
+          <input
+            type="text"
+            placeholder="Ürün Adı"
+            value={yeniUrun.name}
+            onChange={e => setYeniUrun({ ...yeniUrun, name: e.target.value })}
+            className="product-name-input"
           />
-          <input 
-            type="number" 
-            placeholder="Fiyat (₺)" 
-            value={yeniUrun.price} 
-            onChange={e => setYeniUrun({ ...yeniUrun, price: e.target.value })} 
-            style={{ 
-              padding: 8, 
-              borderRadius: 6, 
-              border: `1px solid ${colors.border}`, 
-              background: colors.surfaceBackground,
-              color: colors.text,
-              flex: 1 
-            }} 
+          <input
+            type="number"
+            placeholder="Fiyat (₺)"
+            value={yeniUrun.price}
+            onChange={e => setYeniUrun({ ...yeniUrun, price: e.target.value })}
+            className="product-price-input"
           />
-          <input 
-            type="number" 
-            placeholder="Stok" 
-            value={yeniUrun.stock} 
-            onChange={e => setYeniUrun({ ...yeniUrun, stock: e.target.value })} 
-            style={{ 
-              padding: 8, 
-              borderRadius: 6, 
-              border: `1px solid ${colors.border}`, 
-              background: colors.surfaceBackground,
-              color: colors.text,
-              flex: 1 
-            }} 
+          <input
+            type="number"
+            placeholder="Stok"
+            value={yeniUrun.stock}
+            onChange={e => setYeniUrun({ ...yeniUrun, stock: e.target.value })}
+            className="product-stock-input"
           />
-          <input 
-            type="number" 
-            placeholder="Min. Stok" 
-            value={yeniUrun.minStock} 
-            onChange={e => setYeniUrun({ ...yeniUrun, minStock: e.target.value })} 
-            style={{ 
-              padding: 8, 
-              borderRadius: 6, 
-              border: `1px solid ${colors.border}`, 
-              background: colors.surfaceBackground,
-              color: colors.text,
-              flex: 1 
-            }} 
+          <input
+            type="number"
+            placeholder="Min. Stok"
+            value={yeniUrun.minStock}
+            onChange={e => setYeniUrun({ ...yeniUrun, minStock: e.target.value })}
+            className="product-minstock-input"
           />
-          <button 
-            onClick={urunEkle} 
-            style={{ 
-              background: colors.primary, 
-              color: "#ffffff", 
-              border: "none", 
-              borderRadius: 6, 
-              padding: "8px 24px", 
-              fontWeight: 600, 
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-          >
+          <button onClick={urunEkle} className="add-product-button">
             Ekle
           </button>
         </div>
       )}
-      
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8, minHeight: '550px' }}>
+
+      <div className="product-list">
         {mevcutSayfaUrunleri.map((urun) => {
           const durum = stokDurumu(urun.stock, urun.minStock);
           return (
-            <div 
-              key={urun.id} 
-              style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                background: colors.cardBackground, 
-                borderRadius: 10, 
-                boxShadow: "0 1px 6px rgba(0, 0, 0, 0.3)", 
-                padding: "12px 20px", 
-                gap: 20 
-              }}
-            >
-              <div style={{ flex: 3, fontWeight: 600, color: colors.text }}>{urun.name}</div>
-              <div style={{ flex: 1, fontWeight: 500, color: colors.text }}>{urun.price} ₺</div>
-              <div style={{ flex: 1, fontWeight: 500, color: colors.text }}>{urun.stock} adet</div>
-              <div style={{ flex: 1, fontWeight: 500, color: colors.text }}>Min: {urun.minStock}</div>
-              <div style={{ 
-                flex: 1.5, 
-                textAlign: 'center', 
-                fontWeight: 600, 
-                color: "#ffffff", 
-                background: durum.renk, 
-                padding: "4px 12px", 
-                borderRadius: 12 
-              }}>
+            <div key={urun.id} className="product-list-item">
+              <div className="item-name">{urun.name}</div>
+              <div className="item-price">{urun.price} ₺</div>
+              <div className="item-stock">{urun.stock} adet</div>
+              <div className="item-min-stock">Min: {urun.minStock}</div>
+              <div className="item-status" style={{ backgroundColor: durum.renk }}>
                 {durum.durum}
               </div>
-              {isAdmin && ( // Sadece admin için görünür
-                <>
-                  <button 
-                    onClick={() => urunDuzenle(urun)} 
-                    style={{ 
-                      background: colors.primary, 
-                      color: "#ffffff", 
-                      border: "none", 
-                      borderRadius: 6, 
-                      padding: "7px 18px", 
-                      fontWeight: 600, 
-                      cursor: "pointer",
-                      transition: "all 0.3s ease"
-                    }}
-                  >
+              {isAdmin && (
+                <div className="item-actions">
+                  <button onClick={() => urunDuzenle(urun)} className="edit-button">
                     Düzenle
                   </button>
-                  <button 
-                    onClick={() => urunSil(urun)} 
-                    style={{ 
-                      background: colors.danger, 
-                      color: "#ffffff", 
-                      border: "none", 
-                      borderRadius: 6, 
-                      padding: "7px 18px", 
-                      fontWeight: 600, 
-                      cursor: "pointer",
-                      transition: "all 0.3s ease"
-                    }}
-                  >
+                  <button onClick={() => urunSil(urun)} className="delete-button">
                     Sil
                   </button>
-                </>
+                </div>
               )}
             </div>
           );
         })}
       </div>
-      
+
       {toplamSayfaSayisi > 1 && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+        <div className="pagination-buttons">
           {/* Sayfalama butonları buraya eklenebilir */}
         </div>
       )}
-      
-      {isAdmin && duzenleModal.acik && ( // Sadece admin için görünür
-        <div style={{ 
-          position: "fixed", 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          background: "rgba(0,0,0,0.5)", 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          zIndex: 1000 
-        }}>
-          <div style={{ 
-            background: colors.cardBackground, 
-            borderRadius: 12, 
-            padding: 32, 
-            minWidth: 400, 
-            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-            border: `1px solid ${colors.border}`
-          }}>
-            <h3 style={{ margin: "0 0 20px 0", color: colors.text }}>Ürün Bilgilerini Düzenle</h3>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontWeight: 600, marginBottom: 8, color: colors.text }}>{duzenleModal.urun?.name}</div>
-              <label style={{ color: colors.text }}>Fiyat:</label>
-              <input 
-                type="number" 
-                value={duzenleModal.urun.price} 
-                onChange={e => handleModalChange('price', Number(e.target.value))} 
-                style={{ 
-                  width: "100%", 
-                  padding: 8, 
-                  marginBottom: 12,
-                  background: colors.surfaceBackground,
-                  color: colors.text,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 6
-                }} 
+
+      {isAdmin && duzenleModal.acik && (
+        <div className="edit-modal-overlay">
+          <div className="edit-modal-content">
+            <h3>Ürün Bilgilerini Düzenle</h3>
+            <div className="edit-modal-form">
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{duzenleModal.urun?.name}</div>
+              <label>Fiyat:</label>
+              <input
+                type="number"
+                value={duzenleModal.urun.price}
+                onChange={e => handleModalChange('price', Number(e.target.value))}
               />
-              <label style={{ color: colors.text }}>Stok:</label>
-              <input 
-                type="number" 
-                value={duzenleModal.urun.stock} 
-                onChange={e => handleModalChange('stock', Number(e.target.value))} 
-                style={{ 
-                  width: "100%", 
-                  padding: 8, 
-                  marginBottom: 12,
-                  background: colors.surfaceBackground,
-                  color: colors.text,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 6
-                }} 
+              <label>Stok:</label>
+              <input
+                type="number"
+                value={duzenleModal.urun.stock}
+                onChange={e => handleModalChange('stock', Number(e.target.value))}
               />
-              <label style={{ color: colors.text }}>Min. Stok:</label>
-              <input 
-                type="number" 
-                value={duzenleModal.urun.minStock} 
-                onChange={e => handleModalChange('minStock', Number(e.target.value))} 
-                style={{ 
-                  width: "100%", 
-                  padding: 8, 
-                  marginBottom: 12,
-                  background: colors.surfaceBackground,
-                  color: colors.text,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 6
-                }} 
+              <label>Min. Stok:</label>
+              <input
+                type="number"
+                value={duzenleModal.urun.minStock}
+                onChange={e => handleModalChange('minStock', Number(e.target.value))}
               />
             </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-              <button 
-                onClick={() => setDuzenleModal({ acik: false, urun: null })} 
-                style={{ 
-                  background: "#6c757d", 
-                  color: "#ffffff", 
-                  border: "none", 
-                  borderRadius: 6, 
-                  padding: "8px 20px", 
-                  fontWeight: 600, 
-                  cursor: "pointer",
-                  transition: "all 0.3s ease"
-                }}
-              >
+            <div className="edit-modal-actions">
+              <button onClick={() => setDuzenleModal({ acik: false, urun: null })} className="cancel-button">
                 İptal
               </button>
-              <button 
-                onClick={miktarKaydet} 
-                style={{ 
-                  background: colors.primary, 
-                  color: "#ffffff", 
-                  border: "none", 
-                  borderRadius: 6, 
-                  padding: "8px 20px", 
-                  fontWeight: 600, 
-                  cursor: "pointer",
-                  transition: "all 0.3s ease"
-                }}
-              >
+              <button onClick={miktarKaydet} className="save-button">
                 Kaydet
               </button>
             </div>
