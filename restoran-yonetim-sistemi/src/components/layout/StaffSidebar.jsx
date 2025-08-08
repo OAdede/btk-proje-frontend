@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom"; // useLocation eklendi
 import { createPortal } from "react-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
@@ -9,10 +9,10 @@ import "./StaffLayout.css";
 const StaffSidebar = () => {
     const { logout, user } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation(); // location hook'u eklendi
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const { reservations, removeReservation } = useContext(TableContext);
     const [showSettings, setShowSettings] = useState(false);
-    // Rezervasyon listesini göstermek için kullanılan state kaldırıldı
     const [showProfileSettings, setShowProfileSettings] = useState(false);
     const [profileImage, setProfileImage] = useState(localStorage.getItem('profileImage') || '/default-avatar.png');
     const [phoneNumber, setPhoneNumber] = useState(localStorage.getItem('phoneNumber') || '');
@@ -28,7 +28,6 @@ const StaffSidebar = () => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
     const [tempImage, setTempImage] = useState(null);
-    
 
     const getFloorLetter = (floorIndex) => {
         if (floorIndex === 0) return 'Z';
@@ -206,7 +205,7 @@ const StaffSidebar = () => {
             <div className="staff-sidebar-header">
                 <h2>Personel Paneli</h2>
             </div>
-            
+
             {/* YENİ EKLENEN KISIM: Profil bilgileri */}
             <div
                 style={{
@@ -273,14 +272,12 @@ const StaffSidebar = () => {
                     </NavLink>
                 )}
                 {user?.role === "kasiyer" && (
-                    <NavLink
-                        to="/kasiyer/fast-order"
-                        className={({ isActive }) =>
-                            isActive ? "staff-nav-item active" : "staff-nav-item"
-                        }
+                    <div
+                        onClick={() => navigate('/kasiyer/fast-order')}
+                        className={location.pathname === '/kasiyer/fast-order' ? "staff-nav-item active" : "staff-nav-item"}
                     >
                         🧾 Hızlı Sipariş
-                    </NavLink>
+                    </div>
                 )}
                 {/* YENİ EKLENDİ: Rezervasyonları görüntüleme menüsü */}
                 {canViewReservations && (

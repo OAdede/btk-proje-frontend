@@ -65,7 +65,6 @@ function App() {
   return (
     <ThemeProvider>
       <TableProvider>
-
         <Routes>
           {/* Layout Olmayan Sayfalar */}
           <Route path="/login" element={<Login />} />
@@ -115,7 +114,7 @@ function App() {
           </Route>
 
           {/* Kasiyer Paneli */}
-          <Route path="/kasiyer/fast-order" element={<FastOrderPage />} />
+          {/* DİKKAT: Hızlı sipariş rotası StaffLayout içine taşındı */}
           <Route
             path="/kasiyer/*"
             element={
@@ -130,6 +129,8 @@ function App() {
             <Route path="summary/:tableId" element={<SummaryPage />} />
             <Route path="stock" element={<StokUpdate />} />
             <Route path="orders" element={<OrdersPage />} />
+            {/* Kasiyer Hızlı Sipariş rotası artık burada */}
+            <Route path="fast-order" element={<FastOrderPage />} />
             {/* YENİ EKLENEN ROUTE */}
             <Route path="reservations" element={<ReservationsPage />} />
           </Route>
