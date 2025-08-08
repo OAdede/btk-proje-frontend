@@ -58,7 +58,7 @@ export default function FastOrderPage() {
 
   const handleConfirmFastOrder = () => {
     saveFinalOrder(fakeTableId, cart);
-    alert("Hızlı sipariş oluşturuldu.");
+    alert("Hızlı sipariş oluşturuldu ve ödeme alındı .");
     setCart({});
     navigate(`/${user.role}/home`);
   };
@@ -123,7 +123,8 @@ export default function FastOrderPage() {
               className="btn-next"
               disabled={Object.keys(cart).length === 0}
             >
-              Siparişi Onayla
+              Siparişi Onayla ve Ödeme al
+
             </button>
           </div>
         </div>
