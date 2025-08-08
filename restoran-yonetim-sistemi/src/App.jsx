@@ -34,6 +34,8 @@ import SummaryPage from './pages/staff/SummaryPage.jsx';
 import OrdersPage from "./components/layout/OrdersPage.jsx";
 
 
+
+
 // Stil dosyaları
 import "./App.css";
 
@@ -64,6 +66,7 @@ function App() {
   return (
     <ThemeProvider>
       <TableProvider>
+
         <Routes>
           {/* Layout Olmayan Sayfalar */}
           <Route path="/login" element={<Login />} />

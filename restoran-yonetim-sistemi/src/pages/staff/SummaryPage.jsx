@@ -30,8 +30,8 @@ export default function SummaryPage() {
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
     return (
-        <div style={{ padding: 30, maxWidth: '600px', margin: 'auto', border: '1px solid #ddd', borderRadius: '10px' }}>
-            <h1>{pageTitle}</h1>
+        <div style={{ padding: 30, maxWidth: '600px', margin: 'auto', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '10px' }}>
+            <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>{pageTitle}</h1>
 
             {Object.keys(currentOrder).length === 0 ? (
                 <div style={{ textAlign: "center" }}>
@@ -44,9 +44,25 @@ export default function SummaryPage() {
                 <>
                     <ul style={{ listStyleType: 'none', padding: 0 }}>
                         {Object.entries(currentOrder).map(([id, item]) => (
-                            <li key={id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #eee' }}>
-                                <span>{item.name} x {item.count}</span>
-                                <span>{item.count * item.price}₺</span>
+                            <li key={id} style={{ padding: '15px 0', borderBottom: '1px solid #eee' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: '600' }}>{item.name} x {item.count}</span>
+                                    <span style={{ fontWeight: '500' }}>{item.count * item.price}₺</span>
+                                </div>
+                                {item.note && (
+                                    <p style={{
+                                        fontSize: '0.9em',
+                                        color: '#666',
+                                        marginTop: '8px',
+                                        paddingLeft: '10px',
+                                        borderLeft: '3px solid #007bff',
+                                        background: '#f8f9fa',
+                                        padding: '8px',
+                                        borderRadius: '4px'
+                                    }}>
+                                        <strong>Not:</strong> {item.note}
+                                    </p>
+                                )}
                             </li>
                         ))}
                     </ul>
@@ -59,7 +75,7 @@ export default function SummaryPage() {
                         </button>
                         <button
                             onClick={handleConfirm}
-                            style={{ backgroundColor: "green", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
+                            style={{ backgroundColor: "#28a745", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
                         >
                             Siparişleri Onayla
                         </button>

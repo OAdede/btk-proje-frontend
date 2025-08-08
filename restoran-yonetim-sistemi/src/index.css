@@ -1,25 +1,69 @@
-/* Genel stil ayarları */
-* {
-  margin: 0;
-  padding: 0;
+/* 1. Use a more-intuitive box-sizing model. */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
-  background-color: var(--background);
-  color: var(--text);
-  transition: all 0.3s ease;
+/* 2. Remove default margin and padding*/
+* {
+  margin: 0;
+  padding: 0;
 }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.6;
-  transition: all 0.3s ease;
-}
-
+/* 3. Allow percentage-based heights in the application */
+html,
+body,
 #root {
+  height: 100%;
+}
+
+/*
+  Typographic tweaks!
+  4. Add accessible line-height
+  5. Improve text rendering
+*/
+body {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--background);
   color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 6. Improve media defaults */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 7. Remove built-in form typography styles */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* 8. Avoid text overflows */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* 9. Create a root stacking context */
+#root {
+  isolation: isolate;
   min-height: 100vh;
 }
 
@@ -160,7 +204,9 @@ body {
 }
 
 /* Form stilleri */
-input, select, textarea {
+input,
+select,
+textarea {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -170,7 +216,9 @@ input, select, textarea {
   transition: all 0.3s ease;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(162, 148, 249, 0.1);
@@ -200,6 +248,7 @@ input:focus, select:focus, textarea:focus {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -269,12 +318,12 @@ input:focus, select:focus, textarea:focus {
   .container {
     padding: 0 10px;
   }
-  
+
   .btn {
     padding: 8px 16px;
     font-size: 0.9rem;
   }
-  
+
   .card {
     padding: 15px;
   }
