@@ -40,6 +40,12 @@ const ReservationsPage = () => {
         return `${floorPrefix}${tableIndex + 1}`;
     };
 
+    // Masa kapasitesini al (localStorage'dan)
+    const getTableCapacity = (tableNumber) => {
+        const capacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+        return capacities[tableNumber] || 4; // Varsayılan 4 kişilik
+    };
+
     const handleAddReservation = () => {
         setShowTableSelectionModal(true);
     };
@@ -555,6 +561,7 @@ const ReservationsPage = () => {
                                      const tableNumber = getTableNumber(selectedFloor, tableIndex);
                                      const tableStatus = getTableStatus(tableNumber);
                                      const isReserved = tableStatus.status === 'reserved';
+                                     const tableCapacity = getTableCapacity(tableNumber);
                                      
                                      return (
                                          <button
@@ -581,6 +588,15 @@ const ReservationsPage = () => {
                                                  e.target.style.boxShadow = 'none';
                                              }}
                                          >
+                                             {/* Masa kapasitesi */}
+                                             <div style={{
+                                                 fontSize: '10px',
+                                                 color: 'rgba(255,255,255,0.7)',
+                                                 marginBottom: '2px',
+                                                 fontWeight: 'normal'
+                                             }}>
+                                                 {tableCapacity} Kişilik
+                                             </div>
                                              <div>{tableNumber}</div>
                                              {isReserved && (
                                                  <div style={{

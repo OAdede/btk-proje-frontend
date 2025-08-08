@@ -5,13 +5,10 @@ import WarningModal from '../../components/common/WarningModal';
 const RestaurantSettings = () => {
     const { isDarkMode, colors } = useTheme();
     const [restaurantName, setRestaurantName] = useState(localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi');
-    const [systemName, setSystemName] = useState(localStorage.getItem('systemName') || 'ŞeftaliPos');
     const [openingTime, setOpeningTime] = useState(localStorage.getItem('openingTime') || '09:00');
     const [closingTime, setClosingTime] = useState(localStorage.getItem('closingTime') || '22:00');
     const [showNameModal, setShowNameModal] = useState(false);
-    const [showSystemNameModal, setShowSystemNameModal] = useState(false);
     const [tempRestaurantName, setTempRestaurantName] = useState('');
-    const [tempSystemName, setTempSystemName] = useState('');
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [warningMessage, setWarningMessage] = useState('');
 
@@ -60,11 +57,7 @@ const RestaurantSettings = () => {
         setShowNameModal(true);
     };
 
-    // Sistem ismi değiştirme modalını aç
-    const openSystemNameModal = () => {
-        setTempSystemName(systemName);
-        setShowSystemNameModal(true);
-    };
+
 
     // Restoran ismini kaydet
     const saveRestaurantName = () => {
@@ -79,18 +72,7 @@ const RestaurantSettings = () => {
         }
     };
 
-    // Sistem ismini kaydet
-    const saveSystemName = () => {
-        if (tempSystemName.trim()) {
-            setSystemName(tempSystemName.trim());
-            localStorage.setItem('systemName', tempSystemName.trim());
-            // Login sayfasını güncellemek için custom event gönder
-            window.dispatchEvent(new CustomEvent('systemNameChanged', {
-                detail: { name: tempSystemName.trim() }
-            }));
-            setShowSystemNameModal(false);
-        }
-    };
+
 
     // Son rezervasyon saatini hesapla (kapanıştan 3 saat önce)
     const getLastReservationTime = () => {
@@ -219,38 +201,6 @@ const RestaurantSettings = () => {
             </div>
 
             <div style={styles.settingsContainer}>
-                {/* Sistem İsmi Ayarları */}
-                <div style={styles.settingCard}>
-                    <h2 style={styles.cardTitle}>
-                        🖥️ Sistem İsmi
-                    </h2>
-                    <div style={styles.inputGroup}>
-                        <div style={styles.currentName}>
-                            Mevcut İsim: {systemName}
-                        </div>
-                        <button 
-                            onClick={openSystemNameModal}
-                            style={styles.button}
-                            onMouseEnter={(e) => {
-                                e.target.style.transform = 'translateY(-2px)';
-                                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = 'none';
-                            }}
-                        >
-                            ✏️ İsmi Değiştir
-                        </button>
-                    </div>
-                    <div style={styles.infoBox}>
-                        <p style={styles.infoText}>
-                            💡 Sistem ismi değiştirildiğinde, giriş sayfasındaki karşılama mesajında 
-                            yeni sistem ismi görünecektir.
-                        </p>
-                    </div>
-                </div>
-
                 {/* Restoran İsmi Ayarları */}
                 <div style={styles.settingCard}>
                     <h2 style={styles.cardTitle}>
@@ -321,90 +271,7 @@ const RestaurantSettings = () => {
                 </div>
             </div>
 
-            {/* Sistem İsmi Değiştirme Modal */}
-            {showSystemNameModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '100vh',
-                    backgroundColor: 'rgba(0,0,0,0.7)',
-                    zIndex: 10000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <div style={{
-                        backgroundColor: colors.card,
-                        padding: '2rem',
-                        borderRadius: '15px',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                        maxWidth: '500px',
-                        width: '90%',
-                        border: `2px solid ${colors.border}`
-                    }}>
-                        <h3 style={{
-                            color: colors.text,
-                            marginBottom: '20px',
-                            fontSize: '1.3rem',
-                            textAlign: 'center'
-                        }}>
-                            🖥️ Sistem İsmi Değiştir
-                        </h3>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Yeni Sistem İsmi:</label>
-                            <input
-                                type="text"
-                                value={tempSystemName}
-                                onChange={(e) => setTempSystemName(e.target.value)}
-                                placeholder="Sistem ismini girin..."
-                                style={styles.input}
-                                autoFocus
-                            />
-                        </div>
-                        <div style={{
-                            display: 'flex',
-                            gap: '15px',
-                            justifyContent: 'center',
-                            marginTop: '25px'
-                        }}>
-                            <button
-                                onClick={() => setShowSystemNameModal(false)}
-                                style={{
-                                    background: colors.border,
-                                    color: colors.text,
-                                    border: 'none',
-                                    padding: '12px 25px',
-                                    borderRadius: '8px',
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    fontWeight: '500'
-                                }}
-                            >
-                                ❌ İptal
-                            </button>
-                            <button
-                                onClick={saveSystemName}
-                                style={{
-                                    background: colors.primary,
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '12px 25px',
-                                    borderRadius: '8px',
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    fontWeight: '500'
-                                }}
-                            >
-                                ✅ Kaydet
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Restoran İsmi Değiştirme Modal */}
             {showNameModal && (
