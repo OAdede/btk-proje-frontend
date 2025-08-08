@@ -261,7 +261,7 @@ const ReservationsPage = () => {
 
     return (
         <div style={styles.page}>
-                         <div style={styles.header}>
+            <div style={styles.header}>
                  <h1 style={styles.title}>
                      📅 Rezervasyonlar
                      <span style={styles.badge}>{reservationsList.length}</span>
@@ -279,8 +279,8 @@ const ReservationsPage = () => {
                              e.target.style.boxShadow = 'none';
                          }}
                      >
-                         + Yeni Rezervasyon Ekle
-                     </button>
+                    + Yeni Rezervasyon Ekle
+                </button>
                  </div>
             </div>
 
@@ -365,10 +365,10 @@ const ReservationsPage = () => {
                 ) : (
                     <div style={{ textAlign: "center", padding: "40px", color: colors.textSecondary }}>
                         <h3>🔍 Arama sonucu bulunamadı</h3>
-                        <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
+                    <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
                     </div>
-                                 )}
-             </div>
+                )}
+            </div>
 
              {/* Silme Onay Modalı */}
              {showDeleteModal && (
@@ -640,8 +640,8 @@ const ReservationsPage = () => {
                  message={warningMessage}
                  onClose={() => setShowWarningModal(false)}
              />
-         </div>
-     );
- };
+        </div>
+    );
+};
 
 export default ReservationsPage;

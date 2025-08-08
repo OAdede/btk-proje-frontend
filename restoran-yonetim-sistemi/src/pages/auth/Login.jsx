@@ -7,14 +7,34 @@ function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // şifreyi göster gizle burdan yapılıcak
   const [error, setError] = useState('');
-  const [restaurantName, setRestaurantName] = useState('Restoran Yönetim Sistemi');
+  const [systemName, setSystemName] = useState('ŞeftaliPos');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Restoran ismini localStorage'dan al
+  // Sistem ismini localStorage'dan al
   useEffect(() => {
-    const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
-    setRestaurantName(name);
+    const name = localStorage.getItem('systemName') || 'ŞeftaliPos';
+    setSystemName(name);
+  }, []);
+
+  // localStorage değişikliklerini ve custom event'leri dinle
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const name = localStorage.getItem('systemName') || 'ŞeftaliPos';
+      setSystemName(name);
+    };
+
+    const handleSystemNameChange = (event) => {
+      setSystemName(event.detail.name);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('systemNameChanged', handleSystemNameChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('systemNameChanged', handleSystemNameChange);
+    };
   }, []);
 
   // Açık tema renkleri (sabit)
@@ -123,7 +143,7 @@ function Login() {
             margin: '0 0 16px 0',
             fontWeight: 400
           }}>
-            {restaurantName} Sistemine Hoş Geldiniz
+            {systemName} Sistemine Hoş Geldiniz
           </p>
         </div>
 
