@@ -44,13 +44,19 @@ export const authService = {
     // Request password reset
     async requestPasswordReset(email) {
         try {
+            // Frontend URL'sini backend'e gönder (environment variable veya window.location.origin)
+            const frontendUrl = process.env.FRONTEND_URL || window.location.origin;
+
             const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({
+                    email,
+                    frontendUrl: frontendUrl // Frontend URL'sini backend'e gönder
+                })
             });
 
             if (!response.ok) {
