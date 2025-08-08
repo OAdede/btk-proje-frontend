@@ -49,7 +49,7 @@ function OrdersPage() {
     };
 
     return (
-        <div className="orders-page-container">
+        <div className="orders-page-container" style={{ backgroundColor: 'var(--background)', color: 'var(--text)' }}>
             {/* Butonlar */}
             <div style={{
                 display: 'flex',
@@ -79,7 +79,7 @@ function OrdersPage() {
             {/* Günlük Siparişler Görünümü */}
             {viewMode === 'daily' && (
                 <>
-                    <h2 className="orders-page-title">
+                    <h2 className="orders-page-title" style={{ color: 'var(--text)' }}>
                         Güncel Siparişlerim ({today.toLocaleDateString('tr-TR')})
                     </h2>
                     <div className="total-orders-info">
@@ -88,7 +88,7 @@ function OrdersPage() {
 
                     <div className="orders-list-container">
                         {allOrders.length === 0 ? (
-                            <div className="no-orders-message">
+                            <div className="no-orders-message" style={{ color: 'var(--text-secondary)' }}>
                                 Bugüne ait henüz tamamlanmış siparişiniz yok.
                             </div>
                         ) : (
@@ -98,18 +98,19 @@ function OrdersPage() {
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        backgroundColor: '#FFFFFF',
+                                        backgroundColor: 'var(--card)',
                                         borderRadius: '10px',
-                                        boxShadow: '0 1px 6px rgba(0, 0, 0, 0.1)',
+                                        boxShadow: '0 1px 6px var(--shadow)',
                                         padding: '12px 20px',
                                         gap: '20px',
-                                        border: '1px solid #E0E0E0'
+                                        border: '1px solid var(--border)',
+                                        color: 'var(--text)'
                                     }}
                                 >
-                                    <div style={{ flex: 2, fontWeight: 600 }}>Masa {order.table}</div>
-                                    <div style={{ flex: 1, fontWeight: 500, color: '#10B981' }}>{order.total.toFixed(2)} TL</div>
-                                    <div style={{ flex: 2, fontWeight: 500, color: '#4A3B76' }}>Sipariş ID: #{order.orderId}</div>
-                                    <div style={{ flex: 3, fontWeight: 500, color: '#4A3B76', textAlign: 'right', fontSize: '0.9rem' }}>
+                                    <div style={{ flex: 2, fontWeight: 600, color: 'var(--text)' }}>Masa {order.table}</div>
+                                    <div style={{ flex: 1, fontWeight: 500, color: 'var(--success)' }}>{order.total.toFixed(2)} TL</div>
+                                    <div style={{ flex: 2, fontWeight: 500, color: 'var(--text-secondary)' }}>Sipariş ID: #{order.orderId}</div>
+                                    <div style={{ flex: 3, fontWeight: 500, color: 'var(--text-secondary)', textAlign: 'right', fontSize: '0.9rem' }}>
                                         {formatDate(order.creationDate)}
                                     </div>
                                 </div>

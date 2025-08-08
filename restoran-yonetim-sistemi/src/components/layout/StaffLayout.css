@@ -149,31 +149,38 @@
 
 .view-mode-button {
     padding: 10px 20px;
-    border: 2px solid #2D1B69;
+    border: 2px solid var(--primary);
     background-color: transparent;
-    color: #2D1B69;
+    color: var(--text);
     font-weight: 600;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
+.view-mode-button:hover {
+    background-color: var(--hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
 .view-mode-button.active {
-    background-color: #2D1B69;
+    background-color: var(--primary);
     color: #FFFFFF;
+    box-shadow: 0 4px 12px var(--primary-shadow);
 }
 
 .total-orders-info {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #4A3B76;
+    color: var(--text);
     margin-bottom: 20px;
     padding-bottom: 10px;
-    border-bottom: 1px solid #E0E0E0;
+    border-bottom: 1px solid var(--border);
 }
 
 .total-orders-info span {
-    color: #10B981;
+    color: var(--success);
     font-size: 1.5rem;
 }
 
@@ -191,8 +198,8 @@
 
 .calendar-nav-btn {
     background: none;
-    border: 1px solid #4A3B76;
-    color: #4A3B76;
+    border: 1px solid var(--primary);
+    color: var(--text);
     font-size: 1.5rem;
     cursor: pointer;
     border-radius: 5px;
@@ -201,29 +208,33 @@
 }
 
 .calendar-nav-btn:hover {
-    background-color: #4A3B76;
+    background-color: var(--primary);
     color: #FFFFFF;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow);
 }
 
 .calendar-month-year {
     font-size: 1.5rem;
     font-weight: 600;
+    color: var(--text);
 }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 5px;
-    background-color: #FFFFFF;
+    background-color: var(--card);
     padding: 10px;
     border-radius: 10px;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 6px var(--shadow);
+    border: 1px solid var(--border);
 }
 
 .day-label {
     text-align: center;
     font-weight: 600;
-    color: #2D1B69;
+    color: var(--text);
     padding: 10px 0;
     font-size: 0.9rem;
 }
@@ -233,12 +244,13 @@
     height: 80px;
     border-radius: 5px;
     padding: 8px;
-    background-color: #F8F8F8;
+    background-color: var(--surface);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid #E0E0E0;
+    border: 1px solid var(--border);
+    color: var(--text);
 }
 
 .day-cell.empty {
@@ -247,18 +259,31 @@
 }
 
 .day-cell.today {
-    background-color: #E6F3FF;
-    border: 2px solid #2D8CFF;
+    background-color: var(--accent);
+    border: 2px solid var(--primary);
 }
 
 .day-number {
     font-weight: 700;
     font-size: 1.2rem;
-    color: #2D1B69;
+    color: var(--text);
 }
 
 .order-count {
-    background-color: #10B981;
+    background-color: var(--success);
+    color: #FFFFFF;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.order-count-simplified {
+    background-color: var(--success);
     color: #FFFFFF;
     border-radius: 50%;
     width: 25px;
