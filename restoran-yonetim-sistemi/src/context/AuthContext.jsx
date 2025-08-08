@@ -33,6 +33,10 @@ export const AuthProvider = ({ children }) => {
                     roleId: data.roleId,
                     role: getRoleFromId(data.roleId),
                     email: email,
+                    name: data.name || 'Selin',
+                    surname: data.surname || 'Garson',
+                    profileImage: data.profileImage || localStorage.getItem('profileImage') || null,
+                    phone: data.phone || localStorage.getItem('phoneNumber') || '',
                 };
 
                 localStorage.setItem('token', data.token);
@@ -98,6 +102,8 @@ export const AuthProvider = ({ children }) => {
             if (!currentUser) return null;
             const updatedUser = { ...currentUser, profileImage: imageUrl };
             localStorage.setItem('user', JSON.stringify(updatedUser));
+            // Profil fotoğrafını localStorage'a da kaydet
+            localStorage.setItem('profileImage', imageUrl);
             return updatedUser;
         });
     };

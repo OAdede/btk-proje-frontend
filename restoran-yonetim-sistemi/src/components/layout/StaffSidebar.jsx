@@ -7,7 +7,7 @@ import { TableContext } from "../../context/TableContext";
 import "./StaffLayout.css";
 
 const StaffSidebar = () => {
-    const { logout, user } = useContext(AuthContext);
+    const { logout, user, updateProfileImage } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const { reservations, removeReservation } = useContext(TableContext);
@@ -120,6 +120,8 @@ const StaffSidebar = () => {
         if (tempProfileImage) {
             setProfileImage(tempProfileImage);
             localStorage.setItem('profileImage', tempProfileImage);
+            // AuthContext'i güncelle
+            updateProfileImage(tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
             alert('Profil fotoğrafı başarıyla güncellendi!');
@@ -192,7 +194,58 @@ const StaffSidebar = () => {
     return (
         <div className="staff-sidebar">
             <div className="staff-sidebar-header">
-                <h2>Personel Paneli</h2>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '15px'
+                }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: colors.primary,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        border: `2px solid ${colors.border}`
+                    }}>
+                        {user?.profileImage ? (
+                            <img 
+                                src={user.profileImage} 
+                                alt="Profil" 
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: '50%',
+                                    objectFit: 'cover'
+                                }}
+                            />
+                        ) : (
+                            user?.name ? user.name.charAt(0).toUpperCase() : 'S'
+                        )}
+                    </div>
+                    <div>
+                        <div style={{
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            color: colors.text,
+                            marginBottom: '2px'
+                        }}>
+                            {user?.name || 'Selin'}
+                        </div>
+                        <div style={{
+                            fontSize: '0.9rem',
+                            color: colors.textSecondary,
+                            fontWeight: '500'
+                        }}>
+                            {user?.role === 'garson' ? 'Garson' : user?.role === 'kasiyer' ? 'Kasiyer' : 'Personel'}
+                        </div>
+                    </div>
+                </div>
             </div>
             <nav className="staff-sidebar-nav">
                 <NavLink
