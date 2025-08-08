@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { authService } from '../services/authService';
 
 export const AuthContext = createContext();
 
@@ -16,16 +16,23 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Sayfa yüklendiğinde token veya local user var mı diye kontrol edilebilir.
-        // Şimdilik geliştirme modundaki otomatik girişi kaldırdık.
+        // Sayfa yüklendiğinde localStorage'dan kullanıcı bilgilerini kontrol et
+        const savedUser = authService.getCurrentUser();
+        const token = localStorage.getItem('token');
+
+        if (savedUser && token) {
+            // Token'ı header'a ekle
+            authService.setAuthHeader(token);
+            setUser(savedUser);
+        }
+
         setLoading(false);
     }, []);
 
     const login = async (email, password) => {
         setLoading(true);
         try {
-            const response = await axios.post('/api/auth/login', { email, password });
-            const data = response.data;
+            const data = await authService.login(email, password);
 
             if (data.success) {
                 const userData = {
@@ -42,7 +49,8 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(userData));
 
-                axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+                // Set authorization header
+                authService.setAuthHeader(data.token);
 
                 setUser(userData);
                 setLoading(false);
@@ -53,16 +61,13 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (error) {
             setLoading(false);
-            const errorMessage = error.response?.data?.message || error.message || 'Bir hata oluştu.';
-            console.error('Login failed:', errorMessage);
-            throw new Error(errorMessage);
+            console.error('Login failed:', error.message);
+            throw new Error(error.message);
         }
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        delete axios.defaults.headers.common['Authorization'];
+        authService.logout();
         setUser(null);
     };
 
@@ -128,76 +133,21 @@ export const AuthProvider = ({ children }) => {
 
     const requestPasswordReset = async (email) => {
         try {
-            // Geliştirme aşamasında demo veriler - production'da gerçek API çağrısı yapılacak
-            console.log('Password reset requested for:', email);
-
-            // Simüle edilmiş gecikme
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Demo email kontrolü
-            const validEmails = ['admin@test.com', 'garson@test.com', 'kasiyer@test.com',];
-
-            if (!validEmails.includes(email)) {
-                throw new Error('Bu e-posta adresi sistemde bulunamadı.');
-            }
-
-            return 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. E-postanızı kontrol edin.';
-
-            /* Production için API çağrısı:
-            const response = await axios.post('/api/auth/forgot-password', { email });
-            const data = response.data;
-
-            if (data.success) {
-                return data.message || 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.';
-            } else {
-                throw new Error(data.message || 'Şifre sıfırlama isteği başarısız oldu.');
-            }
-            */
+            const data = await authService.requestPasswordReset(email);
+            return data.message || 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. E-postanızı kontrol edin.';
         } catch (error) {
-            const errorMessage = error.message || 'Bir hata oluştu.';
-            console.error('Password reset request failed:', errorMessage);
-            throw new Error(errorMessage);
+            console.error('Password reset request failed:', error.message);
+            throw new Error(error.message);
         }
     };
 
     const resetPassword = async (token, newPassword) => {
         try {
-            // Geliştirme aşamasında demo veriler - production'da gerçek API çağrısı yapılacak
-            console.log('Password reset attempted with token:', token);
-
-            // Simüle edilmiş gecikme
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Demo token kontrolü
-            const validTokens = ['demo-token-123', 'test-token-456'];
-
-            if (!validTokens.includes(token)) {
-                throw new Error('Geçersiz veya süresi dolmuş token. Lütfen yeni bir şifre sıfırlama isteği gönderin.');
-            }
-
-            if (newPassword.length < 6) {
-                throw new Error('Şifre en az 6 karakter olmalıdır.');
-            }
-
-            return 'Şifreniz başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...';
-
-            /* Production için API çağrısı:
-            const response = await axios.post('/api/auth/reset-password', { 
-                token, 
-                password: newPassword 
-            });
-            const data = response.data;
-
-            if (data.success) {
-                return data.message || 'Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz...';
-            } else {
-                throw new Error(data.message || 'Şifre sıfırlama başarısız oldu.');
-            }
-            */
+            const data = await authService.resetPassword(token, newPassword);
+            return data.message || 'Şifreniz başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...';
         } catch (error) {
-            const errorMessage = error.message || 'Bir hata oluştu.';
-            console.error('Password reset failed:', errorMessage);
-            throw new Error(errorMessage);
+            console.error('Password reset failed:', error.message);
+            throw new Error(error.message);
         }
     };
 
