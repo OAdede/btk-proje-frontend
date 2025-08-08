@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { ThemeContext } from "../../context/ThemeContext";
 
-export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate }) {
+export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate, existingReservations = [], shouldClearForm = true }) {
   const { isDarkMode } = useContext(ThemeContext);
   const [formData, setFormData] = useState({
     ad: "",
@@ -113,6 +113,38 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       return;
     }
     
+    // Çalışma saatleri kontrolü
+    const openingTime = localStorage.getItem('openingTime') || '09:00';
+    const closingTime = localStorage.getItem('closingTime') || '22:00';
+    const lastReservationTime = (() => {
+      const closingHour = parseInt(closingTime.split(':')[0]);
+      const closingMinute = parseInt(closingTime.split(':')[1]);
+      let lastHour = closingHour - 3;
+      if (lastHour < 0) lastHour = 0;
+      return `${lastHour.toString().padStart(2, '0')}:${closingMinute.toString().padStart(2, '0')}`;
+    })();
+
+    const [selectedHours, selectedMinutes] = formData.saat.split(':');
+    const selectedTimeTotal = parseInt(selectedHours) * 60 + parseInt(selectedMinutes);
+    
+    const [openingHours, openingMinutes] = openingTime.split(':');
+    const openingTimeTotal = parseInt(openingHours) * 60 + parseInt(openingMinutes);
+    
+    const [lastResHours, lastResMinutes] = lastReservationTime.split(':');
+    const lastResTimeTotal = parseInt(lastResHours) * 60 + parseInt(lastResMinutes);
+
+    // Açılış saatinden önce rezervasyon yapılamaz
+    if (selectedTimeTotal < openingTimeTotal) {
+      alert(`Rezervasyon sadece açılış saatinden (${openingTime}) sonra yapılabilir.`);
+      return;
+    }
+
+    // Son rezervasyon saatinden sonra rezervasyon yapılamaz
+    if (selectedTimeTotal > lastResTimeTotal) {
+      alert(`Rezervasyon en geç ${lastReservationTime} saatine kadar yapılabilir. (Kapanıştan 3 saat önce)`);
+      return;
+    }
+
     // Bugün için saat kontrolü
     if (selectedDate.getTime() === today.getTime()) {
       const currentTime = new Date();
@@ -126,20 +158,22 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       }
     }
     
-    // Formu temizle
-    setFormData({
-      ad: "",
-      soyad: "",
-      telefon: "",
-      email: "",
-      tarih: defaultDate || "",
-      saat: "",
-      kisiSayisi: "",
-      not: "",
-    });
-    
     // onSubmit'i çağır
     onSubmit(formData);
+    
+    // Sadece başarılı submit sonrasında formu temizle
+    if (shouldClearForm) {
+      setFormData({
+        ad: "",
+        soyad: "",
+        telefon: "",
+        email: "",
+        tarih: defaultDate || "",
+        saat: "",
+        kisiSayisi: "",
+        not: "",
+      });
+    }
   };
 
   // Tema renklerini dinamik olarak belirle
@@ -202,6 +236,68 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
         }}>
           📅 Masa {masaNo} - Yeni Rezervasyon
         </h2>
+
+        {/* Mevcut Rezervasyonlar */}
+        {existingReservations.length > 0 && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '15px',
+            backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
+            borderRadius: '10px',
+            border: `1px solid ${colors.inputBorder}`
+          }}>
+            <h3 style={{
+              color: colors.textColor,
+              fontSize: '16px',
+              marginBottom: '10px',
+              fontWeight: 'bold'
+            }}>
+              📋 Mevcut Rezervasyonlar:
+            </h3>
+            {existingReservations.map((reservation, index) => (
+              <div key={index} style={{
+                padding: '10px',
+                backgroundColor: isDarkMode ? '#32263A' : '#F5EFFF',
+                borderRadius: '8px',
+                marginBottom: '8px',
+                border: `1px solid ${colors.inputBorder}`
+              }}>
+                <div style={{
+                  color: colors.textColor,
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  marginBottom: '5px'
+                }}>
+                  {reservation.ad} {reservation.soyad}
+                </div>
+                <div style={{
+                  color: colors.labelColor,
+                  fontSize: '12px',
+                  display: 'flex',
+                  gap: '15px',
+                  flexWrap: 'wrap'
+                }}>
+                  <span>📞 {reservation.telefon}</span>
+                  <span>🕐 {reservation.saat}</span>
+                  <span>👥 {reservation.kisiSayisi} kişi</span>
+                  {reservation.not && <span>📝 {reservation.not}</span>}
+                </div>
+              </div>
+            ))}
+            <div style={{
+              color: colors.labelColor,
+              fontSize: '12px',
+              fontStyle: 'italic',
+              marginTop: '10px',
+              padding: '8px',
+              backgroundColor: isDarkMode ? '#32263A' : '#F5EFFF',
+              borderRadius: '6px'
+            }}>
+              ⚠️ Bu masaya yeni rezervasyon eklerken 5 saat arayla rezervasyon yapabilirsiniz.
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                      <div style={{ display: "flex", gap: "10px" }}>
              <div style={{ display: "flex", flexDirection: "column", gap: "5px", flex: 1 }}>
@@ -351,27 +447,44 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
             }}>
               Saat:
             </label>
-                         <input
-               type="time"
-               name="saat"
-               value={formData.saat}
-               onChange={handleChange}
-               required
-               disabled={!formData.tarih}
-               min={formData.tarih === new Date().toISOString().split('T')[0] ? new Date().toTimeString().slice(0, 5) : undefined}
-               placeholder={formData.tarih ? "Saat seçin" : "Önce tarih seçin"}
-               style={{
-                 padding: "12px",
-                 border: `2px solid ${colors.inputBorder}`,
-                 borderRadius: "8px",
-                 fontSize: "14px",
-                 transition: "border-color 0.3s ease",
-                 outline: "none",
-                 backgroundColor: formData.tarih ? colors.inputBg : (isDarkMode ? "#2a2a2a" : "#f5f5f5"),
-                 color: formData.tarih ? colors.textColor : (isDarkMode ? "#666666" : "#999999"),
-                 cursor: formData.tarih ? "text" : "not-allowed"
-               }}
-             />
+                                                   <input
+                type="time"
+                name="saat"
+                value={formData.saat}
+                onChange={handleChange}
+                required
+                disabled={!formData.tarih}
+                min={(() => {
+                  const openingTime = localStorage.getItem('openingTime') || '09:00';
+                  if (formData.tarih === new Date().toISOString().split('T')[0]) {
+                    const currentTime = new Date().toTimeString().slice(0, 5);
+                    const currentTimeTotal = parseInt(currentTime.split(':')[0]) * 60 + parseInt(currentTime.split(':')[1]);
+                    const openingTimeTotal = parseInt(openingTime.split(':')[0]) * 60 + parseInt(openingTime.split(':')[1]);
+                    return currentTimeTotal > openingTimeTotal ? currentTime : openingTime;
+                  }
+                  return openingTime;
+                })()}
+                max={(() => {
+                  const closingTime = localStorage.getItem('closingTime') || '22:00';
+                  const closingHour = parseInt(closingTime.split(':')[0]);
+                  const closingMinute = parseInt(closingTime.split(':')[1]);
+                  let lastHour = closingHour - 3;
+                  if (lastHour < 0) lastHour = 0;
+                  return `${lastHour.toString().padStart(2, '0')}:${closingMinute.toString().padStart(2, '0')}`;
+                })()}
+                placeholder={formData.tarih ? "Saat seçin" : "Önce tarih seçin"}
+                style={{
+                  padding: "12px",
+                  border: `2px solid ${colors.inputBorder}`,
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  transition: "border-color 0.3s ease",
+                  outline: "none",
+                  backgroundColor: formData.tarih ? colors.inputBg : (isDarkMode ? "#2a2a2a" : "#f5f5f5"),
+                  color: formData.tarih ? colors.textColor : (isDarkMode ? "#666666" : "#999999"),
+                  cursor: formData.tarih ? "text" : "not-allowed"
+                }}
+              />
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>

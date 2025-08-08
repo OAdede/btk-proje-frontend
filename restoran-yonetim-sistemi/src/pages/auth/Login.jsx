@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -7,8 +7,15 @@ function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // şifreyi göster gizle burdan yapılıcak
   const [error, setError] = useState('');
+  const [restaurantName, setRestaurantName] = useState('Restoran Yönetim Sistemi');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Restoran ismini localStorage'dan al
+  useEffect(() => {
+    const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
+    setRestaurantName(name);
+  }, []);
 
   // Açık tema renkleri (sabit)
   const lightColors = {
@@ -116,7 +123,7 @@ function Login() {
             margin: '0 0 16px 0',
             fontWeight: 400
           }}>
-            Restoran Yönetim Sistemine Hoş Geldiniz
+            {restaurantName} Sistemine Hoş Geldiniz
           </p>
         </div>
 

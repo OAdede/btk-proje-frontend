@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
@@ -9,6 +9,33 @@ const TopNav = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
     const { colors, isDarkMode } = useTheme();
+    const [restaurantName, setRestaurantName] = useState('Restoran Yönetim Sistemi');
+
+    // Restoran ismini localStorage'dan al
+    useEffect(() => {
+        const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
+        setRestaurantName(name);
+    }, []);
+
+    // localStorage değişikliklerini ve custom event'leri dinle
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
+            setRestaurantName(name);
+        };
+
+        const handleRestaurantNameChange = (event) => {
+            setRestaurantName(event.detail.name);
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('restaurantNameChanged', handleRestaurantNameChange);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('restaurantNameChanged', handleRestaurantNameChange);
+        };
+    }, []);
 
     const handleLogout = () => {
         logout();
@@ -29,7 +56,7 @@ const TopNav = () => {
                         marginRight: '15px'
                     }}
                 />
-                <h2 className="top-nav-title" style={{ color: colors.text }}>Restoran Yönetim Sistemi</h2>
+                <h2 className="top-nav-title" style={{ color: colors.text }}>{restaurantName}</h2>
             </div>
 
             <div className="top-nav-right">

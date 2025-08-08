@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TableContext } from '../../context/TableContext';
 import { useTheme } from '../../context/ThemeContext';
 import ReservationModal from '../../components/reservations/ReservationModal';
+import WarningModal from '../../components/common/WarningModal';
 
 const ReservationsPage = () => {
     const navigate = useNavigate();
@@ -15,6 +16,9 @@ const ReservationsPage = () => {
     const [selectedTable, setSelectedTable] = useState(null);
     const [showTableSelectionModal, setShowTableSelectionModal] = useState(false);
     const [selectedFloor, setSelectedFloor] = useState(0);
+    const [showWarningModal, setShowWarningModal] = useState(false);
+    const [warningMessage, setWarningMessage] = useState('');
+    const [modalKey, setModalKey] = useState(0);
 
     // Gerçek rezervasyon verilerini kullan
     const actualReservations = reservations;
@@ -40,11 +44,47 @@ const ReservationsPage = () => {
         setShowTableSelectionModal(true);
     };
 
+    // Masa durumunu kontrol eden fonksiyon
+    const getTableStatus = (tableNumber) => {
+        const tableReservations = Object.values(reservations).filter(res => res.tableId === tableNumber);
+        if (tableReservations.length === 0) {
+            return { status: 'empty', reservations: [] };
+        }
+        return { status: 'reserved', reservations: tableReservations };
+    };
+
+    // 5 saat kısıtlamasını kontrol eden fonksiyon
+    const canMakeReservation = (existingReservations, newTime) => {
+        if (existingReservations.length === 0) return true;
+        
+        const newTimeHour = parseInt(newTime.split(':')[0]);
+        
+        for (const reservation of existingReservations) {
+            const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
+            const timeDifference = Math.abs(newTimeHour - existingTimeHour);
+            
+            if (timeDifference < 5) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     const handleTableSelection = (floorNumber, tableIndex) => {
         const tableNumber = getTableNumber(floorNumber, tableIndex);
-        setSelectedTable(tableNumber);
-        setShowTableSelectionModal(false);
-        setShowReservationModal(true);
+        const tableStatus = getTableStatus(tableNumber);
+        
+        if (tableStatus.status === 'reserved') {
+            // Rezerve masaya tıklandığında rezervasyon bilgilerini göster
+            setSelectedTable(tableNumber);
+            setShowTableSelectionModal(false);
+            setShowReservationModal(true);
+        } else {
+            // Boş masaya tıklandığında normal rezervasyon ekleme
+            setSelectedTable(tableNumber);
+            setShowTableSelectionModal(false);
+            setShowReservationModal(true);
+        }
     };
 
     const handleReservationClose = () => {
@@ -53,9 +93,21 @@ const ReservationsPage = () => {
     };
 
     const handleReservationSubmit = (formData) => {
+        const tableStatus = getTableStatus(selectedTable);
+        
+        if (tableStatus.status === 'reserved') {
+            // Rezerve masaya yeni rezervasyon ekleme
+            if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
+                setWarningMessage('Bu masaya 5 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 5 saat sonra rezervasyon yapabilirsiniz.');
+                setShowWarningModal(true);
+                return;
+            }
+        }
+        
         addReservation(selectedTable, formData);
         setShowReservationModal(false);
         setSelectedTable(null);
+        setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
     };
 
 
@@ -499,33 +551,53 @@ const ReservationsPage = () => {
                                  maxWidth: '400px',
                                  margin: '0 auto'
                              }}>
-                                 {[0, 1, 2, 3, 4, 5, 6, 7].map((tableIndex) => (
-                                     <button
-                                         key={tableIndex}
-                                         onClick={() => handleTableSelection(selectedFloor, tableIndex)}
-                                         style={{
-                                             background: colors.success,
-                                             color: 'white',
-                                             border: 'none',
-                                             padding: '15px 10px',
-                                             borderRadius: '8px',
-                                             cursor: 'pointer',
-                                             fontSize: '14px',
-                                             fontWeight: 'bold',
-                                             transition: 'all 0.3s ease'
-                                         }}
-                                         onMouseEnter={(e) => {
-                                             e.target.style.transform = 'scale(1.05)';
-                                             e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-                                         }}
-                                         onMouseLeave={(e) => {
-                                             e.target.style.transform = 'scale(1)';
-                                             e.target.style.boxShadow = 'none';
-                                         }}
-                                     >
-                                         {getTableNumber(selectedFloor, tableIndex)}
-                                     </button>
-                                 ))}
+                                 {[0, 1, 2, 3, 4, 5, 6, 7].map((tableIndex) => {
+                                     const tableNumber = getTableNumber(selectedFloor, tableIndex);
+                                     const tableStatus = getTableStatus(tableNumber);
+                                     const isReserved = tableStatus.status === 'reserved';
+                                     
+                                     return (
+                                         <button
+                                             key={tableIndex}
+                                             onClick={() => handleTableSelection(selectedFloor, tableIndex)}
+                                             style={{
+                                                 background: isReserved ? '#ffc107' : colors.success,
+                                                 color: isReserved ? '#212529' : 'white',
+                                                 border: 'none',
+                                                 padding: '15px 10px',
+                                                 borderRadius: '8px',
+                                                 cursor: 'pointer',
+                                                 fontSize: '14px',
+                                                 fontWeight: 'bold',
+                                                 transition: 'all 0.3s ease',
+                                                 position: 'relative'
+                                             }}
+                                             onMouseEnter={(e) => {
+                                                 e.target.style.transform = 'scale(1.05)';
+                                                 e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                                             }}
+                                             onMouseLeave={(e) => {
+                                                 e.target.style.transform = 'scale(1)';
+                                                 e.target.style.boxShadow = 'none';
+                                             }}
+                                         >
+                                             <div>{tableNumber}</div>
+                                             {isReserved && (
+                                                 <div style={{
+                                                     fontSize: '10px',
+                                                     marginTop: '2px',
+                                                     fontWeight: 'normal'
+                                                 }}>
+                                                     {tableStatus.reservations.map((res, index) => (
+                                                         <div key={index} style={{ marginBottom: '1px' }}>
+                                                             {res.ad} {res.soyad} - {res.saat}
+                                                         </div>
+                                                     ))}
+                                                 </div>
+                                             )}
+                                         </button>
+                                     );
+                                 })}
                              </div>
                          </div>
 
@@ -552,11 +624,21 @@ const ReservationsPage = () => {
 
              {/* Rezervasyon Modal */}
              <ReservationModal
+                 key={modalKey}
                  visible={showReservationModal}
                  masaNo={selectedTable}
                  onClose={handleReservationClose}
                  onSubmit={handleReservationSubmit}
                  defaultDate={getTodayDate()}
+                 existingReservations={selectedTable ? getTableStatus(selectedTable).reservations : []}
+                 shouldClearForm={false}
+             />
+
+             {/* Uyarı Modal */}
+             <WarningModal
+                 visible={showWarningModal}
+                 message={warningMessage}
+                 onClose={() => setShowWarningModal(false)}
              />
          </div>
      );

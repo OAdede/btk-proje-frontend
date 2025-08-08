@@ -25,6 +25,7 @@ import Rezervasyon from './pages/admin/Rezervasyon.jsx';
 import ReservationsPage from './pages/reservations/ReservationsPage.jsx';
 import EditReservationPage from './pages/reservations/EditReservationPage.jsx';
 import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
+import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
 
 // Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
@@ -93,6 +94,7 @@ function App() {
             <Route path="reservations" element={<ReservationsPage />} />
             <Route path="reservations/edit/:reservationId" element={<EditReservationPage />} />
             <Route path="order-history" element={<OrderHistoryPage />} />
+            <Route path="restaurant-settings" element={<RestaurantSettings />} />
           </Route>
 
           {/* Garson Paneli */}

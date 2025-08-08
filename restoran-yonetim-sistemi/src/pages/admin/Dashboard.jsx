@@ -3,6 +3,7 @@ import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
 import SuccessNotification from "../../components/reservations/SuccessNotification";
+import WarningModal from "../../components/common/WarningModal";
 import "./Dashboard.css";
 
 
@@ -34,6 +35,26 @@ const Dashboard = () => {
     1: "Kat 1", 
     2: "Kat 2"
   });
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [warningMessage, setWarningMessage] = useState('');
+  const [modalKey, setModalKey] = useState(0);
+  const [restaurantName, setRestaurantName] = useState(localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi');
+
+  // Restoran ismini localStorage'dan al
+  useEffect(() => {
+    const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
+    setRestaurantName(name);
+  }, []);
+
+  // Restoran ismi değişikliklerini dinle
+  useEffect(() => {
+    const handleRestaurantNameChange = (event) => {
+      setRestaurantName(event.detail.name);
+    };
+
+    window.addEventListener('restaurantNameChanged', handleRestaurantNameChange);
+    return () => window.removeEventListener('restaurantNameChanged', handleRestaurantNameChange);
+  }, []);
 
 
 
@@ -104,10 +125,29 @@ const Dashboard = () => {
   };
 
   const handleReservationSubmit = (formData) => {
+    // 5 saat kısıtlamasını kontrol et
+    const tableReservations = Object.values(reservations).filter(res => res.tableId === selectedTable);
+    
+    if (tableReservations.length > 0) {
+      const newTimeHour = parseInt(formData.saat.split(':')[0]);
+      
+      for (const reservation of tableReservations) {
+        const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
+        const timeDifference = Math.abs(newTimeHour - existingTimeHour);
+        
+        if (timeDifference < 5) {
+          setWarningMessage('Bu masaya 5 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 5 saat sonra rezervasyon yapabilirsiniz.');
+          setShowWarningModal(true);
+          return;
+        }
+      }
+    }
+    
     addReservation(selectedTable, formData);
     setShowReservationModal(false);
     setSelectedTable(null);
     setShowReservationMode(false); // Rezervasyon modunu kapat
+    setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
 
     // Başarı bildirimi göster
     setSuccessData({ ...formData, masaNo: selectedTable });
@@ -459,7 +499,7 @@ const Dashboard = () => {
             {tables.map((table) => {
               const status = getStatus(table.id);
               const order = orders[table.id] || {};
-              const reservation = Object.values(reservations).find(res => res.tableId === table.id);
+              const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
 
               return (
                 <div
@@ -479,7 +519,7 @@ const Dashboard = () => {
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                     position: 'relative'
                   }}
-                  onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: reservation })}
+                  onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: tableReservations[0] })}
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
@@ -568,13 +608,19 @@ const Dashboard = () => {
                       </span>
                     )}
                   </div>
-                  {reservation && (
+                  {tableReservations.length > 0 && (
                     <div style={{
-                      fontSize: '10px',
+                      fontSize: '9px',
                       marginTop: '4px',
-                      opacity: 0.8
+                      opacity: 0.8,
+                      textAlign: 'center',
+                      lineHeight: '1.2'
                     }}>
-                      {reservation.ad} {reservation.soyad} - {reservation.saat}
+                      {tableReservations.map((res, index) => (
+                        <div key={index} style={{ marginBottom: '1px' }}>
+                          {res.ad} {res.soyad} - {res.saat}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -774,11 +820,20 @@ const Dashboard = () => {
 
         {/* Rezervasyon Modal */}
         <ReservationModal
+          key={modalKey}
           visible={showReservationModal}
           masaNo={selectedTable}
           onClose={handleReservationClose}
           onSubmit={handleReservationSubmit}
           defaultDate={getTodayDate()}
+          shouldClearForm={false}
+        />
+
+        {/* Uyarı Modal */}
+        <WarningModal
+          visible={showWarningModal}
+          message={warningMessage}
+          onClose={() => setShowWarningModal(false)}
         />
 
         {/* Masa Silme Modal */}
@@ -1050,45 +1105,82 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {selectedTableDetails.status === 'reserved' && selectedTableDetails.reservation && (
+              {selectedTableDetails.status === 'reserved' && (
                 <div>
                   <h3 style={{ color: '#ffffff', marginBottom: '15px' }}>Rezervasyon Detayları:</h3>
-                  <div style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    padding: '15px',
-                    borderRadius: '8px',
-                    marginBottom: '15px'
-                  }}>
-                    <p style={{ color: '#ffffff', margin: '5px 0' }}>
-                      <strong>Müşteri:</strong> {selectedTableDetails.reservation.ad} {selectedTableDetails.reservation.soyad}
-                    </p>
-                    <p style={{ color: '#ffffff', margin: '5px 0' }}>
-                      <strong>Tarih:</strong> {selectedTableDetails.reservation.tarih}
-                    </p>
-                    <p style={{ color: '#ffffff', margin: '5px 0' }}>
-                      <strong>Saat:</strong> {selectedTableDetails.reservation.saat}
-                    </p>
-                    <p style={{ color: '#ffffff', margin: '5px 0' }}>
-                      <strong>Kişi Sayısı:</strong> {selectedTableDetails.reservation.kisiSayisi}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleReservationDelete}
-                    style={{
-                      background: '#f44336',
-                      color: 'white',
-                      border: 'none',
-                      padding: '12px 24px',
+                  
+                  {/* Mevcut rezervasyonları göster */}
+                  {Object.values(reservations).filter(res => res.tableId === selectedTableDetails.id).map((reservation, index) => (
+                    <div key={index} style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '15px',
                       borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      transition: 'all 0.3s ease',
-                      width: '100%'
-                    }}
-                  >
-                    🗑️ Rezervasyonu İptal Et
-                  </button>
+                      marginBottom: '15px'
+                    }}>
+                      <p style={{ color: '#ffffff', margin: '5px 0' }}>
+                        <strong>Müşteri:</strong> {reservation.ad} {reservation.soyad}
+                      </p>
+                      <p style={{ color: '#ffffff', margin: '5px 0' }}>
+                        <strong>Tarih:</strong> {reservation.tarih}
+                      </p>
+                      <p style={{ color: '#ffffff', margin: '5px 0' }}>
+                        <strong>Saat:</strong> {reservation.saat}
+                      </p>
+                      <p style={{ color: '#ffffff', margin: '5px 0' }}>
+                        <strong>Kişi Sayısı:</strong> {reservation.kisiSayisi}
+                      </p>
+                      {reservation.not && (
+                        <p style={{ color: '#ffffff', margin: '5px 0' }}>
+                          <strong>Not:</strong> {reservation.not}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <div style={{
+                    display: 'flex',
+                    gap: '10px',
+                    marginTop: '15px'
+                  }}>
+                    <button
+                      onClick={() => {
+                        setSelectedTable(selectedTableDetails.id);
+                        setShowTableDetailsModal(false);
+                        setShowReservationModal(true);
+                      }}
+                      style={{
+                        background: '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        flex: 1
+                      }}
+                    >
+                      ➕ Rezervasyon Ekle
+                    </button>
+                    <button
+                      onClick={handleReservationDelete}
+                      style={{
+                        background: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        flex: 1
+                      }}
+                    >
+                      🗑️ Rezervasyonu İptal Et
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
