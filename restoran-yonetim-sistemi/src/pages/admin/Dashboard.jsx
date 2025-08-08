@@ -28,6 +28,12 @@ const Dashboard = () => {
   const [floorToDelete, setFloorToDelete] = useState(null);
   const [showDeleteTableModal, setShowDeleteTableModal] = useState(false);
   const [tableToDelete, setTableToDelete] = useState(null);
+  const [editingFloor, setEditingFloor] = useState(null);
+  const [floorNames, setFloorNames] = useState({
+    0: "Zemin",
+    1: "Kat 1", 
+    2: "Kat 2"
+  });
 
 
 
@@ -43,8 +49,28 @@ const Dashboard = () => {
 
   // Kat adını döndüren fonksiyon
   const getFloorName = (floorNumber) => {
-    if (floorNumber === 0) return "Zemin";
-    return `Kat ${floorNumber}`;
+    return floorNames[floorNumber] || (floorNumber === 0 ? "Zemin" : `Kat ${floorNumber}`);
+  };
+
+  // Kat ismi düzenleme fonksiyonu
+  const handleFloorNameEdit = (floorNumber) => {
+    setEditingFloor(floorNumber);
+  };
+
+  // Kat ismi kaydetme fonksiyonu
+  const handleFloorNameSave = (floorNumber, newName) => {
+    if (newName.trim()) {
+      setFloorNames(prev => ({
+        ...prev,
+        [floorNumber]: newName.trim()
+      }));
+    }
+    setEditingFloor(null);
+  };
+
+  // Kat ismi iptal etme fonksiyonu
+  const handleFloorNameCancel = () => {
+    setEditingFloor(null);
   };
 
   // Masa numarasını oluşturan fonksiyon
@@ -190,6 +216,10 @@ const Dashboard = () => {
       ...prev,
       [newFloorNumber]: 0 // Yeni katta başlangıçta 0 masa
     }));
+    setFloorNames(prev => ({
+      ...prev,
+      [newFloorNumber]: `Kat ${newFloorNumber}`
+    }));
   };
 
   // Kat silme fonksiyonu
@@ -200,6 +230,11 @@ const Dashboard = () => {
         const newCounts = { ...prev };
         delete newCounts[floorToDelete];
         return newCounts;
+      });
+      setFloorNames(prev => {
+        const newNames = { ...prev };
+        delete newNames[floorToDelete];
+        return newNames;
       });
 
       // Eğer silinen kat seçili kattaysa, ilk kata geç
@@ -600,7 +635,33 @@ const Dashboard = () => {
               }}
             >
               <div style={{ cursor: 'pointer' }}>
-                {getFloorName(floor)}
+                {editingFloor === floor ? (
+                  <input
+                    type="text"
+                    defaultValue={getFloorName(floor)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'inherit',
+                      fontSize: 'inherit',
+                      fontWeight: 'inherit',
+                      textAlign: 'center',
+                      width: '100%',
+                      outline: 'none'
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleFloorNameSave(floor, e.target.value);
+                      } else if (e.key === 'Escape') {
+                        handleFloorNameCancel();
+                      }
+                    }}
+                    onBlur={(e) => handleFloorNameSave(floor, e.target.value)}
+                    autoFocus
+                  />
+                ) : (
+                  getFloorName(floor)
+                )}
               </div>
 
               {/* Kat düzeni modunda silme butonu */}
@@ -640,6 +701,46 @@ const Dashboard = () => {
                   title={`${getFloorName(floor)} Katını Sil`}
                 >
                   ✕
+                </button>
+              )}
+
+              {/* Kat düzeni modunda düzenleme butonu (kalem işareti) */}
+              {showFloorLayoutMode && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFloorNameEdit(floor);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    bottom: '5px',
+                    right: '5px',
+                    background: 'rgba(255,255,255,0.2)',
+                    color: selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057'),
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease',
+                    zIndex: 10
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(0,123,255,0.3)';
+                    e.target.style.color = 'white';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'rgba(255,255,255,0.2)';
+                    e.target.style.color = selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
+                  }}
+                  title={`${getFloorName(floor)} İsmini Düzenle`}
+                >
+                  ✏️
                 </button>
               )}
               </div>
