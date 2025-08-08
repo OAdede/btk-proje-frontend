@@ -2,12 +2,14 @@ import React, { useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const { orders, saveFinalOrder } = useContext(TableContext);
+    const { colors } = useTheme();
 
     const currentOrder = orders[tableId] || {};
 
@@ -30,13 +32,46 @@ export default function SummaryPage() {
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
     return (
-        <div style={{ padding: 30, maxWidth: '600px', margin: 'auto', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '10px' }}>
-            <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>{pageTitle}</h1>
+        <div style={{ 
+            padding: 30, 
+            maxWidth: '600px', 
+            margin: 'auto', 
+            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
+            backgroundColor: colors.cardBackground, 
+            border: `1px solid ${colors.border}`, 
+            borderRadius: '10px',
+            color: colors.text,
+            boxShadow: `0 4px 12px ${colors.shadow}`
+        }}>
+            <h1 style={{ 
+                textAlign: 'center', 
+                marginBottom: '30px',
+                color: colors.text
+            }}>{pageTitle}</h1>
 
             {Object.keys(currentOrder).length === 0 ? (
                 <div style={{ textAlign: "center" }}>
-                    <p>Bu masaya ait görüntülenecek bir sipariş yok.</p>
-                    <button onClick={() => navigate(`/${user.role}/home`)} style={{ padding: "10px 20px", borderRadius: "8px", border: "none", backgroundColor: "#007bff", color: "white", cursor: "pointer" }}>
+                    <p style={{ color: colors.text }}>Bu masaya ait görüntülenecek bir sipariş yok.</p>
+                    <button 
+                        onClick={() => navigate(`/${user.role}/home`)} 
+                        style={{ 
+                            padding: "10px 20px", 
+                            borderRadius: "8px", 
+                            border: "none", 
+                            backgroundColor: colors.primary, 
+                            color: "white", 
+                            cursor: "pointer",
+                            transition: "all 0.3s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = colors.buttonHover;
+                            e.target.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = colors.primary;
+                            e.target.style.transform = "translateY(0)";
+                        }}
+                    >
                         Masalara Dön
                     </button>
                 </div>
@@ -44,19 +79,23 @@ export default function SummaryPage() {
                 <>
                     <ul style={{ listStyleType: 'none', padding: 0 }}>
                         {Object.entries(currentOrder).map(([id, item]) => (
-                            <li key={id} style={{ padding: '15px 0', borderBottom: '1px solid #eee' }}>
+                            <li key={id} style={{ 
+                                padding: '15px 0', 
+                                borderBottom: `1px solid ${colors.border}`,
+                                color: colors.text
+                            }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: '600' }}>{item.name} x {item.count}</span>
-                                    <span style={{ fontWeight: '500' }}>{item.count * item.price}₺</span>
+                                    <span style={{ fontWeight: '600', color: colors.text }}>{item.name} x {item.count}</span>
+                                    <span style={{ fontWeight: '500', color: colors.success }}>{item.count * item.price}₺</span>
                                 </div>
                                 {item.note && (
                                     <p style={{
                                         fontSize: '0.9em',
-                                        color: '#666',
+                                        color: colors.textSecondary,
                                         marginTop: '8px',
                                         paddingLeft: '10px',
-                                        borderLeft: '3px solid #007bff',
-                                        background: '#f8f9fa',
+                                        borderLeft: `3px solid ${colors.primary}`,
+                                        background: colors.surfaceBackground,
                                         padding: '8px',
                                         borderRadius: '4px'
                                     }}>
@@ -66,16 +105,59 @@ export default function SummaryPage() {
                             </li>
                         ))}
                     </ul>
-                    <p style={{ textAlign: 'right', fontSize: '1.2em', fontWeight: 'bold', marginTop: '20px' }}>
-                        <strong>Toplam: {totalPrice}₺</strong>
+                    <p style={{ 
+                        textAlign: 'right', 
+                        fontSize: '1.2em', 
+                        fontWeight: 'bold', 
+                        marginTop: '20px',
+                        color: colors.text
+                    }}>
+                        <strong>Toplam: <span style={{ color: colors.success }}>{totalPrice}₺</span></strong>
                     </p>
                     <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between' }}>
-                        <button onClick={handleGoBack} style={{ backgroundColor: "#6c757d", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}>
+                        <button 
+                            onClick={handleGoBack} 
+                            style={{ 
+                                backgroundColor: "#6c757d", 
+                                color: "white", 
+                                padding: "15px 30px", 
+                                borderRadius: "8px", 
+                                border: "none", 
+                                cursor: "pointer", 
+                                fontSize: '16px',
+                                transition: "all 0.3s ease"
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = "#5a6268";
+                                e.target.style.transform = "translateY(-1px)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = "#6c757d";
+                                e.target.style.transform = "translateY(0)";
+                            }}
+                        >
                             Geri
                         </button>
                         <button
                             onClick={handleConfirm}
-                            style={{ backgroundColor: "#28a745", color: "white", padding: "15px 30px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: '16px' }}
+                            style={{ 
+                                backgroundColor: colors.success, 
+                                color: "white", 
+                                padding: "15px 30px", 
+                                borderRadius: "8px", 
+                                border: "none", 
+                                cursor: "pointer", 
+                                fontSize: '16px',
+                                transition: "all 0.3s ease"
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = "#059669";
+                                e.target.style.transform = "translateY(-1px)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = colors.success;
+                                e.target.style.transform = "translateY(0)";
+                            }}
                         >
                             Siparişleri Onayla
                         </button>

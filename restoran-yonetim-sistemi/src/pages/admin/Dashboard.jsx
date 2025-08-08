@@ -585,7 +585,7 @@ const Dashboard = () => {
             <div
               key={floor}
               onClick={() => setSelectedFloor(floor)}
-              style={{
+                style={{
                 padding: "1rem",
                 marginBottom: "1rem",
                 borderRadius: "8px",
@@ -642,8 +642,8 @@ const Dashboard = () => {
                   ✕
                 </button>
               )}
-            </div>
-          ))}
+              </div>
+            ))}
 
           {/* Kat düzeni modunda + butonu */}
           {showFloorLayoutMode && (
@@ -851,9 +851,9 @@ const Dashboard = () => {
                 >
                   Hayır, İptal
                 </button>
-              </div>
-            </div>
-          </div>
+        </div>
+      </div>
+    </div>
         )}
 
         {/* Masa Detayları Modal */}
