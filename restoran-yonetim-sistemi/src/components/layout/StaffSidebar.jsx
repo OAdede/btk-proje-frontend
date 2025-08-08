@@ -7,7 +7,7 @@ import { TableContext } from "../../context/TableContext";
 import "./StaffLayout.css";
 
 const StaffSidebar = () => {
-    const { logout, user, updateProfileImage } = useContext(AuthContext);
+    const { logout, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const { reservations, removeReservation } = useContext(TableContext);
@@ -28,6 +28,7 @@ const StaffSidebar = () => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
     const [tempImage, setTempImage] = useState(null);
+    
 
     const getFloorLetter = (floorIndex) => {
         if (floorIndex === 0) return 'Z';
@@ -120,8 +121,6 @@ const StaffSidebar = () => {
         if (tempProfileImage) {
             setProfileImage(tempProfileImage);
             localStorage.setItem('profileImage', tempProfileImage);
-            // AuthContext'i güncelle
-            updateProfileImage(tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
             alert('Profil fotoğrafı başarıyla güncellendi!');
@@ -194,58 +193,7 @@ const StaffSidebar = () => {
     return (
         <div className="staff-sidebar">
             <div className="staff-sidebar-header">
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '15px'
-                }}>
-                    <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        backgroundColor: colors.primary,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        border: `2px solid ${colors.border}`
-                    }}>
-                        {user?.profileImage ? (
-                            <img 
-                                src={user.profileImage} 
-                                alt="Profil" 
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderRadius: '50%',
-                                    objectFit: 'cover'
-                                }}
-                            />
-                        ) : (
-                            user?.name ? user.name.charAt(0).toUpperCase() : 'S'
-                        )}
-                    </div>
-                    <div>
-                        <div style={{
-                            fontSize: '1.2rem',
-                            fontWeight: 'bold',
-                            color: colors.text,
-                            marginBottom: '2px'
-                        }}>
-                            {user?.name || 'Selin'}
-                        </div>
-                        <div style={{
-                            fontSize: '0.9rem',
-                            color: colors.textSecondary,
-                            fontWeight: '500'
-                        }}>
-                            {user?.role === 'garson' ? 'Garson' : user?.role === 'kasiyer' ? 'Kasiyer' : 'Personel'}
-                        </div>
-                    </div>
-                </div>
+                <h2>Personel Paneli</h2>
             </div>
             <nav className="staff-sidebar-nav">
                 <NavLink
@@ -263,6 +211,16 @@ const StaffSidebar = () => {
                         Siparişlerim
                     </NavLink>
                 )}
+{user?.role === "kasiyer" && (
+  <NavLink
+    to="/kasiyer/fast-order"
+    className={({ isActive }) =>
+      isActive ? "staff-nav-item active" : "staff-nav-item"
+    }
+  >
+    🧾 Hızlı Sipariş
+  </NavLink>
+)}
 
                 {/* GÜNCELLENDİ: Stok durumu menüsü artık kasiyer ve garsonlar için görünür */}
                 {canViewStock && (
@@ -408,8 +366,8 @@ const StaffSidebar = () => {
                     onClick={() => setShowSettings(!showSettings)}
                     className="staff-settings-btn"
                     style={{
-                        background: colors.primary,
-                        color: '#ffffff',
+                        background: isDarkMode ? '#513653' : 'linear-gradient(90deg,rgb(83, 34, 112) 0%,rgb(54, 16, 98) 100%)',
+                        color: '#513653',
                         border: 'none',
                         padding: '12px 20px',
                         borderRadius: '10px',
@@ -424,16 +382,6 @@ const StaffSidebar = () => {
                         justifyContent: 'center',
                         gap: '8px'
                     }}
-                    onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = colors.buttonHover;
-                        e.target.style.transform = 'translateY(-1px)';
-                        e.target.style.boxShadow = `0 4px 12px ${colors.shadow}`;
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = colors.primary;
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = 'none';
-                    }}
                 >
                     <span>⚙️</span>
                     Ayarlar
@@ -447,7 +395,7 @@ const StaffSidebar = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            background: isDarkMode ? 'rgba(49, 38, 58, 0.95)' : 'rgba(245, 239, 255, 0.95)',
+                            background: 'rgba(0, 0, 0, 0.5)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -457,13 +405,13 @@ const StaffSidebar = () => {
                     >
                         <div
                             style={{
-                                background: isDarkMode ? '#473653' : '#E5D9F2',
+                                background: colors.card,
                                 borderRadius: '15px',
                                 padding: '30px',
                                 minWidth: '400px',
                                 maxWidth: '500px',
-                                boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.5)' : '0 10px 30px rgba(162, 148, 249, 0.3)',
-                                border: `2px solid ${colors.border}`,
+                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${colors.border}`,
                                 position: 'relative'
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -608,7 +556,7 @@ const StaffSidebar = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            background: isDarkMode ? 'rgba(49, 38, 58, 0.95)' : 'rgba(245, 239, 255, 0.95)',
+                            background: 'rgba(0, 0, 0, 0.5)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -618,13 +566,13 @@ const StaffSidebar = () => {
                     >
                         <div
                             style={{
-                                background: isDarkMode ? '#473653' : '#E5D9F2',
+                                background: isDarkMode ? '#2a2a2a' : '#ffffff',
                                 borderRadius: '15px',
                                 padding: '30px',
                                 minWidth: '500px',
                                 maxWidth: '600px',
-                                boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.5)' : '0 10px 30px rgba(162, 148, 249, 0.3)',
-                                border: `2px solid ${colors.border}`,
+                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${colors.border}`,
                                 position: 'relative',
                                 maxHeight: '80vh',
                                 overflowY: 'auto'
@@ -952,7 +900,7 @@ const StaffSidebar = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            background: isDarkMode ? 'rgba(49, 38, 58, 0.95)' : 'rgba(245, 239, 255, 0.95)',
+                            background: 'rgba(0, 0, 0, 0.5)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -962,13 +910,13 @@ const StaffSidebar = () => {
                     >
                         <div
                             style={{
-                                background: isDarkMode ? '#473653' : '#E5D9F2',
+                                background: isDarkMode ? '#2a2a2a' : '#ffffff',
                                 borderRadius: '15px',
                                 padding: '30px',
                                 minWidth: '400px',
                                 maxWidth: '500px',
-                                boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.5)' : '0 10px 30px rgba(162, 148, 249, 0.3)',
-                                border: `2px solid ${colors.border}`,
+                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${colors.border}`,
                                 position: 'relative'
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -1056,7 +1004,7 @@ const StaffSidebar = () => {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            background: isDarkMode ? 'rgba(49, 38, 58, 0.95)' : 'rgba(245, 239, 255, 0.95)',
+                            background: 'rgba(0, 0, 0, 0.5)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1066,13 +1014,13 @@ const StaffSidebar = () => {
                     >
                         <div
                             style={{
-                                background: isDarkMode ? '#473653' : '#E5D9F2',
+                                background: isDarkMode ? '#2a2a2a' : '#ffffff',
                                 borderRadius: '15px',
                                 padding: '30px',
                                 minWidth: '400px',
                                 maxWidth: '500px',
-                                boxShadow: isDarkMode ? '0 10px 30px rgba(0, 0, 0, 0.5)' : '0 10px 30px rgba(162, 148, 249, 0.3)',
-                                border: `2px solid ${colors.border}`,
+                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                border: `1px solid ${colors.border}`,
                                 position: 'relative'
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -1160,7 +1108,7 @@ const StaffSidebar = () => {
                             left: 0,
                             width: '100vw',
                             height: '100vh',
-                            background: isDarkMode ? 'rgba(49, 38, 58, 0.95)' : 'rgba(245, 239, 255, 0.95)',
+                            background: 'rgba(0, 0, 0, 0.8)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1170,15 +1118,15 @@ const StaffSidebar = () => {
                     >
                         <div
                             style={{
-                                background: isDarkMode ? '#473653' : '#E5D9F2',
+                                background: isDarkMode ? '#2a2a2a' : '#ffffff',
                                 padding: '2rem',
                                 borderRadius: '15px',
-                                boxShadow: isDarkMode ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(162, 148, 249, 0.3)',
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                                 zIndex: 1000000,
                                 maxWidth: '500px',
                                 width: '90%',
                                 textAlign: 'center',
-                                border: `2px solid ${colors.border}`
+                                border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >

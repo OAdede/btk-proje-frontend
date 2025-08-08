@@ -33,6 +33,8 @@ import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
 // YENİ EKLENEN IMPORT (DOĞRU YOL İLE)
 import OrdersPage from "./components/layout/OrdersPage.jsx";
+import FastOrderPage from "./pages/staff/FastOrderPage";
+
 
 
 
@@ -116,6 +118,7 @@ function App() {
           </Route>
 
           {/* Kasiyer Paneli */}
+          <Route path="/kasiyer/fast-order" element={<FastOrderPage />} />
           <Route
             path="/kasiyer/*"
             element={
@@ -131,6 +134,7 @@ function App() {
             <Route path="stock" element={<StokUpdate />} />
             {/* YENİ EKLENEN ROUTE */}
             <Route path="orders" element={<OrdersPage />} />
+
           </Route>
 
           {/* Varsayılan Rota */}
