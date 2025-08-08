@@ -1,13 +1,12 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { requestPasswordReset } = useContext(AuthContext);
 
   // Açık tema renkleri (sabit)
   const lightColors = {
@@ -36,8 +35,12 @@ const ForgotPassword = () => {
     setMessage('');
 
     try {
-      const successMessage = await requestPasswordReset(email);
-      setMessage(successMessage);
+      // Backend'e gönderilecek request formatı: { "email": "string" }
+      const response = await authService.requestPasswordReset(email);
+
+      // Backend'den gelen response: {}
+      // Başarılı durumda kullanıcıya bilgi mesajı göster
+      setMessage('Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. E-postanızı kontrol edin.');
     } catch (err) {
       setError(err.message || 'Bir hata oluştu.');
     } finally {
@@ -108,7 +111,7 @@ const ForgotPassword = () => {
             E-posta adresinizi girin, şifre sıfırlama bağlantısı göndereceğiz
           </p>
         </div>
-        
+
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{
@@ -138,7 +141,7 @@ const ForgotPassword = () => {
               placeholder="E-posta adresinizi girin"
             />
           </div>
-          
+
           {error && (
             <div style={{
               margin: '16px 0',
@@ -153,7 +156,7 @@ const ForgotPassword = () => {
               {error}
             </div>
           )}
-          
+
           {message && (
             <div style={{
               margin: '16px 0',
@@ -168,7 +171,7 @@ const ForgotPassword = () => {
               {message}
             </div>
           )}
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -190,7 +193,7 @@ const ForgotPassword = () => {
           >
             {loading ? 'Gönderiliyor...' : 'Şifre Sıfırlama Bağlantısı Gönder'}
           </button>
-          
+
           <Link
             to="/login"
             style={{

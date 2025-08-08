@@ -1,6 +1,6 @@
-import { useState, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useState } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { authService } from '../../services/authService';
 
 const ResetPassword = () => {
     const [password, setPassword] = useState('');
@@ -8,9 +8,74 @@ const ResetPassword = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { token } = useParams();
+    const { token: pathToken } = useParams();
+    const [searchParams] = useSearchParams();
+    const queryToken = searchParams.get('token');
     const navigate = useNavigate();
-    const { resetPassword } = useContext(AuthContext);
+
+    // Token'ı path parameter'dan veya query parameter'dan al
+    const token = pathToken || queryToken;
+
+    // Token yoksa hata göster
+    if (!token) {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #A294F920 0%, #F5EFFF 100%)',
+                fontFamily: 'Inter, Segoe UI, Arial, sans-serif'
+            }}>
+                <div style={{
+                    padding: '40px',
+                    minWidth: 350,
+                    maxWidth: 420,
+                    borderRadius: '20px',
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.13)',
+                    background: '#CBC3E3',
+                    backdropFilter: 'blur(2px)',
+                    border: '1px solid #CDC1FF',
+                    textAlign: 'center'
+                }}>
+                    <h1 style={{
+                        fontSize: '24px',
+                        fontWeight: 800,
+                        color: '#A294F9',
+                        margin: '0 0 16px 0',
+                        letterSpacing: '2px'
+                    }}>
+                        Geçersiz Link
+                    </h1>
+                    <p style={{
+                        fontSize: '14px',
+                        color: '#2D1B69',
+                        margin: '0 0 16px 0',
+                        fontWeight: 400
+                    }}>
+                        Şifre sıfırlama linki geçersiz veya eksik. Lütfen e-postanızdaki linki tekrar kontrol edin.
+                    </p>
+                    <button
+                        onClick={() => navigate('/forgot-password')}
+                        style={{
+                            padding: '12px 24px',
+                            fontWeight: 700,
+                            letterSpacing: '1px',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 8px 0 rgba(167, 139, 250, 0.2)',
+                            background: 'linear-gradient(90deg, #A294F9 0%, #CDC1FF 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                        }}
+                    >
+                        Şifremi Unuttum Sayfasına Dön
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Açık tema renkleri (sabit) - ForgotPassword ile uyumlu
     const lightColors = {
@@ -41,8 +106,12 @@ const ResetPassword = () => {
         setMessage('');
 
         try {
-            const successMessage = await resetPassword(token, password);
-            setMessage(successMessage);
+            // Backend'e gönderilecek request formatı: { "token": "string", "password": "string" }
+            const response = await authService.resetPassword(token, password);
+
+            // Backend'den gelen response: {}
+            // Başarılı durumda kullanıcıya bilgi mesajı göster
+            setMessage('Şifreniz başarıyla güncellendi! Giriş sayfasına yönlendiriliyorsunuz...');
 
             setTimeout(() => {
                 navigate('/login');
@@ -118,7 +187,7 @@ const ResetPassword = () => {
                         Yeni şifrenizi belirleyin
                     </p>
                 </div>
-                
+
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{
@@ -148,7 +217,7 @@ const ResetPassword = () => {
                             placeholder="Yeni şifrenizi girin"
                         />
                     </div>
-                    
+
                     <div style={{ marginBottom: '16px' }}>
                         <label style={{
                             display: 'block',
@@ -177,7 +246,7 @@ const ResetPassword = () => {
                             placeholder="Şifrenizi tekrar girin"
                         />
                     </div>
-                    
+
                     {error && (
                         <div style={{
                             margin: '16px 0',
@@ -192,7 +261,7 @@ const ResetPassword = () => {
                             {error}
                         </div>
                     )}
-                    
+
                     {message && (
                         <div style={{
                             margin: '16px 0',
@@ -207,7 +276,7 @@ const ResetPassword = () => {
                             {message}
                         </div>
                     )}
-                    
+
                     <button
                         type="submit"
                         disabled={loading}
