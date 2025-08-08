@@ -40,6 +40,12 @@ const ReservationsPage = () => {
         return `${floorPrefix}${tableIndex + 1}`;
     };
 
+    // Masa kapasitesini al (localStorage'dan)
+    const getTableCapacity = (tableNumber) => {
+        const capacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+        return capacities[tableNumber] || 4; // Varsayılan 4 kişilik
+    };
+
     const handleAddReservation = () => {
         setShowTableSelectionModal(true);
     };
@@ -261,7 +267,7 @@ const ReservationsPage = () => {
 
     return (
         <div style={styles.page}>
-                         <div style={styles.header}>
+            <div style={styles.header}>
                  <h1 style={styles.title}>
                      📅 Rezervasyonlar
                      <span style={styles.badge}>{reservationsList.length}</span>
@@ -279,8 +285,8 @@ const ReservationsPage = () => {
                              e.target.style.boxShadow = 'none';
                          }}
                      >
-                         + Yeni Rezervasyon Ekle
-                     </button>
+                    + Yeni Rezervasyon Ekle
+                </button>
                  </div>
             </div>
 
@@ -365,10 +371,10 @@ const ReservationsPage = () => {
                 ) : (
                     <div style={{ textAlign: "center", padding: "40px", color: colors.textSecondary }}>
                         <h3>🔍 Arama sonucu bulunamadı</h3>
-                        <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
+                    <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
                     </div>
-                                 )}
-             </div>
+                )}
+            </div>
 
              {/* Silme Onay Modalı */}
              {showDeleteModal && (
@@ -555,6 +561,7 @@ const ReservationsPage = () => {
                                      const tableNumber = getTableNumber(selectedFloor, tableIndex);
                                      const tableStatus = getTableStatus(tableNumber);
                                      const isReserved = tableStatus.status === 'reserved';
+                                     const tableCapacity = getTableCapacity(tableNumber);
                                      
                                      return (
                                          <button
@@ -581,6 +588,15 @@ const ReservationsPage = () => {
                                                  e.target.style.boxShadow = 'none';
                                              }}
                                          >
+                                             {/* Masa kapasitesi */}
+                                             <div style={{
+                                                 fontSize: '10px',
+                                                 color: 'rgba(255,255,255,0.7)',
+                                                 marginBottom: '2px',
+                                                 fontWeight: 'normal'
+                                             }}>
+                                                 {tableCapacity} Kişilik
+                                             </div>
                                              <div>{tableNumber}</div>
                                              {isReserved && (
                                                  <div style={{
@@ -640,8 +656,8 @@ const ReservationsPage = () => {
                  message={warningMessage}
                  onClose={() => setShowWarningModal(false)}
              />
-         </div>
-     );
- };
+        </div>
+    );
+};
 
 export default ReservationsPage;

@@ -57,6 +57,8 @@ const RestaurantSettings = () => {
         setShowNameModal(true);
     };
 
+
+
     // Restoran ismini kaydet
     const saveRestaurantName = () => {
         if (tempRestaurantName.trim()) {
@@ -69,6 +71,8 @@ const RestaurantSettings = () => {
             setShowNameModal(false);
         }
     };
+
+
 
     // Son rezervasyon saatini hesapla (kapanıştan 3 saat önce)
     const getLastReservationTime = () => {
@@ -266,6 +270,8 @@ const RestaurantSettings = () => {
                     </div>
                 </div>
             </div>
+
+
 
             {/* Restoran İsmi Değiştirme Modal */}
             {showNameModal && (

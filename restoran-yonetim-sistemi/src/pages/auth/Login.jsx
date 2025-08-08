@@ -7,15 +7,8 @@ function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // şifreyi göster gizle burdan yapılıcak
   const [error, setError] = useState('');
-  const [restaurantName, setRestaurantName] = useState('Restoran Yönetim Sistemi');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-
-  // Restoran ismini localStorage'dan al
-  useEffect(() => {
-    const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
-    setRestaurantName(name);
-  }, []);
 
   // Açık tema renkleri (sabit)
   const lightColors = {
@@ -123,7 +116,7 @@ function Login() {
             margin: '0 0 16px 0',
             fontWeight: 400
           }}>
-            {restaurantName} Sistemine Hoş Geldiniz
+            ŞeftaliPos Sistemine Hoş Geldiniz
           </p>
         </div>
 

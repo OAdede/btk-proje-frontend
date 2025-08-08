@@ -39,6 +39,13 @@ const Dashboard = () => {
   const [warningMessage, setWarningMessage] = useState('');
   const [modalKey, setModalKey] = useState(0);
   const [restaurantName, setRestaurantName] = useState(localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi');
+  const [showEditReservationModal, setShowEditReservationModal] = useState(false);
+  const [editingReservation, setEditingReservation] = useState(null);
+  const [editReservationFormData, setEditReservationFormData] = useState({});
+  const [showDeleteReservationModal, setShowDeleteReservationModal] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState(null);
+  const [showAddTableModal, setShowAddTableModal] = useState(false);
+  const [newTableCapacity, setNewTableCapacity] = useState(4);
 
   // Restoran ismini localStorage'dan al
   useEffect(() => {
@@ -55,8 +62,6 @@ const Dashboard = () => {
     window.addEventListener('restaurantNameChanged', handleRestaurantNameChange);
     return () => window.removeEventListener('restaurantNameChanged', handleRestaurantNameChange);
   }, []);
-
-
 
 
 
@@ -101,11 +106,39 @@ const Dashboard = () => {
     return `${letter}${tableIndex + 1}`;
   };
 
+  // Masa kapasitelerini yöneten state
+  const [tableCapacities, setTableCapacities] = useState(() => {
+    // localStorage'dan mevcut kapasiteleri al
+    const savedCapacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+    
+    // Eğer localStorage'da kapasite yoksa, mevcut masalar için rastgele atama yap
+    if (Object.keys(savedCapacities).length === 0) {
+      const capacities = {};
+      for (let floor = 0; floor <= 2; floor++) {
+        for (let i = 0; i < 8; i++) {
+          const tableId = getTableNumber(floor, i);
+          capacities[tableId] = Math.floor(Math.random() * 4) + 2; // 2-6 kişilik arası rastgele
+        }
+      }
+      // localStorage'a kaydet
+      localStorage.setItem('tableCapacities', JSON.stringify(capacities));
+      return capacities;
+    }
+    
+    return savedCapacities;
+  });
+
   // Mevcut kattaki masaları oluştur
   const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => ({
     id: getTableNumber(selectedFloor, i), // Masa ID'sini rezervasyonlar sayfasıyla uyumlu hale getir
-    displayNumber: getTableNumber(selectedFloor, i)
+    displayNumber: getTableNumber(selectedFloor, i),
+    capacity: tableCapacities[getTableNumber(selectedFloor, i)] || 4
   }));
+
+  // Masa kapasitelerini localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('tableCapacities', JSON.stringify(tableCapacities));
+  }, [tableCapacities]);
 
   const handleReservationClick = (tableId) => {
     setSelectedTable(tableId);
@@ -119,8 +152,17 @@ const Dashboard = () => {
       setShowReservationModal(true);
     } else {
       // Normal modda masa detaylarını göster
-      setSelectedTableDetails(table);
-      setShowTableDetailsModal(true);
+      // Eğer masada rezervasyon varsa, rezervasyon detaylarını göster
+      const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
+      if (tableReservations.length > 0) {
+        // Masada rezervasyon varsa, rezervasyon detaylarını göster
+        setSelectedTableDetails({ ...table, status: 'reserved' });
+        setShowTableDetailsModal(true);
+      } else {
+        // Masada rezervasyon yoksa, normal masa detaylarını göster
+        setSelectedTableDetails(table);
+        setShowTableDetailsModal(true);
+      }
     }
   };
 
@@ -169,20 +211,83 @@ const Dashboard = () => {
   };
 
   // Rezervasyon silme fonksiyonu
-  const handleReservationDelete = () => {
-    if (selectedTableDetails && selectedTableDetails.status === 'reserved') {
-      // Rezervasyonu bul
+  const handleReservationDelete = (reservationToDelete) => {
+    // Rezervasyonu bul ve sil
+    const reservationEntry = Object.entries(reservations).find(([id, reservation]) =>
+      reservation.id === reservationToDelete.id
+    );
+
+    if (reservationEntry) {
+      const [reservationId] = reservationEntry;
+      removeReservation(reservationId);
+      setShowDeleteReservationModal(false);
+      setReservationToDelete(null);
+    }
+  };
+
+  // Rezervasyon düzenleme fonksiyonu
+  const handleEditReservation = (reservation) => {
+    // Önce rezervasyon detayları modalını kapat
+    setShowTableDetailsModal(false);
+    setSelectedTableDetails(null);
+    
+    // Sonra düzenleme modalını aç
+    setEditingReservation(reservation);
+    setEditReservationFormData({
+      ad: reservation.ad,
+      soyad: reservation.soyad,
+      telefon: reservation.telefon,
+      email: reservation.email,
+      tarih: reservation.tarih,
+      saat: reservation.saat,
+      kisiSayisi: reservation.kisiSayisi,
+      not: reservation.not || ""
+    });
+    setShowEditReservationModal(true);
+  };
+
+  // Rezervasyon düzenleme kaydetme fonksiyonu
+  const handleEditReservationSubmit = (formData) => {
+    if (editingReservation) {
+      // Rezervasyonu bul ve güncelle
       const reservationEntry = Object.entries(reservations).find(([id, reservation]) =>
-        reservation.tableId === selectedTableDetails.id
+        reservation.id === editingReservation.id
       );
 
       if (reservationEntry) {
         const [reservationId] = reservationEntry;
+        // Mevcut rezervasyonu sil
         removeReservation(reservationId);
-        setShowTableDetailsModal(false);
-        setSelectedTableDetails(null);
+        // Yeni rezervasyonu ekle
+        addReservation(editingReservation.tableId, formData);
+        setShowEditReservationModal(false);
+        setEditingReservation(null);
+        setEditReservationFormData({});
+        
+        // Başarı bildirimi göster
+        setSuccessData({ ...formData, masaNo: editingReservation.tableId, isEdit: true });
+        setShowSuccess(true);
       }
     }
+  };
+
+  // Rezervasyon düzenleme modalını kapatma fonksiyonu
+  const handleEditReservationClose = () => {
+    setShowEditReservationModal(false);
+    setEditingReservation(null);
+    setEditReservationFormData({});
+  };
+
+  // Rezervasyon silme onay modalını açma fonksiyonu
+  const handleDeleteReservationClick = (reservation) => {
+    setReservationToDelete(reservation);
+    setShowDeleteReservationModal(true);
+  };
+
+  // Rezervasyon silme onay modalını kapatma fonksiyonu
+  const handleDeleteReservationClose = () => {
+    setShowDeleteReservationModal(false);
+    setReservationToDelete(null);
   };
 
 
@@ -242,10 +347,36 @@ const Dashboard = () => {
 
   // Masa ekleme fonksiyonu
   const addTable = () => {
+    setShowAddTableModal(true);
+  };
+
+  // Masa ekleme modalını kapatma fonksiyonu
+  const handleAddTableClose = () => {
+    setShowAddTableModal(false);
+    setNewTableCapacity(4);
+  };
+
+  // Masa ekleme onaylama fonksiyonu
+  const handleAddTableConfirm = () => {
+    const newTableIndex = tableCounts[selectedFloor];
+    const newTableId = getTableNumber(selectedFloor, newTableIndex);
+    
+    // Yeni masayı ekle
     setTableCounts(prev => ({
       ...prev,
       [selectedFloor]: prev[selectedFloor] + 1
     }));
+    
+    // Yeni masanın kapasitesini kaydet
+    const newCapacities = {
+      ...tableCapacities,
+      [newTableId]: newTableCapacity
+    };
+    setTableCapacities(newCapacities);
+    localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
+    
+    setShowAddTableModal(false);
+    setNewTableCapacity(4);
   };
 
   // Kat ekleme fonksiyonu
@@ -300,6 +431,13 @@ const Dashboard = () => {
         ...prev,
         [selectedFloor]: Math.max(0, prev[selectedFloor] - 1)
       }));
+      
+      // Silinen masanın kapasitesini de kaldır
+      const newCapacities = { ...tableCapacities };
+      delete newCapacities[tableToDelete];
+      setTableCapacities(newCapacities);
+      localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
+      
       setShowDeleteTableModal(false);
       setTableToDelete(null);
     }
@@ -513,7 +651,7 @@ const Dashboard = () => {
                     justifyContent: "center",
                     alignItems: "center",
                     borderRadius: "12px",
-                    cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
+                    cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || tableReservations.length > 0 || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
                     userSelect: "none",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -587,6 +725,15 @@ const Dashboard = () => {
                     </button>
                   )}
 
+                  {/* Masa kapasitesi */}
+                  <div style={{ 
+                    fontSize: "0.8rem", 
+                    color: "rgba(255,255,255,0.7)", 
+                    marginBottom: "2px",
+                    fontWeight: "400"
+                  }}>
+                    {table.capacity} Kişilik
+                  </div>
                   <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
                     {table.displayNumber}
                   </div>
@@ -1115,8 +1262,75 @@ const Dashboard = () => {
                       background: 'rgba(255,255,255,0.1)',
                       padding: '15px',
                       borderRadius: '8px',
-                      marginBottom: '15px'
+                      marginBottom: '15px',
+                      position: 'relative'
                     }}>
+                      {/* Düzenleme butonu */}
+                      <button
+                        onClick={() => handleEditReservation(reservation)}
+                        style={{
+                          position: 'absolute',
+                          top: '10px',
+                          right: '10px',
+                          background: 'rgba(255,255,255,0.2)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '30px',
+                          height: '30px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          color: '#ffffff',
+                          fontSize: '14px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255,255,255,0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255,255,255,0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        title="Rezervasyonu Düzenle"
+                      >
+                        ✏️
+                      </button>
+
+                      {/* Silme butonu */}
+                      <button
+                        onClick={() => handleDeleteReservationClick(reservation)}
+                        style={{
+                          position: 'absolute',
+                          top: '45px',
+                          right: '10px',
+                          background: 'rgba(255,0,0,0.2)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '30px',
+                          height: '30px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          color: '#ffffff',
+                          fontSize: '14px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255,0,0,0.3)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255,0,0,0.2)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        title="Rezervasyonu Sil"
+                      >
+                        🗑️
+                      </button>
+                      
                       <p style={{ color: '#ffffff', margin: '5px 0' }}>
                         <strong>Müşteri:</strong> {reservation.ad} {reservation.soyad}
                       </p>
@@ -1139,7 +1353,7 @@ const Dashboard = () => {
                   
                   <div style={{
                     display: 'flex',
-                    gap: '10px',
+                    justifyContent: 'center',
                     marginTop: '15px'
                   }}>
                     <button
@@ -1157,28 +1371,10 @@ const Dashboard = () => {
                         cursor: 'pointer',
                         fontSize: '16px',
                         fontWeight: 'bold',
-                        transition: 'all 0.3s ease',
-                        flex: 1
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       ➕ Rezervasyon Ekle
-                    </button>
-                    <button
-                      onClick={handleReservationDelete}
-                      style={{
-                        background: '#f44336',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        transition: 'all 0.3s ease',
-                        flex: 1
-                      }}
-                    >
-                      🗑️ Rezervasyonu İptal Et
                     </button>
                   </div>
                 </div>
@@ -1187,6 +1383,497 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Rezervasyon Düzenleme Modal */}
+        {showEditReservationModal && editingReservation && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 10001,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              backgroundColor: '#513653',
+              padding: '2rem',
+              borderRadius: '15px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              border: '2px solid #473653'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px'
+              }}>
+                <h2 style={{ color: '#ffffff', margin: 0 }}>
+                  ✏️ Rezervasyon Düzenle
+                </h2>
+                <button
+                  onClick={handleEditReservationClose}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '24px',
+                    color: '#F08080',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    width: '30px',
+                    height: '30px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = 'rgba(224, 25, 15, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = 'none';
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                handleEditReservationSubmit(editReservationFormData);
+              }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Ad:
+                  </label>
+                  <input
+                    type="text"
+                    value={editReservationFormData.ad || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, ad: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Soyad:
+                  </label>
+                  <input
+                    type="text"
+                    value={editReservationFormData.soyad || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, soyad: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Telefon:
+                  </label>
+                  <input
+                    type="tel"
+                    value={editReservationFormData.telefon || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, telefon: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Email (İsteğe bağlı):
+                  </label>
+                  <input
+                    type="email"
+                    value={editReservationFormData.email || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, email: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Tarih:
+                  </label>
+                  <input
+                    type="date"
+                    value={editReservationFormData.tarih || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, tarih: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Saat:
+                  </label>
+                  <input
+                    type="time"
+                    value={editReservationFormData.saat || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, saat: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Kişi Sayısı:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editReservationFormData.kisiSayisi || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, kisiSayisi: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', color: '#ffffff', marginBottom: '5px', fontWeight: '500' }}>
+                    Not (İsteğe bağlı):
+                  </label>
+                  <textarea
+                    value={editReservationFormData.not || ''}
+                    onChange={(e) => setEditReservationFormData(prev => ({ ...prev, not: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #473653',
+                      backgroundColor: '#32263A',
+                      color: '#ffffff',
+                      fontSize: '14px',
+                      minHeight: '80px',
+                      resize: 'vertical'
+                    }}
+                    placeholder="Özel istekler veya notlar..."
+                  />
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  gap: '15px',
+                  justifyContent: 'center'
+                }}>
+                  <button
+                    type="button"
+                    onClick={handleEditReservationClose}
+                    style={{
+                      background: '#473653',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '12px 25px',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ❌ İptal
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      background: '#4caf50',
+                      color: 'white',
+                      border: 'none',
+                      padding: '12px 25px',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ✅ Kaydet
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Rezervasyon Silme Onay Modal */}
+        {showDeleteReservationModal && reservationToDelete && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              backgroundColor: '#513653',
+              padding: '2rem',
+              borderRadius: '15px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              maxWidth: '400px',
+              width: '90%',
+              textAlign: 'center',
+              border: '2px solid #473653'
+            }}>
+              <h3 style={{
+                color: '#ffffff',
+                marginBottom: '20px',
+                fontSize: '1.5rem'
+              }}>
+                🗑️ Rezervasyon Silme Onayı
+              </h3>
+              <p style={{
+                color: '#cccccc',
+                marginBottom: '30px',
+                fontSize: '1rem'
+              }}>
+                <strong>{reservationToDelete.ad} {reservationToDelete.soyad}</strong> adlı müşterinin rezervasyonunu silmek istediğinizden emin misiniz?
+                <br />
+                <br />
+                <strong>Tarih:</strong> {reservationToDelete.tarih}
+                <br />
+                <strong>Saat:</strong> {reservationToDelete.saat}
+                <br />
+                <small style={{ color: '#ff6b6b' }}>
+                  Bu işlem geri alınamaz!
+                </small>
+              </p>
+              <div style={{
+                display: 'flex',
+                gap: '15px',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={() => handleReservationDelete(reservationToDelete)}
+                  style={{
+                    background: '#f44336',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Evet, Sil
+                </button>
+                <button
+                  onClick={handleDeleteReservationClose}
+                  style={{
+                    background: '#473653',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Hayır, İptal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Masa Ekleme Modal */}
+        {showAddTableModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              backgroundColor: isDarkMode ? '#513653' : '#ffffff',
+              padding: '2rem',
+              borderRadius: '15px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              maxWidth: '400px',
+              width: '90%',
+              textAlign: 'center',
+              border: `2px solid ${isDarkMode ? '#473653' : '#e0e0e0'}`
+            }}>
+              <h3 style={{
+                color: isDarkMode ? '#ffffff' : '#333333',
+                marginBottom: '20px',
+                fontSize: '1.5rem'
+              }}>
+                🍽️ Yeni Masa Ekle
+              </h3>
+              <p style={{
+                color: isDarkMode ? '#cccccc' : '#666666',
+                marginBottom: '20px',
+                fontSize: '1rem'
+              }}>
+                Yeni masanın kaç kişilik olacağını seçin:
+              </p>
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                justifyContent: 'center',
+                marginBottom: '30px',
+                flexWrap: 'wrap'
+              }}>
+                {[2, 3, 4, 5, 6, 8, 10].map(capacity => (
+                  <button
+                    key={capacity}
+                    onClick={() => setNewTableCapacity(capacity)}
+                    style={{
+                      background: newTableCapacity === capacity 
+                        ? (isDarkMode ? '#A294F9' : '#A294F9') 
+                        : (isDarkMode ? '#473653' : '#f5f5f5'),
+                      color: newTableCapacity === capacity 
+                        ? '#ffffff' 
+                        : (isDarkMode ? '#ffffff' : '#333333'),
+                      border: `2px solid ${newTableCapacity === capacity 
+                        ? '#A294F9' 
+                        : (isDarkMode ? '#473653' : '#e0e0e0')}`,
+                      padding: '10px 15px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease',
+                      minWidth: '50px'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (newTableCapacity !== capacity) {
+                        e.target.style.background = isDarkMode ? '#53364D' : '#E5D9F2';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (newTableCapacity !== capacity) {
+                        e.target.style.background = isDarkMode ? '#473653' : '#f5f5f5';
+                      }
+                    }}
+                  >
+                    {capacity}
+                  </button>
+                ))}
+              </div>
+              <div style={{
+                display: 'flex',
+                gap: '15px',
+                justifyContent: 'center'
+              }}>
+                <button
+                  onClick={handleAddTableConfirm}
+                  style={{
+                    background: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Masa Ekle
+                </button>
+                <button
+                  onClick={handleAddTableClose}
+                  style={{
+                    background: isDarkMode ? '#473653' : '#f5f5f5',
+                    color: isDarkMode ? '#ffffff' : '#333333',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </>

@@ -31,10 +31,8 @@ import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
 import WaiterHome from './pages/staff/WaiterHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
-// YENİ EKLENEN IMPORT (DOĞRU YOL İLE)
 import OrdersPage from "./components/layout/OrdersPage.jsx";
-
-
+import FastOrderPage from "./pages/staff/FastOrderPage";
 
 
 // Stil dosyaları
@@ -67,7 +65,6 @@ function App() {
   return (
     <ThemeProvider>
       <TableProvider>
-
         <Routes>
           {/* Layout Olmayan Sayfalar */}
           <Route path="/login" element={<Login />} />
@@ -111,11 +108,13 @@ function App() {
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
             <Route path="stock" element={<StokUpdate />} />
-            {/* YENİ EKLENEN ROUTE */}
             <Route path="orders" element={<OrdersPage />} />
+            {/* YENİ EKLENEN ROUTE */}
+            <Route path="reservations" element={<ReservationsPage />} />
           </Route>
 
           {/* Kasiyer Paneli */}
+          {/* DİKKAT: Hızlı sipariş rotası StaffLayout içine taşındı */}
           <Route
             path="/kasiyer/*"
             element={
@@ -129,8 +128,11 @@ function App() {
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
             <Route path="stock" element={<StokUpdate />} />
-            {/* YENİ EKLENEN ROUTE */}
             <Route path="orders" element={<OrdersPage />} />
+            {/* Kasiyer Hızlı Sipariş rotası artık burada */}
+            <Route path="fast-order" element={<FastOrderPage />} />
+            {/* YENİ EKLENEN ROUTE */}
+            <Route path="reservations" element={<ReservationsPage />} />
           </Route>
 
           {/* Varsayılan Rota */}

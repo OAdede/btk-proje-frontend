@@ -40,7 +40,7 @@ export default function SuccessNotification({ visible, onClose, reservationData 
       width: "100vw",
       height: "100vh",
       backgroundColor: "rgba(0,0,0,0.5)",
-      zIndex: 10000,
+      zIndex: 10002,
       display: "flex",
       alignItems: "center",
       justifyContent: "center"
@@ -86,7 +86,7 @@ export default function SuccessNotification({ visible, onClose, reservationData 
           marginBottom: "15px",
           animation: "fadeInUp 0.6s ease-out 0.4s both"
         }}>
-          ✅ Rezervasyon Başarılı!
+          {reservationData?.isEdit ? "✅ Rezervasyon Güncellendi!" : "✅ Rezervasyon Başarılı!"}
         </h2>
 
         {/* Rezervasyon Detayları */}
@@ -98,6 +98,7 @@ export default function SuccessNotification({ visible, onClose, reservationData 
           animation: "fadeInUp 0.6s ease-out 0.5s both"
         }}>
           <div style={{ color: colors.textColor, fontSize: "0.9rem", lineHeight: "1.6" }}>
+            {reservationData?.masaNo && <div><strong>Masa:</strong> {reservationData?.masaNo}</div>}
             <div><strong>Müşteri:</strong> {reservationData?.ad} {reservationData?.soyad}</div>
             <div><strong>Tarih:</strong> {reservationData?.tarih}</div>
             <div><strong>Saat:</strong> {reservationData?.saat}</div>
