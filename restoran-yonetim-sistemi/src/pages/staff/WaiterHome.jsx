@@ -40,6 +40,7 @@ export default function WaiterHome() {
         "dolu": { text: "Dolu", color: "var(--danger)", textColor: "#fff" },
         "reserved": { text: "Rezerve", color: "var(--warning)", textColor: "#212529" },
         "reserved-future": { text: "Rezerve", color: "var(--success)", textColor: "#fff" },
+        "reserved-special": { text: "Özel Rezerve", color: "var(--warning)", textColor: "#212529" },
     };
 
     const getStatus = (tableId) => {
@@ -51,9 +52,20 @@ export default function WaiterHome() {
                 const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
                 const now = new Date();
                 const oneHour = 60 * 60 * 1000;
+                const fiftyNineMinutes = 59 * 60 * 1000;
 
-                if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-                    return statusInfo["reserved-future"];
+                // Özel rezervasyon kontrolü
+                if (reservation.specialReservation) {
+                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
+                        return statusInfo["reserved-special"]; // 59 dakika içinde sarı
+                    } else if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+                        return statusInfo["reserved-future"]; // 1 saatten uzak yeşil
+                    }
+                } else {
+                    // Normal rezervasyon kontrolü
+                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+                        return statusInfo["reserved-future"];
+                    }
                 }
             }
         }
@@ -97,7 +109,7 @@ export default function WaiterHome() {
                         const reservation = Object.values(reservations).find(res => res.tableId === table.id);
                         return (
                             <div
-                                key={table.id}
+                                key={table.id || crypto.randomUUID()}
                                 style={{
                                     backgroundColor: status.color,
                                     color: status.textColor,

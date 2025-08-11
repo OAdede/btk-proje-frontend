@@ -53,7 +53,7 @@ const StockPage = () => {
                     </thead>
                     <tbody>
                         {stock.map((item) => (
-                            <tr key={item.id}>
+                            <tr key={item.id || crypto.randomUUID()}>
                                 <td>{item.name}</td>
                                 <td>{item.quantity}</td>
                                 <td>{item.unit}</td>

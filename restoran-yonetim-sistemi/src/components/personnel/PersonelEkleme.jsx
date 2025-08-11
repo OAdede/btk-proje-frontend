@@ -645,7 +645,7 @@ const PersonelEkleme = () => {
           </div>
         ) : (
           filteredPersonnel.map((person) => (
-            <div key={person.id} className="personnel-item">
+                                    <div key={person.id || crypto.randomUUID()} className="personnel-item">
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <img 
                   src={person.photo || '/default-avatar.png'} 

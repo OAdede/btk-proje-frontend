@@ -10,7 +10,8 @@ const AdminSidebar = () => {
     const { logout, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const { isDarkMode, toggleTheme, colors } = useTheme();
-    const { reservations } = useContext(TableContext);
+    const tableContext = useContext(TableContext);
+    const reservations = tableContext?.reservations || {};
     const [showSettings, setShowSettings] = useState(false);
     const [showProfileSettings, setShowProfileSettings] = useState(false);
     const [profileImage, setProfileImage] = useState(localStorage.getItem('profileImage') || '/default-avatar.png');
@@ -30,6 +31,9 @@ const AdminSidebar = () => {
 
     // Bugünkü rezervasyon sayısını hesapla
     const getTodayReservationsCount = () => {
+        if (!reservations || Object.keys(reservations).length === 0) {
+            return 0;
+        }
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugün
         return Object.values(reservations).filter(reservation => 
             reservation.tarih === today

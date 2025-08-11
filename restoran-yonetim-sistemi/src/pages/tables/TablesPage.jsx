@@ -68,7 +68,7 @@ const TablesPage = () => {
                         const status = tableStatus[table.id] || "bos";
                         return (
                             <div
-                                key={table.id}
+                                key={table.id || crypto.randomUUID()}
                                 className="table-card"
                                 style={{
                                     background: statusColors[status],

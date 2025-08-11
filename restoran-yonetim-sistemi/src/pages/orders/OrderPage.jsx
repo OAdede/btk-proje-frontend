@@ -61,7 +61,7 @@ export default function OrderPage() {
 
             <div style={styles.grid}>
                 {products[activeCategory].map((product) => (
-                    <div key={product.id} style={styles.card}>
+                    <div key={product.id || crypto.randomUUID()} style={styles.card}>
                         <h3>{product.name}</h3>
                         <p>{product.price}₺ | Stok: {product.stock}</p>
                         <div style={styles.quantityControl}>

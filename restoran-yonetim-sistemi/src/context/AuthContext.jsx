@@ -62,6 +62,12 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             setLoading(false);
             console.error('Login failed:', error.message);
+            
+            // Bağlantı hatası kontrolü
+            if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
+                throw new Error('Backend sunucusuna bağlanılamıyor. Lütfen sunucunun çalıştığından emin olun.');
+            }
+            
             throw new Error(error.message);
         }
     };

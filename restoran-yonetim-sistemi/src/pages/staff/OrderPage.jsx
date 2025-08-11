@@ -143,7 +143,7 @@ export default function OrderPage() {
                             const displayStock = product.stock + initialOrderCount - cartCount;
 
                             return (
-                                <div key={product.id} className={`product-card ${displayStock <= 0 ? 'out-of-stock' : ''}`}>
+                                <div key={product.id || crypto.randomUUID()} className={`product-card ${displayStock <= 0 ? 'out-of-stock' : ''}`}>
                                     <div>
                                         <h3 className="product-name">{product.name}</h3>
                                         <p className="product-details">{product.price}₺ | Stok: {displayStock}</p>
@@ -171,7 +171,7 @@ export default function OrderPage() {
                                     if (item.count === 0) return null;
                                     const isConfirmed = confirmedOrders[item.id] && confirmedOrders[item.id].count === item.count && confirmedOrders[item.id].note === item.note;
                                     return (
-                                        <li key={item.id} className={`cart-item ${isConfirmed ? 'confirmed' : ''}`}>
+                                        <li key={item.id || crypto.randomUUID()} className={`cart-item ${isConfirmed ? 'confirmed' : ''}`}>
                                             <div className="cart-item-details">
                                                 <span className="cart-item-name">{item.name}</span>
                                                 {item.note && <span className="cart-item-note">Not: {item.note}</span>}

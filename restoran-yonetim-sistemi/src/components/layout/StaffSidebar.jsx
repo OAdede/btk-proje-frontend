@@ -11,7 +11,9 @@ const StaffSidebar = () => {
     const navigate = useNavigate();
     const location = useLocation(); // location hook'u eklendi
     const { isDarkMode, toggleTheme, colors } = useTheme();
-    const { reservations, removeReservation } = useContext(TableContext);
+    const tableContext = useContext(TableContext);
+    const reservations = tableContext?.reservations || {};
+    const removeReservation = tableContext?.removeReservation || (() => {});
     const [showSettings, setShowSettings] = useState(false);
     const [showProfileSettings, setShowProfileSettings] = useState(false);
     const [profileImage, setProfileImage] = useState(localStorage.getItem('profileImage') || '/default-avatar.png');

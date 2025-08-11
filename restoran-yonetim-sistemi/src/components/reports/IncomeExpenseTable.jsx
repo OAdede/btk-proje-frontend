@@ -219,7 +219,7 @@ const IncomeExpenseTable = () => {
           </thead>
           <tbody>
             {filteredData.map((item, index) => (
-              <tr key={item.id}>
+                                          <tr key={item.id || crypto.randomUUID()}>
                 <td>{formatDate(item.date)}</td>
                 <td>
                   <Badge bg={item.type === 'income' ? 'success' : 'danger'}>

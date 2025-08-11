@@ -239,6 +239,43 @@ export function TableProvider({ children }) {
         return reservationId;
     };
 
+    const addSpecialReservation = (tables, reservationData) => {
+        const reservationIds = [];
+        
+        tables.forEach(table => {
+            const reservationId = crypto.randomUUID();
+            const tableReservationData = {
+                ...reservationData,
+                kisiSayisi: Math.min(table.capacity, reservationData.personCount),
+                not: `${reservationData.reservationReason} - Özel rezervasyon (${tables.length} masa)`,
+                specialReservation: true,
+                relatedTables: tables.map(t => t.tableNumber),
+                selectedFloor: reservationData.selectedFloor,
+                wholeFloorOption: reservationData.wholeFloorOption,
+                floorClosingHours: reservationData.floorClosingHours,
+                floorClosingAllDay: reservationData.floorClosingAllDay,
+                specialRequests: reservationData.specialRequests
+            };
+            
+            const newReservation = {
+                id: reservationId,
+                tableId: table.tableNumber,
+                ...tableReservationData,
+                createdAt: new Date().toISOString()
+            };
+            
+            setReservations(prev => ({
+                ...prev,
+                [reservationId]: newReservation
+            }));
+            
+            setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'reserved' }));
+            reservationIds.push(reservationId);
+        });
+        
+        return reservationIds;
+    };
+
     const removeReservation = (reservationId) => {
         setReservations(prev => {
             const newReservations = { ...prev };
@@ -380,6 +417,7 @@ export function TableProvider({ children }) {
                 decreaseConfirmedOrderItem,
                 increaseConfirmedOrderItem,
                 addReservation,
+                addSpecialReservation,
                 removeReservation,
                 updateReservation,
                 clearAllReservations,

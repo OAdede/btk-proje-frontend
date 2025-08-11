@@ -187,7 +187,7 @@ const OrderHistoryPage = () => {
                     <tbody>
                         {filteredHistory.length > 0 ? (
                             filteredHistory.map((item) => (
-                                <tr key={item.id}>
+                                <tr key={item.id || crypto.randomUUID()}>
                                     <td style={styles.tableCell}>
                                         <div style={{ fontWeight: '500' }}>
                                             {item.orderContent}

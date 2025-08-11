@@ -515,6 +515,14 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
                 color: colors.textColor
               }}
             />
+            <div style={{
+              fontSize: '12px',
+              color: colors.labelColor,
+              fontStyle: 'italic',
+              marginTop: '5px'
+            }}>
+              ⚠️ Bu masa kapasitesi kontrol edilecektir. Masa kapasitesinden fazla kişi rezervasyonu yapılamaz.
+            </div>
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>

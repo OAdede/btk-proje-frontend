@@ -4,20 +4,23 @@ import { TableContext } from '../../context/TableContext';
 import { useTheme } from '../../context/ThemeContext';
 import ReservationModal from '../../components/reservations/ReservationModal';
 import WarningModal from '../../components/common/WarningModal';
+import SpecialReservationModal from '../../components/reservations/SpecialReservationModal';
 
 const ReservationsPage = () => {
     const navigate = useNavigate();
-    const { reservations, addReservation, removeReservation } = useContext(TableContext);
+    const { reservations, addReservation, addSpecialReservation, removeReservation } = useContext(TableContext);
     const { isDarkMode, colors } = useTheme();
     const [filter, setFilter] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [reservationToDelete, setReservationToDelete] = useState(null);
     const [showReservationModal, setShowReservationModal] = useState(false);
+    const [showSpecialReservationModal, setShowSpecialReservationModal] = useState(false);
     const [selectedTable, setSelectedTable] = useState(null);
     const [showTableSelectionModal, setShowTableSelectionModal] = useState(false);
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [warningMessage, setWarningMessage] = useState('');
+    const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
     const [modalKey, setModalKey] = useState(0);
 
     // Gerçek rezervasyon verilerini kullan
@@ -40,19 +43,151 @@ const ReservationsPage = () => {
         return `${floorPrefix}${tableIndex + 1}`;
     };
 
+    // Table ID'yi masa numarasına çevir (örn: "2-0" -> "A1")
+    const getTableNameFromId = (tableId) => {
+        if (!tableId || typeof tableId !== 'string') return tableId;
+        const parts = tableId.split('-');
+        if (parts.length === 2) {
+            const floorNumber = parseInt(parts[0]);
+            const tableIndex = parseInt(parts[1]);
+            return getTableNumber(floorNumber, tableIndex);
+        }
+        return tableId;
+    };
+
+    // Masa numarasını Table ID'ye çevir (örn: "A1" -> "1-0")
+    const getTableIdFromName = (tableName) => {
+        if (!tableName || typeof tableName !== 'string') return tableName;
+        
+        // Z1, Z2, ... -> 0-0, 0-1, ...
+        if (tableName.startsWith('Z')) {
+            const tableIndex = parseInt(tableName.substring(1)) - 1;
+            return `0-${tableIndex}`;
+        }
+        
+        // A1, A2, ... -> 1-0, 1-1, ...
+        // B1, B2, ... -> 2-0, 2-1, ...
+        const floorChar = tableName.charAt(0);
+        const tableIndex = parseInt(tableName.substring(1)) - 1;
+        const floorNumber = floorChar.charCodeAt(0) - 64; // A=1, B=2, C=3, ...
+        
+        return `${floorNumber}-${tableIndex}`;
+    };
+
     // Masa kapasitesini al (localStorage'dan)
     const getTableCapacity = (tableNumber) => {
         const capacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
         return capacities[tableNumber] || 4; // Varsayılan 4 kişilik
     };
 
+    // Kat kapasitesini hesapla
+    const getFloorCapacity = (floorNumber) => {
+        let totalCapacity = 0;
+        for (let tableIndex = 0; tableIndex < 8; tableIndex++) {
+            const tableNumber = getTableNumber(floorNumber, tableIndex);
+            const tableStatus = getTableStatus(tableNumber);
+            if (tableStatus.status === 'empty') {
+                totalCapacity += getTableCapacity(tableNumber);
+            }
+        }
+        return totalCapacity;
+    };
+
+    // En uygun katı bul
+    const findBestFloor = (personCount) => {
+        let bestFloor = null;
+        let bestCapacity = 0;
+        
+        for (let floor = 0; floor <= 2; floor++) {
+            const floorCapacity = getFloorCapacity(floor);
+            if (floorCapacity >= personCount && (bestFloor === null || floorCapacity < bestCapacity)) {
+                bestFloor = floor;
+                bestCapacity = floorCapacity;
+            }
+        }
+        
+        return bestFloor;
+    };
+
+    // Masa kapasitesi kontrolü
+    const checkTableCapacity = (tableNumber, personCount) => {
+        const tableCapacity = getTableCapacity(tableNumber);
+        return personCount <= tableCapacity;
+    };
+
+    // Özel rezervasyon için uygun masaları bul
+    const findSuitableTables = (personCount, selectedFloor = null) => {
+        const suitableTables = [];
+        const allTables = [];
+        
+        // Tüm masaları topla
+        for (let floor = 0; floor <= 2; floor++) {
+            if (selectedFloor !== null && floor !== selectedFloor) continue;
+            
+            for (let tableIndex = 0; tableIndex < 8; tableIndex++) {
+                const tableNumber = getTableNumber(floor, tableIndex);
+                const tableStatus = getTableStatus(tableNumber);
+                const tableCapacity = getTableCapacity(tableNumber);
+                
+                if (tableStatus.status === 'empty') {
+                    allTables.push({
+                        tableNumber,
+                        capacity: tableCapacity,
+                        floor,
+                        tableIndex
+                    });
+                }
+            }
+        }
+        
+        // Masaları kapasiteye göre sırala (büyükten küçüğe)
+        allTables.sort((a, b) => b.capacity - a.capacity);
+        
+        // En uygun masaları bul
+        let remainingPeople = personCount;
+        let selectedTables = [];
+        
+        for (const table of allTables) {
+            if (remainingPeople <= 0) break;
+            
+            if (table.capacity <= remainingPeople) {
+                selectedTables.push(table);
+                remainingPeople -= table.capacity;
+            }
+        }
+        
+        // Eğer tam eşleşme bulunamazsa, en yakın kombinasyonu bul
+        if (remainingPeople > 0) {
+            selectedTables = [];
+            remainingPeople = personCount;
+            
+            for (const table of allTables) {
+                if (remainingPeople <= 0) break;
+                selectedTables.push(table);
+                remainingPeople -= table.capacity;
+            }
+        }
+        
+        return {
+            tables: selectedTables,
+            totalCapacity: selectedTables.reduce((sum, table) => sum + table.capacity, 0),
+            remainingPeople: Math.max(0, remainingPeople)
+        };
+    };
+
     const handleAddReservation = () => {
         setShowTableSelectionModal(true);
     };
 
+    const handleAddSpecialReservation = () => {
+        setShowSpecialReservationModal(true);
+    };
+
     // Masa durumunu kontrol eden fonksiyon
     const getTableStatus = (tableNumber) => {
-        const tableReservations = Object.values(reservations).filter(res => res.tableId === tableNumber);
+        // tableNumber'ı tableId formatına çevir (örn: "A1" -> "1-0")
+        const tableId = getTableIdFromName(tableNumber);
+        const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
         if (tableReservations.length === 0) {
             return { status: 'empty', reservations: [] };
         }
@@ -98,8 +233,20 @@ const ReservationsPage = () => {
         setSelectedTable(null);
     };
 
+    const handleSpecialReservationClose = () => {
+        setShowSpecialReservationModal(false);
+    };
+
     const handleReservationSubmit = (formData) => {
         const tableStatus = getTableStatus(selectedTable);
+        
+        // Masa kapasitesi kontrolü
+        if (!checkTableCapacity(selectedTable, parseInt(formData.kisiSayisi))) {
+            const tableCapacity = getTableCapacity(selectedTable);
+            setWarningMessage(`Bu masa ${tableCapacity} kişilik. ${formData.kisiSayisi} kişilik rezervasyon yapılamaz.`);
+            setShowWarningModal(true);
+            return;
+        }
         
         if (tableStatus.status === 'reserved') {
             // Rezerve masaya yeni rezervasyon ekleme
@@ -115,6 +262,99 @@ const ReservationsPage = () => {
         setSelectedTable(null);
         setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
     };
+
+    const handleSpecialReservationSubmit = (formData) => {
+        const { personCount, selectedFloor, reservationReason, wholeFloorOption } = formData;
+        
+        // Kat seçimi kontrolü ve otomatik seçim
+        let finalSelectedFloor = selectedFloor;
+        if (selectedFloor === null || selectedFloor === "") {
+            finalSelectedFloor = findBestFloor(personCount);
+            if (finalSelectedFloor === null) {
+                setWarningMessage('Hiçbir katta yeterli kapasite bulunamadı. Lütfen kişi sayısını azaltın veya farklı bir tarih seçin.');
+                setShowWarningModal(true);
+                return;
+            }
+        } else {
+            // Seçilen katın kapasitesini kontrol et
+            const floorCapacity = getFloorCapacity(selectedFloor);
+            if (floorCapacity < personCount) {
+                setWarningMessage(`${getFloorName(selectedFloor)} kapasitesi (${floorCapacity} kişi) yetersiz. Bu kat için maksimum ${floorCapacity} kişilik rezervasyon yapabilirsiniz.`);
+                setShowWarningModal(true);
+                return;
+            }
+        }
+        
+        // Eğer tüm katı kapatma seçeneği seçilmişse
+        if (wholeFloorOption && finalSelectedFloor !== null) {
+            // Seçilen katın tüm masalarını al
+            const floorTables = [];
+            for (let tableIndex = 0; tableIndex < 8; tableIndex++) {
+                const tableNumber = getTableNumber(finalSelectedFloor, tableIndex);
+                const tableStatus = getTableStatus(tableNumber);
+                const tableCapacity = getTableCapacity(tableNumber);
+                
+                if (tableStatus.status === 'empty') {
+                    floorTables.push({
+                        tableNumber,
+                        capacity: tableCapacity,
+                        floor: finalSelectedFloor,
+                        tableIndex
+                    });
+                }
+            }
+            
+            if (floorTables.length === 0) {
+                setWarningMessage('Seçilen katta boş masa bulunamadı.');
+                setShowWarningModal(true);
+                return;
+            }
+            
+            // Tüm katı kapatma rezervasyonu oluştur
+            addSpecialReservation(floorTables, formData);
+            
+            // Başarı mesajı
+            const floorName = getFloorName(finalSelectedFloor);
+            const tableNames = floorTables.map(t => t.tableNumber).join(', ');
+            
+            // Yeni fiyat hesaplama (100₺ kişi başına + kat kapatma ücreti)
+            const basePrice = personCount * 100;
+            let floorClosingPrice = 0;
+            
+            if (formData.floorClosingAllDay) {
+                floorClosingPrice = 8000; // Tüm gün
+            } else {
+                const hours = parseInt(formData.floorClosingHours) || 4;
+                floorClosingPrice = hours * 1000; // Saatlik ücret
+            }
+            
+            const totalPrice = basePrice + floorClosingPrice;
+            
+            setWarningMessage(`🎉 Tüm katı kapatma rezervasyonu başarıyla oluşturuldu!\n\n${floorName} tamamen sizin grubunuz için ayrıldı.\n\nAyrılan masalar: ${tableNames}\n\nToplam kapasite: ${floorTables.reduce((sum, t) => sum + t.capacity, 0)} kişi\n\nToplam ücret: ${totalPrice}₺`);
+            setShowWarningModal(true);
+        } else {
+            // Normal özel rezervasyon - uygun masaları bul
+            const suitableTables = findSuitableTables(personCount, finalSelectedFloor);
+            
+            if (suitableTables.tables.length === 0) {
+                setWarningMessage('Uygun masa bulunamadı. Lütfen farklı bir tarih veya saat seçin.');
+                setShowWarningModal(true);
+                return;
+            }
+            
+                    // Özel rezervasyon oluştur
+        addSpecialReservation(suitableTables.tables, formData);
+        
+        // Başarı mesajı
+        const tableNames = suitableTables.tables.map(t => t.tableNumber).join(', ');
+        const totalPrice = personCount * 100; // Kişi başına 100₺
+        setWarningMessage(`🎉 Özel rezervasyon başarıyla oluşturuldu!\n\n${personCount} kişilik rezervasyonunuz şu masalar için ayrıldı: ${tableNames}\n\nToplam kapasite: ${suitableTables.totalCapacity} kişi\n\nToplam ücret: ${totalPrice}₺`);
+        setShowWarningModal(true);
+    }
+    
+    setShowSpecialReservationModal(false);
+    setModalKey(prev => prev + 1);
+};
 
 
 
@@ -140,18 +380,77 @@ const ReservationsPage = () => {
         setReservationToDelete(null);
     };
 
+    // Özel rezervasyonları grupla
+    const groupSpecialReservations = (reservations) => {
+        const specialGroups = {};
+        const normalReservations = [];
+        
+        Object.entries(reservations).forEach(([reservationId, reservation]) => {
+            if (reservation.specialReservation && reservation.relatedTables) {
+                // Özel rezervasyonları grupla
+                const groupKey = `${reservation.ad}_${reservation.soyad}_${reservation.telefon}_${reservation.tarih}_${reservation.saat}`;
+                if (!specialGroups[groupKey]) {
+                    specialGroups[groupKey] = {
+                        id: reservationId || crypto.randomUUID(),
+                        ad: reservation.ad,
+                        soyad: reservation.soyad,
+                        telefon: reservation.telefon,
+                        email: reservation.email,
+                        tarih: reservation.tarih,
+                        saat: reservation.saat,
+                        personCount: reservation.personCount,
+                        reservationReason: reservation.reservationReason,
+                        specialReservation: true,
+                        relatedTables: reservation.relatedTables,
+                        wholeFloorOption: reservation.wholeFloorOption,
+                        selectedFloor: reservation.selectedFloor,
+                        floorClosingHours: reservation.floorClosingHours,
+                        floorClosingAllDay: reservation.floorClosingAllDay,
+                        specialRequests: reservation.specialRequests,
+                        createdAt: reservation.createdAt,
+                        tableIds: []
+                    };
+                }
+                specialGroups[groupKey].tableIds.push(getTableNameFromId(reservation.tableId));
+            } else {
+                // Normal rezervasyonları ekle
+                normalReservations.push({
+                    id: reservationId || crypto.randomUUID(),
+                    masaNo: getTableNameFromId(reservation.tableId),
+                    ...reservation
+                });
+            }
+        });
+        
+        // Özel rezervasyon gruplarını normal rezervasyon formatına çevir
+        const specialReservations = Object.values(specialGroups).map(group => ({
+            id: group.id || crypto.randomUUID(),
+            masaNo: group.tableIds.join(', '),
+            ...group
+        }));
+        
+        return [...specialReservations, ...normalReservations];
+    };
+
     // Rezervasyonları masa numarası ve rezervasyon verileriyle birlikte düzenle
-    const reservationsList = Object.entries(actualReservations).map(([reservationId, reservation]) => ({
-        id: reservationId,
-        masaNo: reservation.tableId,
-        ...reservation
-    }));
+    const reservationsList = groupSpecialReservations(actualReservations);
 
     // Debug için rezervasyon verilerini konsola yazdır
     console.log('Reservations count:', Object.keys(reservations).length);
     console.log('ReservationsList count:', reservationsList.length);
     console.log('Raw reservations data:', reservations);
     console.log('ReservationsList data:', reservationsList);
+    
+    // Masa isimleri debug
+    reservationsList.forEach((res, index) => {
+        if (res.specialReservation) {
+            console.log(`Special reservation ${index}:`, {
+                masaNo: res.masaNo,
+                tableIds: res.tableIds,
+                originalTableId: res.relatedTables?.[0]?.tableId
+            });
+        }
+    });
 
     const filteredReservations = reservationsList.filter(res => {
         // Eski rezervasyonlarda 'soy' alanı kullanılmış, yeni rezervasyonlarda 'soyad'
@@ -201,7 +500,7 @@ const ReservationsPage = () => {
             fontWeight: "bold"
         },
         addButton: {
-            backgroundColor: isDarkMode ? "#4a4a4a" : colors.button,
+            backgroundColor: isDarkMode ? "#4a4a4a" : "#A294F9",
             color: "white",
             border: "none",
             padding: "10px 20px",
@@ -287,6 +586,40 @@ const ReservationsPage = () => {
                      >
                     + Yeni Rezervasyon Ekle
                 </button>
+                <button 
+                    onClick={handleAddSpecialReservation} 
+                    style={{
+                        ...styles.addButton,
+                        backgroundColor: isDarkMode ? '#8B4513' : '#D2691E',
+                        border: '2px solid #FFD700'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = isDarkMode ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    🎉 Özel Rezervasyonlar (10+ Kişi)
+                </button>
+                <button
+                    onClick={() => setShowDeleteAllModal(true)}
+                    style={{
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        marginLeft: '10px'
+                    }}
+                    title="Rezervasyon verilerini temizle"
+                >
+                    🗑️ Temizle
+                </button>
                  </div>
             </div>
 
@@ -308,9 +641,34 @@ const ReservationsPage = () => {
                     </div>
                 ) : filteredReservations.length > 0 ? (
                     filteredReservations.map(res => (
-                        <div key={res.id} style={styles.card}>
+                        <div key={res.id || crypto.randomUUID()} style={{
+                            ...styles.card,
+                            ...(res.specialReservation && {
+                                backgroundColor: isDarkMode ? '#2d4a3e' : '#e8f5e8',
+                                border: `2px solid ${isDarkMode ? '#4CAF50' : '#4CAF50'}`,
+                                boxShadow: isDarkMode ? '0 4px 12px rgba(76, 175, 80, 0.3)' : '0 4px 12px rgba(76, 175, 80, 0.2)'
+                            })
+                        }}>
                             <div style={styles.cardHeader}>
-                                                                 <strong style={{ color: colors.text }}>Masa {res.masaNo} - {res.ad || ''} {res.soyad || res.soy || ''}</strong>
+                                <strong style={{ color: colors.text }}>
+                                    {res.specialReservation ? (
+                                        <>
+                                            🎉 Özel Rezervasyon - {res.ad || ''} {res.soyad || res.soy || ''}
+                                            {res.selectedFloor !== null && res.selectedFloor !== "" && (
+                                                <span style={{ 
+                                                    color: '#4CAF50', 
+                                                    fontSize: '0.9em',
+                                                    marginLeft: '10px',
+                                                    fontWeight: 'normal'
+                                                }}>
+                                                    ({getFloorName(res.selectedFloor)})
+                                                </span>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>Masa {res.masaNo} - {res.ad || ''} {res.soyad || res.soy || ''}</>
+                                    )}
+                                </strong>
                                                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                      <span style={{ color: colors.textSecondary }}>{res.tarih} • {res.saat}</span>
                                      <button
@@ -363,8 +721,55 @@ const ReservationsPage = () => {
                             </div>
                             <div style={styles.cardBody}>
                                 <p>📞 {res.telefon || 'Telefon yok'}</p>
-                                <p>👥 {res.kisiSayisi || '0'} Kişi</p>
-                                {res.not && <p>📝 Not: {res.not}</p>}
+                                <p>👥 {res.personCount || res.kisiSayisi || '0'} Kişi</p>
+                                {res.specialReservation && (
+                                    <>
+                                        <p style={{
+                                            color: '#4CAF50',
+                                            fontWeight: 'bold',
+                                            fontSize: '14px',
+                                            marginBottom: '5px'
+                                        }}>
+                                            🎉 Özel Rezervasyon
+                                        </p>
+                                        <p style={{
+                                            color: colors.textSecondary,
+                                            fontSize: '13px',
+                                            marginBottom: '5px'
+                                        }}>
+                                            📋 Sebep: {res.reservationReason}
+                                        </p>
+                                        <p style={{
+                                            color: colors.textSecondary,
+                                            fontSize: '13px',
+                                            marginBottom: '5px'
+                                        }}>
+                                            🏢 Masalar: {res.masaNo}
+                                        </p>
+                                        {res.wholeFloorOption && (
+                                            <p style={{
+                                                color: '#FFD700',
+                                                fontWeight: 'bold',
+                                                fontSize: '13px',
+                                                marginBottom: '5px'
+                                            }}>
+                                                🏢 Tüm Kat Kapatma
+                                                {res.floorClosingAllDay ? ' (Tüm Gün)' : ` (${res.floorClosingHours} Saat)`}
+                                            </p>
+                                        )}
+                                        {res.specialRequests && (
+                                            <p style={{
+                                                color: colors.textSecondary,
+                                                fontSize: '12px',
+                                                fontStyle: 'italic',
+                                                marginBottom: '5px'
+                                            }}>
+                                                💬 Özel İstekler: {res.specialRequests}
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                                {!res.specialReservation && res.not && <p>📝 Not: {res.not}</p>}
                             </div>
                         </div>
                     ))
@@ -551,6 +956,22 @@ const ReservationsPage = () => {
                                  {getFloorName(selectedFloor)} - Masa Seçin:
                              </h4>
                              <div style={{
+                                 backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
+                                 padding: '10px',
+                                 borderRadius: '8px',
+                                 marginBottom: '15px',
+                                 border: `1px solid ${colors.border}`
+                             }}>
+                                 <p style={{
+                                     color: isDarkMode ? '#ffffff' : '#333333',
+                                     fontSize: '14px',
+                                     margin: 0,
+                                     textAlign: 'center'
+                                 }}>
+                                     ⚠️ Masa kapasitesi kontrol edilecektir. Seçilen masanın kapasitesinden fazla kişi rezervasyonu yapılamaz.
+                                 </p>
+                             </div>
+                             <div style={{
                                  display: 'grid',
                                  gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
                                  gap: '10px',
@@ -590,10 +1011,13 @@ const ReservationsPage = () => {
                                          >
                                              {/* Masa kapasitesi */}
                                              <div style={{
-                                                 fontSize: '10px',
-                                                 color: 'rgba(255,255,255,0.7)',
-                                                 marginBottom: '2px',
-                                                 fontWeight: 'normal'
+                                                 fontSize: '11px',
+                                                 color: 'rgba(255,255,255,0.9)',
+                                                 marginBottom: '3px',
+                                                 fontWeight: 'bold',
+                                                 backgroundColor: 'rgba(0,0,0,0.3)',
+                                                 padding: '2px 4px',
+                                                 borderRadius: '3px'
                                              }}>
                                                  {tableCapacity} Kişilik
                                              </div>
@@ -605,7 +1029,7 @@ const ReservationsPage = () => {
                                                      fontWeight: 'normal'
                                                  }}>
                                                      {tableStatus.reservations.map((res, index) => (
-                                                         <div key={index} style={{ marginBottom: '1px' }}>
+                                                         <div key={`${tableNumber}-${index}-${res.ad}-${res.saat}`} style={{ marginBottom: '1px' }}>
                                                              {res.ad} {res.soyad} - {res.saat}
                                                          </div>
                                                      ))}
@@ -650,12 +1074,134 @@ const ReservationsPage = () => {
                  shouldClearForm={false}
              />
 
+             {/* Özel Rezervasyon Modal */}
+             <SpecialReservationModal
+                 key={modalKey}
+                 visible={showSpecialReservationModal}
+                 onClose={handleSpecialReservationClose}
+                 onSubmit={handleSpecialReservationSubmit}
+                 defaultDate={getTodayDate()}
+                 existingReservations={actualReservations} // Tüm rezervasyonları gönder
+                 shouldClearForm={false}
+             />
+
              {/* Uyarı Modal */}
              <WarningModal
                  visible={showWarningModal}
                  message={warningMessage}
                  onClose={() => setShowWarningModal(false)}
              />
+
+             {/* Tüm Rezervasyonları Silme Onay Modalı */}
+             {showDeleteAllModal && (
+                 <div style={{
+                     position: 'fixed',
+                     top: 0,
+                     left: 0,
+                     right: 0,
+                     bottom: 0,
+                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                     display: 'flex',
+                     justifyContent: 'center',
+                     alignItems: 'center',
+                     zIndex: 1000
+                 }}>
+                     <div style={{
+                         backgroundColor: colors.card,
+                         padding: '30px',
+                         borderRadius: '15px',
+                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                         maxWidth: '400px',
+                         width: '90%',
+                         border: `1px solid ${colors.border}`
+                     }}>
+                         <div style={{
+                             textAlign: 'center',
+                             marginBottom: '25px'
+                         }}>
+                             <div style={{
+                                 fontSize: '48px',
+                                 marginBottom: '15px'
+                             }}>
+                                 ⚠️
+                             </div>
+                             <h3 style={{
+                                 color: colors.text,
+                                 marginBottom: '10px',
+                                 fontSize: '1.3rem'
+                             }}>
+                                 Dikkat!
+                             </h3>
+                             <p style={{
+                                 color: colors.textSecondary,
+                                 lineHeight: '1.5',
+                                 fontSize: '1rem'
+                             }}>
+                                 Gerçekten bütün rezervasyonları silmek istiyor musunuz?<br/>
+                                 <strong>Bu işlem geri alınamaz.</strong>
+                             </p>
+                         </div>
+                         <div style={{
+                             display: 'flex',
+                             gap: '15px',
+                             justifyContent: 'center'
+                         }}>
+                             <button
+                                 onClick={() => {
+                                     localStorage.removeItem('reservations');
+                                     setShowDeleteAllModal(false);
+                                     window.location.reload();
+                                 }}
+                                 style={{
+                                     background: '#dc3545',
+                                     color: 'white',
+                                     border: 'none',
+                                     padding: '12px 25px',
+                                     borderRadius: '8px',
+                                     fontSize: '1rem',
+                                     cursor: 'pointer',
+                                     transition: 'all 0.3s ease',
+                                     fontWeight: '500'
+                                 }}
+                                 onMouseEnter={(e) => {
+                                     e.target.style.transform = 'translateY(-2px)';
+                                     e.target.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.3)';
+                                 }}
+                                 onMouseLeave={(e) => {
+                                     e.target.style.transform = 'translateY(0)';
+                                     e.target.style.boxShadow = 'none';
+                                 }}
+                             >
+                                 Evet, Sil
+                             </button>
+                             <button
+                                 onClick={() => setShowDeleteAllModal(false)}
+                                 style={{
+                                     background: colors.border,
+                                     color: colors.text,
+                                     border: 'none',
+                                     padding: '12px 25px',
+                                     borderRadius: '8px',
+                                     fontSize: '1rem',
+                                     cursor: 'pointer',
+                                     transition: 'all 0.3s ease',
+                                     fontWeight: '500'
+                                 }}
+                                 onMouseEnter={(e) => {
+                                     e.target.style.transform = 'translateY(-2px)';
+                                     e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                                 }}
+                                 onMouseLeave={(e) => {
+                                     e.target.style.transform = 'translateY(0)';
+                                     e.target.style.boxShadow = 'none';
+                                 }}
+                             >
+                                 Hayır, İptal
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+             )}
         </div>
     );
 };

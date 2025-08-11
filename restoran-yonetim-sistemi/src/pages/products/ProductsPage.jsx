@@ -94,7 +94,7 @@ const ProductsPage = () => {
             }}>
                 {filteredProducts.map((product) => (
                     <div
-                        key={product.id}
+                        key={product.id || crypto.randomUUID()}
                         style={{
                             display: 'flex',
                             alignItems: 'center',

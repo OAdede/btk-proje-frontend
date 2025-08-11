@@ -4,7 +4,7 @@ import { TableContext } from "../../context/TableContext";
 
 export default function TablesGridPage() {
     const navigate = useNavigate();
-    const { tableStatus, updateTableStatus } = useContext(TableContext);
+    const { tableStatus, updateTableStatus, reservations } = useContext(TableContext);
     const [selectedFloor, setSelectedFloor] = useState(1);
 
     const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
@@ -15,10 +15,37 @@ export default function TablesGridPage() {
         "occupied": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
         "dolu": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
         "reserved": { text: "Rezerve", color: "#ffc107", textColor: "#212529" },
+        "reserved-future": { text: "Rezerve", color: "#4caf50", textColor: "#fff" },
+        "reserved-special": { text: "Özel Rezerve", color: "#ffc107", textColor: "#212529" },
     };
 
     const getStatus = (tableId) => {
         const status = tableStatus[tableId] || "empty";
+        
+        if (status === 'reserved') {
+            const reservation = Object.values(reservations).find(res => res.tableId === tableId);
+            if (reservation) {
+                const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
+                const now = new Date();
+                const oneHour = 60 * 60 * 1000;
+                const fiftyNineMinutes = 59 * 60 * 1000;
+
+                // Özel rezervasyon kontrolü
+                if (reservation.specialReservation) {
+                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
+                        return statusInfo["reserved-special"]; // 59 dakika içinde sarı
+                    } else if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+                        return statusInfo["reserved-future"]; // 1 saatten uzak yeşil
+                    }
+                } else {
+                    // Normal rezervasyon kontrolü
+                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+                        return statusInfo["reserved-future"];
+                    }
+                }
+            }
+        }
+        
         return statusInfo[status] || statusInfo["empty"];
     };
 

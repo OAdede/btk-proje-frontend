@@ -315,6 +315,7 @@ const Dashboard = () => {
     "dolu": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
     "reserved": { text: "Rezerve", color: "#ffc107", textColor: "#212529" },
     "reserved-future": { text: "Rezerve", color: "#4caf50", textColor: "#fff" }, // Uzak rezervasyon için yeşil
+    "reserved-special": { text: "Özel Rezerve", color: "#ffc107", textColor: "#212529" }, // Özel rezervasyon için sarı
   };
 
   const getStatus = (tableId) => {
@@ -326,9 +327,20 @@ const Dashboard = () => {
         const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
         const now = new Date();
         const oneHour = 60 * 60 * 1000;
+        const fiftyNineMinutes = 59 * 60 * 1000;
 
-        if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-          return statusInfo["reserved-future"];
+        // Özel rezervasyon kontrolü
+        if (reservation.specialReservation) {
+          if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
+            return statusInfo["reserved-special"]; // 59 dakika içinde sarı
+          } else if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+            return statusInfo["reserved-future"]; // 1 saatten uzak yeşil
+          }
+        } else {
+          // Normal rezervasyon kontrolü
+          if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
+            return statusInfo["reserved-future"];
+          }
         }
       }
     }
@@ -641,7 +653,6 @@ const Dashboard = () => {
 
               return (
                 <div
-                  key={table.id}
                   style={{
                     backgroundColor: status.color,
                     color: status.textColor,
