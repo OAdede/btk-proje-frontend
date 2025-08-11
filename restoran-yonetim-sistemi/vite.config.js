@@ -11,7 +11,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://192.168.232.113:8080', // Spring Boot backend
+        target: process.env.BACKEND_URL || 'https://localhost:8080', // Spring Boot backend over HTTPS (local default)
         changeOrigin: true,
         secure: false,
       },

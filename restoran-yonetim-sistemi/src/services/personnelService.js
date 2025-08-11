@@ -1,5 +1,6 @@
 // Personnel API Service - Backend communication layer
-const API_BASE_URL = 'http://192.168.232.113:8080/api';
+// Prefer environment variable; fallback to Vite dev proxy path
+const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
 // Role mapping from Turkish to English
 const roleMapping = {
