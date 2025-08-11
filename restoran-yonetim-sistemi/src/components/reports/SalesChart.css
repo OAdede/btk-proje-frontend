@@ -9,6 +9,8 @@
 
 .light-theme .sales-chart .card-title {
   color: #2c3e50 !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .light-theme .sales-chart .chart-container {
@@ -19,6 +21,8 @@
   background-color: #ffffff !important;
   color: #2c3e50 !important;
   border-color: #dee2e6 !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .light-theme .sales-chart .btn-group .btn-primary {
@@ -42,6 +46,8 @@
 
 .dark-theme .sales-chart .card-title {
   color: white !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .dark-theme .sales-chart .chart-container {
@@ -52,6 +58,8 @@
   background-color: #34495e !important;
   color: white !important;
   border-color: #34495e !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .dark-theme .sales-chart .btn-group .btn-primary {
@@ -223,4 +231,201 @@
 .dark-theme .sales-chart canvas,
 .dark-theme .sales-chart div {
   background-color: #2c3e50 !important;
-} 
+}
+
+/* Genel chart responsive stilleri */
+.sales-chart {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sales-chart .card {
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sales-chart .card-title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.sales-chart .btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.sales-chart .btn-group .btn {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.sales-chart .form-select {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.sales-chart .chart-container {
+  width: 100%;
+  height: 400px;
+  position: relative;
+}
+
+/* Tablet için responsive tasarım */
+@media (max-width: 1024px) {
+  .sales-chart .card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .sales-chart .card-title {
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+  }
+
+  .sales-chart .btn-group .btn {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+  }
+
+  .sales-chart .form-select {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+  }
+
+  .sales-chart .chart-container {
+    height: 350px;
+  }
+}
+
+/* Mobil için responsive tasarım */
+@media (max-width: 768px) {
+  .sales-chart .card {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .sales-chart .card-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+
+  .sales-chart .btn-group {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .sales-chart .btn-group .btn {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+  }
+
+  .sales-chart .form-select {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+  }
+
+  .sales-chart .chart-container {
+    height: 300px;
+  }
+}
+
+/* Küçük mobil ekranlar için */
+@media (max-width: 480px) {
+  .sales-chart .card {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .card-title {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .btn-group {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .btn-group .btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .sales-chart .form-select {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .chart-container {
+    height: 250px;
+  }
+}
+
+/* Çok küçük ekranlar için */
+@media (max-width: 360px) {
+  .sales-chart .card {
+    padding: 6px;
+    margin-bottom: 6px;
+  }
+
+  .sales-chart .card-title {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+
+  .sales-chart .btn-group {
+    gap: 3px;
+    margin-bottom: 6px;
+  }
+
+  .sales-chart .btn-group .btn {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  .sales-chart .form-select {
+    padding: 3px 4px;
+    font-size: 0.7rem;
+    margin-bottom: 6px;
+  }
+
+  .sales-chart .chart-container {
+    height: 200px;
+  }
+}
+
+/* Landscape modda mobil için */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sales-chart .card {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .card-title {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .btn-group .btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .sales-chart .form-select {
+    padding: 4px 6px;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  .sales-chart .chart-container {
+    height: 200px;
+  }
+}

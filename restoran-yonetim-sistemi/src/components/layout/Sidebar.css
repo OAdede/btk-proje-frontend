@@ -1,5 +1,7 @@
 .sidebar {
-  width: 240px;
+  min-width: 200px;
+  max-width: 300px;
+  width: 20%;
   background: #fff;
   border-right: 1px solid #e0e0e0;
   padding: 32px 16px;
@@ -13,6 +15,8 @@
   color: #333;
   font-weight: 600;
   text-align: center;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .sidebar-nav {
@@ -35,6 +39,10 @@
   cursor: pointer;
   text-align: left;
   width: 100%;
+  word-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.3;
 }
 
 .nav-item:hover {
@@ -54,9 +62,123 @@
   color: #fff !important;
   border: none;
   font-weight: 500;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .logout-btn:hover {
   background: #d32f2f !important;
   color: #fff !important;
+}
+
+/* Tablet için responsive tasarım */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 25%;
+    min-width: 180px;
+    max-width: 250px;
+    padding: 24px 12px;
+  }
+
+  .sidebar h2 {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+  }
+
+  .nav-item {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Mobil için responsive tasarım */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 30%;
+    min-width: 160px;
+    max-width: 200px;
+    padding: 20px 10px;
+  }
+
+  .sidebar h2 {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+  }
+
+  .nav-item {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .logout-btn {
+    margin-top: 15px;
+  }
+}
+
+/* Küçük mobil ekranlar için */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 35%;
+    min-width: 140px;
+    max-width: 180px;
+    padding: 16px 8px;
+  }
+
+  .sidebar h2 {
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+
+  .nav-item {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .logout-btn {
+    margin-top: 12px;
+  }
+}
+
+/* Çok küçük ekranlar için */
+@media (max-width: 360px) {
+  .sidebar {
+    width: 40%;
+    min-width: 120px;
+    max-width: 160px;
+    padding: 12px 6px;
+  }
+
+  .sidebar h2 {
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+
+  .nav-item {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+  }
+
+  .logout-btn {
+    margin-top: 10px;
+  }
+}
+
+/* Landscape modda mobil için */
+@media (max-height: 500px) and (orientation: landscape) {
+  .sidebar {
+    width: 25%;
+    min-width: 160px;
+    max-width: 200px;
+    padding: 16px 8px;
+  }
+
+  .sidebar h2 {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+  }
+
+  .nav-item {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
 }

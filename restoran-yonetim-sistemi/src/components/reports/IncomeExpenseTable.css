@@ -9,6 +9,8 @@
   background-color: #CBC3E3 !important;
   color: #2D1B69 !important;
   border-color: #CDC1FF !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .light-theme .custom-table tbody tr:hover {
@@ -30,6 +32,8 @@
   background-color: #E5D9F2 !important;
   color: #2D1B69 !important;
   border-color: #CDC1FF !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Koyu tema için tablo stilleri - Yeni renk paleti */
@@ -43,6 +47,8 @@
   background-color: var(--tableRowBackground) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .dark-theme .custom-table tbody tr:hover {
@@ -64,4 +70,69 @@
   background-color: var(--tableHeaderBackground) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Genel tablo responsive stilleri */
+.custom-table {
+  width: 100%;
+  overflow-x: auto;
+  font-size: 1rem;
+}
+
+.custom-table th,
+.custom-table td {
+  padding: 12px 16px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* Tablet için responsive tasarım */
+@media (max-width: 1024px) {
+  .custom-table {
+    font-size: 0.95rem;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    padding: 10px 14px;
+  }
+}
+
+/* Mobil için responsive tasarım */
+@media (max-width: 768px) {
+  .custom-table {
+    font-size: 0.9rem;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    padding: 8px 12px;
+  }
+}
+
+/* Küçük mobil ekranlar için */
+@media (max-width: 480px) {
+  .custom-table {
+    font-size: 0.85rem;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    padding: 6px 10px;
+  }
+}
+
+/* Çok küçük ekranlar için */
+@media (max-width: 360px) {
+  .custom-table {
+    font-size: 0.8rem;
+  }
+
+  .custom-table th,
+  .custom-table td {
+    padding: 5px 8px;
+  }
 }
