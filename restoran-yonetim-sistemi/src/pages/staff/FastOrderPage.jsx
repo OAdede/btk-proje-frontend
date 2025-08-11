@@ -58,7 +58,7 @@ export default function FastOrderPage() {
 
   const handleConfirmFastOrder = () => {
     saveFinalOrder(fakeTableId, cart);
-    alert("Hızlı sipariş oluşturuldu ve ödeme alındı .");
+    alert("Hızlı sipariş oluşturuldu ve ödeme alındı.");
     setCart({});
     navigate(`/${user.role}/home`);
   };
@@ -161,3 +161,4 @@ export default function FastOrderPage() {
     </>
   );
 }
+ 
