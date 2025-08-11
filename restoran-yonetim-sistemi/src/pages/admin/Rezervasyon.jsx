@@ -59,6 +59,7 @@ const Rezervasyon = () => {
                 <div style={styles.listContainer}>
                     {filteredReservations.length > 0 ? (
                         filteredReservations.map(res => (
+                            <div key={res.id || crypto.randomUUID()} style={styles.card}>
                                 <div style={styles.cardHeader}>
                                     <div style={styles.cardHeaderLeft}>
                                         <strong>Masa {res.masaNo} - {res.adSoyad}</strong>

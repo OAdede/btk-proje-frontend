@@ -653,6 +653,7 @@ const Dashboard = () => {
 
               return (
                 <div
+                                          key={table.id || crypto.randomUUID()}
                   style={{
                     backgroundColor: status.color,
                     color: status.textColor,
