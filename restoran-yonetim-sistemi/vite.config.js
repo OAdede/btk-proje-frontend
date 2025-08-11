@@ -9,9 +9,12 @@ export default defineConfig({
     'process.env.FRONTEND_URL': JSON.stringify(process.env.FRONTEND_URL || 'http://localhost:5174'),
   },
   server: {
+    host: true, // LAN erişimi için 0.0.0.0'a bind et
+    port: 5174,
+    cors: true,
     proxy: {
       '/api': {
-        target: process.env.BACKEND_URL || 'https://localhost:8080', // Spring Boot backend over HTTPS (local default)
+        target: process.env.BACKEND_URL || 'https://192.168.232.113:8080', // Spring Boot backend over HTTPS (local default)
         changeOrigin: true,
         secure: false,
       },
