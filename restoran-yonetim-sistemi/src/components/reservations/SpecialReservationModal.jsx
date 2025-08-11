@@ -288,23 +288,26 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     // onSubmit'i çağır
     onSubmit(formData);
     
-    // Form temizleme
-    setFormData({
-      ad: "",
-      soyad: "",
-      telefon: "",
-      email: "",
-      tarih: defaultDate || "",
-      saat: "",
-      personCount: "",
-      selectedFloor: null,
-      reservationReason: "",
-      wholeFloorOption: false,
-      floorClosingHours: "4",
-      floorClosingAllDay: false,
-      specialRequests: "",
-      adSoyad: ""
-    });
+    // Form temizleme - sadece başarılı rezervasyon sonrasında
+    // Hata durumunda form verileri korunur
+    if (shouldClearForm) {
+      setFormData({
+        ad: "",
+        soyad: "",
+        telefon: "",
+        email: "",
+        tarih: defaultDate || "",
+        saat: "",
+        personCount: "",
+        selectedFloor: null,
+        reservationReason: "",
+        wholeFloorOption: false,
+        floorClosingHours: "4",
+        floorClosingAllDay: false,
+        specialRequests: "",
+        adSoyad: ""
+      });
+    }
   };
 
   // Tema renklerini dinamik olarak belirle

@@ -208,7 +208,7 @@ const ReservationsPage = () => {
 
     // Masa durumunu kontrol eden fonksiyon
     const getTableStatus = (tableNumber) => {
-        // tableNumber'ı tableId formatına çevir (örn: "Z1" -> "0-0")
+        // tableNumber'ı tableId formatına çevir (örn: "Z1" -> "1")
         const tableId = getTableIdFromName(tableNumber);
         
         // tableStatus context'ini kontrol et
@@ -360,10 +360,10 @@ const ReservationsPage = () => {
             const floorTables = [];
             for (let tableIndex = 0; tableIndex < 8; tableIndex++) {
                 const tableNumber = getTableNumber(finalSelectedFloor, tableIndex);
-                const tableStatus = getTableStatus(tableNumber);
+                const tableStatusInfo = getTableStatus(tableNumber);
                 const tableCapacity = getTableCapacity(tableNumber);
                 
-                if (tableStatus.status === 'empty') {
+                if (tableStatusInfo.status === 'empty') {
                     floorTables.push({
                         tableNumber,
                         capacity: tableCapacity,
@@ -401,6 +401,10 @@ const ReservationsPage = () => {
             
             setWarningMessage(`🎉 Tüm katı kapatma rezervasyonu başarıyla oluşturuldu!\n\n📍 ${floorName} tamamen sizin grubunuz için ayrıldı.\n\n🪑 Ayrılan masalar: ${tableNames}\n\n👥 Toplam kapasite: ${floorTables.reduce((sum, t) => sum + t.capacity, 0)} kişi\n\n💰 Toplam ücret: ${totalPrice}₺`);
             setShowWarningModal(true);
+            
+            // Başarılı rezervasyon sonrası modalı kapat
+            setShowSpecialReservationModal(false);
+            setModalKey(prev => prev + 1);
         } else {
             // Normal özel rezervasyon - uygun masaları bul
             const suitableTables = findSuitableTables(personCount, finalSelectedFloor);
@@ -411,19 +415,20 @@ const ReservationsPage = () => {
                 return;
             }
             
-                    // Özel rezervasyon oluştur
-        addSpecialReservation(suitableTables.tables, formData);
-        
-        // Başarı mesajı
-        const tableNames = suitableTables.tables.map(t => getTableNumber(t.floor, t.tableIndex)).join(', ');
-        const totalPrice = personCount * 100; // Kişi başına 100₺
-        setWarningMessage(`🎉 Özel rezervasyon başarıyla oluşturuldu!\n\n👥 ${personCount} kişilik rezervasyonunuz şu masalar için ayrıldı:\n\n🪑 ${tableNames}\n\n📊 Toplam kapasite: ${suitableTables.totalCapacity} kişi\n\n💰 Toplam ücret: ${totalPrice}₺`);
-        setShowWarningModal(true);
-    }
-    
-    setShowSpecialReservationModal(false);
-    setModalKey(prev => prev + 1);
-};
+            // Özel rezervasyon oluştur
+            addSpecialReservation(suitableTables.tables, formData);
+            
+            // Başarı mesajı
+            const tableNames = suitableTables.tables.map(t => getTableNumber(t.floor, t.tableIndex)).join(', ');
+            const totalPrice = personCount * 100; // Kişi başına 100₺
+            setWarningMessage(`🎉 Özel rezervasyon başarıyla oluşturuldu!\n\n👥 ${personCount} kişilik rezervasyonunuz şu masalar için ayrıldı:\n\n🪑 ${tableNames}\n\n📊 Toplam kapasite: ${suitableTables.totalCapacity} kişi\n\n💰 Toplam ücret: ${totalPrice}₺`);
+            setShowWarningModal(true);
+            
+            // Başarılı rezervasyon sonrası modalı kapat
+            setShowSpecialReservationModal(false);
+            setModalKey(prev => prev + 1);
+        }
+    };
 
 
 
@@ -1157,7 +1162,19 @@ const ReservationsPage = () => {
              <WarningModal
                  visible={showWarningModal}
                  message={warningMessage}
-                 onClose={() => setShowWarningModal(false)}
+                 onClose={() => {
+                     setShowWarningModal(false);
+                     
+                     // Sadece başarılı rezervasyon mesajlarında form temizle
+                     if (warningMessage && (
+                         warningMessage.includes('🎉') || 
+                         warningMessage.includes('başarıyla') ||
+                         warningMessage.includes('oluşturuldu')
+                     )) {
+                         // Başarılı rezervasyon sonrası form temizle
+                         setModalKey(prev => prev + 1);
+                     }
+                 }}
              />
 
              {/* Tüm Rezervasyonları Silme Onay Modalı */}
