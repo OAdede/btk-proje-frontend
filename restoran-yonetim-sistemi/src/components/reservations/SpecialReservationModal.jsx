@@ -16,7 +16,8 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     wholeFloorOption: false,
     floorClosingHours: "4", // Varsayılan 4 saat
     floorClosingAllDay: false, // Tüm gün seçeneği
-    specialRequests: ""
+    specialRequests: "",
+    adSoyad: "" // Ad ve soyad birleşimi için
   });
 
   // Maksimum kat kapatma süresini hesapla
@@ -78,6 +79,8 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     }
   }, [defaultDate]);
 
+
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
@@ -95,7 +98,7 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
         return;
       }
       
-      // Format: 555 555 55 55
+      // Format: 5XX XXX XX XX
       let formatted = '';
       if (numbers.length > 0) {
         formatted = numbers[0];
@@ -132,6 +135,21 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     } else if (type === 'checkbox') {
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
+      // Ad veya soyad değiştiğinde adSoyad alanını güncelle ve büyük harf yap
+      if (name === 'ad' || name === 'soyad') {
+        setFormData((prev) => {
+          const newData = { ...prev, [name]: value };
+          // İsim ve soyismin baş harflerini büyük yap
+          const capitalizedAd = newData.ad.charAt(0).toUpperCase() + newData.ad.slice(1).toLowerCase();
+          const capitalizedSoyad = newData.soyad.charAt(0).toUpperCase() + newData.soyad.slice(1).toLowerCase();
+          newData.ad = capitalizedAd;
+          newData.soyad = capitalizedSoyad;
+          newData.adSoyad = `${capitalizedAd} ${capitalizedSoyad}`.trim();
+          return newData;
+        });
+        return;
+      }
+      
       // Eğer kat seçimi değişiyorsa, tüm katı kapatma seçeneğini sıfırla
       if (name === 'selectedFloor') {
         setFormData((prev) => ({ 
@@ -183,7 +201,7 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     // Telefon numarası validasyonu
     const phoneNumbers = formData.telefon.replace(/\D/g, '');
     if (phoneNumbers.length !== 10 || phoneNumbers[0] !== '5') {
-      alert('Lütfen geçerli bir telefon numarası girin (0(5XX XXX XX XX) formatında)');
+      alert('Lütfen geçerli bir telefon numarası girin (5XX XXX XX XX formatında, 10 haneli)');
       return;
     }
     
@@ -195,13 +213,13 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     
     // Kişi sayısı validasyonu
     if (parseInt(formData.personCount) < 10) {
-      alert('Özel rezervasyonlar için en az 10 kişi gereklidir.');
+      alert('Özel rezervasyonlar için en az 10 kişi gereklidir. Lütfen kişi sayısını 10 veya daha fazla olarak ayarlayın.');
       return;
     }
     
     // Rezervasyon sebebi validasyonu
     if (!formData.reservationReason.trim()) {
-      alert('Lütfen rezervasyon sebebini belirtin.');
+      alert('Lütfen rezervasyon sebebini belirtin. Bu alan zorunludur ve özel rezervasyonunuzun amacını açıklamalıdır.');
       return;
     }
     
@@ -211,7 +229,7 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     today.setHours(0, 0, 0, 0); // Bugünün başlangıcını al
     
     if (selectedDate < today) {
-      alert('Geçmiş tarihler için rezervasyon yapılamaz. Lütfen bugün veya gelecek bir tarih seçin.');
+      alert('Geçmiş tarihler için rezervasyon yapılamaz. Lütfen bugün veya gelecek bir tarih seçin. Seçilen tarih: ' + formData.tarih);
       return;
     }
     
@@ -243,13 +261,13 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
 
     // Açılış saatinden önce rezervasyon yapılamaz
     if (selectedTimeTotal < openingTimeTotal) {
-      alert(`Rezervasyon sadece açılış saatinden (${openingTime}) sonra yapılabilir.`);
+      alert(`Rezervasyon sadece açılış saatinden (${openingTime}) sonra yapılabilir. Seçilen saat: ${formData.saat}`);
       return;
     }
 
     // Son rezervasyon saatinden sonra rezervasyon yapılamaz
     if (selectedTimeTotal > lastResTimeTotal) {
-      alert(`Rezervasyon en geç ${lastReservationTime} saatine kadar yapılabilir. (Kapanıştan 3 saat önce)`);
+      alert(`Rezervasyon en geç ${lastReservationTime} saatine kadar yapılabilir. (Kapanıştan 3 saat önce) Seçilen saat: ${formData.saat}`);
       return;
     }
 
@@ -261,7 +279,8 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
       selectedTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       
       if (selectedTime <= currentTime) {
-        alert('Bugün için sadece şu anki saatten sonraki saatler seçilebilir.');
+        const currentTimeStr = currentTime.toTimeString().slice(0, 5);
+        alert(`Bugün için sadece şu anki saatten (${currentTimeStr}) sonraki saatler seçilebilir. Seçilen saat: ${formData.saat}`);
         return;
       }
     }
@@ -269,24 +288,23 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     // onSubmit'i çağır
     onSubmit(formData);
     
-    // Sadece başarılı submit sonrasında formu temizle
-    if (shouldClearForm) {
-      setFormData({
-        ad: "",
-        soyad: "",
-        telefon: "",
-        email: "",
-        tarih: defaultDate || "",
-        saat: "",
-        personCount: "",
-        selectedFloor: null,
-        reservationReason: "",
-        wholeFloorOption: false,
-        floorClosingHours: "4",
-        floorClosingAllDay: false,
-        specialRequests: ""
-      });
-    }
+    // Form temizleme
+    setFormData({
+      ad: "",
+      soyad: "",
+      telefon: "",
+      email: "",
+      tarih: defaultDate || "",
+      saat: "",
+      personCount: "",
+      selectedFloor: null,
+      reservationReason: "",
+      wholeFloorOption: false,
+      floorClosingHours: "4",
+      floorClosingAllDay: false,
+      specialRequests: "",
+      adSoyad: ""
+    });
   };
 
   // Tema renklerini dinamik olarak belirle
@@ -303,7 +321,8 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     cancelButtonBorder: "#473653",
     overlayBg: "rgba(0,0,0,0.7)",
     specialButtonBg: "#8B4513",
-    specialButtonBorder: "#FFD700"
+    specialButtonBorder: "#FFD700",
+    border: "#473653"
   } : {
     modalBg: "#F5EFFF",
     modalBorder: "#CDC1FF",
@@ -317,7 +336,8 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
     cancelButtonBorder: "#A294F9",
     overlayBg: "rgba(0,0,0,0.5)",
     specialButtonBg: "#D2691E",
-    specialButtonBorder: "#FFD700"
+    specialButtonBorder: "#FFD700",
+    border: "#A294F9"
   };
 
   if (!visible) return null;
@@ -450,13 +470,14 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
             }}>
               Telefon:
             </label>
-            <input
-              type="tel"
-              name="telefon"
-              placeholder="5XX XXX XX XX"
-              value={formData.telefon}
-              onChange={handleChange}
-              required
+                          <input
+                type="tel"
+                name="telefon"
+                placeholder="5XX XXX XX XX"
+                value={formData.telefon}
+                onChange={handleChange}
+                required
+                maxLength="13"
               style={{
                 padding: "12px",
                 border: `2px solid ${colors.inputBorder}`,
@@ -558,7 +579,10 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
                   if (lastHour < 0) lastHour = 0;
                   return `${lastHour.toString().padStart(2, '0')}:${closingMinute.toString().padStart(2, '0')}`;
                 })()}
-                placeholder={formData.tarih ? "Saat seçin" : "Önce tarih seçin"}
+                placeholder={formData.tarih ? 
+                  (formData.tarih === new Date().toISOString().split('T')[0] ? 
+                    "Bugün için uygun saat seçin" : "Saat seçin") : 
+                  "Önce tarih seçin"}
                 style={{
                   padding: "12px",
                   border: `2px solid ${colors.inputBorder}`,
@@ -627,11 +651,14 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
                 color: colors.textColor
               }}
             >
-              <option value="">Tüm katlar</option>
-              <option value="0">Zemin Kat</option>
-              <option value="1">1. Kat</option>
-              <option value="2">2. Kat</option>
+              <option value="">Tüm katlar (Otomatik masa ataması)</option>
+              <option value="0">Zemin Kat (Giriş katı)</option>
+              <option value="1">1. Kat (Orta kat)</option>
+              <option value="2">2. Kat (Üst kat)</option>
             </select>
+            <small style={{ color: colors.labelColor, fontSize: "12px", fontStyle: "italic" }}>
+              Kat seçimi yaparsanız, tüm katı kapatma seçeneği aktif olur
+            </small>
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
@@ -685,7 +712,7 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
                  justifyContent: 'space-between',
                  marginBottom: '5px'
                }}>
-                 <span style={{ color: colors.labelColor }}>Kişi başına ücret (100₺ x {parseInt(formData.personCount) || 0}):</span>
+                 <span style={{ color: colors.labelColor }}>Kişi başına ücret (100₺ × {parseInt(formData.personCount) || 0}):</span>
                  <span style={{ color: colors.textColor, fontWeight: 'bold' }}>{priceInfo.basePrice}₺</span>
                </div>
                {priceInfo.additionalPrice > 0 && (
@@ -822,7 +849,7 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
               marginTop: '10px'
             }}>
               {formData.selectedFloor !== null && formData.selectedFloor !== "" 
-                ? "Bu seçenek işaretlenirse, seçilen katın tüm masaları sadece sizin grubunuz için ayrılır."
+                ? "Bu seçenek işaretlenirse, seçilen katın tüm masaları sadece sizin grubunuz için ayrılır. Ek ücret uygulanır."
                 : "Bu seçenek için önce bir kat seçmelisiniz."
               }
             </div>
@@ -869,7 +896,7 @@ export default function SpecialReservationModal({ visible, onClose, onSubmit, de
               flex: 1,
               transition: "all 0.3s ease"
             }}>
-              🎉 Özel Rezervasyon Oluştur
+              🎉 Özel Rezervasyon Oluştur ({priceInfo.totalPrice}₺)
             </button>
             <button type="button" onClick={onClose} style={{
               background: colors.cancelButtonBg,

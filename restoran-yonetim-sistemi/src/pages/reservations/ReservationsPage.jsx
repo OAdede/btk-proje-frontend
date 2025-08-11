@@ -8,7 +8,7 @@ import SpecialReservationModal from '../../components/reservations/SpecialReserv
 
 const ReservationsPage = () => {
     const navigate = useNavigate();
-    const { reservations, addReservation, addSpecialReservation, removeReservation } = useContext(TableContext);
+    const { reservations, addReservation, addSpecialReservation, removeReservation, tableStatus } = useContext(TableContext);
     const { isDarkMode, colors } = useTheme();
     const [filter, setFilter] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -43,35 +43,37 @@ const ReservationsPage = () => {
         return `${floorPrefix}${tableIndex + 1}`;
     };
 
-    // Table ID'yi masa numarasına çevir (örn: "2-0" -> "A1")
+    // Table ID'yi masa numarasına çevir (örn: "1" -> "Z1", "9" -> "A1")
     const getTableNameFromId = (tableId) => {
         if (!tableId || typeof tableId !== 'string') return tableId;
-        const parts = tableId.split('-');
-        if (parts.length === 2) {
-            const floorNumber = parseInt(parts[0]);
-            const tableIndex = parseInt(parts[1]);
-            return getTableNumber(floorNumber, tableIndex);
+        
+        const id = parseInt(tableId);
+        if (id <= 8) {
+            return `Z${id}`;
+        } else if (id <= 16) {
+            return `A${id - 8}`;
+        } else if (id <= 24) {
+            return `B${id - 16}`;
         }
         return tableId;
     };
 
-    // Masa numarasını Table ID'ye çevir (örn: "A1" -> "1-0")
+    // Masa numarasını Table ID'ye çevir (örn: "Z1" -> "1", "A1" -> "9", "B1" -> "17")
     const getTableIdFromName = (tableName) => {
         if (!tableName || typeof tableName !== 'string') return tableName;
         
-        // Z1, Z2, ... -> 0-0, 0-1, ...
+        // Z1, Z2, ... -> 1, 2, ...
         if (tableName.startsWith('Z')) {
-            const tableIndex = parseInt(tableName.substring(1)) - 1;
-            return `0-${tableIndex}`;
+            return tableName.substring(1);
         }
         
-        // A1, A2, ... -> 1-0, 1-1, ...
-        // B1, B2, ... -> 2-0, 2-1, ...
+        // A1, A2, ... -> 9, 10, ...
+        // B1, B2, ... -> 17, 18, ...
         const floorChar = tableName.charAt(0);
-        const tableIndex = parseInt(tableName.substring(1)) - 1;
+        const tableIndex = parseInt(tableName.substring(1));
         const floorNumber = floorChar.charCodeAt(0) - 64; // A=1, B=2, C=3, ...
         
-        return `${floorNumber}-${tableIndex}`;
+        return (floorNumber * 8) + tableIndex;
     };
 
     // Masa kapasitesini al (localStorage'dan)
@@ -126,10 +128,31 @@ const ReservationsPage = () => {
             
             for (let tableIndex = 0; tableIndex < 8; tableIndex++) {
                 const tableNumber = getTableNumber(floor, tableIndex);
-                const tableStatus = getTableStatus(tableNumber);
+                const tableStatusInfo = getTableStatus(tableNumber);
                 const tableCapacity = getTableCapacity(tableNumber);
                 
-                if (tableStatus.status === 'empty') {
+                if (tableStatusInfo.status === 'empty') {
+                    allTables.push({
+                        tableNumber,
+                        capacity: tableCapacity,
+                        floor,
+                        tableIndex
+                    });
+                }
+            }
+        }
+        
+        // Eğer hiç boş masa bulunamazsa, tüm masaları "empty" olarak işaretle
+        if (allTables.length === 0) {
+            
+            for (let floor = 0; floor <= 2; floor++) {
+                if (selectedFloor !== null && floor !== selectedFloor) continue;
+                
+                for (let tableIndex = 0; tableIndex < 8; tableIndex++) {
+                    const tableNumber = getTableNumber(floor, tableIndex);
+                    const tableCapacity = getTableCapacity(tableNumber);
+                    
+                    // Bu masayı boş olarak işaretle
                     allTables.push({
                         tableNumber,
                         capacity: tableCapacity,
@@ -185,13 +208,59 @@ const ReservationsPage = () => {
 
     // Masa durumunu kontrol eden fonksiyon
     const getTableStatus = (tableNumber) => {
-        // tableNumber'ı tableId formatına çevir (örn: "A1" -> "1-0")
+        // tableNumber'ı tableId formatına çevir (örn: "Z1" -> "0-0")
         const tableId = getTableIdFromName(tableNumber);
-        const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
-        if (tableReservations.length === 0) {
+        
+        // tableStatus context'ini kontrol et
+        let contextStatus = tableStatus[tableId];
+        
+        // Eğer context'te masa 'empty' olarak işaretliyse, boş kabul et
+        if (contextStatus === 'empty' || contextStatus === 'bos') {
             return { status: 'empty', reservations: [] };
         }
-        return { status: 'reserved', reservations: tableReservations };
+        
+        // Context'te 'reserved' ise, rezervasyonları kontrol et
+        if (contextStatus === 'reserved') {
+            const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
+            
+            // Eğer rezervasyon bulunamazsa ama masa hala 'reserved' olarak işaretliyse
+            if (tableReservations.length === 0) {
+                return { status: 'empty', reservations: [] };
+            }
+            
+            // Rezervasyon bulundu, geçerliliğini kontrol et
+            const now = new Date();
+            const validReservations = tableReservations.filter(res => {
+                const reservationTime = new Date(`${res.tarih}T${res.saat}`);
+                return reservationTime > now; // Sadece gelecekteki rezervasyonları kabul et
+            });
+            
+            if (validReservations.length === 0) {
+                return { status: 'empty', reservations: [] };
+            }
+            
+            return { status: 'reserved', reservations: validReservations };
+        }
+        
+        // Eğer context'te hiçbir durum yoksa, reservations array'ini kontrol et
+        if (!contextStatus) {
+            const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
+            if (tableReservations.length > 0) {
+                // Rezervasyon var ama context'te durum yok, geçerliliğini kontrol et
+                const now = new Date();
+                const validReservations = tableReservations.filter(res => {
+                    const reservationTime = new Date(`${res.tarih}T${res.saat}`);
+                    return reservationTime > now;
+                });
+                
+                if (validReservations.length > 0) {
+                    return { status: 'reserved', reservations: validReservations };
+                }
+            }
+        }
+        
+        // Diğer durumlar için (occupied, dolu vb.)
+        return { status: contextStatus || 'empty', reservations: [] };
     };
 
     // 5 saat kısıtlamasını kontrol eden fonksiyon
@@ -315,7 +384,7 @@ const ReservationsPage = () => {
             
             // Başarı mesajı
             const floorName = getFloorName(finalSelectedFloor);
-            const tableNames = floorTables.map(t => t.tableNumber).join(', ');
+            const tableNames = floorTables.map(t => getTableNumber(t.floor, t.tableIndex)).join(', ');
             
             // Yeni fiyat hesaplama (100₺ kişi başına + kat kapatma ücreti)
             const basePrice = personCount * 100;
@@ -330,7 +399,7 @@ const ReservationsPage = () => {
             
             const totalPrice = basePrice + floorClosingPrice;
             
-            setWarningMessage(`🎉 Tüm katı kapatma rezervasyonu başarıyla oluşturuldu!\n\n${floorName} tamamen sizin grubunuz için ayrıldı.\n\nAyrılan masalar: ${tableNames}\n\nToplam kapasite: ${floorTables.reduce((sum, t) => sum + t.capacity, 0)} kişi\n\nToplam ücret: ${totalPrice}₺`);
+            setWarningMessage(`🎉 Tüm katı kapatma rezervasyonu başarıyla oluşturuldu!\n\n📍 ${floorName} tamamen sizin grubunuz için ayrıldı.\n\n🪑 Ayrılan masalar: ${tableNames}\n\n👥 Toplam kapasite: ${floorTables.reduce((sum, t) => sum + t.capacity, 0)} kişi\n\n💰 Toplam ücret: ${totalPrice}₺`);
             setShowWarningModal(true);
         } else {
             // Normal özel rezervasyon - uygun masaları bul
@@ -346,9 +415,9 @@ const ReservationsPage = () => {
         addSpecialReservation(suitableTables.tables, formData);
         
         // Başarı mesajı
-        const tableNames = suitableTables.tables.map(t => t.tableNumber).join(', ');
+        const tableNames = suitableTables.tables.map(t => getTableNumber(t.floor, t.tableIndex)).join(', ');
         const totalPrice = personCount * 100; // Kişi başına 100₺
-        setWarningMessage(`🎉 Özel rezervasyon başarıyla oluşturuldu!\n\n${personCount} kişilik rezervasyonunuz şu masalar için ayrıldı: ${tableNames}\n\nToplam kapasite: ${suitableTables.totalCapacity} kişi\n\nToplam ücret: ${totalPrice}₺`);
+        setWarningMessage(`🎉 Özel rezervasyon başarıyla oluşturuldu!\n\n👥 ${personCount} kişilik rezervasyonunuz şu masalar için ayrıldı:\n\n🪑 ${tableNames}\n\n📊 Toplam kapasite: ${suitableTables.totalCapacity} kişi\n\n💰 Toplam ücret: ${totalPrice}₺`);
         setShowWarningModal(true);
     }
     
@@ -411,14 +480,18 @@ const ReservationsPage = () => {
                         tableIds: []
                     };
                 }
-                specialGroups[groupKey].tableIds.push(getTableNameFromId(reservation.tableId));
+                if (reservation.tableId) {
+                    specialGroups[groupKey].tableIds.push(getTableNameFromId(reservation.tableId));
+                }
             } else {
                 // Normal rezervasyonları ekle
-                normalReservations.push({
-                    id: reservationId || crypto.randomUUID(),
-                    masaNo: getTableNameFromId(reservation.tableId),
-                    ...reservation
-                });
+                if (reservation.tableId) {
+                    normalReservations.push({
+                        id: reservationId || crypto.randomUUID(),
+                        masaNo: getTableNameFromId(reservation.tableId),
+                        ...reservation
+                    });
+                }
             }
         });
         
@@ -435,22 +508,7 @@ const ReservationsPage = () => {
     // Rezervasyonları masa numarası ve rezervasyon verileriyle birlikte düzenle
     const reservationsList = groupSpecialReservations(actualReservations);
 
-    // Debug için rezervasyon verilerini konsola yazdır
-    console.log('Reservations count:', Object.keys(reservations).length);
-    console.log('ReservationsList count:', reservationsList.length);
-    console.log('Raw reservations data:', reservations);
-    console.log('ReservationsList data:', reservationsList);
-    
-    // Masa isimleri debug
-    reservationsList.forEach((res, index) => {
-        if (res.specialReservation) {
-            console.log(`Special reservation ${index}:`, {
-                masaNo: res.masaNo,
-                tableIds: res.tableIds,
-                originalTableId: res.relatedTables?.[0]?.tableId
-            });
-        }
-    });
+
 
     const filteredReservations = reservationsList.filter(res => {
         // Eski rezervasyonlarda 'soy' alanı kullanılmış, yeni rezervasyonlarda 'soyad'
@@ -739,12 +797,22 @@ const ReservationsPage = () => {
                                         }}>
                                             📋 Sebep: {res.reservationReason}
                                         </p>
+                                        {res.selectedFloor !== null && res.selectedFloor !== "" && (
+                                            <p style={{
+                                                color: '#4CAF50',
+                                                fontSize: '13px',
+                                                marginBottom: '5px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                🏢 Kat: {getFloorName(res.selectedFloor)}
+                                            </p>
+                                        )}
                                         <p style={{
                                             color: colors.textSecondary,
                                             fontSize: '13px',
                                             marginBottom: '5px'
                                         }}>
-                                            🏢 Masalar: {res.masaNo}
+                                            🪑 Masalar: {res.masaNo}
                                         </p>
                                         {res.wholeFloorOption && (
                                             <p style={{

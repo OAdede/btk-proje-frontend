@@ -11,7 +11,7 @@ import "./Dashboard.css";
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -329,6 +329,14 @@ const Dashboard = () => {
         const oneHour = 60 * 60 * 1000;
         const fiftyNineMinutes = 59 * 60 * 1000;
 
+        // Rezervasyon geçmiş mi kontrol et
+        if (reservationTime < now) {
+          // Rezervasyon geçmiş, masayı boş yap
+          console.log(`Reservation for table ${tableId} has passed, marking as empty`);
+          updateTableStatus(tableId, 'empty');
+          return statusInfo["empty"];
+        }
+
         // Özel rezervasyon kontrolü
         if (reservation.specialReservation) {
           if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
@@ -342,6 +350,11 @@ const Dashboard = () => {
             return statusInfo["reserved-future"];
           }
         }
+      } else {
+        // Rezervasyon bulunamadı ama masa hala reserved olarak işaretli
+        console.log(`No reservation found for table ${tableId}, marking as empty`);
+        updateTableStatus(tableId, 'empty');
+        return statusInfo["empty"];
       }
     }
 

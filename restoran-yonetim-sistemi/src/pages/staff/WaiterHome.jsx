@@ -7,7 +7,7 @@ import { useTheme } from "../../context/ThemeContext";
 export default function WaiterHome() {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { tableStatus, reservations } = useContext(TableContext);
+    const { tableStatus, reservations, updateTableStatus } = useContext(TableContext);
     const { isDarkMode } = useTheme();
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [tableCounts, setTableCounts] = useState({ 0: 8, 1: 8, 2: 8 });
@@ -54,6 +54,14 @@ export default function WaiterHome() {
                 const oneHour = 60 * 60 * 1000;
                 const fiftyNineMinutes = 59 * 60 * 1000;
 
+                // Rezervasyon geçmiş mi kontrol et
+                if (reservationTime < now) {
+                    // Rezervasyon geçmiş, masayı boş yap
+                    console.log(`Reservation for table ${tableId} has passed, marking as empty`);
+                    updateTableStatus(tableId, 'empty');
+                    return statusInfo["empty"];
+                }
+
                 // Özel rezervasyon kontrolü
                 if (reservation.specialReservation) {
                     if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
@@ -67,6 +75,11 @@ export default function WaiterHome() {
                         return statusInfo["reserved-future"];
                     }
                 }
+            } else {
+                // Rezervasyon bulunamadı ama masa hala reserved olarak işaretli
+                console.log(`No reservation found for table ${tableId}, marking as empty`);
+                updateTableStatus(tableId, 'empty');
+                return statusInfo["empty"];
             }
         }
 

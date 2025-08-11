@@ -242,14 +242,21 @@ export function TableProvider({ children }) {
     const addSpecialReservation = (tables, reservationData) => {
         const reservationIds = [];
         
+        // Masa numarasını doğru formatta al (Z1, Z2, A1, A2 gibi)
+        const getTableNumber = (floorNumber, tableIndex) => {
+            const floorPrefix = floorNumber === 0 ? "Z" : String.fromCharCode(65 + floorNumber - 1);
+            return `${floorPrefix}${tableIndex + 1}`;
+        };
+        
         tables.forEach(table => {
             const reservationId = crypto.randomUUID();
             const tableReservationData = {
                 ...reservationData,
+                adSoyad: reservationData.adSoyad || `${reservationData.ad} ${reservationData.soyad}`.trim(),
                 kisiSayisi: Math.min(table.capacity, reservationData.personCount),
-                not: `${reservationData.reservationReason} - Özel rezervasyon (${tables.length} masa)`,
+                not: `${reservationData.reservationReason} (${tables.length} masa)`,
                 specialReservation: true,
-                relatedTables: tables.map(t => t.tableNumber),
+                relatedTables: tables.map(t => getTableNumber(t.floor, t.tableIndex)),
                 selectedFloor: reservationData.selectedFloor,
                 wholeFloorOption: reservationData.wholeFloorOption,
                 floorClosingHours: reservationData.floorClosingHours,
@@ -280,10 +287,37 @@ export function TableProvider({ children }) {
         setReservations(prev => {
             const newReservations = { ...prev };
             const reservation = newReservations[reservationId];
+            
             if (reservation) {
-                delete newReservations[reservationId];
-                setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: 'empty' }));
+                // Eğer özel rezervasyon ise, tüm ilgili rezervasyonları sil
+                if (reservation.specialReservation && reservation.relatedTables) {
+                    let deletedCount = 0;
+                    
+                    // Aynı kişi, tarih, saat olan tüm rezervasyonları bul ve sil
+                    Object.entries(newReservations).forEach(([id, res]) => {
+                        if (res.specialReservation && 
+                            res.ad === reservation.ad && 
+                            res.soyad === reservation.soyad && 
+                            res.telefon === reservation.telefon && 
+                            res.tarih === reservation.tarih && 
+                            res.saat === reservation.saat) {
+                            delete newReservations[id];
+                            deletedCount++;
+                            // Masa durumunu boş yap
+                            if (res.tableId) {
+                                setTableStatus(prevStatus => ({ ...prevStatus, [res.tableId]: 'empty' }));
+                            }
+                        }
+                    });
+                } else {
+                    // Normal rezervasyon ise sadece bu rezervasyonu sil
+                    delete newReservations[reservationId];
+                    if (reservation.tableId) {
+                        setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: 'empty' }));
+                    }
+                }
             }
+            
             return newReservations;
         });
     };

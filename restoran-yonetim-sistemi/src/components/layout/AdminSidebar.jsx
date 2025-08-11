@@ -36,11 +36,53 @@ const AdminSidebar = () => {
             return 0;
         }
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugün
-        return Object.values(reservations).filter(reservation =>
-            reservation.tarih === today
+        
+        // Normal rezervasyonları say
+        const normalReservations = Object.values(reservations).filter(reservation => 
+            reservation.tarih === today && !reservation.specialReservation
         ).length;
+        
+        // Özel rezervasyonları grupla (aynı kişi, tarih, saat olanları 1 olarak say)
+        const specialReservations = Object.values(reservations).filter(reservation => 
+            reservation.tarih === today && reservation.specialReservation
+        );
+        
+        // Özel rezervasyonları grupla
+        const specialGroups = {};
+        specialReservations.forEach(reservation => {
+            const groupKey = `${reservation.ad}_${reservation.soyad}_${reservation.telefon}_${reservation.tarih}_${reservation.saat}`;
+            if (!specialGroups[groupKey]) {
+                specialGroups[groupKey] = true;
+            }
+        });
+        
+        const uniqueSpecialReservations = Object.keys(specialGroups).length;
+        
+        return normalReservations + uniqueSpecialReservations;
     };
 
+    // Bugünkü özel rezervasyon sayısını hesapla (ünlem işareti için)
+    const getTodaySpecialReservationsCount = () => {
+        if (!reservations || Object.keys(reservations).length === 0) {
+            return 0;
+        }
+        const today = new Date().toISOString().split('T')[0];
+        
+        const specialReservations = Object.values(reservations).filter(reservation => 
+            reservation.tarih === today && reservation.specialReservation
+        );
+        
+        // Özel rezervasyonları grupla
+        const specialGroups = {};
+        specialReservations.forEach(reservation => {
+            const groupKey = `${reservation.ad}_${reservation.soyad}_${reservation.telefon}_${reservation.tarih}_${reservation.saat}`;
+            if (!specialGroups[groupKey]) {
+                specialGroups[groupKey] = true;
+            }
+        });
+        
+        return Object.keys(specialGroups).length;
+    };
 
 
     const handleLogout = () => {
@@ -335,21 +377,50 @@ const AdminSidebar = () => {
                             <span style={{ fontSize: '1.2rem' }}>📅</span>
                             <span>Rezervasyonlar</span>
                             {getTodayReservationsCount() > 0 && (
-                                <span style={{
-                                    backgroundColor: '#28a745',
-                                    color: 'white',
-                                    borderRadius: '50%',
-                                    width: '20px',
-                                    height: '20px',
+                                <div style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold',
+                                    gap: '5px',
                                     marginLeft: 'auto'
                                 }}>
-                                    {getTodayReservationsCount()}
-                                </span>
+                                    {/* Normal rezervasyon sayısı */}
+                                    {getTodayReservationsCount() - getTodaySpecialReservationsCount() > 0 && (
+                                        <span style={{
+                                            backgroundColor: '#28a745',
+                                            color: 'white',
+                                            borderRadius: '50%',
+                                            width: '20px',
+                                            height: '20px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            {getTodayReservationsCount() - getTodaySpecialReservationsCount()}
+                                        </span>
+                                    )}
+                                    
+                                    {/* Özel rezervasyon sayısı (ünlem işareti ile) */}
+                                    {getTodaySpecialReservationsCount() > 0 && (
+                                        <span style={{
+                                            backgroundColor: '#dc3545',
+                                            color: 'white',
+                                            borderRadius: '50%',
+                                            width: '24px',
+                                            height: '24px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '0.9rem',
+                                            fontWeight: 'bold',
+                                            border: '2px solid #ffc107',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                                        }}>
+                                            !{getTodaySpecialReservationsCount()}
+                                        </span>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </NavLink>
