@@ -14,7 +14,7 @@
 .top-nav-left {
     display: flex;
     align-items: center;
-    margin-left: 280px;
+    margin-left: 20%;
 }
 
 .top-nav-title {
@@ -22,6 +22,8 @@
     font-weight: 700;
     color: #343a40;
     margin: 0;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .top-nav-center {
@@ -48,6 +50,9 @@
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
 }
 
 .role-btn:hover {
@@ -77,11 +82,15 @@
     font-size: 0.9rem;
     font-weight: 600;
     color: #343a40;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .user-role {
     font-size: 0.8rem;
     color: #6c757d;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .logout-btn {
@@ -94,6 +103,8 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .logout-btn:hover {
@@ -111,6 +122,8 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .login-btn:hover {
@@ -118,28 +131,176 @@
     border-color: #0056b3;
 }
 
-/* Responsive design */
+/* Tablet için responsive tasarım */
+@media (max-width: 1024px) {
+    .top-nav {
+        padding: 0 20px;
+        height: 65px;
+    }
+
+    .top-nav-left {
+        margin-left: 25%;
+    }
+
+    .top-nav-title {
+        font-size: 1.3rem;
+    }
+
+    .role-btn {
+        padding: 6px 14px;
+        font-size: 0.85rem;
+    }
+
+    .user-name {
+        font-size: 0.85rem;
+    }
+
+    .user-role {
+        font-size: 0.75rem;
+    }
+
+    .logout-btn,
+    .login-btn {
+        padding: 6px 14px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Mobil için responsive tasarım */
 @media (max-width: 768px) {
     .top-nav {
         padding: 0 16px;
         height: 60px;
     }
 
+    .top-nav-left {
+        margin-left: 30%;
+    }
+
     .top-nav-title {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 
     .role-switcher {
         gap: 4px;
-        padding: 2px;
+        padding: 3px;
     }
 
     .role-btn {
-        padding: 6px 12px;
+        padding: 5px 12px;
         font-size: 0.8rem;
+    }
+
+    .top-nav-right {
+        gap: 12px;
     }
 
     .user-info {
         display: none;
+    }
+
+    .logout-btn,
+    .login-btn {
+        padding: 5px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Küçük mobil ekranlar için */
+@media (max-width: 480px) {
+    .top-nav {
+        padding: 0 12px;
+        height: 55px;
+    }
+
+    .top-nav-left {
+        margin-left: 35%;
+    }
+
+    .top-nav-title {
+        font-size: 1rem;
+    }
+
+    .role-switcher {
+        gap: 2px;
+        padding: 2px;
+    }
+
+    .role-btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+
+    .top-nav-right {
+        gap: 8px;
+    }
+
+    .logout-btn,
+    .login-btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Çok küçük ekranlar için */
+@media (max-width: 360px) {
+    .top-nav {
+        padding: 0 8px;
+        height: 50px;
+    }
+
+    .top-nav-left {
+        margin-left: 40%;
+    }
+
+    .top-nav-title {
+        font-size: 0.9rem;
+    }
+
+    .role-switcher {
+        gap: 1px;
+        padding: 1px;
+    }
+
+    .role-btn {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+    }
+
+    .top-nav-right {
+        gap: 6px;
+    }
+
+    .logout-btn,
+    .login-btn {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+    }
+}
+
+/* Landscape modda mobil için */
+@media (max-height: 500px) and (orientation: landscape) {
+    .top-nav {
+        height: 50px;
+        padding: 0 12px;
+    }
+
+    .top-nav-left {
+        margin-left: 25%;
+    }
+
+    .top-nav-title {
+        font-size: 1rem;
+    }
+
+    .role-btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+
+    .logout-btn,
+    .login-btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
     }
 }

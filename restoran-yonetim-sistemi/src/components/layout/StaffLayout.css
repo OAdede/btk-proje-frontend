@@ -11,7 +11,9 @@
 }
 
 .staff-sidebar {
-    width: 240px;
+    min-width: 200px;
+    max-width: 300px;
+    width: 20%;
     background: var(--sidebar);
     border-right: 1px solid var(--border);
     padding: 24px 16px;
@@ -34,6 +36,8 @@
     color: var(--text);
     font-weight: 700;
     margin: 0;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .staff-sidebar-nav {
@@ -57,6 +61,10 @@
     cursor: pointer;
     text-align: left;
     width: 100%;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.3;
 }
 
 .staff-nav-item:hover {
@@ -145,6 +153,188 @@
     --hover: #53364D;
     --shadow: rgba(50, 38, 58, 0.3);
     --overlay: rgba(50, 38, 58, 0.8);
+}
+
+/* Tablet için responsive tasarım */
+@media (max-width: 1024px) {
+    .staff-sidebar {
+        width: 25%;
+        min-width: 180px;
+        max-width: 250px;
+        padding: 20px 12px;
+    }
+
+    .staff-main-content {
+        padding: 30px;
+    }
+
+    .staff-sidebar-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .staff-nav-item {
+        padding: 10px 14px;
+        font-size: 0.95rem;
+    }
+}
+
+/* Mobil için responsive tasarım */
+@media (max-width: 768px) {
+    .staff-sidebar {
+        width: 30%;
+        min-width: 160px;
+        max-width: 200px;
+        padding: 16px 10px;
+    }
+
+    .staff-main-content {
+        padding: 20px;
+    }
+
+    .staff-sidebar-header {
+        padding: 0 6px;
+        margin-bottom: 20px;
+    }
+
+    .staff-sidebar-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .staff-nav-item {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+    }
+
+    .staff-sidebar-bottom {
+        padding-top: 12px;
+    }
+}
+
+/* Küçük mobil ekranlar için */
+@media (max-width: 480px) {
+    .staff-sidebar {
+        width: 35%;
+        min-width: 140px;
+        max-width: 180px;
+        padding: 12px 8px;
+    }
+
+    .staff-main-content {
+        padding: 15px;
+    }
+
+    .staff-sidebar-header {
+        padding: 0 4px;
+        margin-bottom: 16px;
+    }
+
+    .staff-sidebar-header h2 {
+        font-size: 1rem;
+    }
+
+    .staff-nav-item {
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Çok küçük ekranlar için */
+@media (max-width: 360px) {
+    .staff-sidebar {
+        width: 40%;
+        min-width: 120px;
+        max-width: 160px;
+        padding: 10px 6px;
+    }
+
+    .staff-main-content {
+        padding: 12px;
+    }
+
+    .staff-sidebar-header {
+        padding: 0 2px;
+        margin-bottom: 12px;
+    }
+
+    .staff-sidebar-header h2 {
+        font-size: 0.9rem;
+    }
+
+    .staff-nav-item {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Landscape modda mobil için */
+@media (max-height: 500px) and (orientation: landscape) {
+    .staff-sidebar {
+        width: 25%;
+        min-width: 160px;
+        max-width: 200px;
+        padding: 12px 8px;
+    }
+
+    .staff-main-content {
+        padding: 12px;
+    }
+
+    .staff-sidebar-header {
+        margin-bottom: 12px;
+    }
+
+    .staff-sidebar-header h2 {
+        font-size: 1rem;
+    }
+
+    .staff-nav-item {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .staff-sidebar-bottom {
+        padding-top: 8px;
+    }
+}
+
+/* Mobil sidebar toggle stilleri */
+@media (max-width: 768px) {
+    .mobile-sidebar-toggle {
+        display: flex !important;
+    }
+
+    .staff-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        position: fixed;
+        z-index: 1000;
+    }
+
+    .staff-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .staff-main-content {
+        margin-left: 0 !important;
+        padding: 20px;
+    }
+
+    .sidebar-overlay {
+        display: block !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .staff-main-content {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 360px) {
+    .staff-main-content {
+        padding: 12px;
+    }
 }
 
 .view-mode-button {
