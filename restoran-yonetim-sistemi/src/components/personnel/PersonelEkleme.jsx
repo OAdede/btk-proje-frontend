@@ -5,9 +5,7 @@ import { cameraUtils } from '../../utils/cameraUtils';
 import './PersonelEkleme.css';
 
 const PersonelEkleme = () => {
-  const [personnel, setPersonnel] = useState([
-  
-  ]);
+  const [personnel, setPersonnel] = useState([]);
 
   const [newPerson, setNewPerson] = useState({
     name: "",
@@ -31,6 +29,50 @@ const PersonelEkleme = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+  // Load users from backend on component mount
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setIsLoadingUsers(true);
+        const users = await personnelService.getAllUsers();
+        
+                 // Transform backend data to match component format
+         const transformedUsers = users.map(user => {
+           // Map role from backend - convert number to string role name
+           let roleName = 'garson'; // default
+           if (user.roles && user.roles.length > 0) {
+             const roleId = user.roles[0];
+             // Map role ID to role name
+             if (roleId === 0 || roleId === 'waiter') roleName = 'garson';
+             else if (roleId === 1 || roleId === 'cashier') roleName = 'kasiyer';
+             else if (roleId === 2 || roleId === 'manager') roleName = 'müdür';
+             else if (roleId === 3 || roleId === 'admin') roleName = 'admin';
+           }
+           
+                       return {
+              id: user.id,
+              name: user.name,
+              phone: user.phoneNumber,
+              email: user.email,
+              role: roleName,
+              photo: user.photoBase64 && user.photoBase64.startsWith('data:image/') ? user.photoBase64 : null,
+              isActive: true // Default to active
+            };
+         });
+        
+        setPersonnel(transformedUsers);
+      } catch (err) {
+        console.error('Kullanıcılar yüklenemedi:', err);
+        setError('Kullanıcılar yüklenirken bir hata oluştu: ' + err.message);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
 
   const updateFilteredPersonnel = () => {
     let filtered = personnel.filter(person => {
@@ -294,18 +336,21 @@ const PersonelEkleme = () => {
             {/* Fotoğraf Ekleme Bölümü */}
             {capturedImage ? (
               <div style={{ marginBottom: '15px', textAlign: 'center' }}>
-                <img 
-                  src={capturedImage} 
-                  alt="Seçilen fotoğraf" 
-                  style={{
-                    width: '120px',
-                    height: '120px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '3px solid #ddd',
-                    marginBottom: '10px'
-                  }}
-                />
+                                 <img 
+                   src={capturedImage} 
+                   alt="Seçilen fotoğraf" 
+                   style={{
+                     width: '120px',
+                     height: '120px',
+                     borderRadius: '50%',
+                     objectFit: 'cover',
+                     border: '3px solid #ddd',
+                     marginBottom: '10px'
+                   }}
+                   onError={(e) => {
+                     e.target.src = '/default-avatar.png';
+                   }}
+                 />
                 <div>
                   <button
                     type="button"
@@ -408,18 +453,21 @@ const PersonelEkleme = () => {
               {/* Fotoğraf önizlemesi */}
               {tempImage && (
                 <div style={{ marginBottom: '15px' }}>
-                  <img 
-                    src={tempImage} 
-                    alt="Önizleme" 
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '3px solid var(--border)',
-                      margin: '0 auto'
-                    }}
-                  />
+                                     <img 
+                     src={tempImage} 
+                     alt="Önizleme" 
+                     style={{
+                       width: '120px',
+                       height: '120px',
+                       borderRadius: '50%',
+                       objectFit: 'cover',
+                       border: '3px solid var(--border)',
+                       margin: '0 auto'
+                     }}
+                     onError={(e) => {
+                       e.target.src = '/default-avatar.png';
+                     }}
+                   />
                 </div>
               )}
 
@@ -631,7 +679,19 @@ const PersonelEkleme = () => {
 
       {/* Personel Listesi */}
       <div className="personnel-list">
-        {filteredPersonnel.length === 0 ? (
+        {isLoadingUsers ? (
+          <div style={{
+            textAlign: "center",
+            padding: "40px",
+            color: "var(--text-secondary)",
+            background: "var(--surface)",
+            borderRadius: 12,
+            boxShadow: "0 1px 6px var(--shadow)",
+            border: "1px solid var(--border)"
+          }}>
+            Kullanıcılar yükleniyor...
+          </div>
+        ) : filteredPersonnel.length === 0 ? (
           <div style={{
             textAlign: "center",
             padding: "40px",
@@ -647,21 +707,24 @@ const PersonelEkleme = () => {
           filteredPersonnel.map((person) => (
                                     <div key={person.id || crypto.randomUUID()} className="personnel-item">
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <img 
-                  src={person.photo || '/default-avatar.png'} 
-                  alt={person.name}
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '2px solid #ddd'
-                  }}
-                />
+                                 <img 
+                   src={person.photo && person.photo.startsWith('data:image/') && person.photo.length < 3000 ? person.photo : '/default-avatar.png'} 
+                   alt={person.name}
+                   style={{
+                     width: '50px',
+                     height: '50px',
+                     borderRadius: '50%',
+                     objectFit: 'cover',
+                     border: '2px solid #ddd'
+                   }}
+                   onError={(e) => {
+                     e.target.src = '/default-avatar.png';
+                   }}
+                 />
                 <div className="personnel-info">
                   <div className="personnel-name">{person.name}</div>
                   <div className="personnel-details">
-                    {person.phone} • {person.email} • {person.role.charAt(0).toUpperCase() + person.role.slice(1)}
+                    {person.phone} • {person.email} • {typeof person.role === 'string' ? person.role.charAt(0).toUpperCase() + person.role.slice(1) : 'Garson'}
                   </div>
                 </div>
               </div>

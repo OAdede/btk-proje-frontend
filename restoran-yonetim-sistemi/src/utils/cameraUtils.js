@@ -24,12 +24,14 @@ export const cameraUtils = {
     }
 
     const canvas = document.createElement('canvas');
-    canvas.width = videoElement.videoWidth;
-    canvas.height = videoElement.videoHeight;
+    // Use smaller dimensions for captured photos
+    canvas.width = 100;
+    canvas.height = 100;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoElement, 0, 0);
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
     
-    return canvas.toDataURL('image/jpeg');
+    // Use lower quality to reduce file size
+    return canvas.toDataURL('image/jpeg', 0.5);
   },
 
   // Handle file upload
@@ -68,7 +70,7 @@ export const cameraUtils = {
   },
 
   // Resize image for better performance
-  resizeImage(imageData, maxWidth = 300, maxHeight = 300) {
+  resizeImage(imageData, maxWidth = 100, maxHeight = 100) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -93,7 +95,8 @@ export const cameraUtils = {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
+        // Use lower quality (0.5) to reduce file size
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
       };
       img.src = imageData;
     });
