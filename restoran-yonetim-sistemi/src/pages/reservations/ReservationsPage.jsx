@@ -793,24 +793,73 @@ const ReservationsPage = () => {
                                             fontSize: '14px',
                                             marginBottom: '5px'
                                         }}>
-                                            🎉 Özel Rezervasyon
-                                        </p>
-                                        <p style={{
-                                            color: colors.textSecondary,
-                                            fontSize: '13px',
-                                            marginBottom: '5px'
-                                        }}>
                                             📋 Sebep: {res.reservationReason}
                                         </p>
-                                        {res.selectedFloor !== null && res.selectedFloor !== "" && (
+                                        {res.selectedFloor !== null && res.selectedFloor !== "" ? (
                                             <p style={{
                                                 color: '#4CAF50',
-                                                fontSize: '13px',
-                                                marginBottom: '5px',
-                                                fontWeight: 'bold'
+                                                fontSize: '14px',
+                                                marginBottom: '8px',
+                                                fontWeight: 'bold',
+                                                backgroundColor: isDarkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                                                padding: '4px 8px',
+                                                borderRadius: '6px',
+                                                display: 'inline-block'
                                             }}>
-                                                🏢 Kat: {getFloorName(res.selectedFloor)}
+                                                🏢 {getFloorName(res.selectedFloor)}
                                             </p>
+                                        ) : (
+                                            // Masa numaralarından kat bilgisini çıkar
+                                            (() => {
+                                                const masaNo = res.masaNo || '';
+                                                if (masaNo.includes('Z')) {
+                                                    return (
+                                                        <p style={{
+                                                            color: '#4CAF50',
+                                                            fontSize: '14px',
+                                                            marginBottom: '8px',
+                                                            fontWeight: 'bold',
+                                                            backgroundColor: isDarkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '6px',
+                                                            display: 'inline-block'
+                                                        }}>
+                                                            🏢 Zemin
+                                                        </p>
+                                                    );
+                                                } else if (masaNo.includes('A')) {
+                                                    return (
+                                                        <p style={{
+                                                            color: '#4CAF50',
+                                                            fontSize: '14px',
+                                                            marginBottom: '8px',
+                                                            fontWeight: 'bold',
+                                                            backgroundColor: isDarkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '6px',
+                                                            display: 'inline-block'
+                                                        }}>
+                                                            🏢 1. Kat
+                                                        </p>
+                                                    );
+                                                } else if (masaNo.includes('B')) {
+                                                    return (
+                                                        <p style={{
+                                                            color: '#4CAF50',
+                                                            fontSize: '14px',
+                                                            marginBottom: '8px',
+                                                            fontWeight: 'bold',
+                                                            backgroundColor: isDarkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '6px',
+                                                            display: 'inline-block'
+                                                        }}>
+                                                            🏢 2. Kat
+                                                        </p>
+                                                    );
+                                                }
+                                                return null;
+                                            })()
                                         )}
                                         <p style={{
                                             color: colors.textSecondary,
