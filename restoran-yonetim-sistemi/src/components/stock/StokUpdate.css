@@ -1,88 +1,166 @@
-/* StokUpdate.css */
+:root {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f0f0f0;
+  --text-color: #333333;
+  --success: #28a745;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --info: #007bff;
+  --button-edit: #ffc107;
+  --button-delete: #dc3545;
+  --button-add: #28a745;
+  --border-radius: 8px;
+  --shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  --modal-input-bg: #e5e5f0;
+}
+
+body {
+  background-color: var(--secondary-bg);
+  color: var(--text-color);
+  font-family: 'Poppins', sans-serif;
+}
+
 .stok-update-container {
   max-width: 1000px;
   margin: 32px auto;
-  background-color: var(--background);
+  background: var(--primary-bg);
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   padding: 32px;
-  color: var(--text);
 }
 
 .stok-update-title {
-  margin: 0 0 16px 0;
+  margin: 0 0 16px;
   font-weight: 700;
+  text-align: center;
 }
 
-.category-filter-buttons {
+/* Tab Butonları */
+.tab-buttons {
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  gap: 16px;
   margin-bottom: 24px;
-  flex-wrap: wrap;
 }
 
-.category-filter-button {
-  background-color: var(--card-background);
-  color: var(--text);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.category-filter-button.active {
-  background-color: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
-
-.add-product-form {
-  display: flex;
-  gap: 12px;
-  margin: 20px 0 28px 0;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.add-product-form input {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background-color: var(--surface-background);
-  color: var(--text);
-  flex-grow: 1;
-}
-
-.add-product-form .product-name-input {
-  flex: 2;
-}
-
-.add-product-form .product-price-input {
-  flex: 1;
-}
-
-.add-product-form .product-stock-input {
-  flex: 1;
-}
-
-.add-product-form .product-minstock-input {
-  flex: 1;
-}
-
-.add-product-button {
-  background-color: var(--primary);
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 24px;
+.tab-button {
+  background: #e9ecef;
+  color: var(--text-color);
+  border: 1px solid #ced4da;
+  border-radius: var(--border-radius);
+  padding: 10px 24px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.product-list {
+.tab-button.active {
+  background: var(--info);
+  color: #ffffff;
+}
+
+.tab-button:hover {
+  background: #ced4da;
+}
+
+/* Kategori Filtreleri */
+.category-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.category-filter-button {
+  background: #e9ecef;
+  color: var(--text-color);
+  border: 1px solid #ced4da;
+  border-radius: var(--border-radius);
+  padding: 8px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.category-filter-button.active {
+  background: var(--info);
+  color: #ffffff;
+}
+
+.category-filter-button:hover {
+  background: #ced4da;
+}
+
+/* Ürün Ekleme Formu - DÜZENLEME BAŞLANGICI */
+.add-product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--border-radius);
+  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.add-product-form input,
+.add-product-form textarea,
+.add-product-form select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  background: #ffffff;
+  color: var(--text-color);
+  font-size: 1em;
+}
+
+.add-product-form button {
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background-color: var(--info);
+  color: #ffffff;
+}
+
+.recipe-form {
+    display: flex;
+    flex-direction: column; /* Yatay hiza yerine dikey hiza sağlar */
+    gap: 10px; 
+}
+
+.recipe-list {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: var(--border-radius);
+}
+
+.recipe-list ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 8px;
+}
+
+.recipe-list li {
+  margin-bottom: 4px;
+  font-size: 0.9em;
+  color: #6c757d;
+}
+
+.add-product-button {
+  background: var(--success);
+  color: #ffffff;
+  padding: 14px;
+  font-weight: 700;
+  border-radius: var(--border-radius);
+}
+/* Ürün Ekleme Formu - DÜZENLEME BİTİŞİ */
+
+
+/* Ürün Listesi */
+.product-list, .ingredient-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -90,142 +168,272 @@
   min-height: 550px;
 }
 
-.product-list-item {
+.product-list-item, .ingredient-list-item {
   display: flex;
   align-items: center;
-  background-color: var(--card-background);
-  border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
   padding: 12px 20px;
   gap: 20px;
-  flex-wrap: wrap;
 }
 
-.product-list-item>div {
+.item-name { flex: 2; font-weight: 600; }
+.item-price { flex: 1; font-weight: 500; }
+.item-stock { flex: 1; font-weight: 500; }
+.item-min-stock { flex: 1; font-weight: 500; }
+.item-status { 
+  flex: 1.5; 
+  text-align: center; 
+  font-weight: 600; 
+  color: #ffffff; 
+  padding: 4px 12px; 
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.item-details { flex: 3; }
+.item-status-and-actions { display: flex; align-items: center; gap: 20px; }
+.item-recipe {
+  font-size: 0.9em;
+  margin-top: 8px;
+  color: #6c757d;
+}
+.item-recipe strong {
+  color: var(--text-color);
   font-weight: 500;
 }
-
-.product-list-item .item-name {
-  flex: 3;
-  font-weight: 600;
-  min-width: 150px;
+.item-recipe ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+}
+.item-recipe li {
+  font-size: 0.9em;
 }
 
-.product-list-item .item-price {
-  flex: 1;
-  min-width: 60px;
-}
+.status-success { background-color: var(--success); }
+.status-warning { background-color: var(--warning); }
+.status-danger { background-color: var(--danger); }
+.status-undefined { background-color: var(--info); }
 
-.product-list-item .item-stock {
-  flex: 1;
-  min-width: 60px;
-}
-
-.product-list-item .item-min-stock {
-  flex: 1;
-  min-width: 80px;
-}
-
-.product-list-item .item-status {
-  flex: 1.5;
-  text-align: center;
-  font-weight: 600;
-  color: #ffffff;
-  padding: 4px 12px;
-  border-radius: 12px;
-  min-width: 80px;
-}
-
-.product-list-item .item-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.product-list-item .item-actions button {
-  color: #ffffff;
+.edit-button,
+.delete-button {
   border: none;
   border-radius: 6px;
   padding: 7px 18px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  color: #ffffff;
 }
 
-.edit-button {
-  background-color: var(--primary);
+.edit-button { background: var(--button-edit); }
+.delete-button { background: var(--button-delete); }
+.delete-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.no-products-message {
+  text-align: center;
+  color: #6c757d;
+  margin-top: 50px;
 }
 
-.delete-button {
-  background-color: var(--danger);
+/* Sayfalama */
+.pagination-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
 }
 
+.pagination-buttons button {
+  background: #e9ecef;
+  color: var(--text-color);
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pagination-buttons button.active {
+  background: var(--info);
+  color: #ffffff;
+}
+
+.pagination-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
 .edit-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
 }
 
 .edit-modal-content {
-  background-color: var(--card-background);
-  border-radius: 12px;
-  padding: 32px;
-  min-width: 400px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border);
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-recipe-section {
+    background-color: var(--primary-bg);
+    padding: 16px 24px; /* NEGATİF MARGİN KALDIRILDI */
+    margin: 16px -24px 20px;
+    border-radius: 0 0 12px 12px;
 }
 
 .edit-modal-content h3 {
-  margin: 0 0 20px 0;
+    margin-top: 0;
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 1.5rem;
 }
 
-.edit-modal-form div {
-  margin-bottom: 20px;
+.edit-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.modal-item-name {
+    font-weight: 600;
+    margin-bottom: 8px;
 }
 
 .edit-modal-form label {
-  font-weight: 600;
-  margin-bottom: 8px;
-  display: block;
+    color: #6c757d;
+    font-size: 0.9em;
+    font-weight: 500;
 }
 
 .edit-modal-form input {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 12px;
-  background-color: var(--surface-background);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    background: #ffffff;
+    color: var(--text-color);
 }
 
 .edit-modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
-.edit-modal-actions button {
-  border: none;
-  border-radius: 6px;
-  padding: 8px 20px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.cancel-button {
-  background-color: #6c757d;
-  color: #ffffff;
-}
-
+.cancel-button,
 .save-button {
-  background-color: var(--primary);
-  color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.cancel-button { background: var(--button-delete); }
+.save-button { background: var(--info); }
+
+/* --- DÜZENLEME MODALI TARİF KISMI İÇİN ÖZEL STİLLER --- */
+.item-recipe strong {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: var(--text-color);
+}
+
+.item-recipe ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 8px;
+}
+
+.modal-recipe-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.modal-recipe-item span:first-child {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+.modal-recipe-item .recipe-quantity-input {
+    width: 60px;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    text-align: right;
+    background-color: var(--modal-input-bg);
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.modal-recipe-item span:nth-of-type(2) {
+    width: 30px;
+    text-align: left;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+.modal-recipe-item .delete-button {
+    background-color: var(--button-delete);
+    color: #ffffff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.recipe-add-form {
+    margin-top: 20px;
+}
+
+.recipe-add-form .recipe-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.recipe-add-form select,
+.recipe-add-form input {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    background-color: var(--modal-input-bg);
+    color: var(--text-color);
+    flex-grow: 1;
+}
+
+.recipe-add-form .modal-add-ingredient-button {
+    background-color: var(--button-add);
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
 }

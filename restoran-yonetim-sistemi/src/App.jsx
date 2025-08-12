@@ -4,7 +4,7 @@ import { useContext } from 'react';
 import { TableProvider } from './context/TableContext.jsx';
 import { AuthContext } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
-import { getRoleInfoFromToken } from './utils/jwt.js';
+import { getRoleInfoFromToken, isTokenExpired } from './utils/jwt.js';
 
 
 // Layouts
@@ -54,6 +54,12 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const effectiveRole = roleInfo.role ?? user?.role;
 
   if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (isTokenExpired(token)) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     return <Navigate to="/login" replace />;
   }
 

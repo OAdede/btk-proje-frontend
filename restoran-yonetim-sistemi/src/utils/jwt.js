@@ -59,4 +59,15 @@ export function getRoleInfoFromToken(token) {
     return { roleId, role, userId, email, name, surname };
 }
 
+export function isTokenExpired(token) {
+    try {
+        const payload = decodeJwtPayload(token);
+        if (!payload || !payload.exp) return true;
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        return Number(payload.exp) <= nowSeconds;
+    } catch {
+        return true;
+    }
+}
+
 

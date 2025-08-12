@@ -10,10 +10,11 @@
     flex: 1;
 }
 
+/* Desktop/default: sidebar always visible as a left column */
 .admin-sidebar {
-    min-width: 200px;
-    max-width: 300px;
-    width: 20%;
+    width: 260px;
+    min-width: 260px;
+    max-width: 280px;
     background: var(--sidebar);
     border-right: 1px solid var(--border);
     padding: 24px 16px;
@@ -21,22 +22,14 @@
     box-shadow: 0 2px 8px var(--shadow);
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    position: fixed;
+    height: calc(100vh);
+    position: sticky;
     top: 0;
-    left: 0;
-    z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
+    z-index: 10;
+    transform: none;
 }
 
-.admin-sidebar.open {
-    transform: translateX(0);
-}
-
-.admin-sidebar.closed {
-    transform: translateX(-100%);
-}
+/* open/closed classes are used only in mobile view (overridden below) */
 
 .admin-sidebar-header {
     padding: 0 8px;
@@ -157,7 +150,8 @@
     border-radius: 12px;
     padding: 15px;
     cursor: pointer;
-    display: flex;
+    display: none;
+    /* hidden by default; shown on small screens */
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -229,11 +223,28 @@
 
 /* Tablet için responsive tasarım */
 @media (max-width: 1024px) {
+
+    /* Switch to overlay/drawer behavior */
     .admin-sidebar {
-        width: 25%;
-        min-width: 180px;
-        max-width: 250px;
+        width: 280px;
+        min-width: 260px;
+        max-width: 320px;
         padding: 20px 12px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .admin-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .admin-sidebar.closed {
+        transform: translateX(-100%);
     }
 
     .admin-main-content {
@@ -254,9 +265,9 @@
 /* Mobil için responsive tasarım */
 @media (max-width: 768px) {
     .admin-sidebar {
-        width: 30%;
-        min-width: 160px;
-        max-width: 200px;
+        width: 85vw;
+        min-width: 260px;
+        max-width: 90vw;
         padding: 16px 10px;
     }
 
@@ -370,7 +381,6 @@
 
     .admin-sidebar {
         transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
         position: fixed;
         z-index: 1000;
     }
