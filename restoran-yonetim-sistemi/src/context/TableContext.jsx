@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import { reservationService } from "../services/reservationService";
 
 export const TableContext = createContext();
 
@@ -223,23 +224,68 @@ export function TableProvider({ children }) {
         }
     };
 
-    const addReservation = (tableId, reservationData) => {
-        const reservationId = crypto.randomUUID();
-        const newReservation = {
-            id: reservationId,
-            tableId,
-            ...reservationData,
-            createdAt: new Date().toISOString()
-        };
-        setReservations(prev => ({
-            ...prev,
-            [reservationId]: newReservation
-        }));
-        setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
-        return reservationId;
+    const addReservation = async (tableId, reservationData) => {
+        try {
+            // Backend'e rezervasyon gönder
+            const backendReservation = await reservationService.createReservation({
+                ...reservationData,
+                tableId
+            });
+
+            // Backend'den gelen ID'yi kullan
+            const reservationId = backendReservation.id || crypto.randomUUID();
+            const newReservation = {
+                id: reservationId,
+                tableId,
+                ...reservationData,
+                createdAt: backendReservation.createdAt || new Date().toISOString(),
+                backendId: backendReservation.id, // Backend ID'sini sakla
+                statusId: backendReservation.statusId,
+                statusName: backendReservation.statusName,
+                statusNameInTurkish: backendReservation.statusNameInTurkish,
+                salonId: backendReservation.salonId,
+                salonName: backendReservation.salonName
+            };
+
+            // Local state'i güncelle
+            setReservations(prev => ({
+                ...prev,
+                [reservationId]: newReservation
+            }));
+            setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
+
+            console.log('Reservation added successfully to backend and local state:', newReservation);
+            return reservationId;
+        } catch (error) {
+            console.error('Failed to create reservation in backend:', error);
+            
+            // Backend hatası durumunda sadece local state'e ekle (fallback)
+            const reservationId = crypto.randomUUID();
+            const newReservation = {
+                id: reservationId,
+                tableId,
+                ...reservationData,
+                createdAt: new Date().toISOString(),
+                backendError: true, // Backend hatası olduğunu işaretle
+                statusId: 1, // Varsayılan: confirmed
+                statusName: 'confirmed',
+                statusNameInTurkish: 'Onaylandı'
+            };
+            
+            setReservations(prev => ({
+                ...prev,
+                [reservationId]: newReservation
+            }));
+            setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
+            
+            // Kullanıcıya hata bildirimi göster
+            alert('Rezervasyon oluşturuldu ancak veritabanına kaydedilemedi. Lütfen daha sonra tekrar deneyin.');
+            
+            return reservationId;
+        }
     };
 
-    const addSpecialReservation = (tables, reservationData) => {
+    const addSpecialReservation = async (tables, reservationData) => {
         const reservationIds = [];
         
         // Masa numarasını doğru formatta al (Z1, Z2, A1, A2 gibi)
@@ -248,42 +294,93 @@ export function TableProvider({ children }) {
             return `${floorPrefix}${tableIndex + 1}`;
         };
         
-        tables.forEach(table => {
-            const reservationId = crypto.randomUUID();
-            const tableReservationData = {
-                ...reservationData,
-                adSoyad: reservationData.adSoyad || `${reservationData.ad} ${reservationData.soyad}`.trim(),
-                kisiSayisi: Math.min(table.capacity, reservationData.personCount),
-                not: `${reservationData.reservationReason} (${tables.length} masa)`,
-                specialReservation: true,
-                relatedTables: tables.map(t => getTableNumber(t.floor, t.tableIndex)),
-                selectedFloor: reservationData.selectedFloor,
-                wholeFloorOption: reservationData.wholeFloorOption,
-                floorClosingHours: reservationData.floorClosingHours,
-                floorClosingAllDay: reservationData.floorClosingAllDay,
-                specialRequests: reservationData.specialRequests
-            };
-            
-            const newReservation = {
-                id: reservationId,
-                tableId: table.tableNumber,
-                ...tableReservationData,
-                createdAt: new Date().toISOString()
-            };
-            
-            setReservations(prev => ({
-                ...prev,
-                [reservationId]: newReservation
-            }));
-            
-            setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'reserved' }));
-            reservationIds.push(reservationId);
-        });
+        for (const table of tables) {
+            try {
+                const tableReservationData = {
+                    ...reservationData,
+                    adSoyad: reservationData.adSoyad || `${reservationData.ad} ${reservationData.soyad}`.trim(),
+                    kisiSayisi: Math.min(table.capacity, reservationData.personCount),
+                    not: `${reservationData.reservationReason} (${tables.length} masa)`,
+                    specialReservation: true,
+                    relatedTables: tables.map(t => getTableNumber(t.floor, t.tableIndex)),
+                    selectedFloor: reservationData.selectedFloor,
+                    wholeFloorOption: reservationData.wholeFloorOption,
+                    floorClosingHours: reservationData.floorClosingHours,
+                    floorClosingAllDay: reservationData.floorClosingAllDay,
+                    specialRequests: reservationData.specialRequests
+                };
+                
+                // Backend'e gönder
+                const backendReservation = await reservationService.createReservation({
+                    ...tableReservationData,
+                    tableId: table.tableNumber
+                });
+                
+                const reservationId = backendReservation.id || crypto.randomUUID();
+                const newReservation = {
+                    id: reservationId,
+                    tableId: table.tableNumber,
+                    ...tableReservationData,
+                    createdAt: backendReservation.createdAt || new Date().toISOString(),
+                    backendId: backendReservation.id,
+                    statusId: backendReservation.statusId,
+                    statusName: backendReservation.statusName,
+                    statusNameInTurkish: backendReservation.statusNameInTurkish,
+                    salonId: backendReservation.salonId,
+                    salonName: backendReservation.salonName
+                };
+                
+                setReservations(prev => ({
+                    ...prev,
+                    [reservationId]: newReservation
+                }));
+                
+                setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'reserved' }));
+                reservationIds.push(reservationId);
+                
+            } catch (error) {
+                console.error(`Failed to create special reservation for table ${table.tableNumber}:`, error);
+                // Hata durumunda sadece local state'e ekle
+                const reservationId = crypto.randomUUID();
+                const newReservation = {
+                    id: reservationId,
+                    tableId: table.tableNumber,
+                    ...tableReservationData,
+                    createdAt: new Date().toISOString(),
+                    backendError: true,
+                    statusId: 1, // Varsayılan: confirmed
+                    statusName: 'confirmed',
+                    statusNameInTurkish: 'Onaylandı'
+                };
+                
+                setReservations(prev => ({
+                    ...prev,
+                    [reservationId]: newReservation
+                }));
+                
+                setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'reserved' }));
+                reservationIds.push(reservationId);
+            }
+        }
         
         return reservationIds;
     };
 
-    const removeReservation = (reservationId) => {
+    const removeReservation = async (reservationId) => {
+        try {
+            const reservation = reservations[reservationId];
+            
+            if (reservation && reservation.backendId) {
+                // Backend'den de sil
+                await reservationService.deleteReservation(reservation.backendId);
+                console.log('Reservation deleted from backend successfully');
+            }
+        } catch (error) {
+            console.error('Failed to delete reservation from backend:', error);
+            // Backend hatası olsa bile local state'den silmeye devam et
+        }
+
+        // Local state'den sil
         setReservations(prev => {
             const newReservations = { ...prev };
             const reservation = newReservations[reservationId];
@@ -322,17 +419,26 @@ export function TableProvider({ children }) {
         });
     };
 
-    const updateReservation = (reservationId, updatedData) => {
-        setReservations(prev => ({
-            ...prev,
-            [reservationId]: {
-                ...prev[reservationId],
-                ...updatedData
-            }
-        }));
-    };
 
-    const clearAllReservations = () => {
+
+    const clearAllReservations = async () => {
+        try {
+            // Backend'deki tüm rezervasyonları sil
+            const allReservations = Object.values(reservations);
+            for (const reservation of allReservations) {
+                if (reservation.backendId) {
+                    try {
+                        await reservationService.deleteReservation(reservation.backendId);
+                    } catch (error) {
+                        console.error(`Failed to delete reservation ${reservation.id} from backend:`, error);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to clear reservations from backend:', error);
+        }
+
+        // Local state'i temizle
         setReservations({});
         localStorage.setItem('reservations', JSON.stringify({}));
         setTableStatus(prev => {
@@ -344,6 +450,30 @@ export function TableProvider({ children }) {
             });
             return newTableStatus;
         });
+    };
+
+    const updateReservation = async (reservationId, updatedData) => {
+        try {
+            const reservation = reservations[reservationId];
+            
+            if (reservation && reservation.backendId) {
+                // Backend'de güncelle
+                await reservationService.updateReservation(reservation.backendId, updatedData);
+                console.log('Reservation updated in backend successfully');
+            }
+        } catch (error) {
+            console.error('Failed to update reservation in backend:', error);
+        }
+
+        // Local state'i güncelle
+        setReservations(prev => ({
+            ...prev,
+            [reservationId]: {
+                ...prev[reservationId],
+                ...updatedData,
+                updatedAt: new Date().toISOString()
+            }
+        }));
     };
 
     const addProduct = (category, newProduct) => {

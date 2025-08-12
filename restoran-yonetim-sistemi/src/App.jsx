@@ -28,6 +28,7 @@ import ReservationsPage from './pages/reservations/ReservationsPage.jsx';
 import EditReservationPage from './pages/reservations/EditReservationPage.jsx';
 import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
 import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
+import BackendTest from './components/dev/BackendTest.jsx';
 
 // Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
@@ -81,6 +82,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/backend-test" element={<BackendTest />} />
 
           {/* Admin Paneli */}
           <Route
