@@ -316,13 +316,45 @@ const AdminSidebar = () => {
     };
 
     // Profil fotoğrafını onaylama
-    const confirmProfileImage = () => {
-        if (tempProfileImage) {
+    const confirmProfileImage = async () => {
+        if (!tempProfileImage) return;
+        const isNumeric = (val) => val !== undefined && val !== null && /^\d+$/.test(String(val));
+
+        const findUserIdByEmail = async (email) => {
+            if (!email) return null;
+            try {
+                const [actives, inactives] = await Promise.all([
+                    personnelService.getActiveUsers(),
+                    personnelService.getInactiveUsers(),
+                ]);
+                const all = [...(actives || []), ...(inactives || [])];
+                const found = all.find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+                if (found?.id !== undefined) return found.id;
+            } catch {}
+            try {
+                const all = await personnelService.getAllUsers();
+                const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+                if (found?.id !== undefined) return found.id;
+            } catch {}
+            return null;
+        };
+
+        try {
+            let targetId = user?.userId;
+            if (!isNumeric(targetId)) {
+                targetId = await findUserIdByEmail(user?.email);
+            }
+            if (!isNumeric(targetId)) throw new Error('Kullanıcı ID bulunamadı');
+            // Backend'e yükle
+            await userService.uploadUserPhoto(targetId, tempProfileImage);
+            // Başarılı ise UI güncelle
             setProfileImage(tempProfileImage);
             localStorage.setItem('profileImage', tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
             alert('Profil fotoğrafı başarıyla güncellendi!');
+        } catch (e) {
+            alert(e.message || 'Profil fotoğrafı güncellenemedi');
         }
     };
 
