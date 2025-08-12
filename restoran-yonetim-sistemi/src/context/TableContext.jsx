@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect } from "react";
 import { reservationService } from "../services/reservationService";
+import { diningTableService } from "../services/diningTableService";
+import { salonService } from "../services/salonService";
 
 export const TableContext = createContext();
 
@@ -48,9 +50,61 @@ export function TableProvider({ children }) {
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [timestamps, setTimestamps] = useState({});
     const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
+    
+    // Backend'den masa verilerini yükle
+    const [tables, setTables] = useState([]);
+    const [salons, setSalons] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const updateTableStatus = (tableId, status) => {
-        setTableStatus(prev => ({ ...prev, [tableId]: status }));
+    // Backend'den masa ve salon verilerini yükle
+    useEffect(() => {
+        loadTablesAndSalons();
+    }, []);
+
+    const loadTablesAndSalons = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            // Salonları yükle
+            const salonData = await salonService.getAllSalons();
+            setSalons(salonData);
+            
+            // Masaları yükle
+            const tableData = await diningTableService.getAllTables();
+            setTables(tableData);
+            
+            // Masa durumlarını güncelle
+            const newTableStatus = {};
+            tableData.forEach(table => {
+                newTableStatus[table.tableNumber] = table.status.name.toLowerCase();
+            });
+            setTableStatus(newTableStatus);
+            
+            console.log('Tables and salons loaded from backend:', { salonData, tableData });
+        } catch (error) {
+            console.error('Error loading tables and salons:', error);
+            setError(error.message);
+            // Hata durumunda localStorage'dan yükle
+            console.log('Falling back to localStorage data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateTableStatus = async (tableId, status) => {
+        try {
+            // Backend'de güncelle
+            await diningTableService.updateTableStatus(tableId, status);
+            
+            // Local state'i güncelle
+            setTableStatus(prev => ({ ...prev, [tableId]: status }));
+        } catch (error) {
+            console.error('Error updating table status in backend:', error);
+            // Hata durumunda sadece local state'i güncelle
+            setTableStatus(prev => ({ ...prev, [tableId]: status }));
+        }
     };
 
     const saveFinalOrder = (tableId, finalItems) => {
@@ -564,6 +618,7 @@ export function TableProvider({ children }) {
     return (
         <TableContext.Provider
             value={{
+                // Existing state
                 tableStatus,
                 orders,
                 completedOrders,
@@ -573,6 +628,14 @@ export function TableProvider({ children }) {
                 dailyOrderCount: dailyCount,
                 monthlyOrderCount: monthlyCount,
                 yearlyOrderCount: yearlyCount,
+                
+                // New backend state
+                tables,
+                salons,
+                loading,
+                error,
+                
+                // Existing functions
                 updateTableStatus,
                 saveFinalOrder,
                 cancelOrder,
@@ -590,7 +653,10 @@ export function TableProvider({ children }) {
                 updateProduct,
                 addOrderHistoryEntry,
                 getOrderContent,
-                calculateFinancialImpact
+                calculateFinancialImpact,
+                
+                // New backend functions
+                loadTablesAndSalons
             }}
         >
             {children}
