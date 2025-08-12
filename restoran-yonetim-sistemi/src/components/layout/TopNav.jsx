@@ -44,7 +44,7 @@ const TopNav = () => {
 
     return (
         <div className="top-nav" style={{ background: colors.cardBackground, borderBottom: `1px solid ${colors.border}` }}>
-            <div className="top-nav-left">
+            <div className="top-nav-center">
                 <img
                     src={isDarkMode ? "/logo-dark.png" : "/logo-light.png"}
                     alt="Logo"
