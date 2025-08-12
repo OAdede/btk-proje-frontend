@@ -46,6 +46,65 @@ export const userService = {
       throw new Error(error.message || 'Kullanıcı bilgileri alınamadı.');
     }
   }
+  ,
+
+  // Upload/Update user's profile photo
+  async uploadUserPhoto(userId, dataUrl) {
+    if (userId === undefined || userId === null) {
+      throw new Error('Geçersiz kullanıcı ID');
+    }
+    if (!dataUrl) {
+      throw new Error('Yüklenecek fotoğraf bulunamadı');
+    }
+
+    // Convert data URL to Blob
+    const dataUrlToBlob = async (url) => {
+      const res = await fetch(url);
+      return await res.blob();
+    };
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const blob = await dataUrlToBlob(dataUrl);
+      const form = new FormData();
+      form.append('file', blob, 'profile.jpg');
+
+      // Most backends expect multipart at POST or PATCH. We default to POST.
+      const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/photo`, {
+        method: 'POST',
+        headers,
+        body: form,
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Profil fotoğrafı güncellenemedi';
+        try {
+          const errorText = await response.text();
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
+      }
+
+      try {
+        const data = await response.json();
+        return data; // Backend dönerse yeni user objesi veya bilgi
+      } catch {
+        return null; // Response body yoksa
+      }
+    } catch (error) {
+      throw new Error(error.message || 'Profil fotoğrafı güncellenemedi.');
+    }
+  }
 };
 
 
