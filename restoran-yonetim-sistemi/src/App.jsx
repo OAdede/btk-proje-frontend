@@ -4,6 +4,7 @@ import { useContext } from 'react';
 import { TableProvider } from './context/TableContext.jsx';
 import { AuthContext } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
+import { getRoleInfoFromToken } from './utils/jwt.js';
 
 
 // Layouts
@@ -47,12 +48,20 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <div>Yükleniyor...</div>;
   }
 
-  if (!user) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const roleInfo = token ? getRoleInfoFromToken(token) : {};
+  const effectiveRole = roleInfo.role ?? user?.role;
+
+  if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user.role !== requiredRole) {
-    const homePath = user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/home`;
+  if (requiredRole && !effectiveRole) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole && effectiveRole !== requiredRole) {
+    const homePath = effectiveRole === 'admin' ? '/admin/dashboard' : `/${effectiveRole}/home`;
     return <Navigate to={homePath} replace />;
   }
 
@@ -142,14 +151,15 @@ function App() {
             path="*"
             element={
               <ProtectedRoute>
-                {user ? (
-                  <Navigate
-                    to={user.role === 'admin' ? '/admin/dashboard' : `/${user.role}/home`}
-                    replace
-                  />
-                ) : (
-                  <Navigate to="/login" replace />
-                )}
+                {(() => {
+                  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                  if (!token) return <Navigate to="/login" replace />;
+                  const info = getRoleInfoFromToken(token);
+                  const role = info.role ?? user?.role;
+                  if (!role) return <Navigate to="/login" replace />;
+                  const path = role === 'admin' ? '/admin/dashboard' : `/${role}/home`;
+                  return <Navigate to={path} replace />;
+                })()}
               </ProtectedRoute>
             }
           />

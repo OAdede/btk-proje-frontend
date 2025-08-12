@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import { getRoleInfoFromToken } from '../utils/jwt';
 
 export const AuthContext = createContext();
 
@@ -16,16 +17,43 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Sayfa yüklendiğinde localStorage'dan kullanıcı bilgilerini kontrol et
-        const savedUser = authService.getCurrentUser();
+        // Sayfa yüklendiğinde token'dan güvenilir kullanıcı/rol bilgilerini çıkar
         const token = localStorage.getItem('token');
+        const savedUser = authService.getCurrentUser();
 
-        if (savedUser && token) {
+        if (token) {
+            const roleInfo = getRoleInfoFromToken(token);
             // Token'ı header'a ekle
             authService.setAuthHeader(token);
-            setUser(savedUser);
+
+            if (roleInfo.roleId !== undefined) {
+                // savedUser varsa görsel/telefon gibi sadece yardımcı alanları al, rolü token'dan zorla
+                const hydratedUser = {
+                    userId: roleInfo.userId ?? savedUser?.userId ?? null,
+                    roleId: roleInfo.roleId,
+                    role: roleInfo.role,
+                    email: roleInfo.email ?? savedUser?.email ?? '',
+                    name: roleInfo.name ?? savedUser?.name ?? '',
+                    surname: roleInfo.surname ?? savedUser?.surname ?? '',
+                    profileImage: savedUser?.profileImage ?? localStorage.getItem('profileImage') ?? null,
+                    phone: savedUser?.phone ?? localStorage.getItem('phoneNumber') ?? '',
+                };
+                // LocalStorage'daki user manipüle edilmiş olsa bile düzelt
+                localStorage.setItem('user', JSON.stringify(hydratedUser));
+                setUser(hydratedUser);
+                setLoading(false);
+                return;
+            }
+
+            // Token var ama çözümlenemiyorsa temizle ve login akışına düş
+            authService.logout();
+            setUser(null);
+            setLoading(false);
+            return;
         }
 
+        // Token yoksa veya çözümlenemiyorsa kullanıcıyı temizle
+        setUser(null);
         setLoading(false);
     }, []);
 
@@ -35,26 +63,27 @@ export const AuthProvider = ({ children }) => {
             const data = await authService.login(email, password);
 
             if (data.success) {
+                // Token'ı kaydet ve rol bilgisini token'dan al
+                localStorage.setItem('token', data.token);
+                authService.setAuthHeader(data.token);
+
+                const roleInfo = getRoleInfoFromToken(data.token);
+                const roleId = roleInfo.roleId ?? data.roleId;
                 const userData = {
-                    userId: data.userId,
-                    roleId: data.roleId,
-                    role: getRoleFromId(data.roleId),
-                    email: email,
-                    name: data.name || 'Selin',
-                    surname: data.surname || 'Garson',
+                    userId: roleInfo.userId ?? data.userId,
+                    roleId: roleId,
+                    role: roleInfo.role ?? getRoleFromId(roleId),
+                    email: roleInfo.email ?? email,
+                    name: roleInfo.name ?? (data.name || 'Kullanıcı'),
+                    surname: roleInfo.surname ?? (data.surname || ''),
                     profileImage: data.profileImage || localStorage.getItem('profileImage') || null,
                     phone: data.phone || localStorage.getItem('phoneNumber') || '',
                 };
 
-                localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(userData));
-
-                // Set authorization header
-                authService.setAuthHeader(data.token);
-
                 setUser(userData);
                 setLoading(false);
-                return data.roleId;
+                return roleId;
             } else {
                 setLoading(false);
                 throw new Error(data.message || 'Geçersiz email veya şifre');
