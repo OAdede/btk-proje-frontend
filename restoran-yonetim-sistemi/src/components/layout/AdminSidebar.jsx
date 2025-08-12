@@ -349,7 +349,13 @@ const AdminSidebar = () => {
 
             <div className={`admin-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
                 <div className="admin-sidebar-header">
-                    <div className="admin-user-info" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div className="admin-user-info" style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '15px',
+                        marginLeft: isSidebarOpen ? '60px' : '0px',
+                        transition: 'margin-left 0.3s ease'
+                    }}>
                         <img
                             src={profileImage}
                             alt="Profil"
