@@ -12,6 +12,7 @@ const AdminSidebar = () => {
     const { logout, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const { isDarkMode, toggleTheme, colors } = useTheme();
     const tableContext = useContext(TableContext);
     const reservations = tableContext?.reservations || {};
@@ -69,7 +70,7 @@ const AdminSidebar = () => {
                         ]);
                         const all = [...(actives || []), ...(inactives || [])];
                         data = all.find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
-                    } catch {}
+                    } catch { }
                 }
 
                 // Hâlâ yoksa /users (tüm kullanıcılar) üzerinden dene
@@ -384,71 +385,86 @@ const AdminSidebar = () => {
         }
     };
 
+    // Detect viewport to decide hamburger visibility
+    useEffect(() => {
+        const onResize = () => {
+            setIsMobile(window.innerWidth <= 1024);
+            if (window.innerWidth > 1024) {
+                setIsSidebarOpen(false);
+            }
+        };
+        onResize();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
     return (
         <>
-            {/* Hamburger menü butonu */}
-            <button
-                className="hamburger-menu-btn"
-                onClick={toggleSidebar}
-                style={{
-                    position: 'fixed',
-                    top: '20px',
-                    left: '20px',
-                    zIndex: 1001,
-                    background: isDarkMode ? colors.primary : '#A294F9',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '15px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                    transition: 'all 0.3s ease',
-                    border: `2px solid ${isDarkMode ? colors.border : '#CDC1FF'}`
-                }}
-                onMouseEnter={(e) => {
-                    e.target.style.transform = 'scale(1.1)';
-                    e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
-                }}
-                onMouseLeave={(e) => {
-                    e.target.style.transform = 'scale(1)';
-                    e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
-                }}
-            >
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '3px',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <span style={{
-                        width: '20px',
-                        height: '3px',
-                        background: 'white',
-                        borderRadius: '2px',
+            {/* Hamburger menü butonu - only for tablet/mobile */}
+            {isMobile && (
+                <button
+                    className="hamburger-menu-btn"
+                    onClick={toggleSidebar}
+                    style={{
+                        position: 'fixed',
+                        top: '20px',
+                        left: '20px',
+                        zIndex: 1001,
+                        background: isDarkMode ? colors.primary : '#A294F9',
+                        border: 'none',
+                        borderRadius: '12px',
+                        padding: '15px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
                         transition: 'all 0.3s ease',
-                        transform: isSidebarOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
-                    }}></span>
-                    <span style={{
-                        width: '20px',
-                        height: '3px',
-                        background: 'white',
-                        borderRadius: '2px',
-                        transition: 'all 0.3s ease',
-                        opacity: isSidebarOpen ? '0' : '1'
-                    }}></span>
-                    <span style={{
-                        width: '20px',
-                        height: '3px',
-                        background: 'white',
-                        borderRadius: '2px',
-                        transition: 'all 0.3s ease',
-                        transform: isSidebarOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
-                    }}></span>
-                </div>
-            </button>
+                        border: `2px solid ${isDarkMode ? colors.border : '#CDC1FF'}`
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.transform = 'scale(1.1)';
+                        e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.transform = 'scale(1)';
+                        e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+                    }}
+                >
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '3px',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <span style={{
+                            width: '20px',
+                            height: '3px',
+                            background: 'white',
+                            borderRadius: '2px',
+                            transition: 'all 0.3s ease',
+                            transform: isSidebarOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
+                        }}></span>
+                        <span style={{
+                            width: '20px',
+                            height: '3px',
+                            background: 'white',
+                            borderRadius: '2px',
+                            transition: 'all 0.3s ease',
+                            opacity: isSidebarOpen ? '0' : '1'
+                        }}></span>
+                        <span style={{
+                            width: '20px',
+                            height: '3px',
+                            background: 'white',
+                            borderRadius: '2px',
+                            transition: 'all 0.3s ease',
+                            transform: isSidebarOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
+                        }}></span>
+                    </div>
+                </button>
+            )}
 
             {/* Overlay */}
             {isSidebarOpen && (
@@ -469,7 +485,7 @@ const AdminSidebar = () => {
                 />
             )}
 
-            <div className={`admin-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
+            <div className={`admin-sidebar ${isMobile ? (isSidebarOpen ? 'open' : 'closed') : ''}`}>
                 <div className="admin-sidebar-header">
                     <div className="admin-user-info" style={{
                         display: 'flex',
