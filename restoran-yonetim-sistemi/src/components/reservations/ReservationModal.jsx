@@ -14,6 +14,15 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     not: "",
   });
 
+  // Masa kapasitesini al
+  const getTableCapacity = (tableNumber) => {
+    if (!tableNumber) return 4; // Varsayılan kapasite
+    const capacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+    return capacities[tableNumber] || 4;
+  };
+
+  const tableCapacity = getTableCapacity(masaNo);
+
 
   // Tarih alanını otomatik doldur
   useEffect(() => {
@@ -73,6 +82,12 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       }
       
       setFormData((prev) => ({ ...prev, [name]: formatted }));
+    } else if (name === 'kisiSayisi') {
+      // Kişi sayısı kontrolü - masa kapasitesini aşamaz
+      const numValue = parseInt(value);
+      if (value === '' || (numValue >= 1 && numValue <= tableCapacity)) {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      }
     } else if (name === 'email') {
       // E-mail validasyonu - sadece yazma sırasında kontrol etme, submit sırasında kontrol edeceğiz
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -104,6 +119,17 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     
     if (selectedDate < today) {
       alert('Geçmiş tarihler için rezervasyon yapılamaz. Lütfen bugün veya gelecek bir tarih seçin.');
+      return;
+    }
+    
+    // Kişi sayısı validasyonu
+    if (!formData.kisiSayisi || parseInt(formData.kisiSayisi) < 1) {
+      alert('Lütfen geçerli bir kişi sayısı girin (en az 1 kişi).');
+      return;
+    }
+    
+    if (parseInt(formData.kisiSayisi) > tableCapacity) {
+      alert(`Bu masa ${tableCapacity} kişilik. ${formData.kisiSayisi} kişilik rezervasyon yapılamaz. Maksimum ${tableCapacity} kişi seçebilirsiniz.`);
       return;
     }
     
@@ -498,12 +524,12 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
             <input
               type="number"
               name="kisiSayisi"
-              placeholder="Kişi sayısı"
+              placeholder={`Maksimum ${tableCapacity} kişi`}
               value={formData.kisiSayisi}
               onChange={handleChange}
               required
               min="1"
-              max="20"
+              max={tableCapacity}
               style={{
                 padding: "12px",
                 border: `2px solid ${colors.inputBorder}`,
@@ -521,7 +547,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               fontStyle: 'italic',
               marginTop: '5px'
             }}>
-              ⚠️ Bu masa kapasitesi kontrol edilecektir. Masa kapasitesinden fazla kişi rezervasyonu yapılamaz.
+              ⚠️ Bu masa {tableCapacity} kişilik. Maksimum {tableCapacity} kişi seçebilirsiniz.
             </div>
           </div>
           

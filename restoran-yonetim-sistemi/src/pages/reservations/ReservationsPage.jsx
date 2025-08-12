@@ -197,6 +197,16 @@ const ReservationsPage = () => {
     const handleReservationSubmit = (formData) => {
         const tableStatus = getTableStatus(selectedTable);
         
+        // Masa kapasitesi kontrolü
+        const tableCapacity = getTableCapacity(selectedTable);
+        const personCount = parseInt(formData.kisiSayisi);
+        
+        if (personCount > tableCapacity) {
+            setWarningMessage(`Bu masa ${tableCapacity} kişilik. ${personCount} kişilik rezervasyon yapılamaz. Maksimum ${tableCapacity} kişi seçebilirsiniz.`);
+            setShowWarningModal(true);
+            return;
+        }
+        
         if (tableStatus.status === 'reserved') {
             // Rezerve masaya yeni rezervasyon ekleme
             if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
