@@ -151,4 +151,131 @@ export const personnelService = {
             throw new Error(error.message || 'Kullanıcılar yüklenirken bir hata oluştu.');
         }
     },
+
+    // Get only active users
+    async getActiveUsers() {
+        try {
+            const token = localStorage.getItem('token');
+
+            const headers = {
+                'Accept': 'application/json',
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/users/active`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Aktif kullanıcılar yüklenirken bir hata oluştu';
+                try {
+                    const errorText = await response.text();
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch {}
+                throw new Error(errorMessage);
+            }
+
+            try {
+                const responseData = await response.json();
+                return Array.isArray(responseData) ? responseData : [];
+            } catch {
+                return [];
+            }
+        } catch (error) {
+            throw new Error(error.message || 'Aktif kullanıcılar yüklenirken bir hata oluştu.');
+        }
+    },
+
+    // Get only inactive users
+    async getInactiveUsers() {
+        try {
+            const token = localStorage.getItem('token');
+
+            const headers = {
+                'Accept': 'application/json',
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/users/inactive`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Pasif kullanıcılar yüklenirken bir hata oluştu';
+                try {
+                    const errorText = await response.text();
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch {}
+                throw new Error(errorMessage);
+            }
+
+            try {
+                const responseData = await response.json();
+                return Array.isArray(responseData) ? responseData : [];
+            } catch {
+                return [];
+            }
+        } catch (error) {
+            throw new Error(error.message || 'Pasif kullanıcılar yüklenirken bir hata oluştu.');
+        }
+    },
+
+    // Toggle user's active status
+    async setUserActiveStatus(userId, active) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = {
+                'Accept': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/active?active=${encodeURIComponent(Boolean(active))}`, {
+                method: 'PATCH',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Kullanıcı durumu güncellenirken bir hata oluştu';
+                try {
+                    const errorText = await response.text();
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch {}
+                throw new Error(errorMessage);
+            }
+
+            try {
+                const responseData = await response.json();
+                return responseData;
+            } catch {
+                return { id: userId, isActive: Boolean(active) };
+            }
+        } catch (error) {
+            throw new Error(error.message || 'Kullanıcı durumu güncellenirken bir hata oluştu.');
+        }
+    },
 };

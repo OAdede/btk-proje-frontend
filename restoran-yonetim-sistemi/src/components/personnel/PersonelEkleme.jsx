@@ -39,37 +39,17 @@ const PersonelEkleme = () => {
       
       try {
         setIsLoadingUsers(true);
-        console.log('Starting to load users...');
-        
-        const users = await personnelService.getAllUsers();
-        
-        // Check if component is still mounted and not aborted
+        console.log('Starting to load users (active + inactive)...');
+
+        // Load active and inactive lists in parallel
+        const [activeUsersRaw, inactiveUsersRaw] = await Promise.all([
+          personnelService.getActiveUsers(),
+          personnelService.getInactiveUsers()
+        ]);
+
         if (!isMounted || isAborted) return;
-        
-                 console.log('Users received:', users);
-         
-                   // Log first user data to debug
-          if (users.length > 0) {
-            console.log('First user data for debugging:', {
-              id: users[0].id,
-              name: users[0].name,
-              hasPhoto: users[0].hasPhoto,
-              photoBase64: users[0].photoBase64 ? 'exists' : 'null',
-              roles: users[0].roles,
-              rolesType: typeof users[0].roles,
-              rolesLength: users[0].roles ? users[0].roles.length : 0
-            });
-          }
-          
-          // Log all users' roles for debugging
-          console.log('All users roles:', users.map(user => ({
-            name: user.name,
-            roles: user.roles,
-            rolesType: typeof user.roles
-          })));
-         
-         // Transform backend data to match component format
-         const transformedUsers = users.map(user => {
+
+        const mapUser = (user) => {
                        // Map role from backend - convert number to string role name
                          let roleName = 'Garson'; // default
             if (user.roles && user.roles.length > 0) {
@@ -124,8 +104,14 @@ const PersonelEkleme = () => {
              role: roleName,
              photo: photoUrl,
              isActive: user.isActive !== undefined ? user.isActive : true // Use backend value or default to true
-           };
-        });
+            };
+        };
+
+        // Transform both lists and merge
+        const transformedUsers = [
+          ...activeUsersRaw.map(mapUser).map(u => ({ ...u, isActive: true })),
+          ...inactiveUsersRaw.map(mapUser).map(u => ({ ...u, isActive: false })),
+        ];
         
         if (isMounted && !isAborted) {
           setPersonnel(transformedUsers);
@@ -244,10 +230,25 @@ const PersonelEkleme = () => {
 
 
 
-  const togglePersonStatus = (personId) => {
-    setPersonnel(personnel.map(person =>
-      person.id === personId ? { ...person, isActive: !person.isActive } : person
-    ));
+  const togglePersonStatus = async (personId) => {
+    try {
+      const current = personnel.find(p => p.id === personId);
+      if (!current) return;
+      const nextActive = !current.isActive;
+
+      // Optimistic update
+      setPersonnel(prev => prev.map(p => p.id === personId ? { ...p, isActive: nextActive } : p));
+
+      // Persist
+      const updated = await personnelService.setUserActiveStatus(personId, nextActive);
+
+      // Reconcile
+      if (typeof updated?.isActive === 'boolean') {
+        setPersonnel(prev => prev.map(p => p.id === personId ? { ...p, isActive: updated.isActive } : p));
+      }
+    } catch (err) {
+      setError(err.message || 'Durum güncellenemedi.');
+    }
   };
 
   return (

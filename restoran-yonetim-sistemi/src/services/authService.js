@@ -153,6 +153,12 @@ export const authService = {
     logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        // Clear cached profile/info to avoid leaking between accounts
+        localStorage.removeItem('profileImage');
+        localStorage.removeItem('phoneNumber');
+        localStorage.removeItem('email');
+        localStorage.removeItem('displayName');
+        localStorage.removeItem('displayRole');
         // Clear any authorization headers
         if (typeof window !== 'undefined') {
             delete window.axios?.defaults?.headers?.common?.Authorization;
