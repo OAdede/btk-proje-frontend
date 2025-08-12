@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { personnelService } from '../../services/personnelService';
 import { validationUtils } from '../../utils/validation';
-import { cameraUtils } from '../../utils/cameraUtils';
 import './PersonelEkleme.css';
 
 const PersonelEkleme = () => {
@@ -12,14 +11,8 @@ const PersonelEkleme = () => {
     phone: "",
     email: "",
     password: "",
-    role: "garson",
-    photo: null
+    role: "garson"
   });
-
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [cameraStream, setCameraStream] = useState(null);
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [tempImage, setTempImage] = useState(null);
 
   const [activeTab, setActiveTab] = useState("aktif");
   const [roleFilter, setRoleFilter] = useState("tümü");
@@ -50,53 +43,60 @@ const PersonelEkleme = () => {
         // Check if component is still mounted and not aborted
         if (!isMounted || isAborted) return;
         
-        console.log('Users received:', users);
-        
-        // Transform backend data to match component format
-        const transformedUsers = users.map(user => {
-          // Map role from backend - convert number to string role name
-          let roleName = 'garson'; // default
-          if (user.roles && user.roles.length > 0) {
-            const roleId = user.roles[0];
-            // Map role ID to role name
-            if (roleId === 0 || roleId === 'waiter') roleName = 'garson';
-            else if (roleId === 1 || roleId === 'cashier') roleName = 'kasiyer';
-            else if (roleId === 2 || roleId === 'manager') roleName = 'müdür';
-            else if (roleId === 3 || roleId === 'admin') roleName = 'admin';
-          }
+                 console.log('Users received:', users);
+         
+         // Log first user data to debug
+         if (users.length > 0) {
+           console.log('First user data for debugging:', {
+             id: users[0].id,
+             name: users[0].name,
+             hasPhoto: users[0].hasPhoto,
+             photoBase64: users[0].photoBase64 ? 'exists' : 'null',
+             roles: users[0].roles
+           });
+         }
+         
+         // Transform backend data to match component format
+         const transformedUsers = users.map(user => {
+           // Map role from backend - convert number to string role name
+           let roleName = 'garson'; // default
+           if (user.roles && user.roles.length > 0) {
+             const roleId = user.roles[0];
+             // Map role ID to role name
+             if (roleId === 0 || roleId === 'waiter') roleName = 'garson';
+             else if (roleId === 1 || roleId === 'cashier') roleName = 'kasiyer';
+             else if (roleId === 2 || roleId === 'manager') roleName = 'müdür';
+             else if (roleId === 3 || roleId === 'admin') roleName = 'admin';
+           }
+           
+           // Handle photo - check multiple possible photo fields
+           let photoUrl = null;
+           
+           // First check if user has photoBase64 (old format)
+           if (user.photoBase64 && user.photoBase64.length > 0) {
+             photoUrl = `data:image/jpeg;base64,${user.photoBase64}`;
+             console.log(`User ${user.name} has photoBase64, using data URL`);
+           }
+           // Then check hasPhoto boolean (new format)
+           else if (user.hasPhoto === true) {
+             photoUrl = `/api/users/${user.id}/photo`;
+             console.log(`User ${user.name} has photo (hasPhoto: ${user.hasPhoto}), URL: ${photoUrl}`);
+           }
+           // If neither exists, user has no photo
+           else {
+             photoUrl = null;
+             console.log(`User ${user.name} has no photo (hasPhoto: ${user.hasPhoto}, photoBase64: ${user.photoBase64 ? 'exists' : 'null'})`);
+           }
           
-          // Handle photo - if user has photoBase64, convert to data URL, otherwise use default
-          let photoUrl = '/default-avatar.png'; // Default avatar for users without photos
-          
-          // Check if user has a valid photo
-          if (user.photoBase64 && 
-              user.photoBase64.length > 0 && 
-              user.photoBase64 !== 'null' && 
-              user.photoBase64 !== 'undefined' &&
-              user.photoBase64 !== '') {
-            
-            // If it's already a data URL, use it directly
-            if (user.photoBase64.startsWith('data:image/')) {
-              photoUrl = user.photoBase64;
-            } else {
-              // If it's just base64 data, convert to data URL
-              photoUrl = `data:image/jpeg;base64,${user.photoBase64}`;
-            }
-          } else {
-            // User has no photo, use default avatar and don't make any requests
-            photoUrl = '/default-avatar.png';
-            console.log(`User ${user.name} has no photo, using default avatar`);
-          }
-          
-          return {
-            id: user.id,
-            name: user.name,
-            phone: user.phoneNumber,
-            email: user.email,
-            role: roleName,
-            photo: photoUrl,
-            isActive: true // Default to active
-          };
+                     return {
+             id: user.id,
+             name: user.name,
+             phone: user.phoneNumber,
+             email: user.email,
+             role: roleName,
+             photo: photoUrl,
+             isActive: user.isActive !== undefined ? user.isActive : true // Use backend value or default to true
+           };
         });
         
         if (isMounted && !isAborted) {
@@ -167,13 +167,7 @@ const PersonelEkleme = () => {
     setSuccess(null);
 
     try {
-      // Send photo data if available
-      const personDataWithPhoto = {
-        ...newPerson,
-        photo: capturedImage || null
-      };
-      
-      const responseData = await personnelService.registerPersonnel(personDataWithPhoto);
+      const responseData = await personnelService.registerPersonnel(newPerson);
       
       // Add the new person to local state with the response data
       const newPersonWithId = {
@@ -182,15 +176,14 @@ const PersonelEkleme = () => {
         phone: newPerson.phone,
         email: newPerson.email,
         role: newPerson.role,
-        photo: capturedImage || '/default-avatar.png',
-        isActive: true
+        photo: '/default-avatar.png',
+        isActive: responseData.isActive !== undefined ? responseData.isActive : true
       };
 
       setPersonnel([...personnel, newPersonWithId]);
       
       // Reset form
-      setNewPerson({ name: "", phone: "", email: "", password: "", role: "garson", photo: null });
-      setCapturedImage(null);
+      setNewPerson({ name: "", phone: "", email: "", password: "", role: "garson" });
       setSuccess("Personel başarıyla eklendi!");
       
       // Clear success message after 3 seconds
@@ -203,84 +196,7 @@ const PersonelEkleme = () => {
     }
   };
 
-  // Fotoğraf modalını açma
-  const openPhotoModal = () => {
-    setShowPhotoModal(true);
-    setTempImage(null);
-  };
 
-  // Fotoğraf modalını kapatma
-  const closePhotoModal = () => {
-    setShowPhotoModal(false);
-    setTempImage(null);
-    cameraUtils.stopCamera(cameraStream);
-    setCameraStream(null);
-  };
-
-  // Kamera açma
-  const startCamera = async () => {
-    try {
-      const stream = await cameraUtils.startCamera();
-      setCameraStream(stream);
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  // Kamera kapatma
-  const stopCamera = () => {
-    cameraUtils.stopCamera(cameraStream);
-    setCameraStream(null);
-  };
-
-  // Fotoğraf çekme
-  const capturePhoto = () => {
-    if (cameraStream) {
-      const video = document.getElementById('camera-video');
-      try {
-        const imageData = cameraUtils.capturePhoto(video);
-        setTempImage(imageData);
-        stopCamera();
-      } catch (error) {
-        alert(error.message);
-      }
-    }
-  };
-
-  // Dosyadan fotoğraf seçme
-  const handlePhotoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      try {
-        cameraUtils.validateImageFile(file);
-        const imageData = await cameraUtils.handlePhotoUpload(file);
-        const resizedImage = await cameraUtils.resizeImage(imageData);
-        setTempImage(resizedImage);
-      } catch (error) {
-        alert(error.message);
-      }
-    }
-  };
-
-  // Fotoğrafı kabul etme
-  const acceptPhoto = () => {
-    if (tempImage) {
-      setCapturedImage(tempImage);
-      setNewPerson({ ...newPerson, photo: tempImage });
-    }
-    closePhotoModal();
-  };
-
-  // Fotoğrafı reddetme
-  const rejectPhoto = () => {
-    setTempImage(null);
-  };
-
-  // Fotoğrafı kaldırma
-  const removePhoto = () => {
-    setCapturedImage(null);
-    setNewPerson({ ...newPerson, photo: null });
-  };
 
   const togglePersonStatus = (personId) => {
     setPersonnel(personnel.map(person =>
@@ -383,85 +299,14 @@ const PersonelEkleme = () => {
               placeholder="Şifre (aA1@)"
               required
             />
-            <select
-              name="role"
-              value={newPerson.role}
-              onChange={handleInputChange}
-            >
-              <option value="garson">Garson</option>
-              <option value="kasiyer">Kasiyer</option>
-            </select>
-
-            {/* Fotoğraf Ekleme Bölümü */}
-            {capturedImage ? (
-              <div style={{ marginBottom: '15px', textAlign: 'center' }}>
-                                                                   {capturedImage && capturedImage !== '/default-avatar.png' ? (
-                    <img 
-                      src={capturedImage} 
-                      alt="Seçilen fotoğraf" 
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '3px solid #ddd',
-                        marginBottom: '10px'
-                      }}
-                      onError={(e) => {
-                        // If photo fails to load, show default avatar
-                        e.target.src = '/default-avatar.png';
-                      }}
-                    />
-                  ) : (
-                    <img 
-                      src="/default-avatar.png" 
-                      alt="Varsayılan fotoğraf" 
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '3px solid #ddd',
-                        marginBottom: '10px'
-                      }}
-                    />
-                  )}
-                <div>
-                  <button
-                    type="button"
-                    onClick={removePhoto}
-                    style={{
-                      background: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    ❌ Kaldır
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={openPhotoModal}
-                style={{
-                  background: '#513653',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  fontWeight: '500'
-                }}
-              >
-                📷 Fotoğraf Ekle
-              </button>
-            )}
+                         <select
+               name="role"
+               value={newPerson.role}
+               onChange={handleInputChange}
+             >
+               <option value="garson">Garson</option>
+               <option value="kasiyer">Kasiyer</option>
+             </select>
 
             {error && (
               <div style={{ color: 'red', marginTop: '10px', fontSize: '14px', textAlign: 'center' }}>{error}</div>
@@ -473,298 +318,7 @@ const PersonelEkleme = () => {
             <button type="submit" className="add-personnel-btn" disabled={isLoading}>
               {isLoading ? "Eklemek için bekleyin..." : "Personel Ekle"}
             </button>
-          </form>
-
-          {/* Fotoğraf Ekleme Modal */}
-          {showPhotoModal && (
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: 'var(--card)',
-              color: 'var(--text)',
-              padding: '20px',
-              borderRadius: '8px',
-              textAlign: 'center',
-              width: '300px',
-              border: '1px solid var(--border)',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-              zIndex: 1000
-            }}>
-              {/* Kapatma butonu */}
-              <button
-                onClick={closePhotoModal}
-                style={{
-                  position: 'absolute',
-                  top: '5px',
-                  right: '10px',
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '18px',
-                  color: '#dc3545',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  width: '25px',
-                  height: '25px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: '50%',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'rgba(220, 53, 69, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'none';
-                }}
-              >
-                ✕
-              </button>
-
-              <h3 style={{ margin: '0 0 15px 0', color: 'var(--text)', fontSize: '16px' }}>Fotoğraf Ekle</h3>
-
-              {/* Fotoğraf önizlemesi */}
-              {tempImage && (
-                <div style={{ marginBottom: '15px' }}>
-                                                                           {tempImage && tempImage !== '/default-avatar.png' ? (
-                      <img 
-                        src={tempImage} 
-                        alt="Önizleme" 
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '3px solid var(--border)',
-                          margin: '0 auto'
-                        }}
-                        onError={(e) => {
-                          // If photo fails to load, show default avatar
-                          e.target.src = '/default-avatar.png';
-                        }}
-                      />
-                    ) : (
-                      <img 
-                        src="/default-avatar.png" 
-                        alt="Varsayılan önizleme" 
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '3px solid var(--border)',
-                          margin: '0 auto'
-                        }}
-                      />
-                    )}
-                </div>
-              )}
-
-              {/* Kamera görüntüsü */}
-              {cameraStream && !tempImage && (
-                <div style={{ marginBottom: '15px' }}>
-                  <video
-                    id="camera-video"
-                    autoPlay
-                    playsInline
-                    style={{
-                      width: '200px',
-                      height: '150px',
-                      borderRadius: '8px',
-                      margin: '0 auto',
-                      border: '2px solid var(--border)'
-                    }}
-                    ref={(video) => {
-                      if (video && cameraStream) {
-                        video.srcObject = cameraStream;
-                      }
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Butonlar */}
-              {!tempImage && !cameraStream && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', marginBottom: '15px' }}>
-                  <button
-                    onClick={startCamera}
-                    style={{
-                      background: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 2px 8px rgba(0, 123, 255, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    📷 Kamera ile Çek
-                  </button>
-                  <label style={{
-                    background: '#28a745',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}>
-                    📁 Dosyadan Seç
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {/* Kamera butonları */}
-              {cameraStream && !tempImage && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center', marginBottom: '15px' }}>
-                  <button
-                    onClick={capturePhoto}
-                    style={{
-                      background: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    📸 Fotoğraf Çek
-                  </button>
-                  <button
-                    onClick={stopCamera}
-                    style={{
-                      background: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    ❌ İptal
-                  </button>
-                </div>
-              )}
-
-              {/* Kabul/Ret butonları */}
-              {tempImage && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
-                  <button
-                    onClick={acceptPhoto}
-                    style={{
-                      background: '#28a745',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 2px 8px rgba(40, 167, 69, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    ✅ Kabul Et
-                  </button>
-                  <button
-                    onClick={rejectPhoto}
-                    style={{
-                      background: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 2px 8px rgba(220, 53, 69, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    ❌ Reddet
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                     </form>
         </div>
       )}
 
@@ -797,8 +351,9 @@ const PersonelEkleme = () => {
         ) : (
           filteredPersonnel.map((person) => (
                                     <div key={person.id || crypto.randomUUID()} className="personnel-item">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                 {person.photo && person.photo !== '/default-avatar.png' ? (
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                 {/* Check if user has photo before making request */}
+                 {person.photo ? (
                    <img 
                      src={person.photo} 
                      alt={person.name}
@@ -811,7 +366,10 @@ const PersonelEkleme = () => {
                      }}
                      onError={(e) => {
                        // If photo fails to load, show default avatar
-                       e.target.src = '/default-avatar.png';
+                       if (e.target.src !== '/default-avatar.png') {
+                         console.log(`Photo failed to load for ${person.name}, using default avatar`);
+                         e.target.src = '/default-avatar.png';
+                       }
                      }}
                    />
                  ) : (

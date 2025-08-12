@@ -144,6 +144,20 @@ export const personnelService = {
 
             try {
                 const responseData = await response.json();
+                console.log('Users loaded successfully:', responseData.length, 'users');
+                
+                // Log sample user data for debugging
+                if (responseData.length > 0) {
+                    console.log('Sample user data:', {
+                        id: responseData[0].id,
+                        name: responseData[0].name,
+                        hasPhoto: responseData[0].hasPhoto,
+                        photoBase64: responseData[0].photoBase64 ? 'exists' : 'null',
+                        isActive: responseData[0].isActive,
+                        roles: responseData[0].roles
+                    });
+                }
+                
                 // Expected response format:
                 // [
                 //   {
@@ -151,9 +165,10 @@ export const personnelService = {
                 //     "name": "string",
                 //     "email": "string",
                 //     "phoneNumber": "string",
-                //     "photoBase64": "string",
+                //     "hasPhoto": true,
                 //     "createdAt": "2025-08-11T11:31:16.378Z",
-                //     "roles": [0]
+                //     "roles": [0],
+                //     "isActive": true
                 //   }
                 // ]
                 return responseData;
