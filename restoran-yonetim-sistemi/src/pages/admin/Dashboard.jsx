@@ -1277,6 +1277,47 @@ const Dashboard = () => {
                 </div>
               )}
 
+              {/* Rezervasyon Yap Butonu - Tüm masalar için */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginTop: '20px',
+                paddingTop: '20px',
+                borderTop: '2px solid #473653'
+              }}>
+                <button
+                  onClick={() => {
+                    setSelectedTable(selectedTableDetails.id);
+                    setShowTableDetailsModal(false);
+                    setShowReservationModal(true);
+                  }}
+                  style={{
+                    background: '#4caf50',
+                    color: 'white',
+                    border: 'none',
+                    padding: '15px 30px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(76, 175, 80, 0.3)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = '#45a049';
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(76, 175, 80, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = '#4caf50';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(76, 175, 80, 0.3)';
+                  }}
+                >
+                  📅 Rezervasyon Yap
+                </button>
+              </div>
+
               {selectedTableDetails.status === 'reserved' && (
                 <div>
                   <h3 style={{ color: '#ffffff', marginBottom: '15px' }}>Rezervasyon Detayları:</h3>
@@ -1375,33 +1416,6 @@ const Dashboard = () => {
                       )}
                     </div>
                   ))}
-                  
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    marginTop: '15px'
-                  }}>
-                    <button
-                      onClick={() => {
-                        setSelectedTable(selectedTableDetails.id);
-                        setShowTableDetailsModal(false);
-                        setShowReservationModal(true);
-                      }}
-                      style={{
-                        background: '#4caf50',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      ➕ Rezervasyon Ekle
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
