@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { reservationService } from '../services/reservationService';
 
 const ReservationContext = createContext();
 
@@ -11,34 +12,285 @@ export const useReservations = () => {
 };
 
 export const ReservationProvider = ({ children }) => {
-    const [reservations, setReservations] = useState([
-        { id: 1, masaNo: 5, adSoyad: 'Ali Veli', telefon: '555 123 4567', tarih: '2024-08-15', saat: '19:30', kisiSayisi: 4, not: 'Pencere kenarı isteniyor.' },
-        { id: 2, masaNo: 2, adSoyad: 'Ayşe Yılmaz', telefon: '555 987 6543', tarih: '2024-08-15', saat: '20:00', kisiSayisi: 2, not: 'Doğum günü kutlaması.' },
-        { id: 3, masaNo: 8, adSoyad: 'Fatma Kaya', telefon: '555 111 2233', tarih: '2024-08-16', saat: '18:45', kisiSayisi: 5, not: '' },
-    ]);
+    const [reservations, setReservations] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const addReservation = (formData) => {
-        const newReservation = {
-            id: Date.now(),
-            masaNo: Math.floor(Math.random() * 10) + 1,
-            ...formData
-        };
-        setReservations(prev => [newReservation, ...prev]);
+    // Component mount olduğunda rezervasyonları yükle
+    useEffect(() => {
+        loadReservations();
+    }, []);
+
+    // Backend'den rezervasyonları yükle
+    const loadReservations = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await reservationService.getAllReservations();
+            setReservations(data);
+        } catch (error) {
+            console.error('Rezervasyonlar yüklenirken hata:', error);
+            setError(error.message);
+            // Hata durumunda boş array kullan
+            setReservations([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const deleteReservation = (id) => {
-        setReservations(prev => prev.filter(res => res.id !== id));
+    // Yeni rezervasyon ekle
+    const addReservation = async (tableId, formData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            // Backend'e gönderilecek veriyi hazırla
+            const reservationData = {
+                ...formData,
+                tableId: tableId,
+                floor: getFloorFromTableId(tableId)
+            };
+
+            const newReservation = await reservationService.createReservation(reservationData);
+            
+            // State'i güncelle
+            setReservations(prev => [newReservation, ...prev]);
+            
+            return newReservation;
+        } catch (error) {
+            console.error('Rezervasyon ekleme hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // Rezervasyon güncelle
+    const updateReservation = async (reservationId, formData) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const updatedReservation = await reservationService.updateReservation(reservationId, formData);
+            
+            // State'i güncelle
+            setReservations(prev => 
+                prev.map(res => 
+                    res.id === reservationId ? updatedReservation : res
+                )
+            );
+            
+            return updatedReservation;
+        } catch (error) {
+            console.error('Rezervasyon güncelleme hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Rezervasyon sil
+    const removeReservation = async (reservationId) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            await reservationService.deleteReservation(reservationId);
+            
+            // State'i güncelle
+            setReservations(prev => prev.filter(res => res.id !== reservationId));
+        } catch (error) {
+            console.error('Rezervasyon silme hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Rezervasyon iptal et
+    const cancelReservation = async (reservationId) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const cancelledReservation = await reservationService.cancelReservation(reservationId);
+            
+            // State'i güncelle
+            setReservations(prev => 
+                prev.map(res => 
+                    res.id === reservationId ? cancelledReservation : res
+                )
+            );
+            
+            return cancelledReservation;
+        } catch (error) {
+            console.error('Rezervasyon iptal hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Rezervasyonu tamamla
+    const completeReservation = async (reservationId) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const completedReservation = await reservationService.completeReservation(reservationId);
+            
+            // State'i güncelle
+            setReservations(prev => 
+                prev.map(res => 
+                    res.id === reservationId ? completedReservation : res
+                )
+            );
+            
+            return completedReservation;
+        } catch (error) {
+            console.error('Rezervasyon tamamlama hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Rezervasyonu no-show olarak işaretle
+    const markAsNoShow = async (reservationId) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const noShowReservation = await reservationService.markAsNoShow(reservationId);
+            
+            // State'i güncelle
+            setReservations(prev => 
+                prev.map(res => 
+                    res.id === reservationId ? noShowReservation : res
+                )
+            );
+            
+            return noShowReservation;
+        } catch (error) {
+            console.error('No-show işaretleme hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Son rezervasyonları getir
     const getRecentReservations = (limit = 5) => {
         return reservations.slice(0, limit);
     };
 
+    // Bugünkü rezervasyonları getir
+    const getTodayReservations = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const todayReservations = await reservationService.getTodayReservations();
+            return todayReservations;
+        } catch (error) {
+            console.error('Bugünkü rezervasyon getirme hatası:', error);
+            setError(error.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Tarih aralığında rezervasyonları getir
+    const getReservationsByDateRange = async (startDate, endDate) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const rangeReservations = await reservationService.getReservationsByDateRange(startDate, endDate);
+            return rangeReservations;
+        } catch (error) {
+            console.error('Tarih aralığı rezervasyon getirme hatası:', error);
+            setError(error.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Salon bazında rezervasyonları getir
+    const getReservationsBySalon = async (salonId) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const salonReservations = await reservationService.getReservationsBySalon(salonId);
+            return salonReservations;
+        } catch (error) {
+            console.error('Salon rezervasyon getirme hatası:', error);
+            setError(error.message);
+            return [];
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Rezervasyonları yenile
+    const refreshReservations = () => {
+        loadReservations();
+    };
+
+    // Hata mesajını temizle
+    const clearError = () => {
+        setError(null);
+    };
+
+    // ==================== HELPER METHODS ====================
+
+    // Table ID'den kat numarasını al
+    const getFloorFromTableId = (tableId) => {
+        if (!tableId) return 0;
+        
+        const id = parseInt(tableId);
+        if (id <= 8) {
+            return 0; // Zemin kat
+        } else if (id <= 16) {
+            return 1; // 1. kat
+        } else if (id <= 24) {
+            return 2; // 2. kat
+        }
+        return 0;
+    };
+
     const value = {
+        // State
         reservations,
+        loading,
+        error,
+        
+        // Actions
         addReservation,
-        deleteReservation,
-        getRecentReservations
+        updateReservation,
+        removeReservation,
+        cancelReservation,
+        completeReservation,
+        markAsNoShow,
+        
+        // Queries
+        getRecentReservations,
+        getTodayReservations,
+        getReservationsByDateRange,
+        getReservationsBySalon,
+        
+        // Utilities
+        refreshReservations,
+        clearError
     };
 
     return (
@@ -46,4 +298,4 @@ export const ReservationProvider = ({ children }) => {
             {children}
         </ReservationContext.Provider>
     );
-}; 
+};
