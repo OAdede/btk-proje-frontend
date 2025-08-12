@@ -12,6 +12,13 @@ export default function WaiterHome() {
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [tableCounts, setTableCounts] = useState({ 0: 8, 1: 8, 2: 8 });
     const floors = [0, 1, 2];
+    const [tableCapacities, setTableCapacities] = useState(() => {
+        try {
+            const saved = localStorage.getItem('tableCapacities');
+            if (saved) return JSON.parse(saved);
+        } catch { }
+        return {};
+    });
 
     const getFloorName = (floorNumber) => {
         if (floorNumber === 0) return "Zemin";
@@ -24,10 +31,18 @@ export default function WaiterHome() {
         return `${letter}${tableIndex + 1}`;
     };
 
-    const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => ({
-        id: `${selectedFloor}-${i + 1}`,
-        displayNumber: getTableNumber(selectedFloor, i)
-    }));
+    const getCapacity = (tableNumber) => {
+        return tableCapacities?.[tableNumber] || 4;
+    };
+
+    const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => {
+        const tableNumber = getTableNumber(selectedFloor, i);
+        return {
+            id: tableNumber,
+            displayNumber: tableNumber,
+            capacity: getCapacity(tableNumber)
+        };
+    });
 
     const handleTableClick = (tableId) => {
         navigate(`/${user.role}/order/${tableId}`);
@@ -95,20 +110,20 @@ export default function WaiterHome() {
     }, []);
 
     return (
-        <div style={{ 
-            padding: "2rem", 
-            display: "flex", 
-            gap: "2rem", 
+        <div style={{
+            padding: "2rem",
+            display: "flex",
+            gap: "2rem",
             fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
             backgroundColor: "var(--background)",
             color: "var(--text)",
             minHeight: "100vh"
         }}>
             <div style={{ flex: 1 }}>
-                <h2 style={{ 
-                    fontSize: "2rem", 
-                    color: "var(--text)", 
-                    marginBottom: "1.5rem" 
+                <h2 style={{
+                    fontSize: "2rem",
+                    color: "var(--text)",
+                    marginBottom: "1.5rem"
                 }}>
                     {getFloorName(selectedFloor)} - Masa Seçimi
                 </h2>
@@ -119,7 +134,7 @@ export default function WaiterHome() {
                 }}>
                     {tables.map((table) => {
                         const status = getStatus(table.id);
-                        const reservation = Object.values(reservations).find(res => res.tableId === table.id);
+                        const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
                         return (
                             <div
                                 key={table.id || crypto.randomUUID()}
@@ -136,25 +151,46 @@ export default function WaiterHome() {
                                     userSelect: "none",
                                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                                     boxShadow: "0 4px 12px var(--shadow)",
+                                    position: 'relative'
                                 }}
                                 onClick={() => handleTableClick(table.id)}
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 title={`Masa ${table.displayNumber}`}
                             >
+                                {/* Kapasite rozeti */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 6,
+                                    left: 6,
+                                    background: 'rgba(255,255,255,0.2)',
+                                    padding: '2px 6px',
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 600
+                                }}>
+                                    {table.capacity} Kişilik
+                                </div>
+
                                 <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
                                     {table.displayNumber}
                                 </div>
                                 <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
                                     {status.text}
                                 </div>
-                                {reservation && (
+                                {tableReservations.length > 0 && (
                                     <div style={{
                                         fontSize: '10px',
                                         marginTop: '4px',
-                                        opacity: 0.8
+                                        opacity: 0.9,
+                                        textAlign: 'center',
+                                        lineHeight: 1.2
                                     }}>
-                                        {reservation.ad} {reservation.soyad} - {reservation.saat}
+                                        {tableReservations.map((res, idx) => (
+                                            <div key={`${table.id}-${idx}`}>
+                                                {res.ad} {res.soyad} - {res.saat}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -164,10 +200,10 @@ export default function WaiterHome() {
             </div>
 
             <div style={{ width: "150px", flexShrink: 0 }}>
-                <h3 style={{ 
-                    fontSize: "1.25rem", 
-                    color: "var(--text)", 
-                    marginBottom: "1rem" 
+                <h3 style={{
+                    fontSize: "1.25rem",
+                    color: "var(--text)",
+                    marginBottom: "1rem"
                 }}>Katlar</h3>
                 {floors.map((floor) => (
                     <div

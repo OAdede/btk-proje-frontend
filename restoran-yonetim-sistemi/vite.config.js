@@ -20,16 +20,4 @@ export default defineConfig({
       },
     },
   },
-  esbuild: {
-    drop: ['console', 'debugger'],
-  },
-  build: {
-    rollupOptions: {
-      onwarn(warning, warn) {
-        // Deprecated feature uyarılarını bastır
-        if (warning.code === 'DEPRECATED_FEATURE') return;
-        warn(warning);
-      }
-    }
-  }
 })
