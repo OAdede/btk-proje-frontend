@@ -17,27 +17,13 @@ export const personnelService = {
             // Map Turkish role to English roleName
             const roleName = roleMapping[personnelData.role] || 'waiter';
             
-            // Extract base64 data from data URL if present
-            let photoBase64 = null;
-            if (personnelData.photo && personnelData.photo.startsWith('data:image/')) {
-                // Remove data URL prefix to get only base64 data
-                photoBase64 = personnelData.photo.split(',')[1];
-                
-                // Check if photo is too large (more than 1MB base64)
-                if (photoBase64 && photoBase64.length > 1000000) {
-                    console.warn('Photo is too large:', photoBase64.length, 'characters');
-                    // For now, send a smaller placeholder or truncate
-                    photoBase64 = photoBase64.substring(0, 100000); // Limit to ~100KB
-                }
-            }
-            
-            // Create request data with photo
+            // Create request data without photo (photo functionality removed)
             const requestData = {
                 name: personnelData.name.trim(),
                 email: personnelData.email.trim(),
                 password: personnelData.password,
                 phoneNumber: personnelData.phone.trim(),
-                photo: photoBase64, // Send base64 data or null
+                photo: null, // No photo sent
                 createdAt: new Date().toISOString(),
                 roleName: roleName
             };
@@ -47,8 +33,7 @@ export const personnelService = {
                 email: requestData.email,
                 phoneNumber: requestData.phoneNumber,
                 roleName: requestData.roleName,
-                hasPhoto: !!photoBase64,
-                photoLength: photoBase64 ? photoBase64.length : 0
+                hasPhoto: false
             });
 
             const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -82,15 +67,17 @@ export const personnelService = {
 
             try {
                 const responseData = await response.json();
+                console.log('Registration response:', responseData);
                 // Expected response format:
                 // {
                 //   "id": 0,
                 //   "name": "string",
                 //   "email": "string",
                 //   "phoneNumber": "string",
-                //   "photoBase64": "string",
+                //   "hasPhoto": true,
                 //   "createdAt": "2025-08-11T10:36:56.302Z",
-                //   "roles": ["string"]
+                //   "roles": [0],
+                //   "isActive": true
                 // }
                 return responseData;
             } catch (jsonError) {
