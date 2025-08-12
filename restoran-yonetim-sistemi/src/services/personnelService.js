@@ -4,9 +4,13 @@ const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
 // Role mapping for backend (0=admin, 1=waiter, 2=cashier)
 const roleMapping = {
-  'waiter': 'waiter',    // 1 = garson
-  'cashier': 'cashier',  // 2 = kasiyer
-  'admin': 'admin'       // 0 = admin
+  'garson': 'waiter',
+  'kasiyer': 'cashier',
+  'müdür': 'manager',
+  'waiter': 'waiter',
+  'cashier': 'cashier',
+  'manager': 'manager',
+  'admin': 'admin'
 };
 
 export const personnelService = {
@@ -19,7 +23,7 @@ export const personnelService = {
             console.log('Role mapping:', {
                 originalRole: personnelData.role,
                 mappedRole: roleName,
-                backendExpected: ['admin', 'waiter', 'cashier'],
+                backendExpected: ['admin', 'waiter', 'cashier', 'manager'],
                 fullPersonnelData: personnelData
             });
             
@@ -54,7 +58,7 @@ export const personnelService = {
 
             if (!response.ok) {
                 let errorMessage = 'Personel eklenirken bir hata oluştu';
-                
+
                 try {
                     const errorText = await response.text();
                     console.log('Server error response:', errorText);
@@ -75,17 +79,6 @@ export const personnelService = {
             try {
                 const responseData = await response.json();
                 console.log('Registration response:', responseData);
-                // Expected response format:
-                // {
-                //   "id": 0,
-                //   "name": "string",
-                //   "email": "string",
-                //   "phoneNumber": "string",
-                //   "hasPhoto": true,
-                //   "createdAt": "2025-08-11T10:36:56.302Z",
-                //   "roles": [0],
-                //   "isActive": true
-                // }
                 return responseData;
             } catch (jsonError) {
                 console.log('Response is not JSON, returning empty object');
@@ -99,14 +92,12 @@ export const personnelService = {
     // Get all users
     async getAllUsers() {
         try {
-            // Get token from localStorage
             const token = localStorage.getItem('token');
-            
+
             const headers = {
                 'Accept': 'application/json',
             };
 
-            // Add authorization header if token exists
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
@@ -118,7 +109,7 @@ export const personnelService = {
 
             if (!response.ok) {
                 let errorMessage = 'Kullanıcılar yüklenirken bir hata oluştu';
-                
+
                 try {
                     const errorText = await response.text();
                     console.log('Server error response:', errorText);
@@ -139,8 +130,7 @@ export const personnelService = {
             try {
                 const responseData = await response.json();
                 console.log('Users loaded successfully:', responseData.length, 'users');
-                
-                // Log sample user data for debugging
+
                 if (responseData.length > 0) {
                     console.log('Sample user data:', {
                         id: responseData[0].id,
@@ -151,20 +141,7 @@ export const personnelService = {
                         roles: responseData[0].roles
                     });
                 }
-                
-                // Expected response format:
-                // [
-                //   {
-                //     "id": 0,
-                //     "name": "string",
-                //     "email": "string",
-                //     "phoneNumber": "string",
-                //     "hasPhoto": true,
-                //     "createdAt": "2025-08-11T11:31:16.378Z",
-                //     "roles": [0],
-                //     "isActive": true
-                //   }
-                // ]
+
                 return responseData;
             } catch (jsonError) {
                 console.log('Response is not JSON, returning empty array');

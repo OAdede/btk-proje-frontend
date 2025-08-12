@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TableContext } from '../../context/TableContext';
 import { useTheme } from '../../context/ThemeContext';
+import { AuthContext } from '../../context/AuthContext';
 import ReservationModal from '../../components/reservations/ReservationModal';
 import WarningModal from '../../components/common/WarningModal';
 
@@ -10,6 +11,7 @@ const ReservationsPage = () => {
     const navigate = useNavigate();
     const { reservations, addReservation, removeReservation, tableStatus } = useContext(TableContext);
     const { isDarkMode, colors } = useTheme();
+    const { user } = useContext(AuthContext);
     const [filter, setFilter] = useState('');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [reservationToDelete, setReservationToDelete] = useState(null);
@@ -46,7 +48,7 @@ const ReservationsPage = () => {
     // Table ID'yi masa numarasına çevir (örn: "1" -> "Z1", "9" -> "A1")
     const getTableNameFromId = (tableId) => {
         if (!tableId || typeof tableId !== 'string') return tableId;
-        
+
         const id = parseInt(tableId);
         if (id <= 8) {
             return `Z${id}`;
@@ -61,18 +63,18 @@ const ReservationsPage = () => {
     // Masa numarasını Table ID'ye çevir (örn: "Z1" -> "1", "A1" -> "9", "B1" -> "17")
     const getTableIdFromName = (tableName) => {
         if (!tableName || typeof tableName !== 'string') return tableName;
-        
+
         // Z1, Z2, ... -> 1, 2, ...
         if (tableName.startsWith('Z')) {
             return tableName.substring(1);
         }
-        
+
         // A1, A2, ... -> 9, 10, ...
         // B1, B2, ... -> 17, 18, ...
         const floorChar = tableName.charAt(0);
         const tableIndex = parseInt(tableName.substring(1));
         const floorNumber = floorChar.charCodeAt(0) - 64; // A=1, B=2, C=3, ...
-        
+
         return (floorNumber * 8) + tableIndex;
     };
 
@@ -100,38 +102,38 @@ const ReservationsPage = () => {
     const getTableStatus = (tableNumber) => {
         // tableNumber'ı tableId formatına çevir (örn: "Z1" -> "1")
         const tableId = getTableIdFromName(tableNumber);
-        
+
         // tableStatus context'ini kontrol et
         let contextStatus = tableStatus[tableId];
-        
+
         // Eğer context'te masa 'empty' olarak işaretliyse, boş kabul et
         if (contextStatus === 'empty' || contextStatus === 'bos') {
             return { status: 'empty', reservations: [] };
         }
-        
+
         // Context'te 'reserved' ise, rezervasyonları kontrol et
         if (contextStatus === 'reserved') {
             const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
-            
+
             // Eğer rezervasyon bulunamazsa ama masa hala 'reserved' olarak işaretliyse
             if (tableReservations.length === 0) {
                 return { status: 'empty', reservations: [] };
             }
-            
+
             // Rezervasyon bulundu, geçerliliğini kontrol et
             const now = new Date();
             const validReservations = tableReservations.filter(res => {
                 const reservationTime = new Date(`${res.tarih}T${res.saat}`);
                 return reservationTime > now; // Sadece gelecekteki rezervasyonları kabul et
             });
-            
+
             if (validReservations.length === 0) {
                 return { status: 'empty', reservations: [] };
             }
-            
+
             return { status: 'reserved', reservations: validReservations };
         }
-        
+
         // Eğer context'te hiçbir durum yoksa, reservations array'ini kontrol et
         if (!contextStatus) {
             const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
@@ -142,13 +144,13 @@ const ReservationsPage = () => {
                     const reservationTime = new Date(`${res.tarih}T${res.saat}`);
                     return reservationTime > now;
                 });
-                
+
                 if (validReservations.length > 0) {
                     return { status: 'reserved', reservations: validReservations };
                 }
             }
         }
-        
+
         // Diğer durumlar için (occupied, dolu vb.)
         return { status: contextStatus || 'empty', reservations: [] };
     };
@@ -156,13 +158,13 @@ const ReservationsPage = () => {
     // 5 saat kısıtlamasını kontrol eden fonksiyon
     const canMakeReservation = (existingReservations, newTime) => {
         if (existingReservations.length === 0) return true;
-        
+
         const newTimeHour = parseInt(newTime.split(':')[0]);
-        
+
         for (const reservation of existingReservations) {
             const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
             const timeDifference = Math.abs(newTimeHour - existingTimeHour);
-            
+
             if (timeDifference < 5) {
                 return false;
             }
@@ -173,7 +175,7 @@ const ReservationsPage = () => {
     const handleTableSelection = (floorNumber, tableIndex) => {
         const tableNumber = getTableNumber(floorNumber, tableIndex);
         const tableStatus = getTableStatus(tableNumber);
-        
+
         if (tableStatus.status === 'reserved') {
             // Rezerve masaya tıklandığında rezervasyon bilgilerini göster
             setSelectedTable(tableNumber);
@@ -196,17 +198,17 @@ const ReservationsPage = () => {
 
     const handleReservationSubmit = (formData) => {
         const tableStatus = getTableStatus(selectedTable);
-        
+
         // Masa kapasitesi kontrolü
         const tableCapacity = getTableCapacity(selectedTable);
         const personCount = parseInt(formData.kisiSayisi);
-        
+
         if (personCount > tableCapacity) {
             setWarningMessage(`Bu masa ${tableCapacity} kişilik. ${personCount} kişilik rezervasyon yapılamaz. Maksimum ${tableCapacity} kişi seçebilirsiniz.`);
             setShowWarningModal(true);
             return;
         }
-        
+
         if (tableStatus.status === 'reserved') {
             // Rezerve masaya yeni rezervasyon ekleme
             if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
@@ -215,7 +217,7 @@ const ReservationsPage = () => {
                 return;
             }
         }
-        
+
         addReservation(selectedTable, formData);
         setShowReservationModal(false);
         setSelectedTable(null);
@@ -267,7 +269,7 @@ const ReservationsPage = () => {
         const lastName = res.soyad || res.soy || '';
         const fullName = `${res.ad || ''} ${lastName}`.trim();
         return fullName.toLowerCase().includes(filter.toLowerCase()) ||
-               (res.telefon && res.telefon.includes(filter));
+            (res.telefon && res.telefon.includes(filter));
     });
 
     // Stiller fonksiyonu - dinamik renkler için
@@ -373,47 +375,52 @@ const ReservationsPage = () => {
     });
 
     const styles = getStyles();
+    const canAddReservation = user?.role === 'admin';
 
     return (
         <div style={styles.page}>
             <div style={styles.header}>
-                 <h1 style={styles.title}>
-                     📅 Rezervasyonlar
-                     <span style={styles.badge}>{reservationsList.length}</span>
-                 </h1>
-                                 <div style={{ display: 'flex', gap: '10px' }}>
-                     <button 
-                         onClick={handleAddReservation} 
-                         style={styles.addButton}
-                         onMouseEnter={(e) => {
-                             e.target.style.transform = 'translateY(-2px)';
-                             e.target.style.boxShadow = isDarkMode ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.2)';
-                         }}
-                         onMouseLeave={(e) => {
-                             e.target.style.transform = 'translateY(0)';
-                             e.target.style.boxShadow = 'none';
-                         }}
-                     >
-                    + Yeni Rezervasyon Ekle
-                </button>
-                
-                <button
-                    onClick={() => setShowDeleteAllModal(true)}
-                    style={{
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        marginLeft: '10px'
-                    }}
-                    title="Rezervasyon verilerini temizle"
-                >
-                    🗑️ Temizle
-                </button>
-                 </div>
+                <h1 style={styles.title}>
+                    📅 Rezervasyonlar
+                    <span style={styles.badge}>{reservationsList.length}</span>
+                </h1>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {canAddReservation && (
+                        <button
+                            onClick={handleAddReservation}
+                            style={styles.addButton}
+                            onMouseEnter={(e) => {
+                                e.target.style.transform = 'translateY(-2px)';
+                                e.target.style.boxShadow = isDarkMode ? '0 4px 12px rgba(0, 0, 0, 0.4)' : '0 4px 12px rgba(0, 0, 0, 0.2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = 'none';
+                            }}
+                        >
+                            + Yeni Rezervasyon Ekle
+                        </button>
+                    )}
+
+                    {canAddReservation && (
+                        <button
+                            onClick={() => setShowDeleteAllModal(true)}
+                            style={{
+                                background: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px 16px',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                cursor: 'pointer',
+                                marginLeft: '10px'
+                            }}
+                            title="Rezervasyon verilerini temizle"
+                        >
+                            🗑️ Temizle
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div style={styles.filterContainer}>
@@ -434,60 +441,60 @@ const ReservationsPage = () => {
                     </div>
                 ) : filteredReservations.length > 0 ? (
                     filteredReservations.map(res => (
-                                                 <div key={res.id || crypto.randomUUID()} style={styles.card}>
+                        <div key={res.id || crypto.randomUUID()} style={styles.card}>
                             <div style={styles.cardHeader}>
-                                                                 <strong style={{ color: colors.text }}>
-                                     Masa {res.masaNo} - {res.ad || ''} {res.soyad || res.soy || ''}
-                                 </strong>
-                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                     <span style={{ color: colors.textSecondary }}>{res.tarih} • {res.saat}</span>
-                                     <button
-                                         onClick={() => handleEditReservation(res)}
-                                         style={{
-                                             background: isDarkMode ? '#4a90e2' : colors.button,
-                                             color: 'white',
-                                             border: 'none',
-                                             padding: '6px 12px',
-                                             borderRadius: '6px',
-                                             fontSize: '0.8rem',
-                                             cursor: 'pointer',
-                                             transition: 'all 0.3s ease'
-                                         }}
-                                         onMouseEnter={(e) => {
-                                             e.target.style.transform = 'translateY(-1px)';
-                                             e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
-                                         }}
-                                         onMouseLeave={(e) => {
-                                             e.target.style.transform = 'translateY(0)';
-                                             e.target.style.boxShadow = 'none';
-                                         }}
-                                     >
-                                         ✏️ Düzenle
-                                     </button>
-                                     <button
-                                         onClick={() => handleDeleteReservation(res)}
-                                         style={{
-                                             background: colors.error || '#dc3545',
-                                             color: 'white',
-                                             border: 'none',
-                                             padding: '6px 12px',
-                                             borderRadius: '6px',
-                                             fontSize: '0.8rem',
-                                             cursor: 'pointer',
-                                             transition: 'all 0.3s ease'
-                                         }}
-                                         onMouseEnter={(e) => {
-                                             e.target.style.transform = 'translateY(-1px)';
-                                             e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
-                                         }}
-                                         onMouseLeave={(e) => {
-                                             e.target.style.transform = 'translateY(0)';
-                                             e.target.style.boxShadow = 'none';
-                                         }}
-                                     >
-                                         🗑️ Sil
-                                     </button>
-                                 </div>
+                                <strong style={{ color: colors.text }}>
+                                    Masa {res.masaNo} - {res.ad || ''} {res.soyad || res.soy || ''}
+                                </strong>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ color: colors.textSecondary }}>{res.tarih} • {res.saat}</span>
+                                    <button
+                                        onClick={() => handleEditReservation(res)}
+                                        style={{
+                                            background: isDarkMode ? '#4a90e2' : colors.button,
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.8rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-1px)';
+                                            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    >
+                                        ✏️ Düzenle
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteReservation(res)}
+                                        style={{
+                                            background: colors.error || '#dc3545',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '6px 12px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.8rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-1px)';
+                                            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    >
+                                        🗑️ Sil
+                                    </button>
+                                </div>
                             </div>
                             <div style={styles.cardBody}>
                                 <p>📞 {res.telefon || 'Telefon yok'}</p>
@@ -499,427 +506,427 @@ const ReservationsPage = () => {
                 ) : (
                     <div style={{ textAlign: "center", padding: "40px", color: colors.textSecondary }}>
                         <h3>🔍 Arama sonucu bulunamadı</h3>
-                    <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
+                        <p>Arama kriterlerine uygun rezervasyon bulunamadı.</p>
                     </div>
                 )}
             </div>
 
-             {/* Silme Onay Modalı */}
-             {showDeleteModal && (
-                 <div style={{
-                     position: 'fixed',
-                     top: 0,
-                     left: 0,
-                     right: 0,
-                     bottom: 0,
-                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                     display: 'flex',
-                     justifyContent: 'center',
-                     alignItems: 'center',
-                     zIndex: 1000
-                 }}>
-                     <div style={{
-                         backgroundColor: colors.card,
-                         padding: '30px',
-                         borderRadius: '15px',
-                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                         maxWidth: '400px',
-                         width: '90%',
-                         border: `1px solid ${colors.border}`
-                     }}>
-                         <h3 style={{
-                             color: colors.text,
-                             marginBottom: '20px',
-                             fontSize: '1.3rem',
-                             textAlign: 'center'
-                         }}>
-                             ⚠️ Rezervasyon Silme
-                         </h3>
-                         <p style={{
-                             color: colors.textSecondary,
-                             marginBottom: '25px',
-                             textAlign: 'center',
-                             lineHeight: '1.5'
-                         }}>
-                             <strong>{reservationToDelete?.ad || ''} {reservationToDelete?.soyad || reservationToDelete?.soy || ''}</strong> adlı kişinin rezervasyonunu silmek istediğinizden emin misiniz?
-                         </p>
-                         <div style={{
-                             display: 'flex',
-                             gap: '15px',
-                             justifyContent: 'center'
-                         }}>
-                             <button
-                                 onClick={cancelDelete}
-                                 style={{
-                                     background: colors.border,
-                                     color: colors.text,
-                                     border: 'none',
-                                     padding: '12px 25px',
-                                     borderRadius: '8px',
-                                     fontSize: '1rem',
-                                     cursor: 'pointer',
-                                     transition: 'all 0.3s ease',
-                                     fontWeight: '500'
-                                 }}
-                                 onMouseEnter={(e) => {
-                                     e.target.style.transform = 'translateY(-2px)';
-                                     e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-                                 }}
-                                 onMouseLeave={(e) => {
-                                     e.target.style.transform = 'translateY(0)';
-                                     e.target.style.boxShadow = 'none';
-                                 }}
-                             >
-                                 ❌ Hayır
-                             </button>
-                             <button
-                                 onClick={confirmDelete}
-                                 style={{
-                                     background: colors.error || '#dc3545',
-                                     color: 'white',
-                                     border: 'none',
-                                     padding: '12px 25px',
-                                     borderRadius: '8px',
-                                     fontSize: '1rem',
-                                     cursor: 'pointer',
-                                     transition: 'all 0.3s ease',
-                                     fontWeight: '500'
-                                 }}
-                                 onMouseEnter={(e) => {
-                                     e.target.style.transform = 'translateY(-2px)';
-                                     e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-                                 }}
-                                 onMouseLeave={(e) => {
-                                     e.target.style.transform = 'translateY(0)';
-                                     e.target.style.boxShadow = 'none';
-                                 }}
-                             >
-                                 ✅ Evet, Sil
-                             </button>
-                         </div>
-                     </div>
-                 </div>
-             )}
+            {/* Silme Onay Modalı */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: colors.card,
+                        padding: '30px',
+                        borderRadius: '15px',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                        maxWidth: '400px',
+                        width: '90%',
+                        border: `1px solid ${colors.border}`
+                    }}>
+                        <h3 style={{
+                            color: colors.text,
+                            marginBottom: '20px',
+                            fontSize: '1.3rem',
+                            textAlign: 'center'
+                        }}>
+                            ⚠️ Rezervasyon Silme
+                        </h3>
+                        <p style={{
+                            color: colors.textSecondary,
+                            marginBottom: '25px',
+                            textAlign: 'center',
+                            lineHeight: '1.5'
+                        }}>
+                            <strong>{reservationToDelete?.ad || ''} {reservationToDelete?.soyad || reservationToDelete?.soy || ''}</strong> adlı kişinin rezervasyonunu silmek istediğinizden emin misiniz?
+                        </p>
+                        <div style={{
+                            display: 'flex',
+                            gap: '15px',
+                            justifyContent: 'center'
+                        }}>
+                            <button
+                                onClick={cancelDelete}
+                                style={{
+                                    background: colors.border,
+                                    color: colors.text,
+                                    border: 'none',
+                                    padding: '12px 25px',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            >
+                                ❌ Hayır
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                style={{
+                                    background: colors.error || '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 25px',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            >
+                                ✅ Evet, Sil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-             {/* Kat/Masa Seçim Modal */}
-             {showTableSelectionModal && (
-                 <div style={{
-                     position: 'fixed',
-                     top: 0,
-                     left: 0,
-                     width: '100vw',
-                     height: '100vh',
-                     backgroundColor: 'rgba(0,0,0,0.7)',
-                     zIndex: 9998,
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center'
-                 }}>
-                     <div style={{
-                         backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
-                         padding: '2rem',
-                         borderRadius: '15px',
-                         boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                         zIndex: 9999,
-                         maxWidth: '600px',
-                         width: '90%',
-                         textAlign: 'center',
-                         border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
-                     }}>
-                         <h3 style={{ 
-                             color: isDarkMode ? '#ffffff' : '#333333', 
-                             marginBottom: '20px',
-                             fontSize: '1.5rem'
-                         }}>
-                             🏢 Kat ve Masa Seçimi
-                         </h3>
-                         
-                         {/* Kat Seçimi */}
-                         <div style={{ marginBottom: '20px' }}>
-                             <h4 style={{ 
-                                 color: isDarkMode ? '#cccccc' : '#666666', 
-                                 marginBottom: '10px'
-                             }}>
-                                 Kat Seçin:
-                             </h4>
-                             <div style={{
-                                 display: 'flex',
-                                 gap: '10px',
-                                 justifyContent: 'center',
-                                 flexWrap: 'wrap'
-                             }}>
-                                 {[0, 1, 2].map((floor) => (
-                                     <button
-                                         key={floor}
-                                         onClick={() => setSelectedFloor(floor)}
-                                         style={{
-                                                                                           background: selectedFloor === floor ? (isDarkMode ? colors.primary : '#513653') : (isDarkMode ? '#4a4a4a' : '#f0f0f0'),
-                                             color: selectedFloor === floor ? 'white' : (isDarkMode ? '#ffffff' : '#333333'),
-                                             border: 'none',
-                                             padding: '10px 20px',
-                                             borderRadius: '8px',
-                                             cursor: 'pointer',
-                                             fontSize: '14px',
-                                             fontWeight: 'bold',
-                                             transition: 'all 0.3s ease'
-                                         }}
-                                     >
-                                         {getFloorName(floor)}
-                                     </button>
-                                 ))}
-                             </div>
-                         </div>
+            {/* Kat/Masa Seçim Modal */}
+            {showTableSelectionModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    zIndex: 9998,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <div style={{
+                        backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
+                        padding: '2rem',
+                        borderRadius: '15px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                        zIndex: 9999,
+                        maxWidth: '600px',
+                        width: '90%',
+                        textAlign: 'center',
+                        border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+                    }}>
+                        <h3 style={{
+                            color: isDarkMode ? '#ffffff' : '#333333',
+                            marginBottom: '20px',
+                            fontSize: '1.5rem'
+                        }}>
+                            🏢 Kat ve Masa Seçimi
+                        </h3>
 
-                         {/* Masa Seçimi */}
-                         <div style={{ marginBottom: '20px' }}>
-                             <h4 style={{ 
-                                 color: isDarkMode ? '#cccccc' : '#666666', 
-                                 marginBottom: '10px'
-                             }}>
-                                 {getFloorName(selectedFloor)} - Masa Seçin:
-                             </h4>
-                             <div style={{
-                                 backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
-                                 padding: '10px',
-                                 borderRadius: '8px',
-                                 marginBottom: '15px',
-                                 border: `1px solid ${colors.border}`
-                             }}>
-                                 <p style={{
-                                     color: isDarkMode ? '#ffffff' : '#333333',
-                                     fontSize: '14px',
-                                     margin: 0,
-                                     textAlign: 'center'
-                                 }}>
-                                     ⚠️ Masa kapasitesi kontrol edilecektir. Seçilen masanın kapasitesinden fazla kişi rezervasyonu yapılamaz.
-                                 </p>
-                             </div>
-                             <div style={{
-                                 display: 'grid',
-                                 gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                                 gap: '10px',
-                                 maxWidth: '400px',
-                                 margin: '0 auto'
-                             }}>
-                                 {[0, 1, 2, 3, 4, 5, 6, 7].map((tableIndex) => {
-                                     const tableNumber = getTableNumber(selectedFloor, tableIndex);
-                                     const tableStatus = getTableStatus(tableNumber);
-                                     const isReserved = tableStatus.status === 'reserved';
-                                     const tableCapacity = getTableCapacity(tableNumber);
-                                     
-                                     return (
-                                         <button
-                                             key={tableIndex}
-                                             onClick={() => handleTableSelection(selectedFloor, tableIndex)}
-                                             style={{
-                                                 background: isReserved ? '#ffc107' : colors.success,
-                                                 color: isReserved ? '#212529' : 'white',
-                                                 border: 'none',
-                                                 padding: '15px 10px',
-                                                 borderRadius: '8px',
-                                                 cursor: 'pointer',
-                                                 fontSize: '14px',
-                                                 fontWeight: 'bold',
-                                                 transition: 'all 0.3s ease',
-                                                 position: 'relative'
-                                             }}
-                                             onMouseEnter={(e) => {
-                                                 e.target.style.transform = 'scale(1.05)';
-                                                 e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-                                             }}
-                                             onMouseLeave={(e) => {
-                                                 e.target.style.transform = 'scale(1)';
-                                                 e.target.style.boxShadow = 'none';
-                                             }}
-                                         >
-                                             {/* Masa kapasitesi */}
-                                             <div style={{
-                                                 fontSize: '11px',
-                                                 color: 'rgba(255,255,255,0.9)',
-                                                 marginBottom: '3px',
-                                                 fontWeight: 'bold',
-                                                 backgroundColor: 'rgba(0,0,0,0.3)',
-                                                 padding: '2px 4px',
-                                                 borderRadius: '3px'
-                                             }}>
-                                                 {tableCapacity} Kişilik
-                                             </div>
-                                             <div>{tableNumber}</div>
-                                             {isReserved && (
-                                                 <div style={{
-                                                     fontSize: '10px',
-                                                     marginTop: '2px',
-                                                     fontWeight: 'normal'
-                                                 }}>
-                                                     {tableStatus.reservations.map((res, index) => (
-                                                         <div key={`${tableNumber}-${index}-${res.ad}-${res.saat}`} style={{ marginBottom: '1px' }}>
-                                                             {res.ad} {res.soyad} - {res.saat}
-                                                         </div>
-                                                     ))}
-                                                 </div>
-                                             )}
-                                         </button>
-                                     );
-                                 })}
-                             </div>
-                         </div>
+                        {/* Kat Seçimi */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <h4 style={{
+                                color: isDarkMode ? '#cccccc' : '#666666',
+                                marginBottom: '10px'
+                            }}>
+                                Kat Seçin:
+                            </h4>
+                            <div style={{
+                                display: 'flex',
+                                gap: '10px',
+                                justifyContent: 'center',
+                                flexWrap: 'wrap'
+                            }}>
+                                {[0, 1, 2].map((floor) => (
+                                    <button
+                                        key={floor}
+                                        onClick={() => setSelectedFloor(floor)}
+                                        style={{
+                                            background: selectedFloor === floor ? (isDarkMode ? colors.primary : '#513653') : (isDarkMode ? '#4a4a4a' : '#f0f0f0'),
+                                            color: selectedFloor === floor ? 'white' : (isDarkMode ? '#ffffff' : '#333333'),
+                                            border: 'none',
+                                            padding: '10px 20px',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        {getFloorName(floor)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                         {/* İptal Butonu */}
-                         <button
-                             onClick={() => setShowTableSelectionModal(false)}
-                             style={{
-                                 background: isDarkMode ? '#4a4a4a' : '#e0e0e0',
-                                 color: isDarkMode ? '#ffffff' : '#333333',
-                                 border: 'none',
-                                 padding: '12px 24px',
-                                 borderRadius: '8px',
-                                 cursor: 'pointer',
-                                 fontSize: '16px',
-                                 fontWeight: 'bold',
-                                 transition: 'all 0.3s ease'
-                             }}
-                         >
-                             ❌ İptal
-                         </button>
-                     </div>
-                 </div>
-             )}
+                        {/* Masa Seçimi */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <h4 style={{
+                                color: isDarkMode ? '#cccccc' : '#666666',
+                                marginBottom: '10px'
+                            }}>
+                                {getFloorName(selectedFloor)} - Masa Seçin:
+                            </h4>
+                            <div style={{
+                                backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
+                                padding: '10px',
+                                borderRadius: '8px',
+                                marginBottom: '15px',
+                                border: `1px solid ${colors.border}`
+                            }}>
+                                <p style={{
+                                    color: isDarkMode ? '#ffffff' : '#333333',
+                                    fontSize: '14px',
+                                    margin: 0,
+                                    textAlign: 'center'
+                                }}>
+                                    ⚠️ Masa kapasitesi kontrol edilecektir. Seçilen masanın kapasitesinden fazla kişi rezervasyonu yapılamaz.
+                                </p>
+                            </div>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                                gap: '10px',
+                                maxWidth: '400px',
+                                margin: '0 auto'
+                            }}>
+                                {[0, 1, 2, 3, 4, 5, 6, 7].map((tableIndex) => {
+                                    const tableNumber = getTableNumber(selectedFloor, tableIndex);
+                                    const tableStatus = getTableStatus(tableNumber);
+                                    const isReserved = tableStatus.status === 'reserved';
+                                    const tableCapacity = getTableCapacity(tableNumber);
 
-             {/* Rezervasyon Modal */}
-             <ReservationModal
-                 key={modalKey}
-                 visible={showReservationModal}
-                 masaNo={selectedTable}
-                 onClose={handleReservationClose}
-                 onSubmit={handleReservationSubmit}
-                 defaultDate={getTodayDate()}
-                 existingReservations={selectedTable ? getTableStatus(selectedTable).reservations : []}
-                 shouldClearForm={false}
-             />
+                                    return (
+                                        <button
+                                            key={tableIndex}
+                                            onClick={() => handleTableSelection(selectedFloor, tableIndex)}
+                                            style={{
+                                                background: isReserved ? '#ffc107' : colors.success,
+                                                color: isReserved ? '#212529' : 'white',
+                                                border: 'none',
+                                                padding: '15px 10px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '14px',
+                                                fontWeight: 'bold',
+                                                transition: 'all 0.3s ease',
+                                                position: 'relative'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.target.style.transform = 'scale(1.05)';
+                                                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.target.style.transform = 'scale(1)';
+                                                e.target.style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            {/* Masa kapasitesi */}
+                                            <div style={{
+                                                fontSize: '11px',
+                                                color: 'rgba(255,255,255,0.9)',
+                                                marginBottom: '3px',
+                                                fontWeight: 'bold',
+                                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                                padding: '2px 4px',
+                                                borderRadius: '3px'
+                                            }}>
+                                                {tableCapacity} Kişilik
+                                            </div>
+                                            <div>{tableNumber}</div>
+                                            {isReserved && (
+                                                <div style={{
+                                                    fontSize: '10px',
+                                                    marginTop: '2px',
+                                                    fontWeight: 'normal'
+                                                }}>
+                                                    {tableStatus.reservations.map((res, index) => (
+                                                        <div key={`${tableNumber}-${index}-${res.ad}-${res.saat}`} style={{ marginBottom: '1px' }}>
+                                                            {res.ad} {res.soyad} - {res.saat}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
 
-             
+                        {/* İptal Butonu */}
+                        <button
+                            onClick={() => setShowTableSelectionModal(false)}
+                            style={{
+                                background: isDarkMode ? '#4a4a4a' : '#e0e0e0',
+                                color: isDarkMode ? '#ffffff' : '#333333',
+                                border: 'none',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                fontWeight: 'bold',
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
+                            ❌ İptal
+                        </button>
+                    </div>
+                </div>
+            )}
 
-             {/* Uyarı Modal */}
-             <WarningModal
-                 visible={showWarningModal}
-                 message={warningMessage}
-                 onClose={() => {
-                     setShowWarningModal(false);
-                     
-                     
-                 }}
-             />
+            {/* Rezervasyon Modal */}
+            <ReservationModal
+                key={modalKey}
+                visible={showReservationModal}
+                masaNo={selectedTable}
+                onClose={handleReservationClose}
+                onSubmit={handleReservationSubmit}
+                defaultDate={getTodayDate()}
+                existingReservations={selectedTable ? getTableStatus(selectedTable).reservations : []}
+                shouldClearForm={false}
+            />
 
-             {/* Tüm Rezervasyonları Silme Onay Modalı */}
-             {showDeleteAllModal && (
-                 <div style={{
-                     position: 'fixed',
-                     top: 0,
-                     left: 0,
-                     right: 0,
-                     bottom: 0,
-                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                     display: 'flex',
-                     justifyContent: 'center',
-                     alignItems: 'center',
-                     zIndex: 1000
-                 }}>
-                     <div style={{
-                         backgroundColor: colors.card,
-                         padding: '30px',
-                         borderRadius: '15px',
-                         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-                         maxWidth: '400px',
-                         width: '90%',
-                         border: `1px solid ${colors.border}`
-                     }}>
-                         <div style={{
-                             textAlign: 'center',
-                             marginBottom: '25px'
-                         }}>
-                             <div style={{
-                                 fontSize: '48px',
-                                 marginBottom: '15px'
-                             }}>
-                                 ⚠️
-                             </div>
-                             <h3 style={{
-                                 color: colors.text,
-                                 marginBottom: '10px',
-                                 fontSize: '1.3rem'
-                             }}>
-                                 Dikkat!
-                             </h3>
-                             <p style={{
-                                 color: colors.textSecondary,
-                                 lineHeight: '1.5',
-                                 fontSize: '1rem'
-                             }}>
-                                 Gerçekten bütün rezervasyonları silmek istiyor musunuz?<br/>
-                                 <strong>Bu işlem geri alınamaz.</strong>
-                             </p>
-                         </div>
-                         <div style={{
-                             display: 'flex',
-                             gap: '15px',
-                             justifyContent: 'center'
-                         }}>
-                             <button
-                                 onClick={() => {
-                                     localStorage.removeItem('reservations');
-                                     setShowDeleteAllModal(false);
-                                     window.location.reload();
-                                 }}
-                                 style={{
-                                     background: '#dc3545',
-                                     color: 'white',
-                                     border: 'none',
-                                     padding: '12px 25px',
-                                     borderRadius: '8px',
-                                     fontSize: '1rem',
-                                     cursor: 'pointer',
-                                     transition: 'all 0.3s ease',
-                                     fontWeight: '500'
-                                 }}
-                                 onMouseEnter={(e) => {
-                                     e.target.style.transform = 'translateY(-2px)';
-                                     e.target.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.3)';
-                                 }}
-                                 onMouseLeave={(e) => {
-                                     e.target.style.transform = 'translateY(0)';
-                                     e.target.style.boxShadow = 'none';
-                                 }}
-                             >
-                                 Evet, Sil
-                             </button>
-                             <button
-                                 onClick={() => setShowDeleteAllModal(false)}
-                                 style={{
-                                     background: colors.border,
-                                     color: colors.text,
-                                     border: 'none',
-                                     padding: '12px 25px',
-                                     borderRadius: '8px',
-                                     fontSize: '1rem',
-                                     cursor: 'pointer',
-                                     transition: 'all 0.3s ease',
-                                     fontWeight: '500'
-                                 }}
-                                 onMouseEnter={(e) => {
-                                     e.target.style.transform = 'translateY(-2px)';
-                                     e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-                                 }}
-                                 onMouseLeave={(e) => {
-                                     e.target.style.transform = 'translateY(0)';
-                                     e.target.style.boxShadow = 'none';
-                                 }}
-                             >
-                                 Hayır, İptal
-                             </button>
-                         </div>
-                     </div>
-                 </div>
-             )}
+
+
+            {/* Uyarı Modal */}
+            <WarningModal
+                visible={showWarningModal}
+                message={warningMessage}
+                onClose={() => {
+                    setShowWarningModal(false);
+
+
+                }}
+            />
+
+            {/* Tüm Rezervasyonları Silme Onay Modalı */}
+            {showDeleteAllModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: colors.card,
+                        padding: '30px',
+                        borderRadius: '15px',
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                        maxWidth: '400px',
+                        width: '90%',
+                        border: `1px solid ${colors.border}`
+                    }}>
+                        <div style={{
+                            textAlign: 'center',
+                            marginBottom: '25px'
+                        }}>
+                            <div style={{
+                                fontSize: '48px',
+                                marginBottom: '15px'
+                            }}>
+                                ⚠️
+                            </div>
+                            <h3 style={{
+                                color: colors.text,
+                                marginBottom: '10px',
+                                fontSize: '1.3rem'
+                            }}>
+                                Dikkat!
+                            </h3>
+                            <p style={{
+                                color: colors.textSecondary,
+                                lineHeight: '1.5',
+                                fontSize: '1rem'
+                            }}>
+                                Gerçekten bütün rezervasyonları silmek istiyor musunuz?<br />
+                                <strong>Bu işlem geri alınamaz.</strong>
+                            </p>
+                        </div>
+                        <div style={{
+                            display: 'flex',
+                            gap: '15px',
+                            justifyContent: 'center'
+                        }}>
+                            <button
+                                onClick={() => {
+                                    localStorage.removeItem('reservations');
+                                    setShowDeleteAllModal(false);
+                                    window.location.reload();
+                                }}
+                                style={{
+                                    background: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 25px',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            >
+                                Evet, Sil
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteAllModal(false)}
+                                style={{
+                                    background: colors.border,
+                                    color: colors.text,
+                                    border: 'none',
+                                    padding: '12px 25px',
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    fontWeight: '500'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            >
+                                Hayır, İptal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

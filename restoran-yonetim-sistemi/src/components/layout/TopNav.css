@@ -14,7 +14,8 @@
 .top-nav-left {
     display: flex;
     align-items: center;
-    margin-left: 20%;
+    flex: 0 0 auto;
+    width: 100px;
 }
 
 .top-nav-title {
@@ -29,6 +30,9 @@
 .top-nav-center {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex: 1;
+    margin: 0 auto;
 }
 
 .role-switcher {
@@ -70,6 +74,9 @@
     display: flex;
     align-items: center;
     gap: 16px;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    min-width: 200px;
 }
 
 .user-info {
@@ -138,10 +145,6 @@
         height: 65px;
     }
 
-    .top-nav-left {
-        margin-left: 25%;
-    }
-
     .top-nav-title {
         font-size: 1.3rem;
     }
@@ -171,10 +174,6 @@
     .top-nav {
         padding: 0 16px;
         height: 60px;
-    }
-
-    .top-nav-left {
-        margin-left: 30%;
     }
 
     .top-nav-title {
@@ -213,10 +212,6 @@
         height: 55px;
     }
 
-    .top-nav-left {
-        margin-left: 35%;
-    }
-
     .top-nav-title {
         font-size: 1rem;
     }
@@ -249,10 +244,6 @@
         height: 50px;
     }
 
-    .top-nav-left {
-        margin-left: 40%;
-    }
-
     .top-nav-title {
         font-size: 0.9rem;
     }
@@ -283,10 +274,6 @@
     .top-nav {
         height: 50px;
         padding: 0 12px;
-    }
-
-    .top-nav-left {
-        margin-left: 25%;
     }
 
     .top-nav-title {
