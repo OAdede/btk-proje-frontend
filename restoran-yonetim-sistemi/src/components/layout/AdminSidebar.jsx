@@ -30,6 +30,11 @@ const AdminSidebar = () => {
     const [cameraStream, setCameraStream] = useState(null);
     const [tempImage, setTempImage] = useState(null);
 
+    // Sayfa değişikliklerinde sidebar'ı kapat
+    const handleNavClick = () => {
+        setIsSidebarOpen(false);
+    };
+
     // Bugünkü rezervasyon sayısını hesapla
     const getTodayReservationsCount = () => {
         if (!reservations || Object.keys(reservations).length === 0) {
@@ -259,29 +264,68 @@ const AdminSidebar = () => {
 
     return (
         <>
-            {/* Mobil toggle butonu */}
+            {/* Hamburger menü butonu */}
             <button
-                className="mobile-sidebar-toggle"
+                className="hamburger-menu-btn"
                 onClick={toggleSidebar}
                 style={{
                     position: 'fixed',
                     top: '20px',
                     left: '20px',
                     zIndex: 1001,
-                    background: '#A294F9',
+                    background: isDarkMode ? colors.primary : '#A294F9',
                     border: 'none',
-                    borderRadius: '8px',
-                    padding: '12px',
+                    borderRadius: '12px',
+                    padding: '15px',
                     cursor: 'pointer',
-                    display: 'none',
+                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                    transition: 'all 0.3s ease',
+                    border: `2px solid ${isDarkMode ? colors.border : '#CDC1FF'}`
+                }}
+                onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.1)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
                 }}
             >
-                <span style={{ fontSize: '1.5rem', color: 'white' }}>
-                    {isSidebarOpen ? '✕' : '☰'}
-                </span>
+                <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '3px',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <span style={{ 
+                        width: '20px', 
+                        height: '3px', 
+                        background: 'white', 
+                        borderRadius: '2px',
+                        transition: 'all 0.3s ease',
+                        transform: isSidebarOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
+                    }}></span>
+                    <span style={{ 
+                        width: '20px', 
+                        height: '3px', 
+                        background: 'white', 
+                        borderRadius: '2px',
+                        transition: 'all 0.3s ease',
+                        opacity: isSidebarOpen ? '0' : '1'
+                    }}></span>
+                    <span style={{ 
+                        width: '20px', 
+                        height: '3px', 
+                        background: 'white', 
+                        borderRadius: '2px',
+                        transition: 'all 0.3s ease',
+                        transform: isSidebarOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
+                    }}></span>
+                </div>
             </button>
 
             {/* Overlay */}
@@ -295,14 +339,15 @@ const AdminSidebar = () => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        background: 'rgba(0,0,0,0.5)',
+                        background: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.6)',
                         zIndex: 999,
-                        display: 'none'
+                        backdropFilter: 'blur(3px)',
+                        transition: 'all 0.3s ease'
                     }}
                 />
             )}
 
-            <div className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+            <div className={`admin-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
                 <div className="admin-sidebar-header">
                     <div className="admin-user-info" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         <img
@@ -335,6 +380,7 @@ const AdminSidebar = () => {
                     <NavLink
                         to="/admin/dashboard"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>📍</span>
@@ -344,6 +390,7 @@ const AdminSidebar = () => {
                     <NavLink
                         to="/admin/personnel"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>👤</span>
@@ -353,6 +400,7 @@ const AdminSidebar = () => {
                     <NavLink
                         to="/admin/reports"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>📊</span>
@@ -362,6 +410,7 @@ const AdminSidebar = () => {
                     <NavLink
                         to="/admin/stock"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>🍽</span>
@@ -372,6 +421,7 @@ const AdminSidebar = () => {
                         to="/admin/reservations"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                         style={{ position: 'relative' }}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>📅</span>
@@ -427,6 +477,7 @@ const AdminSidebar = () => {
                     <NavLink
                         to="/admin/restaurant-settings"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>🏪</span>
@@ -436,6 +487,7 @@ const AdminSidebar = () => {
                     <NavLink
                         to="/admin/order-history"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>📋</span>
