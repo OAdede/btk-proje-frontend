@@ -2,20 +2,26 @@
 // Prefer environment variable; fallback to Vite dev proxy path
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
-// Role mapping from Turkish to English
+// Role mapping for backend (0=admin, 1=waiter, 2=cashier)
 const roleMapping = {
-  'garson': 'waiter',
-  'kasiyer': 'cashier',
-  'müdür': 'manager',
-  'admin': 'admin'
+  'waiter': 'waiter',    // 1 = garson
+  'cashier': 'cashier',  // 2 = kasiyer
+  'admin': 'admin'       // 0 = admin
 };
 
 export const personnelService = {
     // Register new personnel
     async registerPersonnel(personnelData) {
         try {
-            // Map Turkish role to English roleName
+            // Map role to backend format
             const roleName = roleMapping[personnelData.role] || 'waiter';
+            
+            console.log('Role mapping:', {
+                originalRole: personnelData.role,
+                mappedRole: roleName,
+                backendExpected: ['admin', 'waiter', 'cashier'],
+                fullPersonnelData: personnelData
+            });
             
             // Create request data without photo (photo functionality removed)
             const requestData = {
@@ -33,6 +39,7 @@ export const personnelService = {
                 email: requestData.email,
                 phoneNumber: requestData.phoneNumber,
                 roleName: requestData.roleName,
+                originalRole: personnelData.role,
                 hasPhoto: false
             });
 

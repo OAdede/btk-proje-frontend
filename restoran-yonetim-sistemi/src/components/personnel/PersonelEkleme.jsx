@@ -11,8 +11,11 @@ const PersonelEkleme = () => {
     phone: "",
     email: "",
     password: "",
-    role: "garson"
+    role: "waiter" // Default olarak waiter seçili
   });
+  
+  // Debug: State'i sürekli log'la
+  console.log('Current newPerson state:', newPerson);
 
   const [activeTab, setActiveTab] = useState("aktif");
   const [roleFilter, setRoleFilter] = useState("tümü");
@@ -45,29 +48,54 @@ const PersonelEkleme = () => {
         
                  console.log('Users received:', users);
          
-         // Log first user data to debug
-         if (users.length > 0) {
-           console.log('First user data for debugging:', {
-             id: users[0].id,
-             name: users[0].name,
-             hasPhoto: users[0].hasPhoto,
-             photoBase64: users[0].photoBase64 ? 'exists' : 'null',
-             roles: users[0].roles
-           });
-         }
+                   // Log first user data to debug
+          if (users.length > 0) {
+            console.log('First user data for debugging:', {
+              id: users[0].id,
+              name: users[0].name,
+              hasPhoto: users[0].hasPhoto,
+              photoBase64: users[0].photoBase64 ? 'exists' : 'null',
+              roles: users[0].roles,
+              rolesType: typeof users[0].roles,
+              rolesLength: users[0].roles ? users[0].roles.length : 0
+            });
+          }
+          
+          // Log all users' roles for debugging
+          console.log('All users roles:', users.map(user => ({
+            name: user.name,
+            roles: user.roles,
+            rolesType: typeof user.roles
+          })));
          
          // Transform backend data to match component format
          const transformedUsers = users.map(user => {
-           // Map role from backend - convert number to string role name
-           let roleName = 'garson'; // default
-           if (user.roles && user.roles.length > 0) {
-             const roleId = user.roles[0];
-             // Map role ID to role name
-             if (roleId === 0 || roleId === 'waiter') roleName = 'garson';
-             else if (roleId === 1 || roleId === 'cashier') roleName = 'kasiyer';
-             else if (roleId === 2 || roleId === 'manager') roleName = 'müdür';
-             else if (roleId === 3 || roleId === 'admin') roleName = 'admin';
-           }
+                       // Map role from backend - convert number to string role name
+                         let roleName = 'Garson'; // default
+            if (user.roles && user.roles.length > 0) {
+              const roleId = user.roles[0];
+              console.log(`Mapping role for user ${user.name}: roleId = ${roleId}, type = ${typeof roleId}, roles array = [${user.roles}]`);
+              
+                                        // Map role ID to display name (backend returns: 0=admin, 1=garson, 2=kasiyer)
+              if (roleId === 0 || roleId === 'admin') {
+                roleName = 'Admin';
+                console.log(`  → Mapped ${roleId} to 'Admin'`);
+              }
+              else if (roleId === 1 || roleId === 'waiter') {
+                roleName = 'Garson';
+                console.log(`  → Mapped ${roleId} to 'Garson'`);
+              }
+              else if (roleId === 2 || roleId === 'cashier') {
+                roleName = 'Kasiyer';
+                console.log(`  → Mapped ${roleId} to 'Kasiyer'`);
+              }
+                             else {
+                 console.warn(`Unknown role ID for user ${user.name}: ${roleId}, defaulting to Garson`);
+                 roleName = 'Garson';
+               }
+            } else {
+              console.log(`User ${user.name} has no roles or empty roles array`);
+            }
            
            // Handle photo - check multiple possible photo fields
            let photoUrl = null;
@@ -141,7 +169,14 @@ const PersonelEkleme = () => {
   }, [personnel, activeTab, roleFilter]);
 
   const handleInputChange = (e) => {
-    setNewPerson({ ...newPerson, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    console.log(`Form field changed: ${name} = ${value}`);
+    console.log('Previous state:', newPerson);
+    
+    const updatedPerson = { ...newPerson, [name]: value };
+    console.log('Updated state:', updatedPerson);
+    
+    setNewPerson(updatedPerson);
     // Clear error when user starts typing
     if (error) setError(null);
   };
@@ -158,6 +193,8 @@ const PersonelEkleme = () => {
   const handleAddPerson = async (e) => {
     e.preventDefault();
     
+    console.log('Form submitted with data:', newPerson);
+    
     if (!validateForm()) {
       return;
     }
@@ -169,21 +206,30 @@ const PersonelEkleme = () => {
     try {
       const responseData = await personnelService.registerPersonnel(newPerson);
       
-      // Add the new person to local state with the response data
-      const newPersonWithId = {
-        id: responseData.id || Date.now(),
-        name: newPerson.name,
-        phone: newPerson.phone,
-        email: newPerson.email,
-        role: newPerson.role,
-        photo: '/default-avatar.png',
-        isActive: responseData.isActive !== undefined ? responseData.isActive : true
-      };
+             // Add the new person to local state with the response data
+       const newPersonWithId = {
+         id: responseData.id || Date.now(),
+         name: newPerson.name,
+         phone: newPerson.phone,
+         email: newPerson.email,
+         role: newPerson.role, // Keep the original role from form
+         photo: '/default-avatar.png',
+         isActive: responseData.isActive !== undefined ? responseData.isActive : true
+       };
+       
+               console.log('New person added to state:', {
+          id: newPersonWithId.id,
+          name: newPersonWithId.name,
+          role: newPersonWithId.role,
+          backendRole: responseData.roles,
+          backendRoleType: typeof responseData.roles,
+          backendRoleLength: responseData.roles ? responseData.roles.length : 0
+        });
 
       setPersonnel([...personnel, newPersonWithId]);
       
-      // Reset form
-      setNewPerson({ name: "", phone: "", email: "", password: "", role: "garson" });
+             // Reset form - default olarak waiter seçili
+       setNewPerson({ name: "", phone: "", email: "", password: "", role: "waiter" });
       setSuccess("Personel başarıyla eklendi!");
       
       // Clear success message after 3 seconds
@@ -248,18 +294,18 @@ const PersonelEkleme = () => {
         >
           Tümü
         </button>
-        <button
-          onClick={() => setRoleFilter("garson")}
-          className={roleFilter === "garson" ? "active" : ""}
-        >
-          Garson
-        </button>
-        <button
-          onClick={() => setRoleFilter("kasiyer")}
-          className={roleFilter === "kasiyer" ? "active" : ""}
-        >
-          Kasiyer
-        </button>
+                 <button
+           onClick={() => setRoleFilter("Garson")}
+           className={roleFilter === "Garson" ? "active" : ""}
+         >
+           Garson
+         </button>
+         <button
+           onClick={() => setRoleFilter("Kasiyer")}
+           className={roleFilter === "Kasiyer" ? "active" : ""}
+         >
+           Kasiyer
+         </button>
       </div>
 
       {/* Yeni Personel Ekleme Formu */}
@@ -299,14 +345,20 @@ const PersonelEkleme = () => {
               placeholder="Şifre (aA1@)"
               required
             />
-                         <select
-               name="role"
-               value={newPerson.role}
-               onChange={handleInputChange}
-             >
-               <option value="garson">Garson</option>
-               <option value="kasiyer">Kasiyer</option>
-             </select>
+                                      <select
+                name="role"
+                value={newPerson.role}
+                onChange={handleInputChange}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid var(--border)' }}
+              >
+                <option value="waiter">Garson</option>
+                <option value="cashier">Kasiyer</option>
+              </select>
+              
+             {/* Debug: Seçilen değeri göster */}
+             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '5px' }}>
+               Seçilen rol: {newPerson.role}
+             </div>
 
             {error && (
               <div style={{ color: 'red', marginTop: '10px', fontSize: '14px', textAlign: 'center' }}>{error}</div>
@@ -387,9 +439,9 @@ const PersonelEkleme = () => {
                  )}
                 <div className="personnel-info">
                   <div className="personnel-name">{person.name}</div>
-                  <div className="personnel-details">
-                    {person.phone} • {person.email} • {typeof person.role === 'string' ? person.role.charAt(0).toUpperCase() + person.role.slice(1) : 'Garson'}
-                  </div>
+                                     <div className="personnel-details">
+                     {person.phone} • {person.email} • {person.role || 'Garson'}
+                   </div>
                 </div>
               </div>
 
