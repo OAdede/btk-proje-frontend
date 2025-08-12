@@ -1,89 +1,147 @@
 // src/components/reports/IncomeExpenseTable.jsx
-import React, { useState } from 'react';
-import { Card, Table, ButtonGroup, Button, Form, Badge } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, Table, ButtonGroup, Button, Badge } from 'react-bootstrap';
 import { useTheme } from '../../context/ThemeContext';
+import { analyticsService } from '../../services/analyticsService';
 import './IncomeExpenseTable.css';
 
 const IncomeExpenseTable = () => {
   const { colors } = useTheme();
   const [period, setPeriod] = useState('daily'); // daily, weekly, monthly
-  const [selectedMonth, setSelectedMonth] = useState('aralik');
+  const [dailySalesData, setDailySalesData] = useState(null);
+  const [weeklySalesData, setWeeklySalesData] = useState(null);
+  const [monthlySalesData, setMonthlySalesData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const months = [
-    { value: 'ocak', label: 'Ocak' },
-    { value: 'subat', label: 'Şubat' },
-    { value: 'mart', label: 'Mart' },
-    { value: 'nisan', label: 'Nisan' },
-    { value: 'mayis', label: 'Mayıs' },
-    { value: 'haziran', label: 'Haziran' },
-    { value: 'temmuz', label: 'Temmuz' },
-    { value: 'agustos', label: 'Ağustos' },
-    { value: 'eylul', label: 'Eylül' },
-    { value: 'ekim', label: 'Ekim' },
-    { value: 'kasim', label: 'Kasım' },
-    { value: 'aralik', label: 'Aralık' },
-  ];
-
-  // Sadece gelir verileri - gerçek uygulamada API'den gelecek
-  const revenueData = {
-    daily: {
-      ocak: [
-        { id: 1, date: '2024-01-15', category: 'Yemek Satışı', description: 'Masa 3 - Adana Kebap', amount: 85.50, payment: 'Kredi Kartı' },
-        { id: 2, date: '2024-01-15', category: 'İçecek Satışı', description: 'Masa 5 - Kola, Su', amount: 25.00, payment: 'Nakit' },
-        { id: 3, date: '2024-01-15', category: 'Yemek Satışı', description: 'Masa 2 - İskender', amount: 65.00, payment: 'Kredi Kartı' },
-        { id: 4, date: '2024-01-15', category: 'Tatlı Satışı', description: 'Masa 1 - Künefe', amount: 35.00, payment: 'Nakit' },
-      ],
-      subat: [
-        { id: 5, date: '2024-02-15', category: 'Yemek Satışı', description: 'Masa 4 - Mercimek Çorbası', amount: 45.00, payment: 'Kredi Kartı' },
-        { id: 6, date: '2024-02-15', category: 'İçecek Satışı', description: 'Masa 6 - Çay, Kahve', amount: 30.00, payment: 'Nakit' },
-      ],
-      aralik: [
-        { id: 7, date: '2024-12-15', category: 'Yemek Satışı', description: 'Masa 1 - Sütlaç', amount: 40.00, payment: 'Kredi Kartı' },
-        { id: 8, date: '2024-12-15', category: 'Yemek Satışı', description: 'Masa 3 - İskender', amount: 70.00, payment: 'Nakit' },
-      ]
-    },
-    weekly: {
-      ocak: [
-        { id: 1, date: '2024-01-15', category: 'Yemek Satışı', description: 'Masa 3 - Adana Kebap', amount: 85.50, payment: 'Kredi Kartı' },
-        { id: 2, date: '2024-01-16', category: 'İçecek Satışı', description: 'Masa 5 - Kola, Su', amount: 25.00, payment: 'Nakit' },
-        { id: 3, date: '2024-01-17', category: 'Yemek Satışı', description: 'Masa 2 - İskender', amount: 65.00, payment: 'Kredi Kartı' },
-        { id: 4, date: '2024-01-18', category: 'Tatlı Satışı', description: 'Masa 1 - Künefe', amount: 35.00, payment: 'Nakit' },
-      ],
-      subat: [
-        { id: 5, date: '2024-02-15', category: 'Yemek Satışı', description: 'Masa 4 - Mercimek Çorbası', amount: 45.00, payment: 'Kredi Kartı' },
-        { id: 6, date: '2024-02-16', category: 'İçecek Satışı', description: 'Masa 6 - Çay, Kahve', amount: 30.00, payment: 'Nakit' },
-      ],
-      aralik: [
-        { id: 7, date: '2024-12-15', category: 'Yemek Satışı', description: 'Masa 1 - Sütlaç', amount: 40.00, payment: 'Kredi Kartı' },
-        { id: 8, date: '2024-12-16', category: 'Yemek Satışı', description: 'Masa 3 - İskender', amount: 70.00, payment: 'Nakit' },
-      ]
-    },
-    monthly: {
-      ocak: [
-        { id: 1, date: '2024-01-15', category: 'Yemek Satışı', description: 'Masa 3 - Adana Kebap', amount: 85.50, payment: 'Kredi Kartı' },
-        { id: 2, date: '2024-01-16', category: 'İçecek Satışı', description: 'Masa 5 - Kola, Su', amount: 25.00, payment: 'Nakit' },
-        { id: 3, date: '2024-01-17', category: 'Yemek Satışı', description: 'Masa 2 - İskender', amount: 65.00, payment: 'Kredi Kartı' },
-        { id: 4, date: '2024-01-18', category: 'Tatlı Satışı', description: 'Masa 1 - Künefe', amount: 35.00, payment: 'Nakit' },
-        { id: 5, date: '2024-01-20', category: 'Yemek Satışı', description: 'Masa 4 - Mercimek Çorbası', amount: 45.00, payment: 'Kredi Kartı' },
-        { id: 6, date: '2024-01-25', category: 'İçecek Satışı', description: 'Masa 6 - Çay, Kahve', amount: 30.00, payment: 'Nakit' },
-        { id: 7, date: '2024-01-30', category: 'Yemek Satışı', description: 'Masa 1 - Sütlaç', amount: 40.00, payment: 'Kredi Kartı' },
-        { id: 8, date: '2024-01-31', category: 'Yemek Satışı', description: 'Masa 3 - İskender', amount: 70.00, payment: 'Nakit' },
-      ],
-      aralik: [
-        { id: 9, date: '2024-12-01', category: 'Yemek Satışı', description: 'Masa 2 - Adana Kebap', amount: 85.50, payment: 'Kredi Kartı' },
-        { id: 10, date: '2024-12-05', category: 'İçecek Satışı', description: 'Masa 5 - Kola, Su', amount: 25.00, payment: 'Nakit' },
-        { id: 11, date: '2024-12-10', category: 'Yemek Satışı', description: 'Masa 1 - İskender', amount: 65.00, payment: 'Kredi Kartı' },
-        { id: 12, date: '2024-12-15', category: 'Tatlı Satışı', description: 'Masa 3 - Künefe', amount: 35.00, payment: 'Nakit' },
-        { id: 13, date: '2024-12-20', category: 'Yemek Satışı', description: 'Masa 4 - Mercimek Çorbası', amount: 45.00, payment: 'Kredi Kartı' },
-        { id: 14, date: '2024-12-25', category: 'İçecek Satışı', description: 'Masa 6 - Çay, Kahve', amount: 30.00, payment: 'Nakit' },
-        { id: 15, date: '2024-12-30', category: 'Yemek Satışı', description: 'Masa 1 - Sütlaç', amount: 40.00, payment: 'Kredi Kartı' },
-        { id: 16, date: '2024-12-31', category: 'Yemek Satışı', description: 'Masa 3 - İskender', amount: 70.00, payment: 'Nakit' },
-      ]
+  // API'den daily sales verilerini çek
+  const fetchDailySales = async (date) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await analyticsService.getDailySalesSummary(date);
+      setDailySalesData(data);
+    } catch (err) {
+      console.error('Daily sales fetch error:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const currentData = revenueData[period]?.[selectedMonth] || revenueData[period]?.aralik || [];
+  // API'den weekly sales verilerini çek
+  const fetchWeeklySales = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await analyticsService.getWeeklySalesSummary();
+      setWeeklySalesData(data);
+    } catch (err) {
+      console.error('Weekly sales fetch error:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // API'den monthly sales verilerini çek
+  const fetchMonthlySales = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await analyticsService.getMonthlySalesSummary();
+      setMonthlySalesData(data);
+    } catch (err) {
+      console.error('Monthly sales fetch error:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Component mount olduğunda ve period değiştiğinde veri çek
+  useEffect(() => {
+    if (period === 'daily') {
+      fetchDailySales();
+    } else if (period === 'weekly') {
+      fetchWeeklySales();
+    } else if (period === 'monthly') {
+      fetchMonthlySales();
+    }
+  }, [period]);
+
+  // Sales verilerini tablo formatına dönüştür
+  const transformSalesToTableData = (salesData) => {
+    if (!salesData || !salesData.salesByCategory) {
+      return [];
+    }
+
+    const tableData = [];
+    let id = 1;
+
+    // Kategori bazlı satışları ekle
+    Object.entries(salesData.salesByCategory).forEach(([category, amount]) => {
+      const categoryName = category === 'drinks' ? 'İçecek Satışı' : 
+                          category === 'main_dishes' ? 'Ana Yemek Satışı' :
+                          category === 'desserts' ? 'Tatlı Satışı' :
+                          category === 'appetizers' ? 'Başlangıç Satışı' :
+                          'Diğer Satışlar';
+
+      tableData.push({
+        id: id++,
+        date: salesData.reportDate,
+        category: categoryName,
+        description: `${categoryName} - ${salesData.reportType} Raporu`,
+        amount: parseFloat(amount),
+        payment: 'Karma',
+        orderCount: salesData.totalOrders,
+        averageOrder: salesData.averageOrderValue
+      });
+    });
+
+    // En popüler ürünü ekle
+    if (salesData.mostPopularItemName) {
+      tableData.push({
+        id: id++,
+        date: salesData.reportDate,
+        category: 'En Popüler Ürün',
+        description: `${salesData.mostPopularItemName} - En çok satan ürün`,
+        amount: salesData.averageOrderValue * 0.3, // Tahmini değer
+        payment: 'Karma',
+        orderCount: Math.floor(salesData.totalOrders * 0.2), // Tahmini sipariş sayısı
+        averageOrder: salesData.averageOrderValue
+      });
+    }
+
+    return tableData;
+  };
+
+  // Mevcut veriyi belirle
+  const getCurrentData = () => {
+    if (period === 'daily') {
+      return transformSalesToTableData(dailySalesData);
+    } else if (period === 'weekly') {
+      return transformSalesToTableData(weeklySalesData);
+    } else if (period === 'monthly') {
+      return transformSalesToTableData(monthlySalesData);
+    }
+    return [];
+  };
+
+  // Mevcut sales data'yı belirle
+  const getCurrentSalesData = () => {
+    if (period === 'daily') {
+      return dailySalesData;
+    } else if (period === 'weekly') {
+      return weeklySalesData;
+    } else if (period === 'monthly') {
+      return monthlySalesData;
+    }
+    return null;
+  };
+
+  const currentData = getCurrentData();
+  const currentSalesData = getCurrentSalesData();
   const totalRevenue = currentData.reduce((sum, item) => sum + item.amount, 0);
 
   const formatDate = (dateString) => {
@@ -106,6 +164,42 @@ const IncomeExpenseTable = () => {
       default: return 'Günlük';
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div style={{ backgroundColor: colors.background, padding: '20px', borderRadius: '8px' }}>
+        <Card className="mb-4" style={{ backgroundColor: colors.cardBackground, color: colors.text, border: 'none' }}>
+          <Card.Body className="text-center">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Yükleniyor...</span>
+            </div>
+            <p className="mt-3" style={{ color: colors.textSecondary }}>Ciro verileri yükleniyor...</p>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && (period === 'daily' || period === 'weekly' || period === 'monthly')) {
+    return (
+      <div style={{ backgroundColor: colors.background, padding: '20px', borderRadius: '8px' }}>
+        <Card className="mb-4" style={{ backgroundColor: colors.cardBackground, color: colors.text, border: 'none' }}>
+          <Card.Body className="text-center">
+            <p style={{ color: colors.danger }}>❌ Hata: {error}</p>
+            <Button variant="outline-primary" onClick={() => {
+              if (period === 'daily') fetchDailySales();
+              else if (period === 'weekly') fetchWeeklySales();
+              else if (period === 'monthly') fetchMonthlySales();
+            }}>
+              Tekrar Dene
+            </Button>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: colors.background, padding: '20px', borderRadius: '8px' }}>
@@ -140,19 +234,12 @@ const IncomeExpenseTable = () => {
           <div className="d-flex justify-content-between align-items-center mb-3">
             <div style={{ color: colors.textSecondary, fontSize: '14px' }}>
               {getPeriodTitle()} ciro raporu
+              {currentSalesData && (
+                <span style={{ marginLeft: '10px', color: colors.primary }}>
+                  ({formatDate(currentSalesData.reportDate)})
+                </span>
+              )}
             </div>
-
-            <Form.Select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ width: 'auto', minWidth: '150px' }}
-            >
-              {months.map((month) => (
-                <option key={month.value} value={month.value}>
-                  {month.label}
-                </option>
-              ))}
-            </Form.Select>
           </div>
 
           {/* Ciro Özet Kartı */}
@@ -161,9 +248,17 @@ const IncomeExpenseTable = () => {
               <div className="card" style={{ backgroundColor: colors.success, color: 'white' }}>
                 <div className="card-body text-center">
                   <h6 style={{ color: 'white' }}>💰 Toplam Ciro</h6>
-                  <h3 style={{ color: 'white', fontWeight: 'bold' }}>{formatAmount(totalRevenue)}</h3>
+                  <h3 style={{ color: 'white', fontWeight: 'bold' }}>
+                    {currentSalesData 
+                      ? formatAmount(currentSalesData.totalRevenue)
+                      : formatAmount(totalRevenue)
+                    }
+                  </h3>
                   <small style={{ color: 'white', opacity: 0.8 }}>
                     {getPeriodTitle()} toplam gelir
+                    {currentSalesData && (
+                      <span> • {currentSalesData.totalOrders} sipariş • {currentSalesData.totalCustomers} müşteri</span>
+                    )}
                   </small>
                 </div>
               </div>
@@ -205,7 +300,16 @@ const IncomeExpenseTable = () => {
 
           {currentData.length === 0 && (
             <div className="text-center py-4">
-              <p style={{ color: colors.textSecondary }}>Bu dönem için ciro verisi bulunamadı.</p>
+              <p style={{ color: colors.textSecondary }}>
+                {period === 'daily' 
+                  ? 'Bugün için ciro verisi bulunamadı.'
+                  : period === 'weekly'
+                  ? 'Bu hafta için ciro verisi bulunamadı.'
+                  : period === 'monthly'
+                  ? 'Bu ay için ciro verisi bulunamadı.'
+                  : 'Bu dönem için ciro verisi bulunamadı.'
+                }
+              </p>
             </div>
           )}
         </Card.Body>
