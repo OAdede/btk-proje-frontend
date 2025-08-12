@@ -1,10 +1,12 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { TableContext } from "../../context/TableContext";
 import "./AdminLayout.css";
+import { userService } from "../../services/userService";
+import { personnelService } from "../../services/personnelService";
 
 const AdminSidebar = () => {
     const { logout, user } = useContext(AuthContext);
@@ -15,9 +17,129 @@ const AdminSidebar = () => {
     const reservations = tableContext?.reservations || {};
     const [showSettings, setShowSettings] = useState(false);
     const [showProfileSettings, setShowProfileSettings] = useState(false);
-    const [profileImage, setProfileImage] = useState(localStorage.getItem('profileImage') || '/default-avatar.png');
-    const [phoneNumber, setPhoneNumber] = useState(localStorage.getItem('phoneNumber') || '');
-    const [email, setEmail] = useState(localStorage.getItem('email') || '');
+    const [profileImage, setProfileImage] = useState('/default-avatar.png');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [email, setEmail] = useState('');
+    const [displayName, setDisplayName] = useState('');
+    const [displayRole, setDisplayRole] = useState('');
+    // Kullanıcı profilini yükle (önce AuthContext, sonra backend id ile, yoksa email ile arama)
+    useEffect(() => {
+        const initFromAuth = () => {
+            console.log('[Profile] AuthContext.user:', user);
+            // İsim ve rolü anında göster (backend gelene kadar)
+            const nameFromAuth = user?.name || (user?.email ? user.email.split('@')[0] : '') || 'Kullanıcı';
+            const roleFromAuth = (() => {
+                if (!user?.role) return '';
+                const r = String(user.role).toLowerCase();
+                if (r === 'admin') return 'Admin';
+                if (r === 'garson' || r === 'waiter') return 'Garson';
+                if (r === 'kasiyer' || r === 'cashier') return 'Kasiyer';
+                return user.role;
+            })();
+            setDisplayName(nameFromAuth);
+            setDisplayRole(roleFromAuth);
+            if (user?.email) setEmail(user.email);
+            if (user?.phone) setPhoneNumber(user.phone);
+            if (user?.profileImage) setProfileImage(user.profileImage);
+        };
+
+        const resolveFromApi = async () => {
+            try {
+                const id = user?.userId;
+                let data = null;
+
+                // Sadece sayısal id ile /users/{id} dene
+                const isNumericId = id !== undefined && id !== null && String(id).match(/^\d+$/);
+                if (isNumericId) {
+                    console.log('[Profile] Fetching by numeric id:', id);
+                    try {
+                        data = await userService.getUserById(id);
+                    } catch (e) {
+                        console.warn('[Profile] Fetch by id failed:', e?.message);
+                    }
+                }
+
+                // ID yoksa veya bulunamazsa email ile aktif/pasif listelerde ara
+                if (!data && user?.email) {
+                    try {
+                        console.log('[Profile] Searching by email in active/inactive lists:', user.email);
+                        const [actives, inactives] = await Promise.all([
+                            personnelService.getActiveUsers(),
+                            personnelService.getInactiveUsers(),
+                        ]);
+                        const all = [...(actives || []), ...(inactives || [])];
+                        data = all.find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
+                    } catch {}
+                }
+
+                // Hâlâ yoksa /users (tüm kullanıcılar) üzerinden dene
+                if (!data && user?.email) {
+                    try {
+                        console.log('[Profile] Fallback: searching by email in all users');
+                        const all = await personnelService.getAllUsers();
+                        data = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
+                    } catch (e) {
+                        console.warn('[Profile] Fallback all users failed:', e?.message);
+                    }
+                }
+
+                if (!data) return; // Bulunamadıysa AuthContext fallback ile kal
+
+                // İsim
+                const name = data.name || user?.name || displayName || 'Kullanıcı';
+                setDisplayName(name);
+                localStorage.setItem('displayName', name);
+
+                // Rol
+                const roleLabel = (() => {
+                    const roles = Array.isArray(data.roles) ? data.roles : [];
+                    const first = roles[0];
+                    if (first === 0 || user?.role === 'admin') return 'Admin';
+                    if (first === 1 || user?.role === 'garson' || user?.role === 'waiter') return 'Garson';
+                    if (first === 2 || user?.role === 'kasiyer' || user?.role === 'cashier') return 'Kasiyer';
+                    return displayRole || user?.role || 'Kullanıcı';
+                })();
+                setDisplayRole(roleLabel);
+                localStorage.setItem('displayRole', roleLabel);
+
+                // Fotoğraf
+                if (data.photoBase64) {
+                    const img = `data:image/jpeg;base64,${data.photoBase64}`;
+                    setProfileImage(img);
+                    localStorage.setItem('profileImage', img);
+                } else if (data.hasPhoto && data.id) {
+                    const imgUrl = `/api/users/${data.id}/photo`;
+                    setProfileImage(imgUrl);
+                    localStorage.setItem('profileImage', imgUrl);
+                } else {
+                    console.log('[Profile] No photo found on profile payload');
+                }
+
+                // İletişim
+                if (data.phoneNumber) {
+                    setPhoneNumber(data.phoneNumber);
+                    localStorage.setItem('phoneNumber', data.phoneNumber);
+                }
+                if (data.email) {
+                    setEmail(data.email);
+                    localStorage.setItem('email', data.email);
+                }
+            } catch (err) {
+                console.warn('Profil bilgisi alınamadı:', err.message);
+            }
+        };
+
+        // Kullanıcı değiştiğinde ilk olarak default değerlere dön
+        setProfileImage('/default-avatar.png');
+        setDisplayName('');
+        setDisplayRole('');
+        setEmail('');
+        setPhoneNumber('');
+
+        initFromAuth();
+        resolveFromApi();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
     const [showPhoneVerification, setShowPhoneVerification] = useState(false);
     const [showEmailVerification, setShowEmailVerification] = useState(false);
     const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
@@ -373,12 +495,12 @@ const AdminSidebar = () => {
                                 fontFamily: '00623 Sans Serif Bold, sans-serif',
                                 fontWeight: '700',
                                 fontSize: '1.4rem'
-                            }}>Betül</div>
+                            }}>{displayName || 'Kullanıcı'}</div>
                             <div className="admin-user-role" style={{
                                 fontFamily: '00623 Sans Serif Bold, sans-serif',
                                 fontWeight: '700',
                                 fontSize: '1.2rem'
-                            }}>Admin</div>
+                            }}>{displayRole || 'Kullanıcı'}</div>
                         </div>
                     </div>
                 </div>
