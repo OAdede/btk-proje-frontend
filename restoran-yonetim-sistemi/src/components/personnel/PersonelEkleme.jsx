@@ -23,7 +23,6 @@ const PersonelEkleme = () => {
 
   const [activeTab, setActiveTab] = useState("aktif");
   const [roleFilter, setRoleFilter] = useState("tümü");
-  const [filteredPersonnel, setFilteredPersonnel] = useState([]);
   
   // API states
   const [isLoading, setIsLoading] = useState(false);
@@ -31,60 +30,114 @@ const PersonelEkleme = () => {
   const [success, setSuccess] = useState(null);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  // Load users from backend on component mount
+  // Load users from backend on component mount - with strict controls
   useEffect(() => {
+    let isMounted = true;
+    let hasLoaded = false;
+    let isAborted = false;
+    
     const loadUsers = async () => {
+      // Prevent multiple calls
+      if (hasLoaded || isAborted) return;
+      hasLoaded = true;
+      
       try {
         setIsLoadingUsers(true);
+        console.log('Starting to load users...');
+        
         const users = await personnelService.getAllUsers();
         
-                 // Transform backend data to match component format
-         const transformedUsers = users.map(user => {
-           // Map role from backend - convert number to string role name
-           let roleName = 'garson'; // default
-           if (user.roles && user.roles.length > 0) {
-             const roleId = user.roles[0];
-             // Map role ID to role name
-             if (roleId === 0 || roleId === 'waiter') roleName = 'garson';
-             else if (roleId === 1 || roleId === 'cashier') roleName = 'kasiyer';
-             else if (roleId === 2 || roleId === 'manager') roleName = 'müdür';
-             else if (roleId === 3 || roleId === 'admin') roleName = 'admin';
-           }
-           
-                       return {
-              id: user.id,
-              name: user.name,
-              phone: user.phoneNumber,
-              email: user.email,
-              role: roleName,
-              photo: user.photoBase64 && user.photoBase64.startsWith('data:image/') ? user.photoBase64 : null,
-              isActive: true // Default to active
-            };
-         });
+        // Check if component is still mounted and not aborted
+        if (!isMounted || isAborted) return;
         
-        setPersonnel(transformedUsers);
+        console.log('Users received:', users);
+        
+        // Transform backend data to match component format
+        const transformedUsers = users.map(user => {
+          // Map role from backend - convert number to string role name
+          let roleName = 'garson'; // default
+          if (user.roles && user.roles.length > 0) {
+            const roleId = user.roles[0];
+            // Map role ID to role name
+            if (roleId === 0 || roleId === 'waiter') roleName = 'garson';
+            else if (roleId === 1 || roleId === 'cashier') roleName = 'kasiyer';
+            else if (roleId === 2 || roleId === 'manager') roleName = 'müdür';
+            else if (roleId === 3 || roleId === 'admin') roleName = 'admin';
+          }
+          
+          // Handle photo - if user has photoBase64, convert to data URL, otherwise use default
+          let photoUrl = '/default-avatar.png'; // Default avatar for users without photos
+          
+          // Check if user has a valid photo
+          if (user.photoBase64 && 
+              user.photoBase64.length > 0 && 
+              user.photoBase64 !== 'null' && 
+              user.photoBase64 !== 'undefined' &&
+              user.photoBase64 !== '') {
+            
+            // If it's already a data URL, use it directly
+            if (user.photoBase64.startsWith('data:image/')) {
+              photoUrl = user.photoBase64;
+            } else {
+              // If it's just base64 data, convert to data URL
+              photoUrl = `data:image/jpeg;base64,${user.photoBase64}`;
+            }
+          } else {
+            // User has no photo, use default avatar and don't make any requests
+            photoUrl = '/default-avatar.png';
+            console.log(`User ${user.name} has no photo, using default avatar`);
+          }
+          
+          return {
+            id: user.id,
+            name: user.name,
+            phone: user.phoneNumber,
+            email: user.email,
+            role: roleName,
+            photo: photoUrl,
+            isActive: true // Default to active
+          };
+        });
+        
+        if (isMounted && !isAborted) {
+          setPersonnel(transformedUsers);
+          console.log('Users loaded and transformed:', transformedUsers.length);
+          
+          // Clear any previous errors
+          setError(null);
+        }
+        
       } catch (err) {
         console.error('Kullanıcılar yüklenemedi:', err);
-        setError('Kullanıcılar yüklenirken bir hata oluştu: ' + err.message);
+        // Don't set error for network issues, just log them
+        if (isMounted && !isAborted) {
+          setError(null); // Clear any existing errors
+        }
       } finally {
-        setIsLoadingUsers(false);
+        if (isMounted && !isAborted) {
+          setIsLoadingUsers(false);
+        }
       }
     };
 
     loadUsers();
-  }, []);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      isAborted = true;
+    };
+  }, []); // Empty dependency array - only run once on mount
 
-  const updateFilteredPersonnel = () => {
-    let filtered = personnel.filter(person => {
+  // Calculate filtered personnel directly in render
+  const filteredPersonnel = React.useMemo(() => {
+    if (!Array.isArray(personnel)) return [];
+    
+    return personnel.filter(person => {
       const matchesTab = activeTab === "aktif" ? person.isActive : !person.isActive;
       const matchesRole = roleFilter === "tümü" || person.role === roleFilter;
       return matchesTab && matchesRole;
     });
-    setFilteredPersonnel(filtered);
-  };
-
-  useEffect(() => {
-    updateFilteredPersonnel();
   }, [personnel, activeTab, roleFilter]);
 
   const handleInputChange = (e) => {
@@ -114,7 +167,13 @@ const PersonelEkleme = () => {
     setSuccess(null);
 
     try {
-      const responseData = await personnelService.registerPersonnel(newPerson);
+      // Send photo data if available
+      const personDataWithPhoto = {
+        ...newPerson,
+        photo: capturedImage || null
+      };
+      
+      const responseData = await personnelService.registerPersonnel(personDataWithPhoto);
       
       // Add the new person to local state with the response data
       const newPersonWithId = {
@@ -123,7 +182,7 @@ const PersonelEkleme = () => {
         phone: newPerson.phone,
         email: newPerson.email,
         role: newPerson.role,
-        photo: capturedImage,
+        photo: capturedImage || '/default-avatar.png',
         isActive: true
       };
 
@@ -336,21 +395,37 @@ const PersonelEkleme = () => {
             {/* Fotoğraf Ekleme Bölümü */}
             {capturedImage ? (
               <div style={{ marginBottom: '15px', textAlign: 'center' }}>
-                                 <img 
-                   src={capturedImage} 
-                   alt="Seçilen fotoğraf" 
-                   style={{
-                     width: '120px',
-                     height: '120px',
-                     borderRadius: '50%',
-                     objectFit: 'cover',
-                     border: '3px solid #ddd',
-                     marginBottom: '10px'
-                   }}
-                   onError={(e) => {
-                     e.target.src = '/default-avatar.png';
-                   }}
-                 />
+                                                                   {capturedImage && capturedImage !== '/default-avatar.png' ? (
+                    <img 
+                      src={capturedImage} 
+                      alt="Seçilen fotoğraf" 
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '3px solid #ddd',
+                        marginBottom: '10px'
+                      }}
+                      onError={(e) => {
+                        // If photo fails to load, show default avatar
+                        e.target.src = '/default-avatar.png';
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src="/default-avatar.png" 
+                      alt="Varsayılan fotoğraf" 
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '3px solid #ddd',
+                        marginBottom: '10px'
+                      }}
+                    />
+                  )}
                 <div>
                   <button
                     type="button"
@@ -453,21 +528,37 @@ const PersonelEkleme = () => {
               {/* Fotoğraf önizlemesi */}
               {tempImage && (
                 <div style={{ marginBottom: '15px' }}>
-                                     <img 
-                     src={tempImage} 
-                     alt="Önizleme" 
-                     style={{
-                       width: '120px',
-                       height: '120px',
-                       borderRadius: '50%',
-                       objectFit: 'cover',
-                       border: '3px solid var(--border)',
-                       margin: '0 auto'
-                     }}
-                     onError={(e) => {
-                       e.target.src = '/default-avatar.png';
-                     }}
-                   />
+                                                                           {tempImage && tempImage !== '/default-avatar.png' ? (
+                      <img 
+                        src={tempImage} 
+                        alt="Önizleme" 
+                        style={{
+                          width: '120px',
+                          height: '120px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '3px solid var(--border)',
+                          margin: '0 auto'
+                        }}
+                        onError={(e) => {
+                          // If photo fails to load, show default avatar
+                          e.target.src = '/default-avatar.png';
+                        }}
+                      />
+                    ) : (
+                      <img 
+                        src="/default-avatar.png" 
+                        alt="Varsayılan önizleme" 
+                        style={{
+                          width: '120px',
+                          height: '120px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '3px solid var(--border)',
+                          margin: '0 auto'
+                        }}
+                      />
+                    )}
                 </div>
               )}
 
@@ -707,20 +798,35 @@ const PersonelEkleme = () => {
           filteredPersonnel.map((person) => (
                                     <div key={person.id || crypto.randomUUID()} className="personnel-item">
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                 <img 
-                   src={person.photo && person.photo.startsWith('data:image/') && person.photo.length < 3000 ? person.photo : '/default-avatar.png'} 
-                   alt={person.name}
-                   style={{
-                     width: '50px',
-                     height: '50px',
-                     borderRadius: '50%',
-                     objectFit: 'cover',
-                     border: '2px solid #ddd'
-                   }}
-                   onError={(e) => {
-                     e.target.src = '/default-avatar.png';
-                   }}
-                 />
+                                 {person.photo && person.photo !== '/default-avatar.png' ? (
+                   <img 
+                     src={person.photo} 
+                     alt={person.name}
+                     style={{
+                       width: '50px',
+                       height: '50px',
+                       borderRadius: '50%',
+                       objectFit: 'cover',
+                       border: '2px solid #ddd'
+                     }}
+                     onError={(e) => {
+                       // If photo fails to load, show default avatar
+                       e.target.src = '/default-avatar.png';
+                     }}
+                   />
+                 ) : (
+                   <img 
+                     src="/default-avatar.png" 
+                     alt={person.name}
+                     style={{
+                       width: '50px',
+                       height: '50px',
+                       borderRadius: '50%',
+                       objectFit: 'cover',
+                       border: '2px solid #ddd'
+                     }}
+                   />
+                 )}
                 <div className="personnel-info">
                   <div className="personnel-name">{person.name}</div>
                   <div className="personnel-details">
