@@ -11,6 +11,14 @@ const roleMapping = {
 };
 
 const getRoleFromId = (id) => roleMapping[id];
+const getRoleIdFromName = (name) => {
+    if (!name) return undefined;
+    const normalized = String(name).toLowerCase();
+    if (normalized === 'admin') return 0;
+    if (normalized === 'garson') return 1;
+    if (normalized === 'kasiyer') return 2;
+    return undefined;
+};
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -26,12 +34,14 @@ export const AuthProvider = ({ children }) => {
             // Token'ı header'a ekle
             authService.setAuthHeader(token);
 
-            if (roleInfo.roleId !== undefined) {
+            if (roleInfo.roleId !== undefined || roleInfo.role !== undefined) {
                 // savedUser varsa görsel/telefon gibi sadece yardımcı alanları al, rolü token'dan zorla
+                const resolvedRoleId = roleInfo.roleId ?? getRoleIdFromName(roleInfo.role);
+                const resolvedRole = roleInfo.role ?? getRoleFromId(resolvedRoleId);
                 const hydratedUser = {
                     userId: roleInfo.userId ?? savedUser?.userId ?? null,
-                    roleId: roleInfo.roleId,
-                    role: roleInfo.role,
+                    roleId: resolvedRoleId,
+                    role: resolvedRole,
                     email: roleInfo.email ?? savedUser?.email ?? '',
                     name: roleInfo.name ?? savedUser?.name ?? '',
                     surname: roleInfo.surname ?? savedUser?.surname ?? '',

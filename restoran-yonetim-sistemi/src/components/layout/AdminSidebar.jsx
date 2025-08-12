@@ -41,17 +41,17 @@ const AdminSidebar = () => {
             return 0;
         }
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD formatında bugün
-        
+
         // Normal rezervasyonları say
-        const normalReservations = Object.values(reservations).filter(reservation => 
+        const normalReservations = Object.values(reservations).filter(reservation =>
             reservation.tarih === today && !reservation.specialReservation
         ).length;
-        
+
         // Özel rezervasyonları grupla (aynı kişi, tarih, saat olanları 1 olarak say)
-        const specialReservations = Object.values(reservations).filter(reservation => 
+        const specialReservations = Object.values(reservations).filter(reservation =>
             reservation.tarih === today && reservation.specialReservation
         );
-        
+
         // Özel rezervasyonları grupla
         const specialGroups = {};
         specialReservations.forEach(reservation => {
@@ -60,9 +60,9 @@ const AdminSidebar = () => {
                 specialGroups[groupKey] = true;
             }
         });
-        
+
         const uniqueSpecialReservations = Object.keys(specialGroups).length;
-        
+
         return normalReservations + uniqueSpecialReservations;
     };
 
@@ -72,11 +72,11 @@ const AdminSidebar = () => {
             return 0;
         }
         const today = new Date().toISOString().split('T')[0];
-        
-        const specialReservations = Object.values(reservations).filter(reservation => 
+
+        const specialReservations = Object.values(reservations).filter(reservation =>
             reservation.tarih === today && reservation.specialReservation
         );
-        
+
         // Özel rezervasyonları grupla
         const specialGroups = {};
         specialReservations.forEach(reservation => {
@@ -85,7 +85,7 @@ const AdminSidebar = () => {
                 specialGroups[groupKey] = true;
             }
         });
-        
+
         return Object.keys(specialGroups).length;
     };
 
@@ -294,33 +294,33 @@ const AdminSidebar = () => {
                     e.target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
                 }}
             >
-                <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: '3px',
                     alignItems: 'center',
                     justifyContent: 'center'
                 }}>
-                    <span style={{ 
-                        width: '20px', 
-                        height: '3px', 
-                        background: 'white', 
+                    <span style={{
+                        width: '20px',
+                        height: '3px',
+                        background: 'white',
                         borderRadius: '2px',
                         transition: 'all 0.3s ease',
                         transform: isSidebarOpen ? 'rotate(45deg) translate(5px, 5px)' : 'none'
                     }}></span>
-                    <span style={{ 
-                        width: '20px', 
-                        height: '3px', 
-                        background: 'white', 
+                    <span style={{
+                        width: '20px',
+                        height: '3px',
+                        background: 'white',
                         borderRadius: '2px',
                         transition: 'all 0.3s ease',
                         opacity: isSidebarOpen ? '0' : '1'
                     }}></span>
-                    <span style={{ 
-                        width: '20px', 
-                        height: '3px', 
-                        background: 'white', 
+                    <span style={{
+                        width: '20px',
+                        height: '3px',
+                        background: 'white',
                         borderRadius: '2px',
                         transition: 'all 0.3s ease',
                         transform: isSidebarOpen ? 'rotate(-45deg) translate(5px, -5px)' : 'none'
@@ -349,9 +349,9 @@ const AdminSidebar = () => {
 
             <div className={`admin-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
                 <div className="admin-sidebar-header">
-                    <div className="admin-user-info" style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div className="admin-user-info" style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: '15px',
                         marginLeft: isSidebarOpen ? '60px' : '0px',
                         transition: 'margin-left 0.3s ease'
@@ -456,7 +456,7 @@ const AdminSidebar = () => {
                                             {getTodayReservationsCount() - getTodaySpecialReservationsCount()}
                                         </span>
                                     )}
-                                    
+
                                     {/* Özel rezervasyon sayısı (ünlem işareti ile) */}
                                     {getTodaySpecialReservationsCount() > 0 && (
                                         <span style={{

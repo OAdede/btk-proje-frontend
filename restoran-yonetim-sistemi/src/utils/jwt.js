@@ -20,15 +20,40 @@ export function decodeJwtPayload(token) {
     }
 }
 
+function normalizeRoleName(input) {
+    if (!input) return undefined;
+    const raw = String(input)
+        .replace(/^ROLE[_-]?/i, '')
+        .trim()
+        .toLowerCase();
+    if (raw === 'admin' || raw === 'administrator') return 'admin';
+    if (raw === 'garson' || raw === 'waiter' || raw === 'server') return 'garson';
+    if (raw === 'kasiyer' || raw === 'cashier') return 'kasiyer';
+    return raw; // fallback: return normalized raw
+}
+
 export function getRoleInfoFromToken(token) {
     const payload = decodeJwtPayload(token);
     if (!payload) return { roleId: undefined, role: undefined, userId: undefined, email: undefined, name: undefined, surname: undefined };
     // Common claim names mapping
-    const roleIdRaw = payload.roleId ?? payload.role_id ?? payload.rid;
+    const roleIdRaw = payload.roleId ?? payload.role_id ?? payload.rid ?? payload.roleID ?? payload.roleIDNumber;
     const roleId = typeof roleIdRaw === 'string' && /^\d+$/.test(roleIdRaw) ? parseInt(roleIdRaw, 10) : roleIdRaw;
-    const role = payload.role ?? (typeof roleId === 'number' ? (roleId === 0 ? 'admin' : roleId === 1 ? 'garson' : roleId === 2 ? 'kasiyer' : undefined) : undefined);
-    const userId = payload.userId ?? payload.sub ?? payload.uid;
-    const email = payload.email ?? payload.mail;
+    let role = payload.role ?? payload.role_name ?? payload.roleType ?? (typeof roleId === 'number' ? (roleId === 0 ? 'admin' : roleId === 1 ? 'garson' : roleId === 2 ? 'kasiyer' : undefined) : undefined);
+
+    // Support "roles" array or "authorities" list like ["ROLE_admin"]
+    if (!role) {
+        const rolesClaim = payload.roles ?? payload.authorities ?? payload.role_list;
+        if (Array.isArray(rolesClaim) && rolesClaim.length > 0) {
+            role = normalizeRoleName(rolesClaim[0]);
+        } else if (typeof rolesClaim === 'string' && rolesClaim.length > 0) {
+            // CSV or single string
+            const first = rolesClaim.split(',')[0];
+            role = normalizeRoleName(first);
+        }
+    }
+
+    const userId = payload.userId ?? payload.uid ?? payload.sub;
+    const email = payload.email ?? payload.mail ?? payload.sub;
     const name = payload.name ?? payload.given_name ?? payload.firstName;
     const surname = payload.surname ?? payload.family_name ?? payload.lastName;
     return { roleId, role, userId, email, name, surname };
