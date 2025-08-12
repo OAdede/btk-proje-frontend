@@ -22,6 +22,7 @@ const ReservationsPage = () => {
     const [warningMessage, setWarningMessage] = useState('');
     const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
     const [modalKey, setModalKey] = useState(0);
+    const [showExistingReservationsModal, setShowExistingReservationsModal] = useState(false);
 
     // Gerçek rezervasyon verilerini kullan
     const actualReservations = reservations;
@@ -101,17 +102,63 @@ const ReservationsPage = () => {
         // tableNumber'ı tableId formatına çevir (örn: "Z1" -> "1")
         const tableId = getTableIdFromName(tableNumber);
         
+        console.log('🔍 getTableStatus Debug:', {
+            tableNumber,
+            tableId,
+            tableStatus: tableStatus,
+            reservations: reservations,
+            actualReservations: actualReservations
+        });
+        
+        // Mevcut rezervasyonları kontrol et
+        const allReservations = Object.values(reservations);
+        const tableReservations = allReservations.filter(res => res.tableId === tableId);
+        
+        console.log('🔍 Table Reservations Check:', {
+            tableNumber,
+            tableId,
+            allReservations: allReservations,
+            tableReservations: tableReservations,
+            tableReservationsDetails: tableReservations.map(res => ({
+                id: res.id,
+                tableId: res.tableId,
+                tarih: res.tarih,
+                saat: res.saat,
+                ad: res.ad,
+                soyad: res.soyad
+            }))
+        });
+        
         // tableStatus context'ini kontrol et
         let contextStatus = tableStatus[tableId];
         
+        console.log('🔍 Context Status:', {
+            tableId,
+            contextStatus,
+            tableStatusKeys: Object.keys(tableStatus)
+        });
+        
         // Eğer context'te masa 'empty' olarak işaretliyse, boş kabul et
         if (contextStatus === 'empty' || contextStatus === 'bos') {
+            // Ama rezervasyon var mı kontrol et
+            if (tableReservations.length > 0) {
+                console.log('🔍 WARNING: Context says empty but reservations exist!', {
+                    tableNumber,
+                    tableId,
+                    contextStatus,
+                    tableReservationsCount: tableReservations.length
+                });
+            }
             return { status: 'empty', reservations: [] };
         }
         
         // Context'te 'reserved' ise, rezervasyonları kontrol et
         if (contextStatus === 'reserved') {
-            const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
+            console.log('🔍 Reserved Table Reservations:', {
+                tableId,
+                tableReservations,
+                allReservations: allReservations
+            });
             
             // Eğer rezervasyon bulunamazsa ama masa hala 'reserved' olarak işaretliyse
             if (tableReservations.length === 0) {
@@ -134,7 +181,6 @@ const ReservationsPage = () => {
         
         // Eğer context'te hiçbir durum yoksa, reservations array'ini kontrol et
         if (!contextStatus) {
-            const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
             if (tableReservations.length > 0) {
                 // Rezervasyon var ama context'te durum yok, geçerliliğini kontrol et
                 const now = new Date();
@@ -144,6 +190,11 @@ const ReservationsPage = () => {
                 });
                 
                 if (validReservations.length > 0) {
+                    console.log('🔍 Found reservations but no context status:', {
+                        tableNumber,
+                        tableId,
+                        validReservations
+                    });
                     return { status: 'reserved', reservations: validReservations };
                 }
             }
@@ -153,7 +204,7 @@ const ReservationsPage = () => {
         return { status: contextStatus || 'empty', reservations: [] };
     };
 
-    // 5 saat kısıtlamasını kontrol eden fonksiyon
+    // 3 saat kısıtlamasını kontrol eden fonksiyon
     const canMakeReservation = (existingReservations, newTime) => {
         if (existingReservations.length === 0) return true;
         
@@ -163,11 +214,58 @@ const ReservationsPage = () => {
             const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
             const timeDifference = Math.abs(newTimeHour - existingTimeHour);
             
-            if (timeDifference < 5) {
+            if (timeDifference < 3) {
                 return false;
             }
         }
         return true;
+    };
+
+    // Masa için belirli bir saatte rezervasyon var mı kontrol et
+    const hasReservationAtTime = (tableNumber, date, time) => {
+        const tableId = getTableIdFromName(tableNumber);
+        const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
+        
+        console.log('🔍 hasReservationAtTime Debug:', {
+            tableNumber,
+            tableId,
+            date,
+            time,
+            tableReservations,
+            allReservations: Object.values(reservations)
+        });
+        
+        return tableReservations.some(reservation => 
+            reservation.tarih === date && reservation.saat === time
+        );
+    };
+
+    // Masa için belirli bir saatte 3 saatlik çakışma var mı kontrol et
+    const hasTimeConflict = (tableNumber, date, time) => {
+        const tableId = getTableIdFromName(tableNumber);
+        const tableReservations = Object.values(reservations).filter(res => res.tableId === tableId);
+        
+        console.log('🔍 hasTimeConflict Debug:', {
+            tableNumber,
+            tableId,
+            date,
+            time,
+            tableReservations
+        });
+        
+        const selectedTime = new Date(`${date}T${time}`);
+        const selectedHour = selectedTime.getHours();
+        
+        return tableReservations.some(reservation => {
+            if (reservation.tarih !== date) return false;
+            
+            const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
+            const reservationHour = reservationTime.getHours();
+            
+            // 3 saatlik çakışma kontrolü
+            const timeDiff = Math.abs(selectedHour - reservationHour);
+            return timeDiff < 3;
+        });
     };
 
     const handleTableSelection = (floorNumber, tableIndex) => {
@@ -175,10 +273,11 @@ const ReservationsPage = () => {
         const tableStatus = getTableStatus(tableNumber);
         
         if (tableStatus.status === 'reserved') {
-            // Rezerve masaya tıklandığında rezervasyon bilgilerini göster
+            // Rezerve masaya tıklandığında sadece mevcut rezervasyonları göster
+            // Yeni rezervasyon ekleme modal'ını açma
             setSelectedTable(tableNumber);
             setShowTableSelectionModal(false);
-            setShowReservationModal(true);
+            setShowExistingReservationsModal(true);
         } else {
             // Boş masaya tıklandığında normal rezervasyon ekleme
             setSelectedTable(tableNumber);
@@ -197,6 +296,14 @@ const ReservationsPage = () => {
     const handleReservationSubmit = (formData) => {
         const tableStatus = getTableStatus(selectedTable);
         
+        // Debug için console.log ekleyelim
+        console.log('🔍 handleReservationSubmit Debug:', {
+            selectedTable,
+            formData,
+            tableStatus,
+            existingReservations: Object.values(reservations)
+        });
+        
         // Masa kapasitesi kontrolü
         const tableCapacity = getTableCapacity(selectedTable);
         const personCount = parseInt(formData.kisiSayisi);
@@ -207,16 +314,34 @@ const ReservationsPage = () => {
             return;
         }
         
+        // Aynı saatte rezervasyon var mı kontrol et
+        if (hasReservationAtTime(selectedTable, formData.tarih, formData.saat)) {
+            setWarningMessage('Bu masada aynı saatte zaten rezervasyon bulunmaktadır. Lütfen farklı bir saat seçin.');
+            setShowWarningModal(true);
+            return;
+        }
+        
+        // 3 saatlik çakışma kontrolü
+        if (hasTimeConflict(selectedTable, formData.tarih, formData.saat)) {
+            setWarningMessage('Bu masada seçilen saatte 3 saatlik çakışma bulunmaktadır. Rezervasyon yapılamaz.');
+            setShowWarningModal(true);
+            return;
+        }
+        
         if (tableStatus.status === 'reserved') {
             // Rezerve masaya yeni rezervasyon ekleme
             if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
-                setWarningMessage('Bu masaya 5 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 5 saat sonra rezervasyon yapabilirsiniz.');
+                setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
                 setShowWarningModal(true);
                 return;
             }
         }
         
-        addReservation(selectedTable, formData);
+        // tableId'yi doğru formatta gönder (Z2 -> 2, A1 -> 9 gibi)
+        const tableId = getTableIdFromName(selectedTable);
+        console.log('🔍 Table ID Conversion:', { selectedTable, tableId });
+        
+        addReservation(tableId, formData);
         setShowReservationModal(false);
         setSelectedTable(null);
         setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
@@ -785,17 +910,171 @@ const ReservationsPage = () => {
                  </div>
              )}
 
-             {/* Rezervasyon Modal */}
-             <ReservationModal
-                 key={modalKey}
-                 visible={showReservationModal}
-                 masaNo={selectedTable}
-                 onClose={handleReservationClose}
-                 onSubmit={handleReservationSubmit}
-                 defaultDate={getTodayDate()}
-                 existingReservations={selectedTable ? getTableStatus(selectedTable).reservations : []}
-                 shouldClearForm={false}
-             />
+                         {/* Rezervasyon Modal */}
+            <ReservationModal
+                key={modalKey}
+                visible={showReservationModal}
+                masaNo={selectedTable}
+                onClose={handleReservationClose}
+                onSubmit={handleReservationSubmit}
+                defaultDate={getTodayDate()}
+                shouldClearForm={false}
+            />
+
+            {/* Mevcut Rezervasyonları Gösteren Modal */}
+            {showExistingReservationsModal && selectedTable && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    zIndex: 9998,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <div style={{
+                        backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
+                        padding: '2rem',
+                        borderRadius: '15px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                        zIndex: 9999,
+                        maxWidth: '600px',
+                        width: '90%',
+                        maxHeight: '80vh',
+                        overflowY: 'auto',
+                        border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+                    }}>
+                        <h3 style={{ 
+                            color: isDarkMode ? '#ffffff' : '#333333', 
+                            marginBottom: '20px',
+                            fontSize: '1.5rem',
+                            textAlign: 'center'
+                        }}>
+                            📅 Masa {selectedTable} - Mevcut Rezervasyonlar
+                        </h3>
+                        
+                        {(() => {
+                            const tableStatus = getTableStatus(selectedTable);
+                            const existingReservations = tableStatus.reservations || [];
+                            
+                            return (
+                                <>
+                                    {existingReservations.length > 0 ? (
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <h4 style={{ 
+                                                color: isDarkMode ? '#cccccc' : '#666666', 
+                                                marginBottom: '15px',
+                                                textAlign: 'center'
+                                            }}>
+                                                Bu masada {existingReservations.length} rezervasyon bulunuyor:
+                                            </h4>
+                                            <div style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '10px'
+                                            }}>
+                                                {existingReservations.map((reservation, index) => (
+                                                    <div key={index} style={{
+                                                        backgroundColor: isDarkMode ? '#3a3a3a' : '#f8f9fa',
+                                                        padding: '15px',
+                                                        borderRadius: '8px',
+                                                        border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+                                                    }}>
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center',
+                                                            marginBottom: '8px'
+                                                        }}>
+                                                            <strong style={{ color: isDarkMode ? '#ffffff' : '#333333' }}>
+                                                                {reservation.ad} {reservation.soyad}
+                                                            </strong>
+                                                            <span style={{ 
+                                                                color: isDarkMode ? '#cccccc' : '#666666',
+                                                                fontSize: '0.9rem'
+                                                            }}>
+                                                                {reservation.tarih} • {reservation.saat}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ color: isDarkMode ? '#cccccc' : '#666666' }}>
+                                                            📞 {reservation.telefon} • 👥 {reservation.kisiSayisi} Kişi
+                                                            {reservation.not && <span> • 📝 {reservation.not}</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{
+                                            textAlign: 'center',
+                                            padding: '20px',
+                                            color: isDarkMode ? '#cccccc' : '#666666',
+                                            marginBottom: '20px'
+                                        }}>
+                                            <p>Bu masada henüz rezervasyon bulunmuyor.</p>
+                                        </div>
+                                    )}
+                                    
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '15px',
+                                        justifyContent: 'center',
+                                        flexWrap: 'wrap'
+                                    }}>
+                                        <button
+                                            onClick={() => {
+                                                setShowExistingReservationsModal(false);
+                                                setShowReservationModal(true);
+                                            }}
+                                            style={{
+                                                background: colors.success,
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 24px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                                fontWeight: 'bold',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.target.style.transform = 'translateY(-2px)';
+                                                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.target.style.transform = 'translateY(0)';
+                                                e.target.style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            ➕ Yeni Rezervasyon Ekle
+                                        </button>
+                                        
+                                        <button
+                                            onClick={() => setShowExistingReservationsModal(false)}
+                                            style={{
+                                                background: isDarkMode ? '#4a4a4a' : '#e0e0e0',
+                                                color: isDarkMode ? '#ffffff' : '#333333',
+                                                border: 'none',
+                                                padding: '12px 24px',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                                fontWeight: 'bold',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        >
+                                            ❌ Kapat
+                                        </button>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
 
              
 

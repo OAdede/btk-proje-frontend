@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { ThemeContext } from "../../context/ThemeContext";
 
-export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate, existingReservations = [], shouldClearForm = true }) {
+export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate, shouldClearForm = true }) {
   const { isDarkMode } = useContext(ThemeContext);
   const [formData, setFormData] = useState({
     ad: "",
@@ -30,6 +30,22 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       setFormData(prev => ({ ...prev, tarih: defaultDate }));
     }
   }, [defaultDate]);
+
+  // Modal açıldığında formu temizle
+  useEffect(() => {
+    if (visible) {
+      setFormData({
+        ad: "",
+        soyad: "",
+        telefon: "",
+        email: "",
+        tarih: defaultDate || "",
+        saat: "",
+        kisiSayisi: "",
+        not: "",
+      });
+    }
+  }, [visible, defaultDate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,6 +103,14 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       const numValue = parseInt(value);
       if (value === '' || (numValue >= 1 && numValue <= tableCapacity)) {
         setFormData((prev) => ({ ...prev, [name]: value }));
+      }
+    } else if (name === 'ad' || name === 'soyad') {
+      // Ad ve soyad için ilk harfi büyük yap
+      if (value === '') {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      } else {
+        const formattedValue = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+        setFormData((prev) => ({ ...prev, [name]: formattedValue }));
       }
     } else if (name === 'email') {
       // E-mail validasyonu - sadece yazma sırasında kontrol etme, submit sırasında kontrol edeceğiz
@@ -202,6 +226,21 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     }
   };
 
+  // Modal kapatıldığında formu temizle
+  const handleClose = () => {
+    setFormData({
+      ad: "",
+      soyad: "",
+      telefon: "",
+      email: "",
+      tarih: defaultDate || "",
+      saat: "",
+      kisiSayisi: "",
+      not: "",
+    });
+    onClose();
+  };
+
   // Tema renklerini dinamik olarak belirle
   const colors = isDarkMode ? {
     modalBg: "#513653",
@@ -257,73 +296,14 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
         border: `2px solid ${colors.modalBorder}`
       }}>
         <h2 style={{ 
-          marginBottom: '20px', 
+          marginBottom: "20px", 
+          textAlign: "center", 
           color: colors.textColor 
         }}>
           📅 Masa {masaNo} - Yeni Rezervasyon
         </h2>
 
-        {/* Mevcut Rezervasyonlar */}
-        {existingReservations.length > 0 && (
-          <div style={{
-            marginBottom: '20px',
-            padding: '15px',
-            backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
-            borderRadius: '10px',
-            border: `1px solid ${colors.inputBorder}`
-          }}>
-            <h3 style={{
-              color: colors.textColor,
-              fontSize: '16px',
-              marginBottom: '10px',
-              fontWeight: 'bold'
-            }}>
-              📋 Mevcut Rezervasyonlar:
-            </h3>
-            {existingReservations.map((reservation, index) => (
-              <div key={index} style={{
-                padding: '10px',
-                backgroundColor: isDarkMode ? '#32263A' : '#F5EFFF',
-                borderRadius: '8px',
-                marginBottom: '8px',
-                border: `1px solid ${colors.inputBorder}`
-              }}>
-                <div style={{
-                  color: colors.textColor,
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  marginBottom: '5px'
-                }}>
-                  {reservation.ad} {reservation.soyad}
-                </div>
-                <div style={{
-                  color: colors.labelColor,
-                  fontSize: '12px',
-                  display: 'flex',
-                  gap: '15px',
-                  flexWrap: 'wrap'
-                }}>
-                  <span>📞 {reservation.telefon}</span>
-                  <span>🕐 {reservation.saat}</span>
-                  <span>👥 {reservation.kisiSayisi} kişi</span>
-                  {reservation.not && <span>📝 {reservation.not}</span>}
-                </div>
-              </div>
-            ))}
-            <div style={{
-              color: colors.labelColor,
-              fontSize: '12px',
-              fontStyle: 'italic',
-              marginTop: '10px',
-              padding: '8px',
-              backgroundColor: isDarkMode ? '#32263A' : '#F5EFFF',
-              borderRadius: '6px'
-            }}>
-              ⚠️ Bu masaya yeni rezervasyon eklerken 5 saat arayla rezervasyon yapabilirsiniz.
-            </div>
-          </div>
-        )}
-
+        {/* Rezervasyon Formu */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                      <div style={{ display: "flex", gap: "10px" }}>
              <div style={{ display: "flex", flexDirection: "column", gap: "5px", flex: 1 }}>
@@ -335,6 +315,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
                  Ad:
                </label>
                <input
+                 id="ad-input"
                  type="text"
                  name="ad"
                  placeholder="Ad"
@@ -362,6 +343,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
                  Soyad:
                </label>
                <input
+                 id="soyad-input"
                  type="text"
                  name="soyad"
                  placeholder="Soyad"
@@ -391,6 +373,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               Telefon:
             </label>
             <input
+              id="telefon-input"
               type="tel"
               name="telefon"
               placeholder="5XX XXX XX XX"
@@ -419,6 +402,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               E-mail (İsteğe bağlı):
             </label>
             <input
+              id="email-input"
               type="email"
               name="email"
               placeholder="E-mail adresi"
@@ -446,6 +430,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               Tarih:
             </label>
                          <input
+               id="tarih-input"
                type="date"
                name="tarih"
                value={formData.tarih}
@@ -474,6 +459,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               Saat:
             </label>
                                                    <input
+                id="saat-input"
                 type="time"
                 name="saat"
                 value={formData.saat}
@@ -522,6 +508,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               Kişi Sayısı:
             </label>
             <input
+              id="kisiSayisi-input"
               type="number"
               name="kisiSayisi"
               placeholder={`Maksimum ${tableCapacity} kişi`}
@@ -560,6 +547,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               Not (İsteğe bağlı):
             </label>
             <textarea
+              id="not-input"
               name="not"
               placeholder="Özel istekler, doğum günü vb."
               value={formData.not}
@@ -594,7 +582,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
             }}>
               ✅ Rezervasyon Oluştur
             </button>
-            <button type="button" onClick={onClose} style={{
+            <button type="button" onClick={handleClose} style={{
               background: colors.cancelButtonBg,
               color: colors.textColor,
               border: `2px solid ${colors.cancelButtonBorder}`,
@@ -609,8 +597,8 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               ❌ İptal
             </button>
           </div>
-                 </form>
-       </div>
-     </div>
-   );
- }
+                           </form>
+      </div>
+    </div>
+  );
+}
