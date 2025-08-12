@@ -4,10 +4,10 @@ const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
 // Role mapping from Turkish to English
 const roleMapping = {
-  'garson': 'waiter',
-  'kasiyer': 'cashier',
-  'müdür': 'manager',
-  'admin': 'admin'
+    'garson': 'waiter',
+    'kasiyer': 'cashier',
+    'müdür': 'manager',
+    'admin': 'admin'
 };
 
 export const personnelService = {
@@ -16,7 +16,7 @@ export const personnelService = {
         try {
             // Map Turkish role to English roleName
             const roleName = roleMapping[personnelData.role] || 'waiter';
-            
+
             // Create request data without photo (photo functionality removed)
             const requestData = {
                 name: personnelData.name.trim(),
@@ -47,7 +47,7 @@ export const personnelService = {
 
             if (!response.ok) {
                 let errorMessage = 'Personel eklenirken bir hata oluştu';
-                
+
                 try {
                     const errorText = await response.text();
                     console.log('Server error response:', errorText);
@@ -94,7 +94,7 @@ export const personnelService = {
         try {
             // Get token from localStorage
             const token = localStorage.getItem('token');
-            
+
             const headers = {
                 'Accept': 'application/json',
             };
@@ -111,7 +111,7 @@ export const personnelService = {
 
             if (!response.ok) {
                 let errorMessage = 'Kullanıcılar yüklenirken bir hata oluştu';
-                
+
                 try {
                     const errorText = await response.text();
                     console.log('Server error response:', errorText);
@@ -132,7 +132,7 @@ export const personnelService = {
             try {
                 const responseData = await response.json();
                 console.log('Users loaded successfully:', responseData.length, 'users');
-                
+
                 // Log sample user data for debugging
                 if (responseData.length > 0) {
                     console.log('Sample user data:', {
@@ -144,7 +144,7 @@ export const personnelService = {
                         roles: responseData[0].roles
                     });
                 }
-                
+
                 // Expected response format:
                 // [
                 //   {
