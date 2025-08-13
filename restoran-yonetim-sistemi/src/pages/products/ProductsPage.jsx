@@ -3,16 +3,16 @@ import { useTheme } from '../../context/ThemeContext';
 
 // Örnek ürün verileri - görüntüdeki gibi
 const sampleProducts = [
-    { id: 1, name: 'Et Döner', category: 'Ana Yemek', price: 535, stock: 50, minStock: 10, status: 'Yeterli' },
-    { id: 2, name: 'Döner Beyti Sarma', category: 'Ana Yemek', price: 545, stock: 30, minStock: 5, status: 'Yeterli' },
-    { id: 3, name: 'Tereyağlı İskender', category: 'Ana Yemek', price: 560, stock: 25, minStock: 8, status: 'Yeterli' },
-    { id: 4, name: 'Pilav Üstü Döner', category: 'Ana Yemek', price: 550, stock: 40, minStock: 12, status: 'Yeterli' },
-    { id: 5, name: 'SSK Dürüm Döner', category: 'Ana Yemek', price: 560, stock: 35, minStock: 7, status: 'Yeterli' },
-    { id: 6, name: 'Çiğköfte', category: 'Aparatifler', price: 140, stock: 20, minStock: 5, status: 'Yeterli' },
-    { id: 7, name: 'Soğan Halkası', category: 'Aparatifler', price: 130, stock: 15, minStock: 3, status: 'Yeterli' },
-    { id: 8, name: 'Patates Kızartması', category: 'Aparatifler', price: 140, stock: 30, minStock: 8, status: 'Yeterli' },
-    { id: 9, name: 'Börek Çeşitleri', category: 'Fırın', price: 140, stock: 25, minStock: 6, status: 'Yeterli' },
-    { id: 10, name: 'Salata Çeşitleri', category: 'Aparatifler', price: 120, stock: 18, minStock: 4, status: 'Yeterli' },
+    { id: 1, name: 'Et Döner', category: 'Ana Yemek', price: 535, stock: 50, minStock: 10, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 2, name: 'Döner Beyti Sarma', category: 'Ana Yemek', price: 545, stock: 30, minStock: 5, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 3, name: 'Tereyağlı İskender', category: 'Ana Yemek', price: 560, stock: 25, minStock: 8, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 4, name: 'Pilav Üstü Döner', category: 'Ana Yemek', price: 550, stock: 40, minStock: 12, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 5, name: 'SSK Dürüm Döner', category: 'Ana Yemek', price: 560, stock: 35, minStock: 7, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 6, name: 'Çiğköfte', category: 'Aparatifler', price: 140, stock: 20, minStock: 5, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 7, name: 'Soğan Halkası', category: 'Aparatifler', price: 130, stock: 15, minStock: 3, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 8, name: 'Patates Kızartması', category: 'Aparatifler', price: 140, stock: 30, minStock: 8, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 9, name: 'Börek Çeşitleri', category: 'Fırın', price: 140, stock: 25, minStock: 6, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
+    { id: 10, name: 'Salata Çeşitleri', category: 'Aparatifler', price: 120, stock: 18, minStock: 4, status: 'Yeterli', description: 'Tarif:Tarif bulunamadı.' },
 ];
 
 const categories = [
@@ -43,17 +43,20 @@ const ProductsPage = () => {
 
     return (
         <div style={{
-            maxWidth: '1000px',
+            maxWidth: '1400px',
             margin: '32px auto',
-            background: '#473653',
+            background: colors.cardBackground,
             borderRadius: '16px',
-            boxShadow: 'rgba(0, 0, 0, 0.3) 0px 2px 12px',
-            padding: '32px'
+            boxShadow: `0 8px 32px ${colors.shadow}`,
+            padding: '32px',
+            border: `1px solid ${colors.border}`
         }}>
             <h2 style={{
-                margin: '0px 0px 16px',
-                color: '#ffffff',
-                fontWeight: 700
+                margin: '0px 0px 24px',
+                color: colors.text,
+                fontWeight: 700,
+                fontSize: '28px',
+                textAlign: 'center'
             }}>
                 Ürün & Stok Yönetimi
             </h2>
@@ -61,22 +64,35 @@ const ProductsPage = () => {
             {/* Kategori Filtreleri */}
             <div style={{
                 display: 'flex',
-                gap: '8px',
-                marginBottom: '24px',
-                flexWrap: 'wrap'
+                gap: '12px',
+                marginBottom: '32px',
+                flexWrap: 'wrap',
+                justifyContent: 'center'
             }}>
                 {categories.map((category) => (
                     <button
                         key={category}
                         onClick={() => setSelectedCategory(category)}
                         style={{
-                            background: selectedCategory === category ? '#10B981' : '#53364D',
-                            color: selectedCategory === category ? '#ffffff' : '#ffffff',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '8px 18px',
-                            fontWeight: 700,
-                            cursor: 'pointer'
+                            background: selectedCategory === category ? colors.primary : colors.accentBackground,
+                            color: colors.text,
+                            border: `1px solid ${selectedCategory === category ? colors.primary : colors.border}`,
+                            borderRadius: '12px',
+                            padding: '12px 20px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            fontSize: '14px',
+                            minWidth: '120px',
+                            textAlign: 'center'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.background = selectedCategory === category ? colors.primary : colors.hover;
+                            e.target.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.background = selectedCategory === category ? colors.primary : colors.accentBackground;
+                            e.target.style.transform = 'translateY(0)';
                         }}
                     >
                         {category}
@@ -88,9 +104,9 @@ const ProductsPage = () => {
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '14px',
-                marginTop: '8px',
-                minHeight: '550px'
+                gap: '16px',
+                marginTop: '16px',
+                minHeight: '600px'
             }}>
                 {filteredProducts.map((product) => (
                     <div
@@ -98,82 +114,141 @@ const ProductsPage = () => {
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            background: '#513653',
-                            borderRadius: '10px',
-                            boxShadow: 'rgba(0, 0, 0, 0.3) 0px 1px 6px',
-                            padding: '12px 20px',
-                            gap: '20px'
+                            background: colors.surfaceBackground,
+                            borderRadius: '12px',
+                            boxShadow: `0 4px 16px ${colors.shadow}`,
+                            padding: '20px 24px',
+                            gap: '24px',
+                            border: `1px solid ${colors.border}`,
+                            transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                            e.currentTarget.style.boxShadow = `0 8px 24px ${colors.shadow}`;
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = `0 4px 16px ${colors.shadow}`;
                         }}
                     >
+                        {/* Ürün Adı */}
                         <div style={{
-                            flex: '3 1 0%',
+                            flex: '2 1 0%',
                             fontWeight: 600,
-                            color: '#ffffff'
+                            color: colors.text,
+                            fontSize: '16px'
                         }}>
                             {product.name}
                         </div>
                         
+                        {/* Açıklama */}
+                        <div style={{
+                            flex: '2 1 0%',
+                            fontWeight: 500,
+                            color: colors.textSecondary,
+                            fontSize: '14px',
+                            fontStyle: 'italic'
+                        }}>
+                            {product.description}
+                        </div>
+                        
+                        {/* Fiyat */}
                         <div style={{
                             flex: '1 1 0%',
-                            fontWeight: 500,
-                            color: '#ffffff'
+                            fontWeight: 600,
+                            color: colors.primary,
+                            fontSize: '16px',
+                            textAlign: 'center'
                         }}>
                             {product.price} ₺
                         </div>
                         
+                        {/* Stok */}
                         <div style={{
                             flex: '1 1 0%',
                             fontWeight: 500,
-                            color: '#ffffff'
+                            color: colors.textSecondary,
+                            fontSize: '14px',
+                            textAlign: 'center'
                         }}>
                             {product.stock} adet
                         </div>
                         
+                        {/* Min Stok */}
                         <div style={{
                             flex: '1 1 0%',
                             fontWeight: 500,
-                            color: '#ffffff'
+                            color: colors.textSecondary,
+                            fontSize: '14px',
+                            textAlign: 'center'
                         }}>
                             Min: {product.minStock}
                         </div>
                         
+                        {/* Durum */}
                         <div style={{
                             flex: '1.5 1 0%',
                             textAlign: 'center',
                             fontWeight: 600,
-                            color: '#ffffff',
-                            background: '#10B981',
-                            padding: '4px 12px',
-                            borderRadius: '12px'
+                            color: colors.text,
+                            background: colors.success,
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            fontSize: '14px',
+                            minWidth: '100px'
                         }}>
                             {product.status}
                         </div>
                         
+                        {/* Düzenle Butonu */}
                         <button
                             onClick={() => handleEditProduct(product.id)}
                             style={{
-                                background: '#A294F9',
-                                color: '#ffffff',
+                                background: colors.warning,
+                                color: colors.text,
                                 border: 'none',
-                                borderRadius: '6px',
-                                padding: '7px 18px',
+                                borderRadius: '8px',
+                                padding: '10px 20px',
                                 fontWeight: 600,
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                fontSize: '14px',
+                                minWidth: '100px'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.background = '#f59e0b';
+                                e.target.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.background = colors.warning;
+                                e.target.style.transform = 'scale(1)';
                             }}
                         >
                             Düzenle
                         </button>
                         
+                        {/* Sil Butonu */}
                         <button
                             onClick={() => handleDeleteProduct(product.id)}
                             style={{
-                                background: '#EF4444',
-                                color: '#ffffff',
+                                background: colors.danger,
+                                color: colors.text,
                                 border: 'none',
-                                borderRadius: '6px',
-                                padding: '7px 18px',
+                                borderRadius: '8px',
+                                padding: '10px 20px',
                                 fontWeight: 600,
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                fontSize: '14px',
+                                minWidth: '80px'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.background = '#dc2626';
+                                e.target.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.background = colors.danger;
+                                e.target.style.transform = 'scale(1)';
                             }}
                         >
                             Sil
@@ -188,21 +263,30 @@ const ProductsPage = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 gap: '8px',
-                marginTop: '24px'
+                marginTop: '32px'
             }}>
                 <button
                     onClick={handleAddProduct}
                     style={{
-                        background: 'linear-gradient(90deg, #A294F9 0%, #CDC1FF 100%)',
-                        color: '#ffffff',
+                        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accentBackground} 100%)`,
+                        color: colors.text,
                         border: 'none',
-                        borderRadius: '12px',
-                        padding: '16px 32px',
+                        borderRadius: '16px',
+                        padding: '18px 36px',
                         cursor: 'pointer',
                         fontWeight: 700,
                         fontSize: '16px',
-                        boxShadow: '0 4px 12px rgba(162, 148, 249, 0.3)',
-                        transition: 'all 0.3s ease'
+                        boxShadow: `0 8px 24px ${colors.shadow}`,
+                        transition: 'all 0.3s ease',
+                        minWidth: '200px'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-4px)';
+                        e.target.style.boxShadow = `0 12px 32px ${colors.shadow}`;
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = `0 8px 24px ${colors.shadow}`;
                     }}
                 >
                     + Yeni Ürün Ekle

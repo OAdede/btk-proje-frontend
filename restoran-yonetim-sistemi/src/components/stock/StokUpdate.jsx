@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext.jsx";
+import { useTheme } from "../../context/ThemeContext";
 import './StokUpdate.css';
 
 const URUN_SAYFASI = 10;
@@ -8,6 +9,7 @@ const URUN_SAYFASI = 10;
 function StokUpdate() {
   const { products, ingredients, addProduct, deleteProduct, updateProduct, deleteProductIngredient, updateIngredientStock, addProductIngredient } = useContext(TableContext);
   const { user } = useContext(AuthContext);
+  const { colors } = useTheme();
 
   const [aktifSekme, setAktifSekme] = useState("urunler");
   const [aktifKategori, setAktifKategori] = useState("Tümü");
