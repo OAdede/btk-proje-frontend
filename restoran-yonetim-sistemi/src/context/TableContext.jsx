@@ -78,7 +78,7 @@ export function TableProvider({ children }) {
             // Masa durumlarını güncelle
             const newTableStatus = {};
             tableData.forEach(table => {
-                newTableStatus[table.tableNumber] = table.status.name.toLowerCase();
+                newTableStatus[table.tableNumber] = table.statusName.toLowerCase();
             });
             setTableStatus(newTableStatus);
             
