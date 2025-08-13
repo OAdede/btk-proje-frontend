@@ -10,17 +10,17 @@
     margin-bottom: 24px;
 }
 
-/* Dark mode için sayfa stilleri */
+/* Dark mode için sayfa stilleri - Tema renklerine uygun */
 .dark-theme .reports-page {
-    background-color: #1a252f !important;
-    color: white !important;
+    background-color: var(--background) !important;
+    color: var(--text) !important;
 }
 
 .dark-theme .page-title {
-    color: white !important;
+    color: var(--text) !important;
 }
 
-/* Light mode için sayfa stilleri */
+/* Light mode için sayfa stilleri - Değişiklik yok */
 .light-theme .reports-page {
     background-color: #f8f9fa !important;
     color: #1e293b !important;
@@ -100,15 +100,15 @@
     color: var(--text);
 }
 
-/* Koyu tema için chart wrapper stilleri */
+/* Koyu tema için chart wrapper stilleri - Tema renklerine uygun */
 .dark-theme .chart-wrapper {
-    background-color: var(--card) !important;
+    background-color: var(--cardBackground) !important;
     border-color: var(--border) !important;
     color: var(--text) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 2px 8px var(--shadow) !important;
 }
 
-/* Light mode için chart wrapper stilleri */
+/* Light mode için chart wrapper stilleri - Değişiklik yok */
 .light-theme .chart-wrapper {
     background-color: #fff !important;
     border: 1px solid #dee2e6 !important;
