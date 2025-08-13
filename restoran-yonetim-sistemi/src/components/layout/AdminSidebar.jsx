@@ -331,12 +331,12 @@ const AdminSidebar = () => {
                 const all = [...(actives || []), ...(inactives || [])];
                 const found = all.find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
                 if (found?.id !== undefined) return found.id;
-            } catch {}
+            } catch { }
             try {
                 const all = await personnelService.getAllUsers();
                 const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
                 if (found?.id !== undefined) return found.id;
-            } catch {}
+            } catch { }
             return null;
         };
 
@@ -391,12 +391,12 @@ const AdminSidebar = () => {
                         const all = [...(actives || []), ...(inactives || [])];
                         const found = all.find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
                         if (found?.id !== undefined) return found.id;
-                    } catch {}
+                    } catch { }
                     try {
                         const all = await personnelService.getAllUsers();
                         const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
                         if (found?.id !== undefined) return found.id;
-                    } catch {}
+                    } catch { }
                     return null;
                 };
 
@@ -702,6 +702,17 @@ const AdminSidebar = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>📋</span>
                             <span>Sipariş Geçmişi</span>
+                        </div>
+                    </NavLink>
+
+                    <NavLink
+                        to="/admin/activity-logs"
+                        className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
+                        onClick={handleNavClick}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '1.2rem' }}>🧭</span>
+                            <span>Aktivite Logları</span>
                         </div>
                     </NavLink>
                 </nav>

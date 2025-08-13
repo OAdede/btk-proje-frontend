@@ -29,6 +29,7 @@ import EditReservationPage from './pages/reservations/EditReservationPage.jsx';
 import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
 import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
 import BackendTest from './components/dev/BackendTest.jsx';
+import ActivityLogs from './pages/admin/ActivityLogs.jsx';
 
 // Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
@@ -112,6 +113,7 @@ function App() {
             <Route path="reservations/edit/:reservationId" element={<EditReservationPage />} />
             <Route path="order-history" element={<OrderHistoryPage />} />
             <Route path="restaurant-settings" element={<RestaurantSettings />} />
+            <Route path="activity-logs" element={<ActivityLogs />} />
           </Route>
 
           {/* Garson Paneli */}
