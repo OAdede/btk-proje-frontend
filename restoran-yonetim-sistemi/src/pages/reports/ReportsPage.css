@@ -114,3 +114,57 @@
     border: 1px solid #dee2e6 !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
+
+/* Rapor sayfasındaki buton renklerini tema ile entegre etme */
+.reports-page .btn-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--text) !important;
+}
+
+.reports-page .btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+
+.reports-page .btn-outline-primary:hover {
+    background-color: var(--primary) !important;
+    color: var(--text) !important;
+}
+
+/* Koyu tema için buton renkleri */
+.dark-theme .reports-page .btn-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--text) !important;
+}
+
+.dark-theme .reports-page .btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+
+.dark-theme .reports-page .btn-outline-primary:hover {
+    background-color: var(--primary) !important;
+    color: var(--text) !important;
+}
+
+/* Açık tema için buton renkleri */
+.light-theme .reports-page .btn-primary {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--text) !important;
+}
+
+.light-theme .reports-page .btn-outline-primary {
+    background-color: transparent !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+
+.light-theme .reports-page .btn-outline-primary:hover {
+    background-color: var(--primary) !important;
+    color: var(--text) !important;
+}

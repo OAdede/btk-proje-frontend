@@ -74,6 +74,60 @@
   word-break: break-word;
 }
 
+/* IncomeExpenseTable bileşenindeki buton renklerini tema ile entegre etme */
+.income-expense-table .btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
+.income-expense-table .btn-outline-primary {
+  background-color: transparent !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.income-expense-table .btn-outline-primary:hover {
+  background-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
+/* Koyu tema için buton renkleri */
+.dark-theme .income-expense-table .btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .income-expense-table .btn-outline-primary {
+  background-color: transparent !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.dark-theme .income-expense-table .btn-outline-primary:hover {
+  background-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
+/* Açık tema için buton renkleri */
+.light-theme .income-expense-table .btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
+.light-theme .income-expense-table .btn-outline-primary {
+  background-color: transparent !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.light-theme .income-expense-table .btn-outline-primary:hover {
+  background-color: var(--primary) !important;
+  color: var(--text) !important;
+}
+
 /* Genel tablo responsive stilleri */
 .custom-table {
   width: 100%;
