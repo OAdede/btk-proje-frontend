@@ -47,42 +47,46 @@ export default function AdminStyleTables({ roleOverride }) {
     };
 
     const filteredTables = useMemo(() => {
-        console.log('Backend tables:', tables);
-        console.log('Backend salons:', salons);
-        console.log('Selected floor:', selectedFloor);
+        // Backend'den veri gelirse onu kullan
+        if (tables && tables.length > 0) {
+            const filtered = tables.filter(table => {
+                if (table.salon) {
+                    // Salon ID'sine göre filtrele (1: Zemin, 2: Kat1, 3: Kat2)
+                    const salonId = table.salon.id;
+                    if (selectedFloor === 0 && salonId === 1) return true; // Zemin
+                    if (selectedFloor === 1 && salonId === 2) return true; // Kat1
+                    if (selectedFloor === 2 && salonId === 3) return true; // Kat2
+                }
+                return false;
+            });
+            
+            // Eğer filtrelenmiş masalar varsa onları döndür
+            if (filtered.length > 0) {
+                return filtered.map(table => ({
+                    id: table.tableNumber.toString(),
+                    displayNumber: `Masa ${table.tableNumber}`,
+                    capacity: table.capacity || 4,
+                    backendId: table.id,
+                    salonId: table.salon?.id,
+                    salonName: table.salon?.name,
+                    originalTableNumber: table.tableNumber
+                }));
+            }
+        }
         
-        if (!tables || tables.length === 0) {
-            console.log('No tables from backend, using fallback');
-            // Backend'den veri gelmezse fallback olarak hardcoded masalar
-            return Array.from({ length: 8 }, (_, i) => {
-                const id = getTableNumber(selectedFloor, i);
-                return { id, displayNumber: id, capacity: getCapacity(id) };
+        // Backend'den veri gelmezse veya filtrelenmiş masalar yoksa fallback olarak hardcoded masalar
+        const fallbackTables = [];
+        for (let i = 0; i < 8; i++) {
+            const tableId = getTableNumber(selectedFloor, i);
+            fallbackTables.push({
+                id: tableId,
+                displayNumber: `Masa ${i + 1}`,
+                capacity: getCapacity(tableId),
+                isFallback: true
             });
         }
         
-        // Backend'den gelen masaları filtrele (salon/kat bazında)
-        const filtered = tables.filter(table => {
-            if (table.salon) {
-                // Salon ID'sine göre filtrele (1: Zemin, 2: Kat1, 3: Kat2)
-                const salonId = table.salon.id;
-                if (selectedFloor === 0 && salonId === 1) return true; // Zemin
-                if (selectedFloor === 1 && salonId === 2) return true; // Kat1
-                if (selectedFloor === 2 && salonId === 3) return true; // Kat2
-            }
-            return false;
-        });
-        
-        console.log('Filtered tables for floor', selectedFloor, ':', filtered);
-        
-        return filtered.map(table => ({
-            id: table.tableNumber.toString(),
-            displayNumber: `Masa ${table.tableNumber}`,
-            capacity: table.capacity || 4,
-            backendId: table.id,
-            salonId: table.salon?.id,
-            salonName: table.salon?.name,
-            originalTableNumber: table.tableNumber
-        }));
+        return fallbackTables;
     }, [selectedFloor, tables, tableCapacities]);
 
     const statusInfo = {
@@ -100,7 +104,6 @@ export default function AdminStyleTables({ roleOverride }) {
         const backendTable = tables.find(t => t.tableNumber.toString() === tableId);
         if (backendTable && backendTable.status) {
             const backendStatus = backendTable.status.name.toLowerCase();
-            console.log(`Table ${tableId} backend status:`, backendStatus);
             
             // Backend durumunu frontend durumuna çevir
             if (backendStatus === 'available') return statusInfo['empty'];
@@ -159,39 +162,6 @@ export default function AdminStyleTables({ roleOverride }) {
         const t = setInterval(() => setTick((p) => p + 1), 60000);
         return () => clearInterval(t);
     }, []);
-
-    // Loading state
-    if (loading) {
-        return (
-            <div style={{ 
-                padding: '2rem', 
-                textAlign: 'center',
-                backgroundColor: isDarkMode ? '#1a1a1a' : '#f8f9fa',
-                minHeight: '100vh',
-                color: isDarkMode ? '#e0e0e0' : '#495057'
-            }}>
-                <h2>Masalar yükleniyor...</h2>
-                <p>Backend'den masa verileri alınıyor...</p>
-            </div>
-        );
-    }
-
-    // Error state
-    if (error) {
-        return (
-            <div style={{ 
-                padding: '2rem', 
-                textAlign: 'center',
-                backgroundColor: isDarkMode ? '#1a1a1a' : '#f8f9fa',
-                minHeight: '100vh',
-                color: isDarkMode ? '#e0e0e0' : '#495057'
-            }}>
-                <h2>Hata oluştu!</h2>
-                <p style={{ color: '#dc3545' }}>{error}</p>
-                <p>Masalar localStorage'dan yükleniyor...</p>
-            </div>
-        );
-    }
 
     return (
         <div
@@ -296,42 +266,6 @@ export default function AdminStyleTables({ roleOverride }) {
 
             <div style={{ width: '150px', flexShrink: 0 }}>
                 <h3 style={{ fontSize: '1.25rem', color: isDarkMode ? '#e0e0e0' : '#495057', marginBottom: '1rem' }}>Katlar</h3>
-                
-                {/* Debug bilgisi */}
-                {tables && tables.length > 0 && (
-                    <div style={{ 
-                        fontSize: '0.8rem', 
-                        color: isDarkMode ? '#888' : '#666',
-                        marginBottom: '1rem',
-                        padding: '0.5rem',
-                        backgroundColor: isDarkMode ? '#333' : '#f0f0f0',
-                        borderRadius: '4px'
-                    }}>
-                        <strong>Backend'den {tables.length} masa yüklendi</strong><br/>
-                        <strong>Salonlar:</strong> {salons.map(s => s.name).join(', ')}<br/>
-                        <strong>Mevcut kat:</strong> {getFloorName(selectedFloor)} ({filteredTables.length} masa)<br/>
-                        <strong>Masa durumları:</strong> {filteredTables.map(t => `${t.displayNumber}: ${getStatus(t.id).text}`).join(', ')}
-                    </div>
-                )}
-                
-                {/* Backend veri yoksa bilgi */}
-                {(!tables || tables.length === 0) && (
-                    <div style={{ 
-                        fontSize: '0.8rem', 
-                        color: isDarkMode ? '#ff6b6b' : '#dc3545',
-                        marginBottom: '1rem',
-                        padding: '0.5rem',
-                        backgroundColor: isDarkMode ? '#4a1a1a' : '#f8d7da',
-                        borderRadius: '4px',
-                        border: '1px solid #dc3545'
-                    }}>
-                        <strong>⚠️ Backend'den masa verisi gelmedi!</strong><br/>
-                        <strong>Fallback:</strong> Hardcoded masalar kullanılıyor<br/>
-                        <strong>Çözüm:</strong> Backend'i çalıştır ve masaları yükle<br/>
-                        <strong>Komut:</strong> cd BTK_Restaurant && ./mvnw spring-boot:run<br/>
-                        <strong>Port:</strong> 8080 (HTTPS)
-                    </div>
-                )}
                 
                 {floors.map((floor) => (
                     <div
