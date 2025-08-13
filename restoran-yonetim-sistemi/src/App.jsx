@@ -32,6 +32,7 @@ import BackendTest from './components/dev/BackendTest.jsx';
 
 // Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
+import CashierHome from './pages/staff/CashierHome.jsx';
 import OrderPage from './pages/staff/OrderPage.jsx';
 import SummaryPage from './pages/staff/SummaryPage.jsx';
 import OrdersPage from "./components/layout/OrdersPage.jsx";
@@ -143,7 +144,7 @@ function App() {
             }
           >
             <Route index element={<Navigate to="home" replace />} />
-            <Route path="home" element={<WaiterHome />} />
+            <Route path="home" element={<CashierHome />} />
             <Route path="order/:tableId" element={<OrderPage />} />
             <Route path="summary/:tableId" element={<SummaryPage />} />
             <Route path="stock" element={<StokUpdate />} />
