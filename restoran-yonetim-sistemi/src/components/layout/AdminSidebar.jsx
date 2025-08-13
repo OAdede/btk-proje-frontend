@@ -146,6 +146,7 @@ const AdminSidebar = () => {
     const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
     const [emailVerificationCode, setEmailVerificationCode] = useState('');
     const [tempPhone, setTempPhone] = useState('');
+    const [phoneError, setPhoneError] = useState('');
     const [tempEmail, setTempEmail] = useState('');
     const [tempProfileImage, setTempProfileImage] = useState(null);
     const [showProfileImageConfirm, setShowProfileImageConfirm] = useState(false);
@@ -367,7 +368,11 @@ const AdminSidebar = () => {
 
     // Telefon numarası değiştirme
     const handlePhoneChange = () => {
-        if (tempPhone && tempPhone.length === 10) {
+        if (!tempPhone || tempPhone.length !== 11 || !tempPhone.startsWith('0')) {
+            alert('Lütfen telefon numarasını 0 ile başlayacak ve 11 hane olacak şekilde giriniz.');
+            return;
+        }
+        if (tempPhone && tempPhone.length === 11 && tempPhone.startsWith('0')) {
             setShowPhoneVerification(true);
             // SMS doğrulama kodu gönder (simülasyon)
             const code = Math.floor(100000 + Math.random() * 900000);
@@ -1177,9 +1182,17 @@ const AdminSidebar = () => {
                                     <div style={{ display: 'flex', gap: '10px' }}>
                                         <input
                                             type="tel"
-                                            placeholder="5XX XXX XX XX"
+                                            placeholder="0 5XX XXX XX XX"
                                             value={tempPhone || phoneNumber}
-                                            onChange={(e) => setTempPhone(e.target.value)}
+                                            onChange={(e) => {
+                                                const onlyDigits = e.target.value.replace(/[^0-9]/g, '');
+                                                setTempPhone(onlyDigits);
+                                                if (onlyDigits && (!onlyDigits.startsWith('0') || onlyDigits.length !== 11)) {
+                                                    setPhoneError('Telefon 0 ile başlamalı ve 11 hane olmalı');
+                                                } else {
+                                                    setPhoneError('');
+                                                }
+                                            }}
                                             style={{
                                                 background: isDarkMode ? '#3a3a3a' : '#ffffff',
                                                 color: isDarkMode ? '#ffffff' : '#333333',
@@ -1190,18 +1203,21 @@ const AdminSidebar = () => {
                                                 flex: 1
                                             }}
                                         />
+                                        {phoneError && (
+                                            <div style={{ color: '#dc3545', fontSize: '0.85rem', alignSelf: 'center' }}>{phoneError}</div>
+                                        )}
                                         <button
                                             onClick={handlePhoneChange}
-                                            disabled={!tempPhone || tempPhone.length !== 10}
+                                            disabled={!tempPhone}
                                             style={{
-                                                background: tempPhone && tempPhone.length === 10 ? '#28a745' : '#6c757d',
+                                                background: tempPhone ? '#28a745' : '#6c757d',
                                                 color: 'white',
                                                 border: 'none',
                                                 padding: '12px 20px',
                                                 borderRadius: '8px',
                                                 fontSize: '1rem',
                                                 fontWeight: '600',
-                                                cursor: tempPhone && tempPhone.length === 10 ? 'pointer' : 'not-allowed',
+                                                cursor: tempPhone ? 'pointer' : 'not-allowed',
                                                 transition: 'all 0.3s ease'
                                             }}
                                         >
