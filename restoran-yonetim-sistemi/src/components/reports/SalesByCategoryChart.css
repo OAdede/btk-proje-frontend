@@ -1,0 +1,42 @@
+.sales-by-category-chart {
+  transition: all 0.3s ease;
+}
+
+.sales-by-category-chart:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container.sales-by-category-chart {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.chart-container.sales-by-category-chart:hover {
+  transform: scale(1.02);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sales-by-category-chart .chart-container {
+    max-width: 250px !important;
+    height: 250px !important;
+  }
+  
+  .sales-by-category-chart .table {
+    font-size: 10px !important;
+  }
+  
+  .sales-by-category-chart .table th,
+  .sales-by-category-chart .table td {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .sales-by-category-chart .chart-container {
+    max-width: 200px !important;
+    height: 200px !important;
+  }
+}

@@ -34,6 +34,139 @@ export const analyticsService = {
         }
     },
 
+    // Get daily top products from specific daily endpoint
+    async getDailyTopProducts(limit = 10) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/top-products/daily?limit=${limit}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Daily top products API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Daily top products loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('Daily top products service error:', error);
+            return [];
+        }
+    },
+
+    // Get weekly top products from specific weekly endpoint
+    async getWeeklyTopProducts(limit = 10) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/top-products/weekly?limit=${limit}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Weekly top products API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Weekly top products loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('Weekly top products service error:', error);
+            return [];
+        }
+    },
+
+    // Get monthly top products from specific monthly endpoint
+    async getMonthlyTopProducts(limit = 10) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/top-products/monthly?limit=${limit}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Monthly top products API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Monthly top products loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('Monthly top products service error:', error);
+            return [];
+        }
+    },
+
+    // Get sales by category
+    async getSalesByCategory(startDate, endDate = null) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            let url = `${API_BASE_URL}/daily-sales-summary/sales-by-category?startDate=${startDate}`;
+            if (endDate) {
+                url += `&endDate=${endDate}`;
+            }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Sales by category API error: ${response.status} ${response.statusText}`);
+                return {};
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Sales by category loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty object');
+                return {};
+            }
+        } catch (error) {
+            console.error('Sales by category service error:', error);
+            return {};
+        }
+    },
+
     // Get daily sales summary with date parameter
     async getDailySalesSummary(date) {
         try {

@@ -46,11 +46,31 @@ const PopularItemsChart = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await analyticsService.getTopProductsSummary();
-      setAnalyticsData(data);
+      
+      // Günlük veriler için ayrı endpoint kullan
+      const dailyData = await analyticsService.getDailyTopProducts(10);
+      
+      // Haftalık veriler için ayrı endpoint kullan
+      const weeklyData = await analyticsService.getWeeklyTopProducts(10);
+      
+      // Aylık veriler için ayrı endpoint kullan
+      const monthlyData = await analyticsService.getMonthlyTopProducts(10);
+      
+      // Yıllık veriler için summary endpoint kullan
+      const summaryData = await analyticsService.getTopProductsSummary();
+      
+      // Verileri birleştir
+      const combinedData = {
+        daily: dailyData || [],
+        weekly: weeklyData || [],
+        monthly: monthlyData || [],
+        yearly: summaryData?.yearly || []
+      };
+      
+      setAnalyticsData(combinedData);
     } catch (err) {
       console.error('Analytics data fetch error:', err);
-      setError(err.message);
+      setError(err.message || 'Veriler yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);
     }
@@ -63,14 +83,39 @@ const PopularItemsChart = () => {
 
   // Seçilen filtreye göre chart verisini güncelle
   useEffect(() => {
+    
     if (!analyticsData || !analyticsData[timeFilter]) {
+      setChartData({
+        labels: [],
+        datasets: [{
+          label: 'Satış Adedi',
+          data: [],
+          backgroundColor: [],
+          borderWidth: 1,
+        }]
+      });
       return;
     }
 
     const selectedData = analyticsData[timeFilter];
     
-    // En çok satan 5 ürünü al
+    // Veri array mi ve boş değil mi kontrol et
+    if (!Array.isArray(selectedData) || selectedData.length === 0) {
+      setChartData({
+        labels: [],
+        datasets: [{
+          label: 'Satış Adedi',
+          data: [],
+          backgroundColor: [],
+          borderWidth: 1,
+        }]
+      });
+      return;
+    }
+    
+    // En çok satan 5 ürünü al (totalQuantity'e göre sırala)
     const topProducts = selectedData
+      .filter(product => product && product.totalQuantity > 0) // Sadece quantity > 0 olanları al
       .sort((a, b) => b.totalQuantity - a.totalQuantity)
       .slice(0, 5);
 
@@ -96,7 +141,10 @@ const PopularItemsChart = () => {
       legend: {
         position: 'top',
         labels: {
-          color: colors.text
+          color: colors.text,
+          font: {
+            size: 12
+          }
         }
       },
       tooltip: {
@@ -106,6 +154,19 @@ const PopularItemsChart = () => {
             const value = context.parsed || 0;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+            
+            // Ürün detaylarını bul
+            const selectedData = analyticsData[timeFilter] || [];
+            const product = selectedData.find(p => p.productName === label);
+            
+            if (product) {
+              return [
+                `${label}: ${value} adet (${percentage}%)`,
+                `Toplam Gelir: ₺${product.totalRevenue?.toLocaleString() || 0}`,
+                `Sipariş Sayısı: ${product.orderCount || 0}`
+              ];
+            }
+            
             return `${label}: ${value} adet (${percentage}%)`;
           }
         }
@@ -259,14 +320,76 @@ const PopularItemsChart = () => {
 
         {chartData.labels.length === 0 ? (
           <div className="text-center" style={{ padding: '40px', color: colors.textSecondary }}>
-            {getFilterTitle()} veri bulunamadı
-          </div>
-        ) : (
-          <div className="chart-container popular-items-chart" style={{ maxWidth: '300px', margin: '0 auto', backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px', height: '300px', border: `2px solid ${colors.border}`, overflow: 'hidden' }}>
-            <div style={{ backgroundColor: colors.cardBackground, width: '100%', height: '100%' }}>
-              <Pie data={chartData} options={options} />
+            <div style={{ fontSize: '14px', marginBottom: '10px' }}>
+              {getFilterTitle()} en çok satan ürün verisi bulunamadı
+            </div>
+            <div style={{ fontSize: '12px', opacity: 0.8 }}>
+              Bu dönemde henüz satış verisi bulunmuyor veya API'den veri alınamadı.
             </div>
           </div>
+        ) : (
+          <>
+            <div className="chart-container popular-items-chart" style={{ maxWidth: '300px', margin: '0 auto', backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px', height: '300px', border: `2px solid ${colors.border}`, overflow: 'hidden' }}>
+              <div style={{ backgroundColor: colors.cardBackground, width: '100%', height: '100%' }}>
+                <Pie data={chartData} options={options} />
+              </div>
+            </div>
+
+            {/* Ürün Detay Tablosu */}
+            <div className="mt-3" style={{ backgroundColor: colors.surface, borderRadius: '8px', padding: '15px', border: `1px solid ${colors.border}` }}>
+              <h6 style={{ color: colors.text, fontSize: '14px', marginBottom: '10px' }}>
+                {getFilterTitle()} En Çok Satan Ürün Detayları
+              </h6>
+              <div className="table-responsive">
+                <table className="table table-sm" style={{ color: colors.text, fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: colors.cardBackground }}>
+                      <th style={{ color: colors.text, fontSize: '11px' }}>Ürün</th>
+                      <th style={{ color: colors.text, fontSize: '11px' }}>Adet</th>
+                      <th style={{ color: colors.text, fontSize: '11px' }}>Gelir</th>
+                      <th style={{ color: colors.text, fontSize: '11px' }}>Sipariş</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const selectedData = analyticsData[timeFilter] || [];
+                      const topProducts = selectedData
+                        .filter(product => product && product.totalQuantity > 0) // Sadece quantity > 0 olanları al
+                        .sort((a, b) => b.totalQuantity - a.totalQuantity)
+                        .slice(0, 5);
+                      
+                      if (topProducts.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan="4" style={{ color: colors.textSecondary, fontSize: '11px', textAlign: 'center' }}>
+                              Bu dönemde satış verisi bulunamadı
+                            </td>
+                          </tr>
+                        );
+                      }
+                      
+                      return topProducts.map((product, index) => (
+                        <tr key={product.productId || index} style={{ backgroundColor: colors.cardBackground }}>
+                          <td style={{ color: colors.text, fontSize: '11px', fontWeight: '500' }}>
+                            {product.productName}
+                          </td>
+                          <td style={{ color: colors.text, fontSize: '11px' }}>
+                            {product.totalQuantity?.toLocaleString() || 0}
+                          </td>
+                          <td style={{ color: colors.text, fontSize: '11px' }}>
+                            ₺{product.totalRevenue?.toLocaleString() || 0}
+                          </td>
+                          <td style={{ color: colors.text, fontSize: '11px' }}>
+                            {product.orderCount || 0}
+                          </td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
       </Card.Body>

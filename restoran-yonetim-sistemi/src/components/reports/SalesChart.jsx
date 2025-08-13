@@ -324,8 +324,10 @@ const SalesChart = () => {
     } else if (mode === 'monthly') {
       fetchYearlyMonthlyData();
     } else if (mode === 'dateRange') {
-      fetchDateRangeData();
+      // Clear date range data when switching to date range mode
+      setDateRangeData(null);
     }
+    // Removed automatic fetch for dateRange mode - now only triggered by Generate button
   }, [mode]);
 
   // Fetch data when year or month changes
@@ -339,12 +341,7 @@ const SalesChart = () => {
     }
   }, [selectedYear, selectedMonth, mode]);
 
-  // Fetch data when date range parameters change
-  useEffect(() => {
-    if (mode === 'dateRange') {
-      fetchDateRangeData();
-    }
-  }, [startDate, endDate, dateRangeReportType, mode]);
+  // Removed the useEffect that automatically fetched date range data when parameters changed
 
   // Dinamik günlük tarih oluşturma - Sadece API verilerini kullan
   const generateDailyLabels = (monthName, monthIndex, year) => {
@@ -767,6 +764,16 @@ const SalesChart = () => {
                 <option value="WEEKLY">Haftalık</option>
                 <option value="MONTHLY">Aylık</option>
               </Form.Select>
+              <Button
+                variant="primary"
+                onClick={() => fetchDateRangeData()}
+                disabled={!startDate || !endDate || loading}
+                className="sales-chart"
+                style={{ minWidth: '80px', fontSize: '0.85rem', padding: '4px 8px' }}
+                size="sm"
+              >
+                {loading ? 'Yükleniyor...' : 'Generate'}
+              </Button>
               <Button
                 variant="outline-secondary"
                 onClick={() => {

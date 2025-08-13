@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { TableContext } from '../../context/TableContext';
 import SalesChart from '../../components/reports/SalesChart';
 import PopularItemsChart from '../../components/reports/PopularItemsChart';
+import SalesByCategoryChart from '../../components/reports/SalesByCategoryChart';
 import IncomeExpenseTable from '../../components/reports/IncomeExpenseTable';
 import './ReportsPage.css';
 
@@ -67,6 +68,9 @@ const ReportsPage = () => {
                 </div>
                 <div className="chart-wrapper">
                     <PopularItemsChart />
+                </div>
+                <div className="chart-wrapper">
+                    <SalesByCategoryChart />
                 </div>
             </div>
 
