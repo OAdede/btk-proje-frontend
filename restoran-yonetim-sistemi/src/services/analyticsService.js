@@ -34,7 +34,7 @@ export const analyticsService = {
         }
     },
 
-    // Get daily sales summary
+    // Get daily sales summary with date parameter
     async getDailySalesSummary(date) {
         try {
             const token = localStorage.getItem('token');
@@ -42,7 +42,7 @@ export const analyticsService = {
 
             if (token) { headers['Authorization'] = `Bearer ${token}`; }
 
-            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/daily`, {
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/daily/${date}`, {
                 method: 'GET',
                 headers: headers
             });
@@ -55,14 +55,7 @@ export const analyticsService = {
             try {
                 const responseData = await response.json();
                 console.log('Daily sales summary loaded:', responseData);
-                
-                // API array döndürüyor, ilk elemanı al veya null döndür
-                if (Array.isArray(responseData) && responseData.length > 0) {
-                    return responseData[0]; // İlk daily sales raporunu döndür
-                } else {
-                    console.log('No daily sales data found in response');
-                    return null;
-                }
+                return responseData;
             } catch (jsonError) {
                 console.log('Response is not JSON, returning null');
                 return null;
@@ -73,15 +66,15 @@ export const analyticsService = {
         }
     },
 
-    // Get weekly sales summary
-    async getWeeklySalesSummary() {
+    // Get weekly sales summary with endDate parameter
+    async getWeeklySalesSummary(endDate) {
         try {
             const token = localStorage.getItem('token');
             const headers = { 'Accept': 'application/json' };
 
             if (token) { headers['Authorization'] = `Bearer ${token}`; }
 
-            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/weekly`, {
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/weekly/${endDate}`, {
                 method: 'GET',
                 headers: headers
             });
@@ -94,14 +87,7 @@ export const analyticsService = {
             try {
                 const responseData = await response.json();
                 console.log('Weekly sales summary loaded:', responseData);
-                
-                // API array döndürüyor, ilk elemanı al veya null döndür
-                if (Array.isArray(responseData) && responseData.length > 0) {
-                    return responseData[0]; // İlk weekly sales raporunu döndür
-                } else {
-                    console.log('No weekly sales data found in response');
-                    return null;
-                }
+                return responseData;
             } catch (jsonError) {
                 console.log('Response is not JSON, returning null');
                 return null;
@@ -112,15 +98,47 @@ export const analyticsService = {
         }
     },
 
-    // Get monthly sales summary
-    async getMonthlySalesSummary() {
+    // Get weekly sales data for multiple weeks (for chart display)
+    async getWeeklySalesData(endDate) {
         try {
             const token = localStorage.getItem('token');
             const headers = { 'Accept': 'application/json' };
 
             if (token) { headers['Authorization'] = `Bearer ${token}`; }
 
-            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/monthly`, {
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/weekly/${endDate}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Weekly sales data API error: ${response.status} ${response.statusText}`);
+                return null;
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Weekly sales data loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning null');
+                return null;
+            }
+        } catch (error) {
+            console.error('Weekly sales data service error:', error);
+            return null;
+        }
+    },
+
+    // Get monthly sales summary with year and month parameters
+    async getMonthlySalesSummary(year, month) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/monthly/${year}/${month}`, {
                 method: 'GET',
                 headers: headers
             });
@@ -133,14 +151,7 @@ export const analyticsService = {
             try {
                 const responseData = await response.json();
                 console.log('Monthly sales summary loaded:', responseData);
-                
-                // API array döndürüyor, ilk elemanı al veya null döndür
-                if (Array.isArray(responseData) && responseData.length > 0) {
-                    return responseData[0]; // İlk monthly sales raporunu döndür
-                } else {
-                    console.log('No monthly sales data found in response');
-                    return null;
-                }
+                return responseData;
             } catch (jsonError) {
                 console.log('Response is not JSON, returning null');
                 return null;
