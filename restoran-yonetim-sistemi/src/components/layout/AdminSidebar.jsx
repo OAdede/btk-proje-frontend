@@ -9,7 +9,7 @@ import { userService } from "../../services/userService";
 import { personnelService } from "../../services/personnelService";
 
 const AdminSidebar = () => {
-    const { logout, user } = useContext(AuthContext);
+    const { logout, user, updatePhone } = useContext(AuthContext);
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -376,16 +376,50 @@ const AdminSidebar = () => {
     };
 
     // Telefon doğrulama
-    const verifyPhone = () => {
-        // Simülasyon için rastgele kod oluştur ve kontrol et
-        const expectedCode = '123456'; // Sabit kod
+    const verifyPhone = async () => {
+        const expectedCode = '123456';
         if (phoneVerificationCode === expectedCode) {
-            setPhoneNumber(tempPhone);
-            localStorage.setItem('phoneNumber', tempPhone);
-            setShowPhoneVerification(false);
-            setTempPhone('');
-            setPhoneVerificationCode('');
-            alert('Telefon numarası başarıyla güncellendi!');
+            try {
+                const isNumeric = (val) => val !== undefined && val !== null && /^\d+$/.test(String(val));
+                const findUserIdByEmail = async (email) => {
+                    if (!email) return null;
+                    try {
+                        const [actives, inactives] = await Promise.all([
+                            personnelService.getActiveUsers(),
+                            personnelService.getInactiveUsers(),
+                        ]);
+                        const all = [...(actives || []), ...(inactives || [])];
+                        const found = all.find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+                        if (found?.id !== undefined) return found.id;
+                    } catch {}
+                    try {
+                        const all = await personnelService.getAllUsers();
+                        const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+                        if (found?.id !== undefined) return found.id;
+                    } catch {}
+                    return null;
+                };
+
+                let targetId = user?.userId;
+                if (!isNumeric(targetId)) {
+                    targetId = await findUserIdByEmail(user?.email);
+                }
+                if (!isNumeric(targetId)) throw new Error('Kullanıcı ID bulunamadı');
+
+                await userService.updateUserPhone(targetId, tempPhone);
+
+                setPhoneNumber(tempPhone);
+                localStorage.setItem('phoneNumber', tempPhone);
+                if (typeof updatePhone === 'function') {
+                    updatePhone(tempPhone);
+                }
+                setShowPhoneVerification(false);
+                setTempPhone('');
+                setPhoneVerificationCode('');
+                alert('Telefon numarası başarıyla güncellendi!');
+            } catch (e) {
+                alert(e.message || 'Telefon numarası güncellenemedi');
+            }
         } else {
             alert(`Yanlış doğrulama kodu! Doğru kod: ${expectedCode}`);
         }
@@ -1072,7 +1106,7 @@ const AdminSidebar = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value="Betül"
+                                        value={displayName || ''}
                                         disabled
                                         style={{
                                             background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
@@ -1103,7 +1137,7 @@ const AdminSidebar = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value="Admin"
+                                        value={displayRole || ''}
                                         disabled
                                         style={{
                                             background: isDarkMode ? '#3a3a3a' : '#f8f9fa',

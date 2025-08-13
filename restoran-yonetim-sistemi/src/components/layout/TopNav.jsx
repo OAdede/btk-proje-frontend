@@ -63,8 +63,25 @@ const TopNav = () => {
                 {user ? (
                     <>
                         <div className="user-info">
-                            <span className="user-name" style={{ color: colors.text }}>{user?.email}</span>
-                            <span className="user-role" style={{ color: colors.textSecondary }}>({user?.role})</span>
+                            {(() => {
+                                const storedName = localStorage.getItem('displayName');
+                                const storedRole = localStorage.getItem('displayRole');
+                                const resolvedName = user?.email || user?.name || storedName || '';
+                                const resolveRoleLabel = (r) => {
+                                    const val = String(r || '').toLowerCase();
+                                    if (val === 'admin') return 'Admin';
+                                    if (val === 'garson' || val === 'waiter') return 'Garson';
+                                    if (val === 'kasiyer' || val === 'cashier') return 'Kasiyer';
+                                    return r || '';
+                                };
+                                const resolvedRole = resolveRoleLabel(user?.role) || storedRole || '';
+                                return (
+                                    <>
+                                        <span className="user-name" style={{ color: colors.text }}>{resolvedName}</span>
+                                        <span className="user-role" style={{ color: colors.textSecondary }}>({resolvedRole})</span>
+                                    </>
+                                );
+                            })()}
                         </div>
                         <button className="logout-btn" onClick={handleLogout} style={{ background: colors.danger, color: 'white' }}>
                             Çıkış Yap

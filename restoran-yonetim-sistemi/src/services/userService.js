@@ -1,5 +1,5 @@
 // User API Service - Fetch user profile information
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
+const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || '/api';
 
 export const userService = {
   // Fetch user by ID
@@ -103,6 +103,56 @@ export const userService = {
       }
     } catch (error) {
       throw new Error(error.message || 'Profil fotoğrafı güncellenemedi.');
+    }
+  },
+
+  // Update user's phone number
+  async updateUserPhone(userId, phoneNumber) {
+    if (userId === undefined || userId === null) {
+      throw new Error('Geçersiz kullanıcı ID');
+    }
+    if (!phoneNumber || String(phoneNumber).trim().length === 0) {
+      throw new Error('Geçerli bir telefon numarası giriniz');
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/phone`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Telefon numarası güncellenemedi';
+        try {
+          const errorText = await response.text();
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } catch {
+            errorMessage = errorText || errorMessage;
+          }
+        } catch {}
+        throw new Error(errorMessage);
+      }
+
+      try {
+        const data = await response.json();
+        return data;
+      } catch {
+        return null;
+      }
+    } catch (error) {
+      throw new Error(error.message || 'Telefon numarası güncellenemedi.');
     }
   }
 };
