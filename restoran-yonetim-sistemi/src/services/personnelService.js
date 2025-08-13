@@ -27,13 +27,34 @@ export const personnelService = {
                 fullPersonnelData: personnelData
             });
             
-            // Create request data without photo (photo functionality removed)
+            // Generate a temporary strong password to satisfy backend validation
+            const generateTempPassword = () => {
+                const lower = 'abcdefghijklmnopqrstuvwxyz';
+                const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const nums = '0123456789';
+                const specials = '@$!%*?&';
+                const all = lower + upper + nums + specials;
+                const pick = (set) => set[Math.floor(Math.random() * set.length)];
+                // Ensure complexity: at least one from each
+                const chars = [pick(lower), pick(upper), pick(nums), pick(specials)];
+                // Fill remaining to length 12
+                for (let i = 0; i < 8; i++) chars.push(pick(all));
+                // Shuffle
+                for (let i = chars.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [chars[i], chars[j]] = [chars[j], chars[i]];
+                }
+                return chars.join('');
+            };
+            const tempPassword = generateTempPassword();
+
+            // Create request data with temporary password (user will set their own via email reset)
             const requestData = {
                 name: personnelData.name.trim(),
                 email: personnelData.email.trim(),
-                password: personnelData.password,
+                password: tempPassword,
                 phoneNumber: personnelData.phone.trim(),
-                photo: null, // No photo sent
+                photo: null,
                 createdAt: new Date().toISOString(),
                 roleName: roleName
             };
@@ -44,7 +65,9 @@ export const personnelService = {
                 phoneNumber: requestData.phoneNumber,
                 roleName: requestData.roleName,
                 originalRole: personnelData.role,
-                hasPhoto: false
+                hasPhoto: false,
+                includesPassword: true,
+                tempPasswordLength: tempPassword.length
             });
 
             const response = await fetch(`${API_BASE_URL}/auth/register`, {

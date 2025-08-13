@@ -29,18 +29,7 @@ export const validationUtils = {
       }
     }
 
-    // Password validation
-    if (!formData.password.trim()) {
-      errors.push("Şifre alanı zorunludur");
-    } else if (formData.password.length < 6) {
-      errors.push("Şifre en az 6 karakter olmalıdır");
-    } else {
-      // Password complexity validation
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
-      if (!passwordRegex.test(formData.password)) {
-        errors.push("Şifre en az bir küçük harf, bir büyük harf, bir rakam ve bir özel karakter içermelidir");
-      }
-    }
+    // Password validation removed: password will be set via email reset flow
 
     return {
       isValid: errors.length === 0,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { personnelService } from '../../services/personnelService';
 import { validationUtils } from '../../utils/validation';
+import { authService } from '../../services/authService';
 import './PersonelEkleme.css';
 
 const PersonelEkleme = () => {
@@ -10,7 +11,6 @@ const PersonelEkleme = () => {
     name: "",
     phone: "",
     email: "",
-    password: "",
     role: "waiter" // Default olarak waiter seçili
   });
   
@@ -198,7 +198,7 @@ const PersonelEkleme = () => {
          name: newPerson.name,
          phone: newPerson.phone,
          email: newPerson.email,
-         role: newPerson.role, // Keep the original role from form
+          role: newPerson.role, // Keep the original role from form
          photo: '/default-avatar.png',
          isActive: responseData.isActive !== undefined ? responseData.isActive : true
        };
@@ -213,9 +213,16 @@ const PersonelEkleme = () => {
         });
 
       setPersonnel([...personnel, newPersonWithId]);
+
+      // Send forgot-password email to the new user to set password
+      try {
+        await authService.requestPasswordReset(newPerson.email);
+      } catch (e) {
+        console.warn('Şifre belirleme e-postası gönderilemedi:', e?.message);
+      }
       
              // Reset form - default olarak waiter seçili
-       setNewPerson({ name: "", phone: "", email: "", password: "", role: "waiter" });
+       setNewPerson({ name: "", phone: "", email: "", role: "waiter" });
       setSuccess("Personel başarıyla eklendi!");
       
       // Clear success message after 3 seconds
@@ -338,14 +345,7 @@ const PersonelEkleme = () => {
               placeholder="E-posta"
               required
             />
-            <input
-              name="password"
-              type="password"
-              value={newPerson.password}
-              onChange={handleInputChange}
-              placeholder="Şifre (aA1@)"
-              required
-            />
+            {/* Şifre alanı kaldırıldı: kullanıcı mail ile gelen linkten şifre belirleyecek */}
                                       <select
                 name="role"
                 value={newPerson.role}
