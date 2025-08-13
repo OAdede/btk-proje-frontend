@@ -1,4 +1,4 @@
-/* Açık tema için tablo stilleri - Yeni mor paleti */
+/* Açık tema için tablo stilleri - Yeni mor paleti - Değişiklik yok */
 .light-theme .custom-table tbody tr {
   background-color: #CBC3E3 !important;
   color: #2D1B69 !important;
@@ -36,7 +36,7 @@
   word-break: break-word;
 }
 
-/* Koyu tema için tablo stilleri - Yeni renk paleti */
+/* Koyu tema için tablo stilleri - Tema renklerine uygun */
 .dark-theme .custom-table tbody tr {
   background-color: var(--tableRowBackground) !important;
   color: var(--text) !important;
