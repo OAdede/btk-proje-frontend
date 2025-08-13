@@ -500,7 +500,7 @@ const SalesChart = () => {
           mode === 'daily'
             ? 'Günlük Satışlar'
             : mode === 'weekly'
-              ? 'Haftalük Satışlar'
+              ? 'Haftalık Satışlar'
               : mode === 'monthly'
                 ? 'Aylık Satışlar'
                 : 'Yıllık Satışlar',
