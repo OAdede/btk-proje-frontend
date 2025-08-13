@@ -160,5 +160,43 @@ export const analyticsService = {
             console.error('Monthly sales service error:', error);
             return null;
         }
+    },
+
+    // Get sales data for custom date range
+    async getDateRangeSalesSummary(startDate, endDate, reportType) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const params = new URLSearchParams({
+                startDate: startDate,
+                endDate: endDate,
+                reportType: reportType
+            });
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/generate/date-range?${params}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Date range sales API error: ${response.status} ${response.statusText}`);
+                return null;
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Date range sales summary loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning null');
+                return null;
+            }
+        } catch (error) {
+            console.error('Date range sales service error:', error);
+            return null;
+        }
     }
 };

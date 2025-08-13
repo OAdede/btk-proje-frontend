@@ -42,7 +42,13 @@ const SalesChart = () => {
   const [weeklyData, setWeeklyData] = useState(null);
   const [dailyData, setDailyData] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
+  const [dateRangeData, setDateRangeData] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Date range state
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [dateRangeReportType, setDateRangeReportType] = useState('DAILY');
 
   // Format date to YYYY-MM-DD for API
   const formatDateForAPI = (date) => {
@@ -270,6 +276,45 @@ const SalesChart = () => {
     }
   };
 
+  // Fetch data for custom date range
+  const fetchDateRangeData = async () => {
+    if (!startDate || !endDate) {
+      setDateRangeData(null);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await analyticsService.getDateRangeSalesSummary(startDate, endDate, dateRangeReportType);
+      
+      if (data) {
+        // Process the date range data
+        const processedData = {
+          reportType: dateRangeReportType,
+          totalRevenue: data.totalRevenue || 0,
+          totalOrders: data.totalOrders || 0,
+          totalCustomers: data.totalCustomers || 0,
+          averageOrderValue: data.averageOrderValue || 0,
+          mostPopularItemName: data.mostPopularItemName || '',
+          leastPopularItemName: data.leastPopularItemName || '',
+          totalReservations: data.totalReservations || 0,
+          salesByCategory: data.salesByCategory || {},
+          employeePerformance: data.employeePerformance || {},
+          startDate: startDate,
+          endDate: endDate
+        };
+        setDateRangeData(processedData);
+      } else {
+        setDateRangeData(null);
+      }
+    } catch (error) {
+      console.error('Error fetching date range data:', error);
+      setDateRangeData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch data when mode changes
   useEffect(() => {
     if (mode === 'daily') {
@@ -278,6 +323,8 @@ const SalesChart = () => {
       fetchMonthlyWeeklyData();
     } else if (mode === 'monthly') {
       fetchYearlyMonthlyData();
+    } else if (mode === 'dateRange') {
+      fetchDateRangeData();
     }
   }, [mode]);
 
@@ -292,6 +339,13 @@ const SalesChart = () => {
     }
   }, [selectedYear, selectedMonth, mode]);
 
+  // Fetch data when date range parameters change
+  useEffect(() => {
+    if (mode === 'dateRange') {
+      fetchDateRangeData();
+    }
+  }, [startDate, endDate, dateRangeReportType, mode]);
+
   // Dinamik günlük tarih oluşturma - Sadece API verilerini kullan
   const generateDailyLabels = (monthName, monthIndex, year) => {
     const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -301,8 +355,8 @@ const SalesChart = () => {
     if (dailyData && dailyData.reportType === 'DAILY' && dailyData.dailyBreakdown) {
       return dailyData.dailyBreakdown.map((dayData, index) => {
         const date = new Date(dayData.date);
-        const day = date.getDate();
-        const monthShort = monthShortNames[date.getMonth()];
+      const day = date.getDate();
+      const monthShort = monthShortNames[date.getMonth()];
         return `${dayNames[index]} (${day} ${monthShort})`;
       });
     }
@@ -357,7 +411,7 @@ const SalesChart = () => {
   const generateMonthlyLabels = (year) => {
     const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
                        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-
+    
     // Sadece API'den gelen veriyi kullan
     if (monthlyData && monthlyData.reportType === 'MONTHLY' && monthlyData.monthlyBreakdown) {
       return monthlyData.monthlyBreakdown.map((monthData) => {
@@ -469,13 +523,70 @@ const SalesChart = () => {
     ? dataSets[mode][selectedYear]
     : mode === 'yearly'
     ? dataSets[mode]
+    : mode === 'dateRange'
+    ? (() => {
+        // Date range için seçilen rapor tipine göre veri oluştur
+        if (!dateRangeData) {
+          return { labels: [], data: [] };
+        }
+        
+        if (dateRangeReportType === 'DAILY' && dateRangeData.dailyBreakdown) {
+          return {
+            labels: dateRangeData.dailyBreakdown.map((day, index) => {
+              const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+              const monthShortNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+              const date = new Date(day.date);
+              const dayNumber = date.getDate();
+              const monthShort = monthShortNames[date.getMonth()];
+              return `${dayNames[index]} (${dayNumber} ${monthShort})`;
+            }),
+            data: dateRangeData.dailyBreakdown.map(day => day.revenue)
+          };
+        } else if (dateRangeReportType === 'WEEKLY' && dateRangeData.weeklyBreakdown) {
+          return {
+            labels: dateRangeData.weeklyBreakdown.map((week) => {
+              const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
+                                 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+              const endDate = new Date(week.endDate);
+              const day = endDate.getDate();
+              const monthShort = monthNames[endDate.getMonth()];
+              return `${week.week}. Hafta (${day} ${monthShort})`;
+            }),
+            data: dateRangeData.weeklyBreakdown.map(week => week.revenue)
+          };
+        } else if (dateRangeReportType === 'MONTHLY' && dateRangeData.monthlyBreakdown) {
+          return {
+            labels: dateRangeData.monthlyBreakdown.map((month) => {
+              const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+              const monthIndex = month.month - 1;
+              return monthNames[monthIndex];
+            }),
+            data: dateRangeData.monthlyBreakdown.map(month => month.revenue)
+          };
+        } else {
+          // Eğer breakdown verisi yoksa toplam geliri göster
+          return { 
+            labels: ['Toplam Gelir'], 
+            data: [dateRangeData.totalRevenue || 0] 
+          };
+        }
+      })()
     : dataSets[mode][selectedMonth];
 
   const chartData = {
     labels: currentData.labels,
     datasets: [
       {
-        label: `Satışlar (${mode === 'daily' ? 'Günlük' : mode === 'weekly' ? 'Haftalık' : mode === 'monthly' ? 'Aylık' : 'Yıllık'})`,
+        label: `Satışlar (${
+          mode === 'daily' ? 'Günlük' : 
+          mode === 'weekly' ? 'Haftalık' : 
+          mode === 'monthly' ? 'Aylık' : 
+          mode === 'dateRange' ? (
+            dateRangeReportType === 'DAILY' ? 'Günlük' : 
+            dateRangeReportType === 'WEEKLY' ? 'Haftalık' : 'Aylık'
+          ) : 'Yıllık'
+        })`,
         data: currentData.data,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.4,
@@ -500,26 +611,35 @@ const SalesChart = () => {
           mode === 'daily'
             ? 'Günlük Satışlar'
             : mode === 'weekly'
-              ? 'Haftalık Satışlar'
+               ? 'Haftalık Satışlar'
               : mode === 'monthly'
                 ? 'Aylık Satışlar'
+                : mode === 'dateRange'
+                  ? `Tarih Aralığı Satışları (${startDate} - ${endDate}) - ${
+                      dateRangeReportType === 'DAILY' ? 'Günlük' : 
+                      dateRangeReportType === 'WEEKLY' ? 'Haftalık' : 'Aylık'
+                    }`
                 : 'Yıllık Satışlar',
       },
     },
     scales: {
       x: {
+        display: currentData.labels && currentData.labels.length > 0,
         ticks: {
           color: colors.text
         },
         grid: {
+          display: currentData.labels && currentData.labels.length > 0,
           color: colors.isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         }
       },
       y: {
+        display: currentData.data && currentData.data.length > 0 && currentData.data.some(val => val > 0),
         ticks: {
           color: colors.text
         },
         grid: {
+          display: currentData.data && currentData.data.length > 0 && currentData.data.some(val => val > 0),
           color: colors.isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         }
       }
@@ -543,34 +663,45 @@ const SalesChart = () => {
 
   return (
     <Card className="mb-4 sales-chart" style={{ backgroundColor: colors.cardBackground, color: colors.text }}>
-      <Card.Body>
-        <Card.Title className="sales-chart" style={{ color: colors.text }}>Satış Grafiği</Card.Title>
+      <Card.Body style={{ padding: '15px', overflow: 'hidden' }}>
+        <Card.Title className="sales-chart mb-2" style={{ color: colors.text, fontSize: '1.2rem' }}>Satış Grafiği</Card.Title>
 
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <ButtonGroup className="sales-chart">
+        <div className="d-flex justify-content-between align-items-center mb-2" style={{ flexWrap: 'wrap', gap: '8px' }}>
+          <ButtonGroup className="sales-chart" size="sm">
             <Button
               variant={mode === 'daily' ? 'primary' : 'outline-primary'}
               onClick={() => setMode('daily')}
+              style={{ fontSize: '0.85rem', padding: '4px 8px' }}
             >
               Günlük
             </Button>
             <Button
               variant={mode === 'weekly' ? 'primary' : 'outline-primary'}
               onClick={() => setMode('weekly')}
+              style={{ fontSize: '0.85rem', padding: '4px 8px' }}
             >
               Haftalık
             </Button>
             <Button
               variant={mode === 'monthly' ? 'primary' : 'outline-primary'}
               onClick={() => setMode('monthly')}
+              style={{ fontSize: '0.85rem', padding: '4px 8px' }}
             >
               Aylık
             </Button>
             <Button
               variant={mode === 'yearly' ? 'primary' : 'outline-primary'}
               onClick={() => setMode('yearly')}
+              style={{ fontSize: '0.85rem', padding: '4px 8px' }}
             >
               Yıllık
+            </Button>
+            <Button
+              variant={mode === 'dateRange' ? 'primary' : 'outline-primary'}
+              onClick={() => setMode('dateRange')}
+              style={{ fontSize: '0.85rem', padding: '4px 8px' }}
+            >
+              Tarih Aralığı
             </Button>
           </ButtonGroup>
 
@@ -579,7 +710,8 @@ const SalesChart = () => {
               className="sales-chart"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{ width: 'auto', minWidth: '150px' }}
+              style={{ width: 'auto', minWidth: '120px', fontSize: '0.85rem' }}
+              size="sm"
             >
               {months.map((month) => (
                 <option key={month.value} value={month.value}>
@@ -594,7 +726,8 @@ const SalesChart = () => {
               className="sales-chart"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              style={{ width: 'auto', minWidth: '150px' }}
+              style={{ width: 'auto', minWidth: '120px', fontSize: '0.85rem' }}
+              size="sm"
             >
               {years.map((year) => (
                 <option key={year.value} value={year.value}>
@@ -603,174 +736,292 @@ const SalesChart = () => {
               ))}
             </Form.Select>
           )}
+
+          {mode === 'dateRange' && (
+            <div className="d-flex gap-1 align-items-center" style={{ flexWrap: 'wrap', gap: '4px' }}>
+              <Form.Control
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{ width: 'auto', minWidth: '120px', fontSize: '0.85rem' }}
+                className="sales-chart"
+                size="sm"
+              />
+              <span style={{ color: colors.text, fontSize: '0.85rem' }}>-</span>
+              <Form.Control
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{ width: 'auto', minWidth: '120px', fontSize: '0.85rem' }}
+                className="sales-chart"
+                size="sm"
+              />
+              <Form.Select
+                className="sales-chart"
+                value={dateRangeReportType}
+                onChange={(e) => setDateRangeReportType(e.target.value)}
+                style={{ width: 'auto', minWidth: '90px', fontSize: '0.85rem' }}
+                size="sm"
+              >
+                <option value="DAILY">Günlük</option>
+                <option value="WEEKLY">Haftalık</option>
+                <option value="MONTHLY">Aylık</option>
+              </Form.Select>
+              <Button
+                variant="outline-secondary"
+                onClick={() => {
+                  setMode('daily');
+                  setStartDate('');
+                  setEndDate('');
+                  setDateRangeData(null);
+                }}
+                className="sales-chart"
+                style={{ minWidth: '50px', fontSize: '0.85rem', padding: '4px 6px' }}
+                size="sm"
+              >
+                Geri
+              </Button>
+            </div>
+          )}
         </div>
 
         {loading && (
-          <div className="text-center mb-3">
-            <div className="spinner-border text-primary" role="status">
+          <div className="text-center mb-2">
+            <div className="spinner-border spinner-border-sm text-primary" role="status">
               <span className="visually-hidden">Yükleniyor...</span>
             </div>
           </div>
         )}
 
-        <div className="chart-container sales-chart" style={{ backgroundColor: colors.cardBackground, padding: '10px', borderRadius: '8px', height: '400px', border: `2px solid ${colors.border}`, overflow: 'hidden' }}>
+        <div className="chart-container sales-chart" style={{ backgroundColor: colors.cardBackground, padding: '8px', borderRadius: '6px', height: '280px', border: `1px solid ${colors.border}`, overflow: 'hidden' }}>
           <div style={{ backgroundColor: colors.cardBackground, width: '100%', height: '100%' }}>
             {(mode === 'daily' && (!dailyData || !dailyData.dailyBreakdown || dailyData.dailyBreakdown.length === 0)) ||
-             (mode === 'monthly' && (!monthlyData || !monthlyData.monthlyBreakdown || monthlyData.monthlyBreakdown.length === 0)) ? (
-              <div className="d-flex align-items-center justify-content-center h-100">
-                <div className="text-center">
-                  <div style={{ color: colors.textSecondary, fontSize: '1.1rem' }}>
-                    {loading ? 'Veriler yükleniyor...' : 
-                     mode === 'daily' ? 'Bu tarih için günlük veri bulunamadı' :
-                     mode === 'monthly' ? 'Bu yıl için aylık veri bulunamadı' : 'Veri bulunamadı'}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <Line data={chartData} options={options} />
-            )}
-          </div>
-        </div>
-
-        {dailyData && mode === 'daily' && (
-          <div className="mt-3 p-3" style={{ backgroundColor: colors.cardBackground, borderRadius: '8px', border: `1px solid ${colors.border}` }}>
-            <h6 style={{ color: colors.text }}>Günlük Özet</h6>
-            <div className="row">
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Gelir</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{dailyData.totalRevenue?.toLocaleString()}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Sipariş</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>{dailyData.totalOrders}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Ortalama Sipariş</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{dailyData.totalOrders > 0 ? (dailyData.totalRevenue / dailyData.totalOrders).toFixed(2) : '0.00'}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Müşteri</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>{dailyData.totalCustomers}</div>
-              </div>
-            </div>
-            
-            {dailyData.dailyBreakdown && dailyData.dailyBreakdown.length > 0 && (
-              <div className="mt-3">
-                <h6 style={{ color: colors.text }}>Günlük Detay</h6>
-                <div className="row">
-                  {dailyData.dailyBreakdown.map((day, index) => {
-                    const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-                    const monthShortNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-                    const date = new Date(day.date);
-                    const dayNumber = date.getDate();
-                    const monthShort = monthShortNames[date.getMonth()];
-                    return (
-                      <div key={index} className="col-md-3 mb-2">
-                        <small style={{ color: colors.textSecondary }}>{dayNames[index]} ({dayNumber} {monthShort})</small>
-                        <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{day.revenue?.toLocaleString()}</div>
-                        <small style={{ color: colors.textSecondary }}>{day.orders} sipariş</small>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {weeklyData && mode === 'weekly' && (
-          <div className="mt-3 p-3" style={{ backgroundColor: colors.cardBackground, borderRadius: '8px', border: `1px solid ${colors.border}` }}>
-            <h6 style={{ color: colors.text }}>Haftalık Özet</h6>
-            <div className="row">
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Gelir</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{weeklyData.totalRevenue?.toLocaleString()}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Sipariş</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>{weeklyData.totalOrders}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Ortalama Sipariş</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{weeklyData.totalOrders > 0 ? (weeklyData.totalRevenue / weeklyData.totalOrders).toFixed(2) : '0.00'}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Müşteri</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>{weeklyData.totalCustomers}</div>
-              </div>
-            </div>
-            
-                         {weeklyData.weeklyBreakdown && weeklyData.weeklyBreakdown.length > 0 && (
-               <div className="mt-3">
-                 <h6 style={{ color: colors.text }}>Haftalık Detay</h6>
-                 <div className="row">
-                   {weeklyData.weeklyBreakdown.map((week, index) => {
-                     const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
-                                        'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-                     const endDate = new Date(week.endDate);
-                     const day = endDate.getDate();
-                     const monthShort = monthNames[endDate.getMonth()];
-                     return (
-                       <div key={index} className="col-md-3 mb-2">
-                         <small style={{ color: colors.textSecondary }}>{week.week}. Hafta ({day} {monthShort})</small>
-                         <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{week.revenue?.toLocaleString()}</div>
-                         <small style={{ color: colors.textSecondary }}>{week.orders} sipariş</small>
-                       </div>
-                     );
-                   })}
+              (mode === 'monthly' && (!monthlyData || !monthlyData.monthlyBreakdown || monthlyData.monthlyBreakdown.length === 0)) ||
+              (mode === 'dateRange' && (!dateRangeData || !startDate || !endDate)) ||
+              (mode === 'dateRange' && dateRangeData && (!dateRangeData.totalRevenue || dateRangeData.totalRevenue === 0)) ? (
+               <div className="d-flex align-items-center justify-content-center h-100">
+                 <div className="text-center">
+                   <div style={{ color: colors.textSecondary, fontSize: '1rem' }}>
+                     {loading ? 'Veriler yükleniyor...' : 
+                      mode === 'daily' ? 'Bu tarih için günlük veri bulunamadı' :
+                      mode === 'monthly' ? 'Bu yıl için aylık veri bulunamadı' :
+                      mode === 'dateRange' ? 'Lütfen tarih aralığı seçin' : 'Veri bulunamadı'}
+                   </div>
                  </div>
                </div>
+             ) : (
+               <Line data={chartData} options={options} />
              )}
-          </div>
-        )}
+           </div>
+         </div>
 
-        {monthlyData && mode === 'monthly' && (
-          <div className="mt-3 p-3" style={{ backgroundColor: colors.cardBackground, borderRadius: '8px', border: `1px solid ${colors.border}` }}>
-            <h6 style={{ color: colors.text }}>Aylık Özet</h6>
-            <div className="row">
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Gelir</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{monthlyData.totalRevenue?.toLocaleString()}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Sipariş</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>{monthlyData.totalOrders}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Ortalama Sipariş</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{monthlyData.totalOrders > 0 ? (monthlyData.totalRevenue / monthlyData.totalOrders).toFixed(2) : '0.00'}</div>
-              </div>
-              <div className="col-md-3">
-                <small style={{ color: colors.textSecondary }}>Toplam Müşteri</small>
-                <div style={{ color: colors.text, fontWeight: 'bold' }}>{monthlyData.totalCustomers}</div>
-              </div>
-            </div>
-            
-                         {monthlyData.monthlyBreakdown && monthlyData.monthlyBreakdown.length > 0 && (
-               <div className="mt-3">
-                 <h6 style={{ color: colors.text }}>Aylık Detay</h6>
-                 <div className="row">
-                   {monthlyData.monthlyBreakdown.map((month, index) => {
-                     const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
-                                        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-                     // Gerçek ay numarasını kullan (1-12)
-                     const monthIndex = month.month - 1; // Array index için 0-11
-                     return (
-                       <div key={index} className="col-md-3 mb-2">
-                         <small style={{ color: colors.textSecondary }}>{monthNames[monthIndex]}</small>
-                         <div style={{ color: colors.text, fontWeight: 'bold' }}>₺{month.revenue?.toLocaleString()}</div>
-                         <small style={{ color: colors.textSecondary }}>{month.orders} sipariş</small>
-                       </div>
-                     );
-                   })}
+         <div style={{ maxHeight: '200px', overflow: 'hidden' }}>
+           {dailyData && mode === 'daily' && (
+             <div className="mt-2 p-2" style={{ backgroundColor: colors.cardBackground, borderRadius: '6px', border: `1px solid ${colors.border}` }}>
+               <h6 style={{ color: colors.text, fontSize: '0.95rem', marginBottom: '8px' }}>Günlük Özet</h6>
+               <div className="row g-2">
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Gelir</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{dailyData.totalRevenue?.toLocaleString()}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dailyData.totalOrders}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Ortalama Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{dailyData.totalOrders > 0 ? (dailyData.totalRevenue / dailyData.totalOrders).toFixed(2) : '0.00'}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Müşteri</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dailyData.totalCustomers}</div>
                  </div>
                </div>
-             )}
-          </div>
-        )}
-      </Card.Body>
-    </Card>
-  );
+               
+               {dailyData.dailyBreakdown && dailyData.dailyBreakdown.length > 0 && (
+                 <div className="mt-2">
+                   <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Günlük Detay</h6>
+                   <div className="row g-1">
+                     {dailyData.dailyBreakdown.map((day, index) => {
+                       const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+                       const monthShortNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+                       const date = new Date(day.date);
+                       const dayNumber = date.getDate();
+                       const monthShort = monthShortNames[date.getMonth()];
+                       return (
+                         <div key={index} className="col-md-3 col-6 mb-1">
+                           <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>{dayNames[index]} ({dayNumber} {monthShort})</small>
+                           <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.8rem' }}>₺{day.revenue?.toLocaleString()}</div>
+                           <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>{day.orders} sipariş</small>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+             </div>
+           )}
+
+           {weeklyData && mode === 'weekly' && (
+             <div className="mt-2 p-2" style={{ backgroundColor: colors.cardBackground, borderRadius: '6px', border: `1px solid ${colors.border}` }}>
+               <h6 style={{ color: colors.text, fontSize: '0.95rem', marginBottom: '8px' }}>Haftalık Özet</h6>
+               <div className="row g-2">
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Gelir</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{weeklyData.totalRevenue?.toLocaleString()}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{weeklyData.totalOrders}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Ortalama Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{weeklyData.totalOrders > 0 ? (weeklyData.totalRevenue / weeklyData.totalOrders).toFixed(2) : '0.00'}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Müşteri</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{weeklyData.totalCustomers}</div>
+                 </div>
+               </div>
+               
+               {weeklyData.weeklyBreakdown && weeklyData.weeklyBreakdown.length > 0 && (
+                 <div className="mt-2">
+                   <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Haftalık Detay</h6>
+                   <div className="row g-1">
+                     {weeklyData.weeklyBreakdown.map((week, index) => {
+                       const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
+                                          'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+                       const endDate = new Date(week.endDate);
+                       const day = endDate.getDate();
+                       const monthShort = monthNames[endDate.getMonth()];
+                       return (
+                         <div key={index} className="col-md-3 col-6 mb-1">
+                           <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>{week.week}. Hafta ({day} {monthShort})</small>
+                           <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.8rem' }}>₺{week.revenue?.toLocaleString()}</div>
+                           <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>{week.orders} sipariş</small>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+             </div>
+           )}
+
+           {monthlyData && mode === 'monthly' && (
+             <div className="mt-2 p-2" style={{ backgroundColor: colors.cardBackground, borderRadius: '6px', border: `1px solid ${colors.border}` }}>
+               <h6 style={{ color: colors.text, fontSize: '0.95rem', marginBottom: '8px' }}>Aylık Özet</h6>
+               <div className="row g-2">
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Gelir</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{monthlyData.totalRevenue?.toLocaleString()}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{monthlyData.totalOrders}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Ortalama Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{monthlyData.totalOrders > 0 ? (monthlyData.totalRevenue / monthlyData.totalOrders).toFixed(2) : '0.00'}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Müşteri</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{monthlyData.totalCustomers}</div>
+                 </div>
+               </div>
+               
+               {monthlyData.monthlyBreakdown && monthlyData.monthlyBreakdown.length > 0 && (
+                 <div className="mt-2">
+                   <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Aylık Detay</h6>
+                   <div className="row g-1">
+                     {monthlyData.monthlyBreakdown.map((month, index) => {
+                       const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                                          'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+                       // Gerçek ay numarasını kullan (1-12)
+                       const monthIndex = month.month - 1; // Array index için 0-11
+                       return (
+                         <div key={index} className="col-md-3 col-6 mb-1">
+                           <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>{monthNames[monthIndex]}</small>
+                           <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.8rem' }}>₺{month.revenue?.toLocaleString()}</div>
+                           <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>{month.orders} sipariş</small>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+             </div>
+           )}
+
+           {dateRangeData && mode === 'dateRange' && (
+             <div className="mt-2 p-2" style={{ backgroundColor: colors.cardBackground, borderRadius: '6px', border: `1px solid ${colors.border}` }}>
+               <h6 style={{ color: colors.text, fontSize: '0.95rem', marginBottom: '8px' }}>Tarih Aralığı Özet ({dateRangeData.startDate} - {dateRangeData.endDate})</h6>
+               <div className="row g-2">
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Gelir</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{dateRangeData.totalRevenue?.toLocaleString()}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dateRangeData.totalOrders}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Ortalama Sipariş</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>₺{dateRangeData.averageOrderValue?.toFixed(2)}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Müşteri</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dateRangeData.totalCustomers}</div>
+                 </div>
+               </div>
+               
+               <div className="row g-2 mt-2">
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>En Popüler Ürün</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dateRangeData.mostPopularItemName}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>En Az Popüler Ürün</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dateRangeData.leastPopularItemName}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Toplam Rezervasyon</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>{dateRangeData.totalReservations}</div>
+                 </div>
+                 <div className="col-md-3">
+                   <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Rapor Tipi</small>
+                   <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>
+                     {dateRangeData.reportType === 'DAILY' ? 'Günlük' : 
+                      dateRangeData.reportType === 'WEEKLY' ? 'Haftalık' : 'Aylık'}
+                   </div>
+                 </div>
+               </div>
+
+               {dateRangeData.salesByCategory && Object.keys(dateRangeData.salesByCategory).length > 0 && (
+                 <div className="mt-2">
+                   <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Kategori Bazında Satışlar</h6>
+                   <div className="row g-1">
+                     {Object.entries(dateRangeData.salesByCategory).map(([category, amount], index) => (
+                       <div key={index} className="col-md-3 col-6 mb-1">
+                         <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>
+                           {category === 'drinks' ? 'İçecekler' : 
+                            category === 'main_dishes' ? 'Ana Yemekler' : 
+                            category === 'desserts' ? 'Tatlılar' : 
+                            category === 'appetizers' ? 'Başlangıçlar' : category}
+                         </small>
+                         <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.8rem' }}>₺{parseFloat(amount).toLocaleString()}</div>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+             </div>
+           )}
+         </div>
+       </Card.Body>
+     </Card>
+   );
 };
 
 export default SalesChart;
+
