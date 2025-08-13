@@ -107,7 +107,7 @@
 /* Genel chart responsive stilleri */
 .popular-items-chart {
   width: 100%;
-  overflow-x: auto;
+  /* overflow-x: auto; - Gereksiz scroll bar kaldırıldı */
 }
 
 .popular-items-chart .card {

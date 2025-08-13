@@ -236,7 +236,7 @@
 /* Genel chart responsive stilleri */
 .sales-chart {
   width: 100%;
-  overflow-x: auto;
+  /* overflow-x: auto; - Gereksiz scroll bar kaldırıldı */
 }
 
 .sales-chart .card {
