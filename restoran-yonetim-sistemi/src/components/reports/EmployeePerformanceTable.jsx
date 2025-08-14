@@ -18,22 +18,30 @@ const EmployeePerformanceTable = () => {
       setIsLoading(true);
       setError(null);
       
-      // Use fallback method since the new endpoint has issues
-      const allDailyData = await analyticsService.getAllDailySalesSummaries();
-      const today = new Date().toISOString().split('T')[0];
-      const todayData = allDailyData.find(data => data.reportDate === today);
+      // Get employee performance from monthly sales summaries endpoint
+      const allMonthlyData = await analyticsService.getAllMonthlySalesSummaries();
       
-      if (todayData && todayData.employeePerformance) {
+      // Find the most recent data with employee performance
+      const recentData = allMonthlyData.find(data => {
+        if (!data.employeePerformance) return false;
+        // Skip malformed data
+        if (typeof data.employeePerformance === 'string' && data.employeePerformance === '[object Object]') {
+          return false;
+        }
+        return true;
+      });
+      
+      if (recentData && recentData.employeePerformance) {
         try {
           // Handle different data formats
           let parsedPerformance;
-          if (typeof todayData.employeePerformance === 'string') {
+          if (typeof recentData.employeePerformance === 'string') {
             // Try to parse as JSON first
             try {
-              parsedPerformance = JSON.parse(todayData.employeePerformance);
+              parsedPerformance = JSON.parse(recentData.employeePerformance);
             } catch (jsonError) {
               // If it's "[object Object]", the data is malformed, skip it
-              if (todayData.employeePerformance === '[object Object]') {
+              if (recentData.employeePerformance === '[object Object]') {
                 console.log('Employee performance data is malformed, skipping');
                 setPerformanceData(null);
                 return;
@@ -43,7 +51,7 @@ const EmployeePerformanceTable = () => {
             }
           } else {
             // It's already an object
-            parsedPerformance = todayData.employeePerformance;
+            parsedPerformance = recentData.employeePerformance;
           }
           setPerformanceData(parsedPerformance);
         } catch (parseError) {
@@ -51,46 +59,7 @@ const EmployeePerformanceTable = () => {
           setError('Çalışan performans verisi işlenirken hata oluştu');
         }
       } else {
-        // Try to find any recent data with employee performance
-        const recentData = allDailyData.find(data => {
-          if (!data.employeePerformance) return false;
-          // Skip malformed data
-          if (typeof data.employeePerformance === 'string' && data.employeePerformance === '[object Object]') {
-            return false;
-          }
-          return true;
-        });
-        
-        if (recentData) {
-          try {
-            // Handle different data formats
-            let parsedPerformance;
-            if (typeof recentData.employeePerformance === 'string') {
-              // Try to parse as JSON first
-              try {
-                parsedPerformance = JSON.parse(recentData.employeePerformance);
-              } catch (jsonError) {
-                // If it's "[object Object]", the data is malformed, skip it
-                if (recentData.employeePerformance === '[object Object]') {
-                  console.log('Recent employee performance data is malformed, skipping');
-                  setPerformanceData(null);
-                  return;
-                } else {
-                  throw jsonError;
-                }
-              }
-            } else {
-              // It's already an object
-              parsedPerformance = recentData.employeePerformance;
-            }
-            setPerformanceData(parsedPerformance);
-          } catch (parseError) {
-            console.error('Failed to parse recent employee performance data:', parseError);
-            setPerformanceData(null);
-          }
-        } else {
-          setPerformanceData(null);
-        }
+        setPerformanceData(null);
       }
     } catch (err) {
       console.error('Performance data fetch error:', err);
