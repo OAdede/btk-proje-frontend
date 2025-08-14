@@ -1,5 +1,5 @@
 :root {
-  /* Karanlık mod için CSS değişkenleri */
+  /* Karanlık mod için CSS değişkenleri - Mor Palet */
   --primary-bg: #473653;
   --secondary-bg: #32263A;
   --text-color: #ffffff;
@@ -8,17 +8,17 @@
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
-  --info: #60a5fa;
-  --button-edit: #fbbf24;
+  --info: #A294F9;
+  --button-edit: #A294F9;
   --button-delete: #f87171;
   --button-add: #4ade80;
   --border-radius: 8px;
   --shadow: rgba(50, 38, 58, 0.3) 0px 4px 12px;
   --modal-input-bg: #513653;
-  --border-color: #53364D;
-  --hover-bg: #53364D;
+  --border-color: #473653;
+  --hover-bg: #513653;
   --card-bg: #513653;
-  --accent-bg: #53364D;
+  --accent-bg: #32263A;
 }
 
 /* Karanlık mod için ek optimizasyonlar */
@@ -31,38 +31,38 @@ body.dark-theme {
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
-  --info: #60a5fa;
-  --button-edit: #fbbf24;
+  --info: #A294F9;
+  --button-edit: #A294F9;
   --button-delete: #f87171;
   --button-add: #4ade80;
   --shadow: rgba(50, 38, 58, 0.3) 0px 4px 12px;
   --modal-input-bg: #513653;
-  --border-color: #53364D;
-  --hover-bg: #53364D;
+  --border-color: #473653;
+  --hover-bg: #513653;
   --card-bg: #513653;
-  --accent-bg: #53364D;
+  --accent-bg: #32263A;
 }
 
-/* Açık tema için CSS değişkenleri */
+/* Açık tema için CSS değişkenleri - Mor Palet */
 body.light-theme {
-  --primary-bg: #ffffff;
-  --secondary-bg: #f0f0f0;
-  --text-color: #333333;
-  --text-secondary: #666666;
-  --text-muted: #999999;
+  --primary-bg: #F5EFFF;
+  --secondary-bg: #E5D9F2;
+  --text-color: #513653;
+  --text-secondary: #513653;
+  --text-muted: #513653;
   --success: #28a745;
   --warning: #ffc107;
   --danger: #dc3545;
-  --info: #007bff;
-  --button-edit: #ffc107;
+  --info: #A294F9;
+  --button-edit: #A294F9;
   --button-delete: #dc3545;
   --button-add: #28a745;
-  --shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
-  --modal-input-bg: #e5e5f0;
-  --border-color: #ced4da;
-  --hover-bg: #e9ecef;
+  --shadow: rgba(161, 148, 249, 0.1) 0px 4px 12px;
+  --modal-input-bg: #E5D9F2;
+  --border-color: #CDC1FF;
+  --hover-bg: #CDC1FF;
   --card-bg: #ffffff;
-  --accent-bg: #e9ecef;
+  --accent-bg: #E5D9F2;
 }
 
 body {
