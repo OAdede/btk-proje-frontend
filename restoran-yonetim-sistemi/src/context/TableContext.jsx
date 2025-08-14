@@ -353,22 +353,30 @@ export function TableProvider({ children }) {
                 });
             }
 
-            for (const [id, item] of Object.entries(finalItems)) {
-                const recipe = findProductRecipe(id);
-                for (const ingredient of recipe) {
-                    const movement = {
-                        id: 0,
-                        stockId: ingredient.ingredientId,
-                        change: -(ingredient.quantity * item.count),
-                        reason: "ORDER",
-                        note: "Sipariş",
-                        timestamp: new Date().toISOString()
-                    };
-                    await apiCall('/stock-movements', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(movement)
-                    });
+            // Sadece admin rolleri stok hareketi oluşturabilir
+            {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const roleInfo = token ? getRoleInfoFromToken(token) : {};
+                const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
+                if (isAdmin) {
+                    for (const [id, item] of Object.entries(finalItems)) {
+                        const recipe = findProductRecipe(id);
+                        for (const ingredient of recipe) {
+                            const movement = {
+                                id: 0,
+                                stockId: ingredient.ingredientId,
+                                change: -(ingredient.quantity * item.count),
+                                reason: "ORDER",
+                                note: "Sipariş",
+                                timestamp: new Date().toISOString()
+                            };
+                            await apiCall('/stock-movements', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(movement)
+                            });
+                        }
+                    }
                 }
             }
 
@@ -390,22 +398,30 @@ export function TableProvider({ children }) {
                 method: 'POST',
             });
 
-            for (const item of Object.values(orderToCancel.items)) {
-                const recipe = findProductRecipe(item.id);
-                for (const ingredient of recipe) {
-                    const movement = {
-                        id: 0,
-                        stockId: ingredient.ingredientId,
-                        change: ingredient.quantity * item.count,
-                        reason: "CANCELLED_ORDER",
-                        note: "Sipariş İptali",
-                        timestamp: new Date().toISOString()
-                    };
-                    await apiCall('/stock-movements', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(movement)
-                    });
+            // Sadece admin rolleri stok iade hareketi oluşturabilir
+            {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const roleInfo = token ? getRoleInfoFromToken(token) : {};
+                const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
+                if (isAdmin) {
+                    for (const item of Object.values(orderToCancel.items)) {
+                        const recipe = findProductRecipe(item.id);
+                        for (const ingredient of recipe) {
+                            const movement = {
+                                id: 0,
+                                stockId: ingredient.ingredientId,
+                                change: ingredient.quantity * item.count,
+                                reason: "CANCELLED_ORDER",
+                                note: "Sipariş İptali",
+                                timestamp: new Date().toISOString()
+                            };
+                            await apiCall('/stock-movements', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(movement)
+                            });
+                        }
+                    }
                 }
             }
             await fetchData();
