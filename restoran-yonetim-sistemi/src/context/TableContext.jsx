@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useRef } from "react";
+import { getRoleInfoFromToken } from "../utils/jwt.js";
 
 export const TableContext = createContext();
 
@@ -52,7 +53,13 @@ export function TableProvider({ children }) {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, mergedOptions);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Sunucu hatası' }));
+                // 401 ise (ör. stocks için admin olmayan roller) gürültüyü azalt
+                if (response.status === 401) {
+                    console.warn(`API çağrısı yetkisiz: ${endpoint} (401)`);
+                    throw new Error('Unauthorized');
+                }
+                const errorData = await response.text().catch(() => '')
+                    .then(t => { try { return JSON.parse(t); } catch { return { message: t || 'Sunucu hatası' }; } });
                 console.error(`API çağrısı hatası: ${endpoint}`, errorData);
                 throw new Error(errorData.message || "Beklenmedik bir hata oluştu.");
             }
@@ -79,14 +86,28 @@ export function TableProvider({ children }) {
         console.log("Veriler sunucudan alınıyor...");
 
         try {
-            const [productsData, stocksData, productIngredientsData, diningTablesData, ordersData, salonsData] = await Promise.all([
-                apiCall('/products'),
-                apiCall('/stocks'),
-                apiCall('/product-ingredients'),
-                apiCall('/dining-tables'),
-                apiCall('/orders'),
-                apiCall('/salons'),
-            ]);
+            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            const roleInfo = token ? getRoleInfoFromToken(token) : {};
+            const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
+
+            const tasks = [
+                apiCall('/products'),                // 0
+                isAdmin ? apiCall('/stocks') : Promise.resolve([]), // 1
+                apiCall('/product-ingredients'),     // 2
+                apiCall('/dining-tables'),           // 3
+                apiCall('/orders'),                  // 4
+                apiCall('/salons'),                  // 5
+            ];
+
+            const results = await Promise.allSettled(tasks);
+
+            const safe = (idx, fallback) => results[idx]?.status === 'fulfilled' ? results[idx].value : fallback;
+            const productsData = safe(0, []);
+            const stocksData = safe(1, []);
+            const productIngredientsData = safe(2, []);
+            const diningTablesData = safe(3, []);
+            const ordersData = safe(4, []);
+            const salonsData = safe(5, []);
 
             if (!productsData || productsData.length === 0) {
                 console.warn("API'den ürün verisi gelmedi veya liste boş.");
@@ -253,9 +274,9 @@ export function TableProvider({ children }) {
             if (!recipe.length) continue;
             for (const ingredient of recipe) {
                 const required = ingredient.quantity * item.count;
-                if (!tempIngredients[ingredient.ingredientId] || tempIngredients[ingredient.ingredientId].stockQuantity < required) {
-                    return false;
-                }
+                // Stok verisi erişilemiyorsa (ör. admin olmayan roller) stok kontrolünü atla
+                if (!tempIngredients[ingredient.ingredientId]) continue;
+                if (tempIngredients[ingredient.ingredientId].stockQuantity < required) return false;
                 tempIngredients[ingredient.ingredientId].stockQuantity -= required;
             }
         }

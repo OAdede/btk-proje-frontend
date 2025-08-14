@@ -26,10 +26,11 @@ export const authService = {
                         errorMessage = errorData.message || errorData.error || errorMessage;
                         console.log('Server error details (parsed JSON):', errorData);
                     } catch {
-                        errorMessage = errorText || errorMessage;
+                        errorMessage = (errorText && errorText.trim().length > 0) ? errorText : `${errorMessage} (HTTP ${response.status})`;
                     }
                 } catch (readErr) {
                     console.log('Could not read error response body:', readErr);
+                    errorMessage = `${errorMessage} (HTTP ${response.status})`;
                 }
                 console.log('Response status:', response.status);
                 throw new Error(errorMessage);

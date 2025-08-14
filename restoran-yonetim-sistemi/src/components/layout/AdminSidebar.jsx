@@ -574,39 +574,39 @@ const AdminSidebar = () => {
                         marginLeft: isSidebarOpen ? '60px' : '0px',
                         transition: 'margin-left 0.3s ease'
                     }}>
-                        
-                                                 <div className="admin-user-info">
-                             <img
-                                 src={profileImage}
-                                 alt="Profil"
-                                 style={{
-                                     width: '35px',
-                                     height: '35px',
-                                     borderRadius: '50%',
-                                     objectFit: 'cover',
-                                     border: '2px solid #fff',
-                                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                                     marginRight: '12px'
-                                 }}
-                             />
-                             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                                 <div className="admin-user-name" style={{
-                                     fontFamily: '00623 Sans Serif Bold, sans-serif',
-                                     fontWeight: '600',
-                                     fontSize: '0.85rem',
-                                     color: isDarkMode ? '#ffffff' : '#1A0B3D',
-                                     marginBottom: '2px',
-                                     lineHeight: '1.1'
-                                 }}>{displayName || 'Kullanıcı'}</div>
-                                 <div className="admin-user-role" style={{
-                                     fontFamily: '00623 Sans Serif Bold, sans-serif',
-                                     fontWeight: '500',
-                                     fontSize: '0.7rem',
-                                     color: isDarkMode ? '#e0e0e0' : '#2D1B69',
-                                     lineHeight: '1.1'
-                                 }}>{displayRole || 'Kullanıcı'}</div>
-                             </div>
-                         </div>
+
+                        <div className="admin-user-info">
+                            <img
+                                src={profileImage}
+                                alt="Profil"
+                                style={{
+                                    width: '35px',
+                                    height: '35px',
+                                    borderRadius: '50%',
+                                    objectFit: 'cover',
+                                    border: '2px solid #fff',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                    marginRight: '12px'
+                                }}
+                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                <div className="admin-user-name" style={{
+                                    fontFamily: '00623 Sans Serif Bold, sans-serif',
+                                    fontWeight: '600',
+                                    fontSize: '0.85rem',
+                                    color: isDarkMode ? '#ffffff' : '#1A0B3D',
+                                    marginBottom: '2px',
+                                    lineHeight: '1.1'
+                                }}>{displayName || 'Kullanıcı'}</div>
+                                <div className="admin-user-role" style={{
+                                    fontFamily: '00623 Sans Serif Bold, sans-serif',
+                                    fontWeight: '500',
+                                    fontSize: '0.7rem',
+                                    color: isDarkMode ? '#e0e0e0' : '#2D1B69',
+                                    lineHeight: '1.1'
+                                }}>{displayRole || 'Kullanıcı'}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <nav className="admin-sidebar-nav">
