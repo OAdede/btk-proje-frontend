@@ -4,6 +4,7 @@ import { analyticsService } from '../../services/analyticsService';
 import SalesChart from '../../components/reports/SalesChart';
 import PopularItemsChart from '../../components/reports/PopularItemsChart';
 import SalesByCategoryChart from '../../components/reports/SalesByCategoryChart';
+import EmployeePerformanceTable from '../../components/reports/EmployeePerformanceTable';
 import IncomeExpenseTable from '../../components/reports/IncomeExpenseTable';
 import './ReportsPage.css';
 
@@ -100,6 +101,9 @@ const ReportsPage = () => {
                 </div>
                 <div className="chart-wrapper">
                     <SalesByCategoryChart />
+                </div>
+                <div className="chart-wrapper">
+                    <EmployeePerformanceTable />
                 </div>
             </div>
 

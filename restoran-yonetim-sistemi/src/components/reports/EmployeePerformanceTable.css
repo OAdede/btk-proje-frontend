@@ -1,0 +1,54 @@
+.employee-performance-table {
+  transition: all 0.3s ease;
+}
+
+.employee-performance-table:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Top performer badge animation */
+.employee-performance-table span[style*="FFD700"] {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .employee-performance-table .table {
+    font-size: 10px !important;
+  }
+  
+  .employee-performance-table .table th,
+  .employee-performance-table .table td {
+    font-size: 10px !important;
+    padding: 4px 6px !important;
+  }
+  
+  .employee-performance-table .row .col-4 {
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .employee-performance-table .table-responsive {
+    font-size: 9px !important;
+  }
+  
+  .employee-performance-table .table th,
+  .employee-performance-table .table td {
+    font-size: 9px !important;
+    padding: 2px 4px !important;
+  }
+}
