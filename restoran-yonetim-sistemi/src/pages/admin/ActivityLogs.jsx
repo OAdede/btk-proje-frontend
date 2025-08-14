@@ -61,12 +61,32 @@ export default function ActivityLogs() {
         await run(async () => activityLogService.getByEntity(entityType, entityId));
     };
     const fetchByAction = async () => {
-        if (!actionType) return;
-        await run(async () => activityLogService.getByActionType(actionType));
+        const actionRaw = String(actionType || '').trim();
+        if (!actionRaw) return;
+        const action = actionRaw.toUpperCase().replace(/\s+/g, '_');
+        await run(async () => {
+            try {
+                return await activityLogService.getByActionType(action);
+            } catch {
+                const all = await activityLogService.getAll();
+                return (all || []).filter(l => String(l.action_type || l.actionType || '').toUpperCase() === action);
+            }
+        });
     };
     const fetchByDateRange = async () => {
         if (!startDate || !endDate) return;
         await run(async () => activityLogService.getByDateRange(startDate, endDate));
+    };
+
+    const resetFiltersToAll = async () => {
+        setUserId('');
+        setEntityType('');
+        setEntityId('');
+        setActionType('');
+        setStartDate('');
+        setEndDate('');
+        setSearch('');
+        await fetchAll();
     };
 
     const run = async (fn) => {
@@ -221,6 +241,10 @@ export default function ActivityLogs() {
                 <button onClick={fetchByDateRange} style={styles.tabBtn(false)}>Tarih aralığı</button>
 
                 <input placeholder="Ara (mesaj, aksiyon, varlık, e-posta)" value={search} onChange={e => setSearch(e.target.value)} style={{ ...styles.input, gridColumn: '1 / -1' }} />
+
+                <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={resetFiltersToAll} style={styles.tabBtn(false)}>Tümünü getir (Filtreleri sıfırla)</button>
+                </div>
             </div>
 
             {error && (
