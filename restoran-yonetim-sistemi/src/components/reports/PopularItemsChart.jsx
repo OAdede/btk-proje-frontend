@@ -47,23 +47,14 @@ const PopularItemsChart = () => {
       setIsLoading(true);
       setError(null);
       
-      // Günlük veriler için ayrı endpoint kullan
-      const dailyData = await analyticsService.getDailyTopProducts(10);
+      // Tek endpoint'ten tüm verileri çek
+      const summaryData = await analyticsService.getTopProductsSummary(10);
       
-      // Haftalık veriler için ayrı endpoint kullan
-      const weeklyData = await analyticsService.getWeeklyTopProducts(10);
-      
-      // Aylık veriler için ayrı endpoint kullan
-      const monthlyData = await analyticsService.getMonthlyTopProducts(10);
-      
-      // Yıllık veriler için summary endpoint kullan
-      const summaryData = await analyticsService.getTopProductsSummary();
-      
-      // Verileri birleştir
+      // Verileri doğrudan kullan
       const combinedData = {
-        daily: dailyData || [],
-        weekly: weeklyData || [],
-        monthly: monthlyData || [],
+        daily: summaryData?.daily || [],
+        weekly: summaryData?.weekly || [],
+        monthly: summaryData?.monthly || [],
         yearly: summaryData?.yearly || []
       };
       

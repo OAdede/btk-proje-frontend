@@ -48,7 +48,6 @@ const SalesChart = () => {
   // Date range state
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [dateRangeReportType, setDateRangeReportType] = useState('DAILY');
 
   // Format date to YYYY-MM-DD for API
   const formatDateForAPI = (date) => {
@@ -145,32 +144,45 @@ const SalesChart = () => {
   const fetchDailyData = async () => {
     setLoading(true);
     try {
-      const monthIndex = months.findIndex(m => m.value === selectedMonth);
-      const weekDates = getWeekDatesForMonth(monthIndex, parseInt(selectedYear));
+      // Get all daily sales summaries from the new endpoint
+      const allDailyData = await analyticsService.getAllDailySalesSummaries();
       
-      const dailyDataPromises = weekDates.map(date => 
-        analyticsService.getDailySalesSummary(date)
-      );
-      
-      const dailyDataResults = await Promise.all(dailyDataPromises);
-      const validData = dailyDataResults.filter(data => data !== null);
-      
-      if (validData.length > 0) {
-        // Combine daily data for the week
-        const combinedData = {
-          reportType: 'DAILY',
-          totalRevenue: validData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0),
-          totalOrders: validData.reduce((sum, data) => sum + (data.totalOrders || 0), 0),
-          totalCustomers: validData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0),
-          dailyBreakdown: validData.map((data, index) => ({
-            day: index + 1,
-            revenue: data.totalRevenue || 0,
-            orders: data.totalOrders || 0,
-            customers: data.totalCustomers || 0,
-            date: weekDates[index]
-          }))
-        };
-        setDailyData(combinedData);
+      if (allDailyData && allDailyData.length > 0) {
+        const monthIndex = months.findIndex(m => m.value === selectedMonth);
+        const selectedYearInt = parseInt(selectedYear);
+        
+        // Filter data for the selected month and year
+        const filteredData = allDailyData.filter(data => {
+          if (!data.reportDate) return false;
+          const date = new Date(data.reportDate);
+          return date.getMonth() === monthIndex && date.getFullYear() === selectedYearInt;
+        });
+        
+        // Sort by date (newest first, then reverse to get oldest first for the week)
+        filteredData.sort((a, b) => new Date(b.reportDate) - new Date(a.reportDate));
+        
+        // Get the most recent 7 days of data for the selected month
+        const weekData = filteredData.slice(0, 7).reverse();
+        
+        if (weekData.length > 0) {
+          // Combine daily data for the week
+          const combinedData = {
+            reportType: 'DAILY',
+            totalRevenue: weekData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0),
+            totalOrders: weekData.reduce((sum, data) => sum + (data.totalOrders || 0), 0),
+            totalCustomers: weekData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0),
+            dailyBreakdown: weekData.map((data, index) => ({
+              day: index + 1,
+              revenue: data.totalRevenue || 0,
+              orders: data.totalOrders || 0,
+              customers: data.totalCustomers || 0,
+              date: data.reportDate
+            }))
+          };
+          setDailyData(combinedData);
+        } else {
+          setDailyData(null);
+        }
       } else {
         setDailyData(null);
       }
@@ -200,32 +212,45 @@ const SalesChart = () => {
   const fetchMonthlyWeeklyData = async () => {
     setLoading(true);
     try {
-      const monthIndex = months.findIndex(m => m.value === selectedMonth);
-      const weekEndDates = getWeekEndDatesForMonth(monthIndex, parseInt(selectedYear));
+      // Get all weekly sales summaries from the new endpoint
+      const allWeeklyData = await analyticsService.getAllWeeklySalesSummaries();
       
-      const weeklyDataPromises = weekEndDates.map(endDate => 
-        analyticsService.getWeeklySalesData(endDate)
-      );
-      
-      const weeklyDataResults = await Promise.all(weeklyDataPromises);
-      const validData = weeklyDataResults.filter(data => data !== null);
-      
-      if (validData.length > 0) {
-        // Combine weekly data for the month with real dates
-        const combinedData = {
-          reportType: 'WEEKLY',
-          totalRevenue: validData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0),
-          totalOrders: validData.reduce((sum, data) => sum + (data.totalOrders || 0), 0),
-          totalCustomers: validData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0),
-          weeklyBreakdown: validData.map((data, index) => ({
-            week: index + 1,
-            endDate: weekEndDates[index], // Gerçek tarih
-            revenue: data.totalRevenue || 0,
-            orders: data.totalOrders || 0,
-            customers: data.totalCustomers || 0
-          }))
-        };
-        setWeeklyData(combinedData);
+      if (allWeeklyData && allWeeklyData.length > 0) {
+        const monthIndex = months.findIndex(m => m.value === selectedMonth);
+        const selectedYearInt = parseInt(selectedYear);
+        
+        // Filter data for the selected month and year
+        const filteredData = allWeeklyData.filter(data => {
+          if (!data.reportDate) return false;
+          const date = new Date(data.reportDate);
+          return date.getMonth() === monthIndex && date.getFullYear() === selectedYearInt;
+        });
+        
+        // Sort by date (newest first, then reverse to get oldest first for the month)
+        filteredData.sort((a, b) => new Date(b.reportDate) - new Date(a.reportDate));
+        
+        // Get the most recent 4 weeks of data for the selected month
+        const monthData = filteredData.slice(0, 4).reverse();
+        
+        if (monthData.length > 0) {
+          // Combine weekly data for the month with real dates
+          const combinedData = {
+            reportType: 'WEEKLY',
+            totalRevenue: monthData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0),
+            totalOrders: monthData.reduce((sum, data) => sum + (data.totalOrders || 0), 0),
+            totalCustomers: monthData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0),
+            weeklyBreakdown: monthData.map((data, index) => ({
+              week: index + 1,
+              endDate: data.reportDate, // Use actual report date from API
+              revenue: data.totalRevenue || 0,
+              orders: data.totalOrders || 0,
+              customers: data.totalCustomers || 0
+            }))
+          };
+          setWeeklyData(combinedData);
+        } else {
+          setWeeklyData(null);
+        }
       } else {
         setWeeklyData(null);
       }
@@ -241,30 +266,47 @@ const SalesChart = () => {
   const fetchYearlyMonthlyData = async () => {
     setLoading(true);
     try {
-      const monthNumbers = getMonthDatesForYear(selectedYear);
+      // Get all monthly sales summaries from the new endpoint
+      const allMonthlyData = await analyticsService.getAllMonthlySalesSummaries();
       
-      const monthlyDataPromises = monthNumbers.map(month => 
-        analyticsService.getMonthlySalesSummary(selectedYear, month)
-      );
-      
-      const monthlyDataResults = await Promise.all(monthlyDataPromises);
-      const validData = monthlyDataResults.filter(data => data !== null);
-      
-      if (validData.length > 0) {
-        // Combine monthly data for the year with real month numbers
-        const combinedData = {
-          reportType: 'MONTHLY',
-          totalRevenue: validData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0),
-          totalOrders: validData.reduce((sum, data) => sum + (data.totalOrders || 0), 0),
-          totalCustomers: validData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0),
-          monthlyBreakdown: validData.map((data, index) => ({
-            month: monthNumbers[index], // Gerçek ay numarası
-            revenue: data.totalRevenue || 0,
-            orders: data.totalOrders || 0,
-            customers: data.totalCustomers || 0
-          }))
-        };
-        setMonthlyData(combinedData);
+      if (allMonthlyData && allMonthlyData.length > 0) {
+        const selectedYearInt = parseInt(selectedYear);
+        
+        // Filter data for the selected year
+        const filteredData = allMonthlyData.filter(data => {
+          if (!data.reportDate) return false;
+          const date = new Date(data.reportDate);
+          return date.getFullYear() === selectedYearInt;
+        });
+        
+        // Sort by date (newest first, then reverse to get oldest first for the year)
+        filteredData.sort((a, b) => new Date(b.reportDate) - new Date(a.reportDate));
+        
+        // Get all months for the selected year (up to 12 months)
+        const yearData = filteredData.slice(0, 12).reverse();
+        
+        if (yearData.length > 0) {
+          // Combine monthly data for the year with real month numbers
+          const combinedData = {
+            reportType: 'MONTHLY',
+            totalRevenue: yearData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0),
+            totalOrders: yearData.reduce((sum, data) => sum + (data.totalOrders || 0), 0),
+            totalCustomers: yearData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0),
+            monthlyBreakdown: yearData.map((data, index) => {
+              const date = new Date(data.reportDate);
+              return {
+                month: date.getMonth() + 1, // Get actual month number (1-12)
+                revenue: data.totalRevenue || 0,
+                orders: data.totalOrders || 0,
+                customers: data.totalCustomers || 0,
+                reportDate: data.reportDate
+              };
+            })
+          };
+          setMonthlyData(combinedData);
+        } else {
+          setMonthlyData(null);
+        }
       } else {
         setMonthlyData(null);
       }
@@ -285,23 +327,57 @@ const SalesChart = () => {
 
     setLoading(true);
     try {
-      const data = await analyticsService.getDateRangeSalesSummary(startDate, endDate, dateRangeReportType);
+      // Get sales summaries by date range from the new endpoint
+      const dateRangeData = await analyticsService.getSalesSummariesByDateRange(startDate, endDate);
       
-      if (data) {
+      if (dateRangeData && dateRangeData.length > 0) {
+        // Calculate totals from all summaries
+        const totalRevenue = dateRangeData.reduce((sum, data) => sum + (data.totalRevenue || 0), 0);
+        const totalOrders = dateRangeData.reduce((sum, data) => sum + (data.totalOrders || 0), 0);
+        const totalCustomers = dateRangeData.reduce((sum, data) => sum + (data.totalCustomers || 0), 0);
+        const totalReservations = dateRangeData.reduce((sum, data) => sum + (data.totalReservations || 0), 0);
+        
+        // Calculate average order value
+        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+        
+        // Get most and least popular items (from the first summary for simplicity)
+        const firstSummary = dateRangeData[0];
+        const mostPopularItemName = firstSummary?.mostPopularItemName || '';
+        const leastPopularItemName = firstSummary?.leastPopularItemName || '';
+        
+        // Combine sales by category from all summaries
+        const combinedSalesByCategory = {};
+        dateRangeData.forEach(summary => {
+          if (summary.salesByCategory) {
+            Object.entries(summary.salesByCategory).forEach(([category, amount]) => {
+              const currentAmount = parseFloat(amount) || 0;
+              combinedSalesByCategory[category] = (combinedSalesByCategory[category] || 0) + currentAmount;
+            });
+          }
+        });
+        
         // Process the date range data
         const processedData = {
-          reportType: dateRangeReportType,
-          totalRevenue: data.totalRevenue || 0,
-          totalOrders: data.totalOrders || 0,
-          totalCustomers: data.totalCustomers || 0,
-          averageOrderValue: data.averageOrderValue || 0,
-          mostPopularItemName: data.mostPopularItemName || '',
-          leastPopularItemName: data.leastPopularItemName || '',
-          totalReservations: data.totalReservations || 0,
-          salesByCategory: data.salesByCategory || {},
-          employeePerformance: data.employeePerformance || {},
+          reportType: 'DAILY',
+          totalRevenue: totalRevenue,
+          totalOrders: totalOrders,
+          totalCustomers: totalCustomers,
+          averageOrderValue: averageOrderValue,
+          mostPopularItemName: mostPopularItemName,
+          leastPopularItemName: leastPopularItemName,
+          totalReservations: totalReservations,
+          salesByCategory: combinedSalesByCategory,
+          employeePerformance: firstSummary?.employeePerformance || {},
           startDate: startDate,
-          endDate: endDate
+          endDate: endDate,
+          // Add daily breakdown for chart display
+          dailyBreakdown: dateRangeData.map((data, index) => ({
+            day: index + 1,
+            revenue: data.totalRevenue || 0,
+            orders: data.totalOrders || 0,
+            customers: data.totalCustomers || 0,
+            date: data.reportDate
+          }))
         };
         setDateRangeData(processedData);
       } else {
@@ -522,12 +598,12 @@ const SalesChart = () => {
     ? dataSets[mode]
     : mode === 'dateRange'
     ? (() => {
-        // Date range için seçilen rapor tipine göre veri oluştur
+        // Date range için günlük veri oluştur
         if (!dateRangeData) {
           return { labels: [], data: [] };
         }
         
-        if (dateRangeReportType === 'DAILY' && dateRangeData.dailyBreakdown) {
+        if (dateRangeData.dailyBreakdown) {
           return {
             labels: dateRangeData.dailyBreakdown.map((day, index) => {
               const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -538,28 +614,6 @@ const SalesChart = () => {
               return `${dayNames[index]} (${dayNumber} ${monthShort})`;
             }),
             data: dateRangeData.dailyBreakdown.map(day => day.revenue)
-          };
-        } else if (dateRangeReportType === 'WEEKLY' && dateRangeData.weeklyBreakdown) {
-          return {
-            labels: dateRangeData.weeklyBreakdown.map((week) => {
-              const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
-                                 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-              const endDate = new Date(week.endDate);
-              const day = endDate.getDate();
-              const monthShort = monthNames[endDate.getMonth()];
-              return `${week.week}. Hafta (${day} ${monthShort})`;
-            }),
-            data: dateRangeData.weeklyBreakdown.map(week => week.revenue)
-          };
-        } else if (dateRangeReportType === 'MONTHLY' && dateRangeData.monthlyBreakdown) {
-          return {
-            labels: dateRangeData.monthlyBreakdown.map((month) => {
-              const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
-                                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-              const monthIndex = month.month - 1;
-              return monthNames[monthIndex];
-            }),
-            data: dateRangeData.monthlyBreakdown.map(month => month.revenue)
           };
         } else {
           // Eğer breakdown verisi yoksa toplam geliri göster
@@ -579,10 +633,7 @@ const SalesChart = () => {
           mode === 'daily' ? 'Günlük' : 
           mode === 'weekly' ? 'Haftalık' : 
           mode === 'monthly' ? 'Aylık' : 
-          mode === 'dateRange' ? (
-            dateRangeReportType === 'DAILY' ? 'Günlük' : 
-            dateRangeReportType === 'WEEKLY' ? 'Haftalık' : 'Aylık'
-          ) : 'Yıllık'
+          mode === 'dateRange' ? 'Günlük' : 'Yıllık'
         })`,
         data: currentData.data,
         borderColor: 'rgb(75, 192, 192)',
@@ -612,10 +663,7 @@ const SalesChart = () => {
               : mode === 'monthly'
                 ? 'Aylık Satışlar'
                 : mode === 'dateRange'
-                  ? `Tarih Aralığı Satışları (${startDate} - ${endDate}) - ${
-                      dateRangeReportType === 'DAILY' ? 'Günlük' : 
-                      dateRangeReportType === 'WEEKLY' ? 'Haftalık' : 'Aylık'
-                    }`
+                  ? `Tarih Aralığı Satışları (${startDate} - ${endDate}) - Günlük`
                 : 'Yıllık Satışlar',
       },
     },
@@ -753,17 +801,7 @@ const SalesChart = () => {
                 className="sales-chart"
                 size="sm"
               />
-              <Form.Select
-                className="sales-chart"
-                value={dateRangeReportType}
-                onChange={(e) => setDateRangeReportType(e.target.value)}
-                style={{ width: 'auto', minWidth: '90px', fontSize: '0.85rem' }}
-                size="sm"
-              >
-                <option value="DAILY">Günlük</option>
-                <option value="WEEKLY">Haftalık</option>
-                <option value="MONTHLY">Aylık</option>
-              </Form.Select>
+
               <Button
                 variant="primary"
                 onClick={() => fetchDateRangeData()}
@@ -998,8 +1036,7 @@ const SalesChart = () => {
                  <div className="col-md-3">
                    <small style={{ color: colors.textSecondary, fontSize: '0.75rem' }}>Rapor Tipi</small>
                    <div style={{ color: colors.text, fontWeight: 'bold', fontSize: '0.9rem' }}>
-                     {dateRangeData.reportType === 'DAILY' ? 'Günlük' : 
-                      dateRangeData.reportType === 'WEEKLY' ? 'Haftalık' : 'Aylık'}
+                     Günlük
                    </div>
                  </div>
                </div>

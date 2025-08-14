@@ -19,8 +19,12 @@ const IncomeExpenseTable = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await analyticsService.getDailySalesSummary(date);
-      setDailySalesData(data);
+      
+      // Get all daily sales summaries and filter for the specified date
+      const allDailyData = await analyticsService.getAllDailySalesSummaries();
+      const dateData = allDailyData.find(data => data.reportDate === date);
+      
+      setDailySalesData(dateData || null);
     } catch (err) {
       console.error('Daily sales fetch error:', err);
       setError(err.message);
@@ -34,8 +38,12 @@ const IncomeExpenseTable = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await analyticsService.getWeeklySalesSummary();
-      setWeeklySalesData(data);
+      
+      // Get all weekly sales summaries and get the most recent one
+      const allWeeklyData = await analyticsService.getAllWeeklySalesSummaries();
+      const mostRecentWeekly = allWeeklyData.length > 0 ? allWeeklyData[0] : null;
+      
+      setWeeklySalesData(mostRecentWeekly);
     } catch (err) {
       console.error('Weekly sales fetch error:', err);
       setError(err.message);
@@ -49,8 +57,12 @@ const IncomeExpenseTable = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await analyticsService.getMonthlySalesSummary();
-      setMonthlySalesData(data);
+      
+      // Get all monthly sales summaries and get the most recent one
+      const allMonthlyData = await analyticsService.getAllMonthlySalesSummaries();
+      const mostRecentMonthly = allMonthlyData.length > 0 ? allMonthlyData[0] : null;
+      
+      setMonthlySalesData(mostRecentMonthly);
     } catch (err) {
       console.error('Monthly sales fetch error:', err);
       setError(err.message);

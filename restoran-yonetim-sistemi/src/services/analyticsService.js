@@ -167,6 +167,38 @@ export const analyticsService = {
         }
     },
 
+    // Get all daily sales summaries
+    async getAllDailySalesSummaries() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/daily`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`All daily sales API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('All daily sales summaries loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('All daily sales service error:', error);
+            return [];
+        }
+    },
+
     // Get daily sales summary with date parameter
     async getDailySalesSummary(date) {
         try {
@@ -231,6 +263,38 @@ export const analyticsService = {
         }
     },
 
+    // Get all weekly sales summaries
+    async getAllWeeklySalesSummaries() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/weekly`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`All weekly sales API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('All weekly sales summaries loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('All weekly sales service error:', error);
+            return [];
+        }
+    },
+
     // Get weekly sales data for multiple weeks (for chart display)
     async getWeeklySalesData(endDate) {
         try {
@@ -260,6 +324,38 @@ export const analyticsService = {
         } catch (error) {
             console.error('Weekly sales data service error:', error);
             return null;
+        }
+    },
+
+    // Get all monthly sales summaries
+    async getAllMonthlySalesSummaries() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/monthly`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`All monthly sales API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('All monthly sales summaries loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('All monthly sales service error:', error);
+            return [];
         }
     },
 
@@ -330,6 +426,91 @@ export const analyticsService = {
         } catch (error) {
             console.error('Date range sales service error:', error);
             return null;
+        }
+    },
+
+    // Get sales summaries by date range
+    async getSalesSummariesByDateRange(startDate, endDate) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const params = new URLSearchParams({
+                startDate: startDate,
+                endDate: endDate
+            });
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/date-range?${params}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Date range summaries API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Date range summaries loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('Date range summaries service error:', error);
+            return [];
+        }
+    },
+
+    // Get employee performance analytics
+    async getEmployeePerformance() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            // Try different parameter combinations to see what works
+            const params = new URLSearchParams({
+                // Add common parameters that might be required
+                limit: '10',
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            const response = await fetch(`${API_BASE_URL}/analytics/employee-performance?${params}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Employee performance API error: ${response.status} ${response.statusText}`);
+                
+                // Try to get error details from response
+                try {
+                    const errorData = await response.text();
+                    console.log('Error response body:', errorData);
+                } catch (e) {
+                    console.log('Could not read error response body');
+                }
+                
+                throw new Error(`Employee performance API error: ${response.status} ${response.statusText}`);
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Employee performance loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty object');
+                return {};
+            }
+        } catch (error) {
+            console.error('Employee performance service error:', error);
+            throw error; // Re-throw the error so the component can handle it
         }
     }
 };

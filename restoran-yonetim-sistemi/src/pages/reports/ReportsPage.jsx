@@ -18,8 +18,12 @@ const ReportsPage = () => {
         try {
             setIsLoadingSales(true);
             const today = new Date().toISOString().split('T')[0];
-            const data = await analyticsService.getDailySalesSummary(today);
-            setDailySalesData(data);
+            
+            // Get all daily sales summaries and filter for today
+            const allDailyData = await analyticsService.getAllDailySalesSummaries();
+            const todayData = allDailyData.find(data => data.reportDate === today);
+            
+            setDailySalesData(todayData || null);
         } catch (error) {
             console.error('Daily sales data fetch error:', error);
             setDailySalesData(null);

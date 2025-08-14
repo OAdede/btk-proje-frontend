@@ -10,7 +10,7 @@ const EmployeePerformanceTable = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [performanceData, setPerformanceData] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
 
   // API'den veri çek
   const fetchPerformanceData = async () => {
@@ -18,8 +18,80 @@ const EmployeePerformanceTable = () => {
       setIsLoading(true);
       setError(null);
       
-      const data = await analyticsService.getDailySalesSummary(selectedDate);
-      setPerformanceData(data);
+      // Use fallback method since the new endpoint has issues
+      const allDailyData = await analyticsService.getAllDailySalesSummaries();
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = allDailyData.find(data => data.reportDate === today);
+      
+      if (todayData && todayData.employeePerformance) {
+        try {
+          // Handle different data formats
+          let parsedPerformance;
+          if (typeof todayData.employeePerformance === 'string') {
+            // Try to parse as JSON first
+            try {
+              parsedPerformance = JSON.parse(todayData.employeePerformance);
+            } catch (jsonError) {
+              // If it's "[object Object]", the data is malformed, skip it
+              if (todayData.employeePerformance === '[object Object]') {
+                console.log('Employee performance data is malformed, skipping');
+                setPerformanceData(null);
+                return;
+              } else {
+                throw jsonError;
+              }
+            }
+          } else {
+            // It's already an object
+            parsedPerformance = todayData.employeePerformance;
+          }
+          setPerformanceData(parsedPerformance);
+        } catch (parseError) {
+          console.error('Failed to parse employee performance data:', parseError);
+          setError('Çalışan performans verisi işlenirken hata oluştu');
+        }
+      } else {
+        // Try to find any recent data with employee performance
+        const recentData = allDailyData.find(data => {
+          if (!data.employeePerformance) return false;
+          // Skip malformed data
+          if (typeof data.employeePerformance === 'string' && data.employeePerformance === '[object Object]') {
+            return false;
+          }
+          return true;
+        });
+        
+        if (recentData) {
+          try {
+            // Handle different data formats
+            let parsedPerformance;
+            if (typeof recentData.employeePerformance === 'string') {
+              // Try to parse as JSON first
+              try {
+                parsedPerformance = JSON.parse(recentData.employeePerformance);
+              } catch (jsonError) {
+                // If it's "[object Object]", the data is malformed, skip it
+                if (recentData.employeePerformance === '[object Object]') {
+                  console.log('Recent employee performance data is malformed, skipping');
+                  setPerformanceData(null);
+                  return;
+                } else {
+                  throw jsonError;
+                }
+              }
+            } else {
+              // It's already an object
+              parsedPerformance = recentData.employeePerformance;
+            }
+            setPerformanceData(parsedPerformance);
+          } catch (parseError) {
+            console.error('Failed to parse recent employee performance data:', parseError);
+            setPerformanceData(null);
+          }
+        } else {
+          setPerformanceData(null);
+        }
+      }
     } catch (err) {
       console.error('Performance data fetch error:', err);
       setError(err.message || 'Veriler yüklenirken bir hata oluştu');
@@ -35,13 +107,48 @@ const EmployeePerformanceTable = () => {
 
   // Performans verilerini parse et
   const parseEmployeePerformance = () => {
-    if (!performanceData || !performanceData.employeePerformance) {
+    if (!performanceData) {
       return { employees: [], topPerformer: null };
     }
 
     try {
-      const parsed = JSON.parse(performanceData.employeePerformance);
-      return parsed;
+      // Check if this is the new endpoint format (object with employee data)
+      if (performanceData.employees && Array.isArray(performanceData.employees)) {
+        // This is the fallback format from daily sales data
+        return {
+          employees: performanceData.employees || [],
+          topPerformer: performanceData.topPerformer || null
+        };
+      }
+
+      // This is the new endpoint format (object with employee IDs as keys)
+      const employees = [];
+      let topPerformer = null;
+      let maxSales = 0;
+
+      // Process the performance data object
+      Object.entries(performanceData).forEach(([employeeId, data]) => {
+        if (data && typeof data === 'object') {
+          const employee = {
+            employeeId: employeeId,
+            employeeName: data.employeeName || `Çalışan ${employeeId}`,
+            totalSales: data.totalSales || 0,
+            orderCount: data.orderCount || 0,
+            averageOrderValue: data.averageOrderValue || 0,
+            customerCount: data.customerCount || 0
+          };
+          
+          employees.push(employee);
+          
+          // Find top performer
+          if (employee.totalSales > maxSales) {
+            maxSales = employee.totalSales;
+            topPerformer = employee;
+          }
+        }
+      });
+
+      return { employees, topPerformer };
     } catch (error) {
       console.error('Employee performance parse error:', error);
       return { employees: [], topPerformer: null };
@@ -113,28 +220,8 @@ const EmployeePerformanceTable = () => {
           </Card.Title>
         </div>
 
-        {/* Tarih Seçimi */}
-        <div className="d-flex gap-2 align-items-center mb-3" style={{ flexWrap: 'wrap', gap: '8px' }}>
-          <Form.Control
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ width: 'auto', minWidth: '140px', fontSize: '0.85rem' }}
-            size="sm"
-          />
-          <Button
-            variant="primary"
-            onClick={fetchPerformanceData}
-            disabled={!selectedDate || isLoading}
-            style={{ minWidth: '80px', fontSize: '0.85rem', padding: '4px 8px' }}
-            size="sm"
-          >
-            {isLoading ? 'Yükleniyor...' : 'Getir'}
-          </Button>
-        </div>
-
         <div className="text-center mb-2" style={{ color: colors.textSecondary, fontSize: '14px' }}>
-          {selectedDate} Tarihli Çalışan Performans Raporu
+          Çalışan Performans Raporu
         </div>
 
         {isLoading ? (
@@ -144,10 +231,10 @@ const EmployeePerformanceTable = () => {
         ) : employees.length === 0 ? (
           <div className="text-center" style={{ padding: '40px', color: colors.textSecondary }}>
             <div style={{ fontSize: '14px', marginBottom: '10px' }}>
-              Bu tarihte çalışan performans verisi bulunamadı
+              Çalışan performans verisi bulunamadı
             </div>
             <div style={{ fontSize: '12px', opacity: 0.8 }}>
-              Seçilen tarihte henüz performans verisi bulunmuyor veya API'den veri alınamadı.
+              Henüz performans verisi bulunmuyor veya API'den veri alınamadı.
             </div>
           </div>
         ) : (
