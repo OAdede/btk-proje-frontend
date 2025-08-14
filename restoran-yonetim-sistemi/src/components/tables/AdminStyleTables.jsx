@@ -12,17 +12,38 @@ export default function AdminStyleTables({ roleOverride }) {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const effectiveRole = roleOverride || user?.role;
-    const { tableStatus, reservations, updateTableStatus, orders, tables, salons, loading, error } = useContext(TableContext);
+    const { tableStatus, reservations, updateTableStatus, orders, tables, salons, loading, error, loadTablesAndSalons } = useContext(TableContext);
     const { isDarkMode } = useContext(ThemeContext);
 
-    const [selectedFloor, setSelectedFloor] = useState(0); // 0: Zemin, 1: Kat1, 2: Kat2
-    const floors = [0, 1, 2];
+    // Dinamik salon seçimi: backend salons listesinden veya tables'tan türet
+    const derivedSalons = useMemo(() => {
+        if (Array.isArray(salons) && salons.length > 0) return salons;
+        // Fallback: tables içinden benzersiz salonları çıkar
+        const set = new Map();
+        (tables || []).forEach(t => {
+            const s = t?.salon;
+            if (s && !set.has(s.id)) set.set(s.id, { id: s.id, name: s.name || `Salon ${s.id}` });
+        });
+        return Array.from(set.values());
+    }, [salons, tables]);
 
-    const getFloorName = (floorNumber) => (floorNumber === 0 ? 'Zemin' : `Kat ${floorNumber}`);
-    const getTableNumber = (floorNumber, tableIndex) => {
-        if (floorNumber === 0) return `Z${tableIndex + 1}`;
-        const letter = String.fromCharCode(65 + floorNumber - 1);
-        return `${letter}${tableIndex + 1}`;
+    const initialSalonId = useMemo(() => (derivedSalons.length > 0 ? derivedSalons[0].id : null), [derivedSalons]);
+    const [selectedSalonId, setSelectedSalonId] = useState(initialSalonId);
+    useEffect(() => {
+        if (!selectedSalonId && derivedSalons.length > 0) {
+            setSelectedSalonId(derivedSalons[0].id);
+        }
+    }, [derivedSalons]);
+
+    // Admin tarzı adlandırma: 0 -> Zemin (Z), 1 -> Kat 1 (A), 2 -> Kat 2 (B) ...
+    const getSalonIndexById = (sid) => (derivedSalons || []).findIndex(s => String(s.id) === String(sid));
+    const getAdminFloorLabelByIndex = (idx) => (idx <= 0 ? 'Zemin' : `Kat ${idx}`);
+    const getAdminPrefixByIndex = (idx) => (idx <= 0 ? 'Z' : String.fromCharCode(65 + (idx - 1))); // 1->A, 2->B
+    const getAdminFloorLabelBySalonId = (sid) => getAdminFloorLabelByIndex(getSalonIndexById(sid));
+    const getFloorName = (salon) => (salon?.name || getAdminFloorLabelBySalonId(salon?.id));
+    const getSalonDisplayNameById = (sid) => {
+        const s = (derivedSalons || []).find(x => String(x.id) === String(sid));
+        return s?.name || getAdminFloorLabelBySalonId(sid);
     };
 
     // Capacities from localStorage
@@ -41,53 +62,68 @@ export default function AdminStyleTables({ roleOverride }) {
         if (backendTable && backendTable.capacity) {
             return backendTable.capacity;
         }
-        
+
         // Fallback: localStorage'dan kapasite al
         return tableCapacities?.[tableNumber] || 4;
     };
 
     const filteredTables = useMemo(() => {
-        // Backend'den veri gelirse onu kullan
-        if (tables && tables.length > 0) {
-            const filtered = tables.filter(table => {
-                if (table.salon) {
-                    // Salon ID'sine göre filtrele (1: Zemin, 2: Kat1, 3: Kat2)
-                    const salonId = table.salon.id;
-                    if (selectedFloor === 0 && salonId === 1) return true; // Zemin
-                    if (selectedFloor === 1 && salonId === 2) return true; // Kat1
-                    if (selectedFloor === 2 && salonId === 3) return true; // Kat2
-                }
-                return false;
-            });
-            
-            // Eğer filtrelenmiş masalar varsa onları döndür
-            if (filtered.length > 0) {
-                return filtered.map(table => ({
-                    id: table.tableNumber.toString(),
-                    displayNumber: `Masa ${table.tableNumber}`,
-                    capacity: table.capacity || 4,
-                    backendId: table.id,
-                    salonId: table.salon?.id,
-                    salonName: table.salon?.name,
-                    originalTableNumber: table.tableNumber
-                }));
-            }
+        if (!Array.isArray(tables) || tables.length === 0) return [];
+
+        const selectedSalon = (derivedSalons || []).find(s => s.id === selectedSalonId);
+
+        const getTableSalonId = (t) => {
+            // Desteklenen şekiller: t.salon.id, t.salonId, t.salonID
+            return (
+                t?.salon?.id ??
+                t?.salonId ??
+                t?.salonID ??
+                null
+            );
+        };
+
+        const getTableSalonName = (t) => t?.salon?.name ?? t?.salonName ?? null;
+
+        const shouldInclude = (t) => {
+            if (!selectedSalonId) return true;
+            const sid = getTableSalonId(t);
+            if (sid != null && String(sid) === String(selectedSalonId)) return true;
+            if (
+                selectedSalon &&
+                getTableSalonName(t) &&
+                String(getTableSalonName(t)) === String(selectedSalon.name)
+            ) return true;
+            return false;
+        };
+
+        const filtered = tables.filter(shouldInclude);
+        const source = filtered.length > 0 ? filtered : tables; // fallback: eşleşme yoksa tüm masaları göster
+
+        return source.map((table) => {
+            const tableNum = table?.tableNumber ?? table?.number ?? table?.id;
+            const idStr = tableNum != null ? String(tableNum) : String(table?.id ?? '');
+            const salonId = getTableSalonId(table);
+            const salonIdx = getSalonIndexById(salonId);
+            const prefix = getAdminPrefixByIndex(salonIdx);
+            const adminDisplay = `${prefix}${idStr}`;
+            return {
+                id: idStr,
+                displayNumber: adminDisplay,
+                capacity: table?.capacity || 4,
+                backendId: table?.id,
+                salonId: salonId,
+                salonName: getTableSalonName(table),
+                originalTableNumber: tableNum
+            };
+        });
+    }, [selectedSalonId, derivedSalons, tables]);
+
+    // Eğer veri henüz gelmediyse güvenli bir tekrar yükleme denemesi
+    useEffect(() => {
+        if (!loading && (!tables || tables.length === 0)) {
+            try { loadTablesAndSalons?.(); } catch { }
         }
-        
-        // Backend'den veri gelmezse veya filtrelenmiş masalar yoksa fallback olarak hardcoded masalar
-        const fallbackTables = [];
-        for (let i = 0; i < 8; i++) {
-            const tableId = getTableNumber(selectedFloor, i);
-            fallbackTables.push({
-                id: tableId,
-                displayNumber: `Masa ${i + 1}`,
-                capacity: getCapacity(tableId),
-                isFallback: true
-            });
-        }
-        
-        return fallbackTables;
-    }, [selectedFloor, tables, tableCapacities]);
+    }, [loading, tables, loadTablesAndSalons]);
 
     const statusInfo = {
         empty: { text: 'Boş', color: '#4caf50', textColor: '#fff' },
@@ -101,16 +137,21 @@ export default function AdminStyleTables({ roleOverride }) {
 
     const getStatus = (tableId) => {
         // Backend'den gelen masa durumunu kullan
-        const backendTable = tables.find(t => t.tableNumber.toString() === tableId);
-        if (backendTable && backendTable.status) {
-            const backendStatus = backendTable.status.name.toLowerCase();
-            
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        if (backendTable && (backendTable.status || backendTable.statusName || backendTable.status_name)) {
+            const backendStatus = String(
+                backendTable?.status?.name ??
+                backendTable?.statusName ??
+                backendTable?.status_name ??
+                ''
+            ).toLowerCase();
+
             // Backend durumunu frontend durumuna çevir
             if (backendStatus === 'available') return statusInfo['empty'];
             if (backendStatus === 'occupied') return statusInfo['occupied'];
             if (backendStatus === 'reserved') return statusInfo['reserved'];
         }
-        
+
         // Fallback: localStorage'dan durum al
         const status = tableStatus[tableId] || 'empty';
         if (status === 'reserved') {
@@ -148,7 +189,12 @@ export default function AdminStyleTables({ roleOverride }) {
 
     // Staff click behavior: go to order/summary
     const handleStaffClick = (tableId) => {
-        const status = tableStatus[tableId] || 'empty';
+        // Öncelik: backend durumu
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        const backendStatus = (
+            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name
+        )?.toLowerCase?.();
+        const status = backendStatus || tableStatus[tableId] || 'empty';
         if (status === 'occupied') {
             navigate(`/${effectiveRole}/summary/${tableId}`);
         } else {
@@ -174,7 +220,7 @@ export default function AdminStyleTables({ roleOverride }) {
         >
             <div style={{ flex: 1 }}>
                 <h2 style={{ fontSize: '2rem', color: isDarkMode ? '#e0e0e0' : '#343a40', marginBottom: '1.5rem' }}>
-                    {getFloorName(selectedFloor)} - Masa Seçimi
+                    {getSalonDisplayNameById(selectedSalonId)} - Masa Seçimi
                 </h2>
                 <div
                     style={{
@@ -213,9 +259,9 @@ export default function AdminStyleTables({ roleOverride }) {
                                 <div
                                     style={{
                                         fontSize: '0.8rem',
-                                        color: 'rgba(255,255,255,0.85)',
+                                        color: 'rgba(255,255,255,0.7)',
                                         marginBottom: '2px',
-                                        fontWeight: 500,
+                                        fontWeight: 400,
                                     }}
                                 >
                                     {table.capacity} Kişilik
@@ -246,7 +292,7 @@ export default function AdminStyleTables({ roleOverride }) {
                                         style={{
                                             fontSize: '9px',
                                             marginTop: '4px',
-                                            opacity: 0.85,
+                                            opacity: 0.8,
                                             textAlign: 'center',
                                             lineHeight: 1.2,
                                         }}
@@ -266,17 +312,17 @@ export default function AdminStyleTables({ roleOverride }) {
 
             <div style={{ width: '150px', flexShrink: 0 }}>
                 <h3 style={{ fontSize: '1.25rem', color: isDarkMode ? '#e0e0e0' : '#495057', marginBottom: '1rem' }}>Katlar</h3>
-                
-                {floors.map((floor) => (
+
+                {(derivedSalons || []).map((salon) => (
                     <div
-                        key={floor}
-                        onClick={() => setSelectedFloor(floor)}
+                        key={salon.id}
+                        onClick={() => setSelectedSalonId(salon.id)}
                         style={{
                             padding: '1rem',
                             marginBottom: '1rem',
                             borderRadius: '8px',
-                            backgroundColor: selectedFloor === floor ? (isDarkMode ? '#007bff' : '#513653') : (isDarkMode ? '#4a4a4a' : '#e9ecef'),
-                            color: selectedFloor === floor ? 'white' : isDarkMode ? '#e0e0e0' : '#495057',
+                            backgroundColor: selectedSalonId === salon.id ? (isDarkMode ? '#007bff' : '#513653') : (isDarkMode ? '#4a4a4a' : '#e9ecef'),
+                            color: selectedSalonId === salon.id ? 'white' : isDarkMode ? '#e0e0e0' : '#495057',
                             textAlign: 'center',
                             cursor: 'pointer',
                             fontWeight: 'bold',
@@ -285,7 +331,7 @@ export default function AdminStyleTables({ roleOverride }) {
                             position: 'relative',
                         }}
                     >
-                        {getFloorName(floor)}
+                        {getFloorName(salon)}
                     </div>
                 ))}
             </div>

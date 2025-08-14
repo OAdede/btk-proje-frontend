@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
 import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
@@ -11,20 +11,36 @@ import "./Dashboard.css";
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [showTableDetailsModal, setShowTableDetailsModal] = useState(false);
   const [selectedTableDetails, setSelectedTableDetails] = useState(null);
-  const [selectedFloor, setSelectedFloor] = useState(0); // 0 = Zemin kat, 1 = 1. kat, 2 = 2. kat
+  // Backend salonları ile çalış: seçili salon
+  const derivedSalons = useMemo(() => {
+    if (Array.isArray(salons) && salons.length > 0) return salons;
+    const map = new Map();
+    (tables || []).forEach(t => {
+      const s = t?.salon || { id: t?.salonId, name: t?.salonName };
+      if (s?.id && !map.has(s.id)) map.set(s.id, { id: s.id, name: s.name || `Salon ${s.id}` });
+    });
+    return Array.from(map.values());
+  }, [salons, tables]);
+
+  const initialSalonId = useMemo(() => (derivedSalons.length > 0 ? derivedSalons[0].id : null), [derivedSalons]);
+  const [selectedSalonId, setSelectedSalonId] = useState(initialSalonId);
+  useEffect(() => {
+    if (!selectedSalonId && derivedSalons.length > 0) setSelectedSalonId(derivedSalons[0].id);
+  }, [derivedSalons]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const [showTableLayoutMode, setShowTableLayoutMode] = useState(false);
   const [showFloorLayoutMode, setShowFloorLayoutMode] = useState(false);
-  const [tableCounts, setTableCounts] = useState({ 0: 8, 1: 8, 2: 8 }); // Her kattaki masa sayısı
-  const [floors, setFloors] = useState([0, 1, 2]); // Mevcut katlar
+  // Yerel düzenleme durumları korunuyor, fakat görünüm backend'den geliyor
+  const [tableCounts, setTableCounts] = useState({});
+  const [floors, setFloors] = useState([]);
   const [showDeleteFloorModal, setShowDeleteFloorModal] = useState(false);
   const [floorToDelete, setFloorToDelete] = useState(null);
   const [showDeleteTableModal, setShowDeleteTableModal] = useState(false);
@@ -32,7 +48,7 @@ const Dashboard = () => {
   const [editingFloor, setEditingFloor] = useState(null);
   const [floorNames, setFloorNames] = useState({
     0: "Zemin",
-    1: "Kat 1", 
+    1: "Kat 1",
     2: "Kat 2"
   });
   const [showWarningModal, setShowWarningModal] = useState(false);
@@ -75,7 +91,9 @@ const Dashboard = () => {
 
   // Kat adını döndüren fonksiyon
   const getFloorName = (floorNumber) => {
-    return floorNames[floorNumber] || (floorNumber === 0 ? "Zemin" : `Kat ${floorNumber}`);
+    // Yönetim başlığında backend salon adını göster
+    const salon = (derivedSalons || []).find(s => String(s.id) === String(selectedSalonId));
+    return salon?.name || (floorNumber === 0 ? "Zemin" : `Kat ${floorNumber}`);
   };
 
   // Kat ismi düzenleme fonksiyonu
@@ -100,17 +118,22 @@ const Dashboard = () => {
   };
 
   // Masa numarasını oluşturan fonksiyon
-  const getTableNumber = (floorNumber, tableIndex) => {
-    if (floorNumber === 0) return `Z${tableIndex + 1}`;
-    const letter = String.fromCharCode(65 + floorNumber - 1); // A, B, C, ...
-    return `${letter}${tableIndex + 1}`;
+  // Admin görsel etiketi: salon sırasına göre Z/A/B + tableNumber
+  const getSalonIndexById = (sid) => (derivedSalons || []).findIndex(s => String(s.id) === String(sid));
+  const getAdminPrefixByIndex = (idx) => (idx <= 0 ? 'Z' : String.fromCharCode(65 + (idx - 1)));
+  const getAdminDisplayFor = (table) => {
+    const tableNum = table?.tableNumber ?? table?.id;
+    const salonId = table?.salon?.id ?? table?.salonId;
+    const idx = getSalonIndexById(salonId);
+    const prefix = getAdminPrefixByIndex(idx);
+    return `${prefix}${tableNum}`;
   };
 
   // Masa kapasitelerini yöneten state
   const [tableCapacities, setTableCapacities] = useState(() => {
     // localStorage'dan mevcut kapasiteleri al
     const savedCapacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
-    
+
     // Eğer localStorage'da kapasite yoksa, mevcut masalar için rastgele atama yap
     if (Object.keys(savedCapacities).length === 0) {
       const capacities = {};
@@ -124,16 +147,22 @@ const Dashboard = () => {
       localStorage.setItem('tableCapacities', JSON.stringify(capacities));
       return capacities;
     }
-    
+
     return savedCapacities;
   });
 
-  // Mevcut kattaki masaları oluştur
-  const tables = Array.from({ length: tableCounts[selectedFloor] }, (_, i) => ({
-    id: getTableNumber(selectedFloor, i), // Masa ID'sini rezervasyonlar sayfasıyla uyumlu hale getir
-    displayNumber: getTableNumber(selectedFloor, i),
-    capacity: tableCapacities[getTableNumber(selectedFloor, i)] || 4
-  }));
+  // Backend'den gelen masaları seçili salona göre göster
+  const displayTables = useMemo(() => {
+    if (!Array.isArray(tables) || tables.length === 0) return [];
+    const filtered = selectedSalonId ? tables.filter(t => (t?.salon?.id ?? t?.salonId) === selectedSalonId) : tables;
+    return filtered.map(t => ({
+      id: String(t?.tableNumber ?? t?.id),
+      displayNumber: getAdminDisplayFor(t),
+      capacity: t?.capacity || 4,
+      backendId: t?.id,
+      salonId: t?.salon?.id ?? t?.salonId
+    }));
+  }, [tables, selectedSalonId, derivedSalons]);
 
   // Masa kapasitelerini localStorage'a kaydet
   useEffect(() => {
@@ -169,22 +198,22 @@ const Dashboard = () => {
   const handleReservationSubmit = (formData) => {
     // 3 saat kısıtlamasını kontrol et
     const tableReservations = Object.values(reservations).filter(res => res.tableId === selectedTable);
-    
+
     if (tableReservations.length > 0) {
       const newTimeHour = parseInt(formData.saat.split(':')[0]);
-      
+
       for (const reservation of tableReservations) {
         const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
         const timeDifference = Math.abs(newTimeHour - existingTimeHour);
-        
-                            if (timeDifference < 3) {
-                                  setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
+
+        if (timeDifference < 3) {
+          setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
           setShowWarningModal(true);
           return;
         }
       }
     }
-    
+
     addReservation(selectedTable, formData);
     setShowReservationModal(false);
     setSelectedTable(null);
@@ -230,7 +259,7 @@ const Dashboard = () => {
     // Önce rezervasyon detayları modalını kapat
     setShowTableDetailsModal(false);
     setSelectedTableDetails(null);
-    
+
     // Sonra düzenleme modalını aç
     setEditingReservation(reservation);
     setEditReservationFormData({
@@ -263,7 +292,7 @@ const Dashboard = () => {
         setShowEditReservationModal(false);
         setEditingReservation(null);
         setEditReservationFormData({});
-        
+
         // Başarı bildirimi göster
         setSuccessData({ ...formData, masaNo: editingReservation.tableId, isEdit: true });
         setShowSuccess(true);
@@ -299,13 +328,14 @@ const Dashboard = () => {
   };
 
   // İstatistikleri hesapla - Yeni kat sistemi ile
-  const allTables = floors.flatMap(floor =>
-    Array.from({ length: tableCounts[floor] || 0 }, (_, i) => `${floor}-${i + 1}`)
-  );
-  const emptyTables = allTables.filter(tableId => (tableStatus[tableId] || 'empty') === 'empty').length;
-  const occupiedTables = allTables.filter(tableId => (tableStatus[tableId] || 'empty') === 'occupied').length;
-  const reservedTables = allTables.filter(tableId => (tableStatus[tableId] || 'empty') === 'reserved').length;
-  const totalTables = allTables.length;
+  const backendTablesForStats = useMemo(() => {
+    const list = selectedSalonId ? (tables || []).filter(t => (t?.salon?.id ?? t?.salonId) === selectedSalonId) : (tables || []);
+    return list;
+  }, [tables, selectedSalonId]);
+  const totalTables = backendTablesForStats.length;
+  const emptyTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'available').length;
+  const occupiedTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'occupied').length;
+  const reservedTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'reserved').length;
 
   // Waiter ile aynı status sistemi
   const statusInfo = {
@@ -385,13 +415,13 @@ const Dashboard = () => {
   const handleAddTableConfirm = () => {
     const newTableIndex = tableCounts[selectedFloor];
     const newTableId = getTableNumber(selectedFloor, newTableIndex);
-    
+
     // Yeni masayı ekle
     setTableCounts(prev => ({
       ...prev,
       [selectedFloor]: prev[selectedFloor] + 1
     }));
-    
+
     // Yeni masanın kapasitesini kaydet
     const newCapacities = {
       ...tableCapacities,
@@ -399,7 +429,7 @@ const Dashboard = () => {
     };
     setTableCapacities(newCapacities);
     localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
-    
+
     setShowAddTableModal(false);
     setNewTableCapacity(4);
   };
@@ -456,13 +486,13 @@ const Dashboard = () => {
         ...prev,
         [selectedFloor]: Math.max(0, prev[selectedFloor] - 1)
       }));
-      
+
       // Silinen masanın kapasitesini de kaldır
       const newCapacities = { ...tableCapacities };
       delete newCapacities[tableToDelete];
       setTableCapacities(newCapacities);
       localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
-      
+
       setShowDeleteTableModal(false);
       setTableToDelete(null);
     }
@@ -611,7 +641,7 @@ const Dashboard = () => {
 
           {/* Kat Başlığı */}
           <h2 style={{ fontSize: "2rem", color: isDarkMode ? "#e0e0e0" : "#343a40", marginBottom: "1.5rem" }}>
-            {getFloorName(selectedFloor)} - Masa Seçimi
+            {(derivedSalons.find(s => String(s.id) === String(selectedSalonId))?.name || 'Salon')} - Masa Seçimi
             {showReservationMode && (
               <span style={{
                 background: '#4caf50',
@@ -659,14 +689,14 @@ const Dashboard = () => {
             gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
             gap: "1.5rem"
           }}>
-            {tables.map((table) => {
+            {displayTables.map((table) => {
               const status = getStatus(table.id);
               const order = orders[table.id] || {};
               const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
 
               return (
                 <div
-                                          key={table.id || crypto.randomUUID()}
+                  key={table.id || crypto.randomUUID()}
                   style={{
                     backgroundColor: status.color,
                     color: status.textColor,
@@ -751,9 +781,9 @@ const Dashboard = () => {
                   )}
 
                   {/* Masa kapasitesi */}
-                  <div style={{ 
-                    fontSize: "0.8rem", 
-                    color: "rgba(255,255,255,0.7)", 
+                  <div style={{
+                    fontSize: "0.8rem",
+                    color: "rgba(255,255,255,0.7)",
                     marginBottom: "2px",
                     fontWeight: "400"
                   }}>
@@ -834,16 +864,16 @@ const Dashboard = () => {
         {/* Sağ Panel - Kat Seçimi */}
         <div style={{ width: "150px", flexShrink: 0 }}>
           <h3 style={{ fontSize: "1.25rem", color: isDarkMode ? "#e0e0e0" : "#495057", marginBottom: "1rem" }}>Katlar</h3>
-          {floors.map((floor) => (
+          {(derivedSalons || []).map((salon) => (
             <div
-              key={floor}
-              onClick={() => setSelectedFloor(floor)}
-                style={{
+              key={salon.id}
+              onClick={() => setSelectedSalonId(salon.id)}
+              style={{
                 padding: "1rem",
                 marginBottom: "1rem",
                 borderRadius: "8px",
-                backgroundColor: selectedFloor === floor ? (isDarkMode ? "#007bff" : "#513653") : (isDarkMode ? "#4a4a4a" : "#e9ecef"),
-                color: selectedFloor === floor ? "white" : (isDarkMode ? "#e0e0e0" : "#495057"),
+                backgroundColor: selectedSalonId === salon.id ? (isDarkMode ? "#007bff" : "#513653") : (isDarkMode ? "#4a4a4a" : "#e9ecef"),
+                color: selectedSalonId === salon.id ? "white" : (isDarkMode ? "#e0e0e0" : "#495057"),
                 textAlign: "center",
                 cursor: "pointer",
                 fontWeight: "bold",
@@ -853,10 +883,10 @@ const Dashboard = () => {
               }}
             >
               <div style={{ cursor: 'pointer' }}>
-                {editingFloor === floor ? (
+                {editingFloor === salon.id ? (
                   <input
                     type="text"
-                    defaultValue={getFloorName(floor)}
+                    defaultValue={salon.name}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -869,32 +899,32 @@ const Dashboard = () => {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        handleFloorNameSave(floor, e.target.value);
+                        handleFloorNameSave(salon.id, e.target.value);
                       } else if (e.key === 'Escape') {
                         handleFloorNameCancel();
                       }
                     }}
-                    onBlur={(e) => handleFloorNameSave(floor, e.target.value)}
+                    onBlur={(e) => handleFloorNameSave(salon.id, e.target.value)}
                     autoFocus
                   />
                 ) : (
-                  getFloorName(floor)
+                  salon.name
                 )}
               </div>
 
               {/* Kat düzeni modunda silme butonu */}
-              {showFloorLayoutMode && floors.length > 1 && (
+              {showFloorLayoutMode && (derivedSalons || []).length > 1 && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    openDeleteFloorModal(floor);
+                    openDeleteFloorModal(salon.id);
                   }}
                   style={{
                     position: 'absolute',
                     top: '5px',
                     right: '5px',
                     background: 'rgba(255,255,255,0.2)',
-                    color: selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057'),
+                    color: selectedSalonId === salon.id ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057'),
                     border: 'none',
                     borderRadius: '50%',
                     width: '20px',
@@ -916,7 +946,7 @@ const Dashboard = () => {
                     e.target.style.background = 'rgba(255,255,255,0.2)';
                     e.target.style.color = selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
                   }}
-                  title={`${getFloorName(floor)} Katını Sil`}
+                  title={`${salon.name} Katını Sil`}
                 >
                   ✕
                 </button>
@@ -927,14 +957,14 @@ const Dashboard = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleFloorNameEdit(floor);
+                    handleFloorNameEdit(salon.id);
                   }}
                   style={{
                     position: 'absolute',
                     bottom: '5px',
                     right: '5px',
                     background: 'rgba(255,255,255,0.2)',
-                    color: selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057'),
+                    color: selectedSalonId === salon.id ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057'),
                     border: 'none',
                     borderRadius: '50%',
                     width: '20px',
@@ -956,13 +986,13 @@ const Dashboard = () => {
                     e.target.style.background = 'rgba(255,255,255,0.2)';
                     e.target.style.color = selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
                   }}
-                  title={`${getFloorName(floor)} İsmini Düzenle`}
+                  title={`${salon.name} İsmini Düzenle`}
                 >
                   ✏️
                 </button>
               )}
-              </div>
-            ))}
+            </div>
+          ))}
 
           {/* Kat düzeni modunda + butonu */}
           {showFloorLayoutMode && (
@@ -1179,9 +1209,9 @@ const Dashboard = () => {
                 >
                   Hayır, İptal
                 </button>
-        </div>
-      </div>
-    </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Masa Detayları Modal */}
@@ -1321,7 +1351,7 @@ const Dashboard = () => {
               {selectedTableDetails.status === 'reserved' && (
                 <div>
                   <h3 style={{ color: '#ffffff', marginBottom: '15px' }}>Rezervasyon Detayları:</h3>
-                  
+
                   {/* Mevcut rezervasyonları göster */}
                   {Object.values(reservations).filter(res => res.tableId === selectedTableDetails.id).map((reservation, index) => (
                     <div key={index} style={{
@@ -1396,7 +1426,7 @@ const Dashboard = () => {
                       >
                         🗑️
                       </button>
-                      
+
                       <p style={{ color: '#ffffff', margin: '5px 0' }}>
                         <strong>Müşteri:</strong> {reservation.ad} {reservation.soyad}
                       </p>
@@ -1840,14 +1870,14 @@ const Dashboard = () => {
                     key={capacity}
                     onClick={() => setNewTableCapacity(capacity)}
                     style={{
-                      background: newTableCapacity === capacity 
-                        ? (isDarkMode ? '#A294F9' : '#A294F9') 
+                      background: newTableCapacity === capacity
+                        ? (isDarkMode ? '#A294F9' : '#A294F9')
                         : (isDarkMode ? '#473653' : '#f5f5f5'),
-                      color: newTableCapacity === capacity 
-                        ? '#ffffff' 
+                      color: newTableCapacity === capacity
+                        ? '#ffffff'
                         : (isDarkMode ? '#ffffff' : '#333333'),
-                      border: `2px solid ${newTableCapacity === capacity 
-                        ? '#A294F9' 
+                      border: `2px solid ${newTableCapacity === capacity
+                        ? '#A294F9'
                         : (isDarkMode ? '#473653' : '#e0e0e0')}`,
                       padding: '10px 15px',
                       borderRadius: '8px',

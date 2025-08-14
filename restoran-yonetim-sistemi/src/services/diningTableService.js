@@ -77,7 +77,18 @@ export const diningTableService = {
     // Update table status
     async updateTableStatus(tableId, status) {
         try {
-            const response = await fetch(`${API_BASE_URL}/dining-tables/${tableId}/status/${status}`, {
+            // Normalize status to backend enum
+            const mapStatus = (s) => {
+                if (!s) return 'AVAILABLE';
+                const v = String(s).toLowerCase();
+                if (v === 'empty' || v === 'bos' || v === 'available') return 'AVAILABLE';
+                if (v === 'occupied' || v === 'dolu') return 'OCCUPIED';
+                if (v === 'reserved' || v === 'rezerve') return 'RESERVED';
+                return String(s).toUpperCase();
+            };
+            const backendStatus = mapStatus(status);
+
+            const response = await fetch(`${API_BASE_URL}/dining-tables/${tableId}/status/${backendStatus}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,

@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useCallback } from "react";
 
 export const TableContext = createContext();
 
-const API_BASE_URL = "http://localhost:5174/api";
+const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || "/api";
 
 const readFromLocalStorage = (key, initialValue) => {
     try {
@@ -30,33 +30,40 @@ export function TableProvider({ children }) {
     const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', {}));
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
     const [completedOrders, setCompletedOrders] = useState(() => readFromLocalStorage('completedOrders', {}));
-    
+
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [salons, setSalons] = useState([]);
     const [timestamps, setTimestamps] = useState({});
     const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
-    
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const apiCall = async (endpoint, options) => {
+    const apiCall = async (endpoint, options = {}) => {
         try {
             console.log(`API çağrısı yapılıyor: ${endpoint}`);
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-            
+            const token = localStorage.getItem('token');
+            const mergedOptions = { ...options };
+            const defaultHeaders = {
+                'Accept': 'application/json'
+            };
+            if (token) defaultHeaders['Authorization'] = `Bearer ${token}`;
+            mergedOptions.headers = { ...defaultHeaders, ...(options.headers || {}) };
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, mergedOptions);
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Sunucu hatası' }));
                 console.error(`API çağrısı hatası: ${endpoint}`, errorData);
                 throw new Error(errorData.message || "Beklenmedik bir hata oluştu.");
             }
-            
+
             if (response.status === 204) {
                 console.log(`API çağrısı başarılı (boş yanıt): ${endpoint}`);
                 return null;
             }
 
             const data = await response.json();
-            
+
             console.log(`API çağrısı başarılı: ${endpoint}`, data);
             return data;
 
@@ -80,20 +87,20 @@ export function TableProvider({ children }) {
                 apiCall('/orders'),
                 apiCall('/salons'),
             ]);
-        
+
             if (!productsData || productsData.length === 0) {
                 console.warn("API'den ürün verisi gelmedi veya liste boş.");
             }
-        
+
             setTables(diningTablesData || []);
             setSalons(salonsData || []);
-        
+
             const newTableStatus = (diningTablesData || []).reduce((acc, table) => {
                 acc[table.tableNumber] = table.statusName.toLowerCase();
                 return acc;
             }, {});
             setTableStatus(newTableStatus);
-        
+
             const newIngredients = (stocksData || []).reduce((acc, item) => {
                 acc[item.id] = {
                     id: item.id,
@@ -106,10 +113,10 @@ export function TableProvider({ children }) {
             }, {});
             console.log("İçerik verisi güncellendi:", newIngredients);
             setIngredients(newIngredients);
-        
+
             const newProductsByCategory = {};
             const productsByIdTemp = {};
-        
+
             (productsData || []).forEach(item => {
                 const categoryName = item.category || 'Diğer';
                 if (!newProductsByCategory[categoryName]) {
@@ -126,7 +133,7 @@ export function TableProvider({ children }) {
                 newProductsByCategory[categoryName].push(productWithRecipe);
                 productsByIdTemp[item.id] = productWithRecipe;
             });
-        
+
             (productIngredientsData || []).forEach(item => {
                 const productId = item.product?.id;
                 if (productsByIdTemp[productId]) {
@@ -139,13 +146,13 @@ export function TableProvider({ children }) {
                     console.warn(`Tarif için ürün bulunamadı. Muhtemelen API'den gelmeyen bir ürünün tarifi var. Ürün ID: ${productId}`);
                 }
             });
-        
+
             console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
             console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
-            
+
             setProducts(newProductsByCategory);
             setProductsById(productsByIdTemp);
-            
+
             const ordersByTable = (ordersData || []).reduce((acc, order) => {
                 const tableId = order.tableId;
                 acc[tableId] = {
@@ -167,7 +174,7 @@ export function TableProvider({ children }) {
 
             const completedOrdersData = (ordersData || []).filter(order => order.status === "paid");
             setCompletedOrders(completedOrdersData || {});
-            
+
             const reservationsById = (ordersData || []).filter(order => order.status === "reserved").reduce((acc, res) => {
                 acc[res.id] = res;
                 return acc;
@@ -175,7 +182,7 @@ export function TableProvider({ children }) {
             setReservations(reservationsById);
 
             console.log("Veriler başarıyla alındı ve işlendi.");
-            
+
         } catch (err) {
             console.error("Veriler alınırken hata:", err);
             setError("Veriler sunucudan alınırken bir hata oluştu.");
@@ -184,9 +191,32 @@ export function TableProvider({ children }) {
         }
     }, [apiCall]);
 
+    // Yalnızca salonlar ve masalar için hafif yükleyici (grid'ler için kritik)
+    const loadTablesAndSalons = useCallback(async () => {
+        try {
+            const [salonsData, diningTablesData] = await Promise.all([
+                apiCall('/salons'),
+                apiCall('/dining-tables')
+            ]);
+            setSalons(salonsData || []);
+            setTables(diningTablesData || []);
+            const newTableStatus = (diningTablesData || []).reduce((acc, table) => {
+                const statusName = (table?.status?.name || table?.statusName || '').toLowerCase();
+                acc[table.tableNumber] = statusName || 'empty';
+                return acc;
+            }, {});
+            setTableStatus(newTableStatus);
+        } catch (err) {
+            console.error('loadTablesAndSalons hata:', err);
+        }
+    }, [apiCall]);
+
     useEffect(() => {
+        // Önce kritik verileri hızlıca çek
+        loadTablesAndSalons();
+        // Ardından kapsamlı verileri arka planda çek
         fetchData();
-    }, [fetchData]);
+    }, [loadTablesAndSalons, fetchData]);
 
     useEffect(() => {
         saveToLocalStorage('tableStatus', tableStatus);
@@ -200,8 +230,8 @@ export function TableProvider({ children }) {
         const parsedProductId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
         return productsById[parsedProductId] || null;
     };
-    
-    const findProductRecipe = (productId) => { 
+
+    const findProductRecipe = (productId) => {
         const product = findProductById(productId);
         return product?.recipe || [];
     };
@@ -221,13 +251,20 @@ export function TableProvider({ children }) {
         }
         return true;
     };
-    
+
     const updateTableStatus = async (tableId, status) => {
         try {
-            await apiCall(`/dining-tables/${tableId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statusName: status })
+            const mapStatus = (s) => {
+                if (!s) return 'AVAILABLE';
+                const v = String(s).toLowerCase();
+                if (v === 'empty' || v === 'bos' || v === 'available') return 'AVAILABLE';
+                if (v === 'occupied' || v === 'dolu') return 'OCCUPIED';
+                if (v === 'reserved' || v === 'rezerve') return 'RESERVED';
+                return String(s).toUpperCase();
+            };
+            const backendStatus = mapStatus(status);
+            await apiCall(`/dining-tables/${tableId}/status/${backendStatus}`, {
+                method: 'PATCH'
             });
             await fetchData();
         } catch (error) {
@@ -236,13 +273,16 @@ export function TableProvider({ children }) {
         }
     };
 
+    // Dışarıdan manuel yenileme: sadece salon+masa hafif yüklemesi
+    // Not: fetchData ayrıca tüm verileri getirir; burada hızlı grid güncellemesi sağlanır
+
     const saveFinalOrder = async (tableId, finalItems) => {
         const isOrderEmpty = Object.keys(finalItems).length === 0;
         if (!isOrderEmpty && !checkIngredientStock(finalItems)) {
-            alert("Maalesef stokta yeterli içerik yok!"); 
+            alert("Maalesef stokta yeterli içerik yok!");
             return;
         }
-        
+
         const orderItemsForBackend = Object.entries(finalItems).map(([id, item]) => {
             const product = findProductById(id);
             if (!product) {
@@ -260,28 +300,28 @@ export function TableProvider({ children }) {
 
         const orderData = {
             tableId: parseInt(tableId),
-            userId: 1, 
-            waiterName: "Garson Adı", 
+            userId: 1,
+            waiterName: "Garson Adı",
             totalPrice: orderItemsForBackend.reduce((sum, item) => sum + item.totalPrice, 0),
             items: orderItemsForBackend,
         };
-        
+
         try {
             const currentOrder = orders[tableId];
             if (currentOrder && currentOrder.id) {
-                 await apiCall(`/orders/${currentOrder.id}`, {
+                await apiCall(`/orders/${currentOrder.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
-                 });
+                });
             } else {
-                 await apiCall('/orders', {
+                await apiCall('/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData),
                 });
             }
-            
+
             for (const [id, item] of Object.entries(finalItems)) {
                 const recipe = findProductRecipe(id);
                 for (const ingredient of recipe) {
@@ -300,25 +340,25 @@ export function TableProvider({ children }) {
                     });
                 }
             }
-            
+
             await fetchData();
             updateTableStatus(tableId, "occupied");
-            
+
         } catch (error) {
             console.error("Sipariş kaydedilirken hata:", error);
             setError(`Sipariş kaydedilirken hata oluştu: ${error.message}`);
         }
     };
-    
+
     const cancelOrder = async (tableId) => {
         try {
             const orderToCancel = orders[tableId];
             if (!orderToCancel || !orderToCancel.id) return;
-            
+
             await apiCall(`/orders/${orderToCancel.id}/cancel`, {
                 method: 'POST',
             });
-            
+
             for (const item of Object.values(orderToCancel.items)) {
                 const recipe = findProductRecipe(item.productId);
                 for (const ingredient of recipe) {
@@ -344,7 +384,7 @@ export function TableProvider({ children }) {
             setError(`Sipariş iptal edilirken hata oluştu: ${error.message}`);
         }
     };
-    
+
     const processPayment = async (tableId) => {
         try {
             const orderToPay = orders[tableId];
@@ -360,23 +400,23 @@ export function TableProvider({ children }) {
             setError(`Ödeme alınırken hata oluştu: ${error.message}`);
         }
     };
-    
+
     const decreaseConfirmedOrderItem = async (tableId, itemToDecrease) => {
         try {
             const currentOrder = orders[tableId];
             if (!currentOrder || !currentOrder.id) return;
-    
+
             const updatedItems = { ...currentOrder.items };
             if (updatedItems[itemToDecrease.id].count > 1) {
                 updatedItems[itemToDecrease.id].count -= 1;
             } else {
                 delete updatedItems[itemToDecrease.id];
             }
-    
+
             const orderData = {
                 tableId: parseInt(tableId),
-                userId: 1, 
-                waiterName: "Garson Adı", 
+                userId: 1,
+                waiterName: "Garson Adı",
                 totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -387,32 +427,32 @@ export function TableProvider({ children }) {
                     note: item.note || ''
                 })),
             };
-    
+
             await apiCall(`/orders/${currentOrder.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
             });
             await fetchData();
-    
+
         } catch (error) {
             console.error('Onaylanmış ürün azaltılırken hata:', error);
             setError(`Sipariş ürünü azaltılırken bir hata oluştu: ${error.message}`);
         }
     };
-    
+
     const increaseConfirmedOrderItem = async (tableId, itemToIncrease) => {
         try {
             const currentOrder = orders[tableId];
             if (!currentOrder || !currentOrder.id) return;
-    
+
             const updatedItems = { ...currentOrder.items };
             updatedItems[itemToIncrease.id].count += 1;
-    
+
             const orderData = {
                 tableId: parseInt(tableId),
-                userId: 1, 
-                waiterName: "Garson Adı", 
+                userId: 1,
+                waiterName: "Garson Adı",
                 totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -423,32 +463,32 @@ export function TableProvider({ children }) {
                     note: item.note || ''
                 })),
             };
-    
+
             await apiCall(`/orders/${currentOrder.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
             });
             await fetchData();
-    
+
         } catch (error) {
             console.error('Onaylanmış ürün artırılırken hata:', error);
             setError(`Sipariş ürünü artırılırken bir hata oluştu: ${error.message}`);
         }
     };
-    
+
     const removeConfirmedOrderItem = async (tableId, itemToRemove) => {
         try {
             const currentOrder = orders[tableId];
             if (!currentOrder || !currentOrder.id) return;
-    
+
             const updatedItems = { ...currentOrder.items };
             delete updatedItems[itemToRemove.id];
-    
+
             const orderData = {
                 tableId: parseInt(tableId),
-                userId: 1, 
-                waiterName: "Garson Adı", 
+                userId: 1,
+                waiterName: "Garson Adı",
                 totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -459,7 +499,7 @@ export function TableProvider({ children }) {
                     note: item.note || ''
                 })),
             };
-    
+
             if (Object.keys(updatedItems).length === 0) {
                 await apiCall(`/orders/${currentOrder.id}`, { method: 'DELETE' });
                 await updateTableStatus(tableId, "empty");
@@ -471,13 +511,13 @@ export function TableProvider({ children }) {
                 });
             }
             await fetchData();
-    
+
         } catch (error) {
             console.error('Onaylanmış ürün kaldırılırken hata:', error);
             setError(`Sipariş ürünü kaldırılırken bir hata oluştu: ${error.message}`);
         }
     };
-    
+
     const saveProductRecipe = async (productId, recipe) => {
         if (!recipe || recipe.length === 0) return;
 
@@ -506,7 +546,7 @@ export function TableProvider({ children }) {
                     category: category
                 }),
             });
-            
+
             await saveProductRecipe(newProduct.id, productData.recipe);
             await fetchData();
 
@@ -524,7 +564,7 @@ export function TableProvider({ children }) {
                     await apiCall(`/product-ingredients/${productId}/${item.ingredient.id}`, { method: 'DELETE' });
                 }
             }
-            
+
             await apiCall(`/products/${productId}`, {
                 method: 'DELETE',
             });
@@ -548,7 +588,7 @@ export function TableProvider({ children }) {
                     category: category
                 }),
             });
-            
+
             const existingRecipe = await apiCall(`/product-ingredients/product/${updatedProduct.id}`);
             if (existingRecipe && existingRecipe.length > 0) {
                 for (const item of existingRecipe) {
@@ -558,26 +598,26 @@ export function TableProvider({ children }) {
 
             await saveProductRecipe(updatedProduct.id, updatedProduct.recipe);
             await fetchData();
-            
+
         } catch (error) {
             console.error("Ürün güncellenirken hata:", error);
             setError(`Ürün güncellenirken bir hata oluştu: ${error.message}`);
         }
     };
 
-   const deleteProductIngredient = async (productId, ingredientId) => {
-    try {
-        await apiCall(`/product-ingredients/${productId}/${Number(ingredientId)}`, {
-            method: 'DELETE',
-        });
-        await fetchData();
-    } catch (error) {
-        console.error('Reçete içerik silinirken beklenmedik bir hata oluştu:', error);
-        setError(`Reçete içeriği silinirken bir hata oluştu: ${error.message}`);
-        throw error;
-    }
-};
-    
+    const deleteProductIngredient = async (productId, ingredientId) => {
+        try {
+            await apiCall(`/product-ingredients/${productId}/${Number(ingredientId)}`, {
+                method: 'DELETE',
+            });
+            await fetchData();
+        } catch (error) {
+            console.error('Reçete içerik silinirken beklenmedik bir hata oluştu:', error);
+            setError(`Reçete içeriği silinirken bir hata oluştu: ${error.message}`);
+            throw error;
+        }
+    };
+
     const addProductIngredient = async (productId, newIngredientData) => {
         try {
             await apiCall('/product-ingredients', {
@@ -596,7 +636,7 @@ export function TableProvider({ children }) {
             throw error;
         }
     };
-    
+
     const addIngredient = async (ingredientData) => {
         try {
             console.log("Yeni bir stok malzemesi ekleniyor:", ingredientData);
@@ -625,19 +665,19 @@ export function TableProvider({ children }) {
                 reason: "MANUAL_ADJUSTMENT",
                 note: "Yeni içerik eklendi (Başlangıç Stoğu)",
             };
-            
+
             await apiCall('/stock-movements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(movement)
             });
-            
+
             console.log("fetchData fonksiyonu çağrılıyor...");
             await fetchData();
             console.log("fetchData fonksiyonu tamamlandı.");
 
             alert("İçerik başarıyla eklendi!");
-            
+
         } catch (error) {
             console.error("İçerik eklenirken hata:", error);
             setError(`İçerik eklenirken hata oluştu: ${error.message}`);
@@ -651,13 +691,13 @@ export function TableProvider({ children }) {
                 console.log("Stok miktarında değişiklik yok. İşlem atlanıyor.");
                 return;
             }
-            
+
             await apiCall('/stock-movements', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     stockId: stockId,
-                    change: change, 
+                    change: change,
                     reason: reason,
                     note: note,
                 })
@@ -813,6 +853,7 @@ export function TableProvider({ children }) {
                 saveFinalOrder,
                 cancelOrder,
                 processPayment,
+                loadTablesAndSalons,
                 addProduct,
                 deleteProduct,
                 updateProduct,
