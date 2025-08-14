@@ -17,6 +17,17 @@ export default defineConfig({
         target: process.env.BACKEND_URL || 'https://192.168.232.113:8080', // Spring Boot backend over HTTPS (local default)
         changeOrigin: true,
         secure: false,
+        // Bazı backend'ler 401 ile WWW-Authenticate: Basic header'ı döndürdüğünde
+        // tarayıcı Basic Auth popup'ı gösterir. Geliştirme ortamında bu header'ı
+        // proxy üzerinde kaldırarak popup'ın çıkmasını engelliyoruz.
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            const authHeader = proxyRes.headers['www-authenticate'];
+            if (authHeader && /basic/i.test(String(authHeader))) {
+              delete proxyRes.headers['www-authenticate'];
+            }
+          });
+        },
       },
     },
   },
