@@ -30,7 +30,9 @@ export const reservationService = {
   // Create new reservation
   async createReservation(reservationData) {
     try {
-      console.log('reservationService - received reservationData:', reservationData);
+      console.log('🔍 reservationService.createReservation - GELEN VERİ:', reservationData);
+      console.log('🔍 Gelen veri tipi:', typeof reservationData);
+      console.log('🔍 Gelen veri keys:', Object.keys(reservationData));
 
       const requestBody = {
         tableId: toBigInt(reservationData.tableId),                       // bigint
@@ -42,15 +44,18 @@ export const reservationService = {
         createdBy: toBigInt(reservationData.createdBy ?? localStorage.getItem('userId'), 1) // bigint
       };
 
+      console.log('🔍 Oluşturulan requestBody:', requestBody);
+
       // Son bir zorunlu alan kontrolü (null/undefined yakala)
       const required = ['tableId', 'customerName', 'customerPhone', 'reservationTime', 'createdBy'];
       for (const k of required) {
         if (requestBody[k] === null || requestBody[k] === undefined || requestBody[k] === '') {
+          console.error(`❌ Zorunlu alan eksik: ${k} = ${requestBody[k]}`);
           throw new Error(`CLIENT_VALIDATION: Zorunlu alan eksik: ${k}`);
         }
       }
 
-      console.log('reservationService - created requestBody:', requestBody);
+      console.log('✅ Tüm zorunlu alanlar mevcut, backend\'e gönderiliyor...');
 
       const response = await fetch(`${API_BASE_URL}/reservations`, {
         method: 'POST',
@@ -63,15 +68,15 @@ export const reservationService = {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Backend error response:', errorText);
+        console.error('❌ Backend error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Reservation created successfully:', result);
+      console.log('✅ Rezervasyon başarıyla oluşturuldu:', result);
       return result;
     } catch (error) {
-      console.error('Error creating reservation:', error);
+      console.error('❌ Rezervasyon oluşturma hatası:', error);
       throw error;
     }
   },

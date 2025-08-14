@@ -44,6 +44,11 @@ export const ReservationProvider = ({ children }) => {
             setLoading(true);
             setError(null);
             
+            // userId'yi localStorage'dan al
+            const userId = parseInt(localStorage.getItem('userId')) || 1;
+            
+            console.log('addReservation çağrıldı:', { tableId, formData, userId });
+            
             // Backend'e gönderilecek veriyi hazırla
             const reservationData = {
                 tableId: parseInt(tableId), // bigint
@@ -55,6 +60,8 @@ export const ReservationProvider = ({ children }) => {
                 statusId: 1, // integer
                 createdBy: userId // bigint
             };
+
+            console.log('Backend\'e gönderilecek veri:', reservationData);
 
             const newReservation = await reservationService.createReservation(reservationData);
             
