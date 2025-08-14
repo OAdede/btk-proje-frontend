@@ -26,6 +26,45 @@ const PersonelEkleme = () => {
   const [success, setSuccess] = useState(null);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
+  // Telefon numarası formatı: 5xx xxx xx xx
+  const formatPhoneNumber = (value) => {
+    // Sadece rakamları al
+    const numbers = value.replace(/\D/g, '');
+    
+    // 5 ile başlamıyorsa 5 ekle
+    let formatted = numbers;
+    if (numbers.length > 0 && numbers[0] !== '5') {
+      formatted = '5' + numbers;
+    }
+    
+    // Maksimum 10 hane olacak şekilde kes
+    formatted = formatted.slice(0, 10);
+    
+    // Format uygula: 5xx xxx xx xx
+    if (formatted.length >= 1) {
+      if (formatted.length <= 3) {
+        formatted = formatted;
+      } else if (formatted.length <= 6) {
+        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3);
+      } else if (formatted.length <= 8) {
+        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6);
+      } else {
+        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6, 8) + ' ' + formatted.slice(8);
+      }
+    }
+    
+    return formatted;
+  };
+
+  // Telefon input değişikliği
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setNewPerson(prev => ({
+      ...prev,
+      phone: formatted
+    }));
+  };
+
   // Load users from backend on component mount - with strict controls
   useEffect(() => {
     let isMounted = true;
@@ -179,7 +218,14 @@ const PersonelEkleme = () => {
   const handleAddPerson = async (e) => {
     e.preventDefault();
     
-    console.log('Form submitted with data:', newPerson);
+    // Telefon numarasından boşlukları temizle
+    const cleanPhone = newPerson.phone.replace(/\s/g, '');
+    const personDataToSend = {
+      ...newPerson,
+      phone: cleanPhone
+    };
+    
+    console.log('Form submitted with data:', personDataToSend);
     
     if (!validateForm()) {
       return;
@@ -190,7 +236,7 @@ const PersonelEkleme = () => {
     setSuccess(null);
 
     try {
-      const responseData = await personnelService.registerPersonnel(newPerson);
+      const responseData = await personnelService.registerPersonnel(personDataToSend);
       
              // Add the new person to local state with the response data
        const newPersonWithId = {
@@ -333,8 +379,8 @@ const PersonelEkleme = () => {
               name="phone"
               type="tel"
               value={newPerson.phone}
-              onChange={handleInputChange}
-              placeholder="Telefon"
+              onChange={handlePhoneChange}
+              placeholder="5xx xxx xx xx"
               required
             />
             <input
