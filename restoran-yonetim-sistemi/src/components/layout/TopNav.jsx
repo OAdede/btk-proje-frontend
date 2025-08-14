@@ -66,6 +66,7 @@ const TopNav = () => {
                             {(() => {
                                 const storedName = localStorage.getItem('displayName');
                                 const storedRole = localStorage.getItem('displayRole');
+                                const storedProfileImage = localStorage.getItem('profileImage');
                                 const resolvedName = user?.email || user?.name || storedName || '';
                                 const resolveRoleLabel = (r) => {
                                     const val = String(r || '').toLowerCase();
@@ -75,8 +76,21 @@ const TopNav = () => {
                                     return r || '';
                                 };
                                 const resolvedRole = resolveRoleLabel(user?.role) || storedRole || '';
+                                const profileImage = user?.profileImage || storedProfileImage || '/default-avatar.png';
                                 return (
                                     <>
+                                        <img
+                                            src={profileImage}
+                                            alt="Profil"
+                                            style={{
+                                                width: '32px',
+                                                height: '32px',
+                                                borderRadius: '50%',
+                                                objectFit: 'cover',
+                                                border: `2px solid ${colors.border}`,
+                                                marginRight: '12px'
+                                            }}
+                                        />
                                         <span className="user-name" style={{ color: colors.text }}>{resolvedName}</span>
                                         <span className="user-role" style={{ color: colors.textSecondary }}>({resolvedRole})</span>
                                     </>
