@@ -34,7 +34,7 @@
 
 .admin-sidebar-header {
     padding: 0 8px;
-    margin-bottom: 32px;
+    margin-bottom: 8px;
 }
 
 .admin-sidebar-header h2 {
@@ -48,25 +48,32 @@
 }
 
 .admin-user-info {
-    padding: 12px 0;
+    padding: 4px 0;
     border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 12px;
 }
 
 .admin-user-name {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: var(--text);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     word-wrap: break-word;
     word-break: break-word;
+    text-align: left;
 }
 
 .admin-user-role {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     font-weight: 500;
     word-wrap: break-word;
     word-break: break-word;
+    text-align: left;
 }
 
 .admin-sidebar-nav {
@@ -265,6 +272,21 @@
         font-size: 1.3rem;
     }
 
+    .admin-user-info {
+        padding: 3px 0;
+        margin-bottom: 8px;
+        gap: 10px;
+    }
+
+    .admin-user-name {
+        font-size: 0.85rem;
+        margin-bottom: 3px;
+    }
+
+    .admin-user-role {
+        font-size: 0.7rem;
+    }
+
     .admin-nav-item {
         padding: 10px 14px;
         font-size: 0.95rem;
@@ -293,7 +315,7 @@
 
     .admin-sidebar-header {
         padding: 0 6px;
-        margin-bottom: 20px;
+        margin-bottom: 8px;
     }
 
     .admin-sidebar-header h2 {
@@ -305,6 +327,11 @@
         padding: 10px 12px;
         font-size: 0.85rem;
         border-radius: 6px;
+    }
+
+    .admin-user-info {
+        padding: 8px 0;
+        gap: 12px;
     }
 
     .admin-sidebar-bottom {
@@ -328,7 +355,7 @@
 
     .admin-sidebar-header {
         padding: 0 4px;
-        margin-bottom: 16px;
+        margin-bottom: 6px;
     }
 
     .admin-sidebar-header h2 {
@@ -341,12 +368,18 @@
         font-size: 0.8rem;
     }
 
+    .admin-user-info {
+        padding: 4px 0;
+        margin-bottom: 8px;
+    }
+
     .admin-user-name {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
+        margin-bottom: 3px;
     }
 
     .admin-user-role {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 }
 
@@ -366,7 +399,7 @@
 
     .admin-sidebar-header {
         padding: 0 2px;
-        margin-bottom: 12px;
+        margin-bottom: 4px;
     }
 
     .admin-sidebar-header h2 {
@@ -379,12 +412,19 @@
         font-size: 0.75rem;
     }
 
+    .admin-user-info {
+        padding: 3px 0;
+        margin-bottom: 6px;
+        gap: 8px;
+    }
+
     .admin-user-name {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        margin-bottom: 2px;
     }
 
     .admin-user-role {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
 }
 
@@ -441,7 +481,7 @@
     }
 
     .admin-sidebar-header {
-        margin-bottom: 12px;
+        margin-bottom: 4px;
     }
 
     .admin-sidebar-header h2 {
