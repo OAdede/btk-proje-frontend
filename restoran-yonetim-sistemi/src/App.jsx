@@ -83,99 +83,103 @@ function App() {
 
   return (
     <ThemeProvider>
-      <TableProvider>
-        <Routes>
-          {/* Layout Olmayan Sayfalar */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/backend-test" element={<BackendTest />} />
+      <Routes>
+        {/* Layout Olmayan Sayfalar */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/backend-test" element={<BackendTest />} />
 
-          {/* Admin Paneli */}
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute requiredRole="admin">
+        {/* Admin Paneli */}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <TableProvider>
                 <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="products" element={<ProductsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="stock" element={<StokUpdate />} />
-            <Route path="personnel" element={<PersonnelPage />} />
-            <Route path="menu" element={<MenuPage />} />
-            <Route path="rezervasyon" element={<Rezervasyon />} />
-            <Route path="reservations" element={<ReservationsPage />} />
-            <Route path="reservations/edit/:reservationId" element={<EditReservationPage />} />
-            <Route path="order-history" element={<OrderHistoryPage />} />
-            <Route path="restaurant-settings" element={<RestaurantSettings />} />
-            <Route path="activity-logs" element={<ActivityLogs />} />
-          </Route>
+              </TableProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="stock" element={<StokUpdate />} />
+          <Route path="personnel" element={<PersonnelPage />} />
+          <Route path="menu" element={<MenuPage />} />
+          <Route path="rezervasyon" element={<Rezervasyon />} />
+          <Route path="reservations" element={<ReservationsPage />} />
+          <Route path="reservations/edit/:reservationId" element={<EditReservationPage />} />
+          <Route path="order-history" element={<OrderHistoryPage />} />
+          <Route path="restaurant-settings" element={<RestaurantSettings />} />
+          <Route path="activity-logs" element={<ActivityLogs />} />
+        </Route>
 
-          {/* Garson Paneli */}
-          <Route
-            path="/garson/*"
-            element={
-              <ProtectedRoute requiredRole="garson">
+        {/* Garson Paneli */}
+        <Route
+          path="/garson/*"
+          element={
+            <ProtectedRoute requiredRole="garson">
+              <TableProvider>
                 <StaffLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="home" replace />} />
-            <Route path="home" element={<WaiterHome />} />
-            <Route path="order/:tableId" element={<OrderPage />} />
-            <Route path="summary/:tableId" element={<SummaryPage />} />
-            <Route path="stock" element={<StokUpdate />} />
-            <Route path="orders" element={<OrdersPage />} />
-            {/* YENİ EKLENEN ROUTE */}
-            <Route path="reservations" element={<ReservationsPage />} />
-          </Route>
+              </TableProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<WaiterHome />} />
+          <Route path="order/:tableId" element={<OrderPage />} />
+          <Route path="summary/:tableId" element={<SummaryPage />} />
+          <Route path="stock" element={<StokUpdate />} />
+          <Route path="orders" element={<OrdersPage />} />
+          {/* YENİ EKLENEN ROUTE */}
+          <Route path="reservations" element={<ReservationsPage />} />
+        </Route>
 
-          {/* Kasiyer Paneli */}
-          {/* DİKKAT: Hızlı sipariş rotası StaffLayout içine taşındı */}
-          <Route
-            path="/kasiyer/*"
-            element={
-              <ProtectedRoute requiredRole="kasiyer">
+        {/* Kasiyer Paneli */}
+        {/* DİKKAT: Hızlı sipariş rotası StaffLayout içine taşındı */}
+        <Route
+          path="/kasiyer/*"
+          element={
+            <ProtectedRoute requiredRole="kasiyer">
+              <TableProvider>
                 <StaffLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="home" replace />} />
-            <Route path="home" element={<CashierHome />} />
-            <Route path="order/:tableId" element={<OrderPage />} />
-            <Route path="summary/:tableId" element={<SummaryPage />} />
-            <Route path="stock" element={<StokUpdate />} />
-            <Route path="orders" element={<OrdersPage />} />
-            {/* Kasiyer Hızlı Sipariş rotası artık burada */}
-            <Route path="fast-order" element={<FastOrderPage />} />
-            {/* YENİ EKLENEN ROUTE */}
-            <Route path="reservations" element={<ReservationsPage />} />
-          </Route>
+              </TableProvider>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<CashierHome />} />
+          <Route path="order/:tableId" element={<OrderPage />} />
+          <Route path="summary/:tableId" element={<SummaryPage />} />
+          <Route path="stock" element={<StokUpdate />} />
+          <Route path="orders" element={<OrdersPage />} />
+          {/* Kasiyer Hızlı Sipariş rotası artık burada */}
+          <Route path="fast-order" element={<FastOrderPage />} />
+          {/* YENİ EKLENEN ROUTE */}
+          <Route path="reservations" element={<ReservationsPage />} />
+        </Route>
 
-          {/* Varsayılan Rota */}
-          <Route
-            path="*"
-            element={
-              <ProtectedRoute>
-                {(() => {
-                  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                  if (!token) return <Navigate to="/login" replace />;
-                  const info = getRoleInfoFromToken(token);
-                  const role = info.role ?? user?.role;
-                  if (!role) return <Navigate to="/login" replace />;
-                  const path = role === 'admin' ? '/admin/dashboard' : `/${role}/home`;
-                  return <Navigate to={path} replace />;
-                })()}
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </TableProvider>
+        {/* Varsayılan Rota */}
+        <Route
+          path="*"
+          element={
+            <ProtectedRoute>
+              {(() => {
+                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                if (!token) return <Navigate to="/login" replace />;
+                const info = getRoleInfoFromToken(token);
+                const role = info.role ?? user?.role;
+                if (!role) return <Navigate to="/login" replace />;
+                const path = role === 'admin' ? '/admin/dashboard' : `/${role}/home`;
+                return <Navigate to={path} replace />;
+              })()}
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </ThemeProvider>
   );
 }

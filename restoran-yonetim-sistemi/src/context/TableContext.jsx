@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useState, useEffect, useCallback, useRef } from "react";
 
 export const TableContext = createContext();
 
@@ -39,7 +39,7 @@ export function TableProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const apiCall = async (endpoint, options = {}) => {
+    const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
             console.log(`API çağrısı yapılıyor: ${endpoint}`);
             const token = localStorage.getItem('token');
@@ -71,7 +71,7 @@ export function TableProvider({ children }) {
             console.error(`API çağrısı başarısız: ${endpoint}`, err);
             throw err;
         }
-    };
+    }, []);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -211,7 +211,17 @@ export function TableProvider({ children }) {
         }
     }, [apiCall]);
 
+    const initializedRef = useRef(false);
     useEffect(() => {
+        if (initializedRef.current) return;
+        initializedRef.current = true;
+
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) {
+            // Login sayfasında gereksiz çağrıları atla
+            setIsLoading(false);
+            return;
+        }
         // Önce kritik verileri hızlıca çek
         loadTablesAndSalons();
         // Ardından kapsamlı verileri arka planda çek
@@ -360,12 +370,12 @@ export function TableProvider({ children }) {
             });
 
             for (const item of Object.values(orderToCancel.items)) {
-                const recipe = findProductRecipe(item.productId);
+                const recipe = findProductRecipe(item.id);
                 for (const ingredient of recipe) {
                     const movement = {
                         id: 0,
                         stockId: ingredient.ingredientId,
-                        change: ingredient.quantity * item.quantity,
+                        change: ingredient.quantity * item.count,
                         reason: "CANCELLED_ORDER",
                         note: "Sipariş İptali",
                         timestamp: new Date().toISOString()
@@ -417,7 +427,7 @@ export function TableProvider({ children }) {
                 tableId: parseInt(tableId),
                 userId: 1,
                 waiterName: "Garson Adı",
-                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
+                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.price * item.count, 0),
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
                     productName: item.name,
@@ -453,7 +463,7 @@ export function TableProvider({ children }) {
                 tableId: parseInt(tableId),
                 userId: 1,
                 waiterName: "Garson Adı",
-                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
+                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.price * item.count, 0),
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
                     productName: item.name,
@@ -489,7 +499,7 @@ export function TableProvider({ children }) {
                 tableId: parseInt(tableId),
                 userId: 1,
                 waiterName: "Garson Adı",
-                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
+                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.price * item.count, 0),
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
                     productName: item.name,
@@ -592,7 +602,7 @@ export function TableProvider({ children }) {
             const existingRecipe = await apiCall(`/product-ingredients/product/${updatedProduct.id}`);
             if (existingRecipe && existingRecipe.length > 0) {
                 for (const item of existingRecipe) {
-                    await apiCall(`/product-ingredients/product/${updatedProduct.id}/ingredient/${item.ingredient.id}`, { method: 'DELETE' });
+                    await apiCall(`/product-ingredients/${updatedProduct.id}/${item.ingredient.id}`, { method: 'DELETE' });
                 }
             }
 

@@ -17,26 +17,31 @@ export const authService = {
 
             if (!response.ok) {
                 let errorMessage = 'Giriş yapılırken bir hata oluştu';
+                // Response gövdesini bir kez oku ve sonra JSON parse etmeyi dene
                 try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.error || errorMessage;
-                    console.log('Server error details:', errorData);
-                } catch (parseError) {
+                    const errorText = await response.text();
+                    console.log('Server error text:', errorText);
                     try {
-                        const errorText = await response.text();
-                        console.log('Server error text:', errorText);
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                        console.log('Server error details (parsed JSON):', errorData);
+                    } catch {
                         errorMessage = errorText || errorMessage;
-                    } catch (textError) {
-                        console.log('Could not parse error response as text:', textError);
                     }
+                } catch (readErr) {
+                    console.log('Could not read error response body:', readErr);
                 }
                 console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
                 throw new Error(errorMessage);
             }
 
-            const responseData = await response.json();
-            return responseData;
+            // Başarılı yanıtta gövdeyi bir kere oku, JSON parse etmeyi dene
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch {
+                return text ? { message: text } : {};
+            }
         } catch (error) {
             throw new Error(error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
         }
