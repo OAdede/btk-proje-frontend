@@ -159,6 +159,15 @@ const AdminSidebar = () => {
         setIsSidebarOpen(false);
     };
 
+    // Sidebar durumuna göre body class'ını güncelle
+    useEffect(() => {
+        if (isSidebarOpen) {
+            document.body.classList.add('sidebar-open');
+        } else {
+            document.body.classList.remove('sidebar-open');
+        }
+    }, [isSidebarOpen]);
+
     // Bugünkü rezervasyon sayısını hesapla
     const getTodayReservationsCount = () => {
         if (!reservations || Object.keys(reservations).length === 0) {
@@ -565,29 +574,8 @@ const AdminSidebar = () => {
                         marginLeft: isSidebarOpen ? '60px' : '0px',
                         transition: 'margin-left 0.3s ease'
                     }}>
-                        <img
-                            src={profileImage}
-                            alt="Profil"
-                            style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '50%',
-                                objectFit: 'cover',
-                                border: '2px solid #fff',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                            }}
-                        />
+                        
                         <div>
-                            <div className="admin-user-name" style={{
-                                fontFamily: '00623 Sans Serif Bold, sans-serif',
-                                fontWeight: '700',
-                                fontSize: '1.4rem'
-                            }}>{displayName || 'Kullanıcı'}</div>
-                            <div className="admin-user-role" style={{
-                                fontFamily: '00623 Sans Serif Bold, sans-serif',
-                                fontWeight: '700',
-                                fontSize: '1.2rem'
-                            }}>{displayRole || 'Kullanıcı'}</div>
                         </div>
                     </div>
                 </div>
