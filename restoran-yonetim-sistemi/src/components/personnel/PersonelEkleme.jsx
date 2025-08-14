@@ -402,10 +402,7 @@ const PersonelEkleme = () => {
                 <option value="cashier">Kasiyer</option>
               </select>
               
-             {/* Debug: Seçilen değeri göster */}
-             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '5px' }}>
-               Seçilen rol: {newPerson.role}
-             </div>
+
 
             {error && (
               <div style={{ color: 'red', marginTop: '10px', fontSize: '14px', textAlign: 'center' }}>{error}</div>
