@@ -15,7 +15,7 @@
     display: flex;
     align-items: center;
     flex: 0 0 auto;
-    width: 100px;
+    width: 0;
 }
 
 .top-nav-title {
@@ -30,9 +30,9 @@
 .top-nav-center {
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex: 1;
-    margin: 0 auto;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+    margin: 0;
 }
 
 .role-switcher {
@@ -81,8 +81,8 @@
 
 .user-info {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
 }
 
 .user-name {
@@ -91,6 +91,7 @@
     color: #343a40;
     word-wrap: break-word;
     word-break: break-word;
+    margin-right: 8px;
 }
 
 .user-role {
@@ -145,6 +146,10 @@
         height: 65px;
     }
 
+    .top-nav-center {
+        justify-content: flex-start;
+    }
+
     .top-nav-title {
         font-size: 1.3rem;
     }
@@ -152,6 +157,12 @@
     .role-btn {
         padding: 6px 14px;
         font-size: 0.85rem;
+    }
+
+    .user-info img {
+        width: 28px;
+        height: 28px;
+        margin-right: 10px;
     }
 
     .user-name {
@@ -176,6 +187,10 @@
         height: 60px;
     }
 
+    .top-nav-center {
+        justify-content: flex-start;
+    }
+
     .top-nav-title {
         font-size: 1.1rem;
     }
@@ -195,7 +210,9 @@
     }
 
     .user-info {
-        display: none;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
     }
 
     .logout-btn,
@@ -210,6 +227,10 @@
     .top-nav {
         padding: 0 12px;
         height: 55px;
+    }
+
+    .top-nav-center {
+        justify-content: flex-start;
     }
 
     .top-nav-title {
@@ -230,6 +251,12 @@
         gap: 8px;
     }
 
+    .user-info img {
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+    }
+
     .logout-btn,
     .login-btn {
         padding: 4px 8px;
@@ -242,6 +269,10 @@
     .top-nav {
         padding: 0 8px;
         height: 50px;
+    }
+
+    .top-nav-center {
+        justify-content: flex-start;
     }
 
     .top-nav-title {
@@ -274,6 +305,10 @@
     .top-nav {
         height: 50px;
         padding: 0 12px;
+    }
+
+    .top-nav-center {
+        justify-content: flex-start;
     }
 
     .top-nav-title {
