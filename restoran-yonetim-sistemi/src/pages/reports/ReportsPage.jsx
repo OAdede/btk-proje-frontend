@@ -1,5 +1,6 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { TableContext } from '../../context/TableContext';
+import { analyticsService } from '../../services/analyticsService';
 import SalesChart from '../../components/reports/SalesChart';
 import PopularItemsChart from '../../components/reports/PopularItemsChart';
 import SalesByCategoryChart from '../../components/reports/SalesByCategoryChart';
@@ -8,6 +9,28 @@ import './ReportsPage.css';
 
 const ReportsPage = () => {
     const { reservations, dailyOrderCount } = useContext(TableContext);
+    const [dailySalesData, setDailySalesData] = useState(null);
+    const [isLoadingSales, setIsLoadingSales] = useState(true);
+
+    // Günlük satış verilerini API'den çek
+    const fetchDailySalesData = async () => {
+        try {
+            setIsLoadingSales(true);
+            const today = new Date().toISOString().split('T')[0];
+            const data = await analyticsService.getDailySalesSummary(today);
+            setDailySalesData(data);
+        } catch (error) {
+            console.error('Daily sales data fetch error:', error);
+            setDailySalesData(null);
+        } finally {
+            setIsLoadingSales(false);
+        }
+    };
+
+    // Component mount olduğunda veri çek
+    useEffect(() => {
+        fetchDailySalesData();
+    }, []);
 
     // Aktif rezervasyonları hesapla (bugünkü rezervasyonlar)
     const getActiveReservations = () => {
@@ -22,11 +45,17 @@ const ReportsPage = () => {
         return dailyOrderCount;
     };
 
-    // Toplam kazancı hesapla
+    // Toplam kazancı API'den al
     const getTotalEarnings = () => {
-        // Bu kısım orders verilerine göre hesaplanabilir
-        // Şimdilik sabit değer döndürüyoruz
-        return "1,500₺";
+        if (isLoadingSales) {
+            return "Yükleniyor...";
+        }
+        
+        if (dailySalesData && dailySalesData.totalRevenue) {
+            return `${dailySalesData.totalRevenue.toLocaleString()}₺`;
+        }
+        
+        return "0₺";
     };
 
     const activeReservations = getActiveReservations();
