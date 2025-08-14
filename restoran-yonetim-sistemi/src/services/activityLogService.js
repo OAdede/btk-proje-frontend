@@ -65,7 +65,9 @@ export const activityLogService = {
         if (!entityType || entityId === undefined || entityId === null) {
             throw new Error('Geçersiz varlık parametreleri');
         }
-        const res = await fetch(`${API_BASE_URL}/activity-logs/entity/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`, {
+        const type = String(entityType).toUpperCase().trim();
+        const id = String(entityId).trim();
+        const res = await fetch(`${API_BASE_URL}/activity-logs/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}`, {
             method: 'GET',
             headers: buildAuthHeaders()
         });
@@ -107,7 +109,8 @@ export const activityLogService = {
         if (!actionType) {
             throw new Error('Aksiyon tipi zorunludur');
         }
-        const res = await fetch(`${API_BASE_URL}/activity-logs/action/${encodeURIComponent(actionType)}`, {
+        const action = String(actionType).toUpperCase().replace(/\s+/g, '_');
+        const res = await fetch(`${API_BASE_URL}/activity-logs/action/${encodeURIComponent(action)}`, {
             method: 'GET',
             headers: buildAuthHeaders()
         });

@@ -167,7 +167,7 @@ const Dashboard = () => {
   };
 
   const handleReservationSubmit = (formData) => {
-    // 5 saat kısıtlamasını kontrol et
+    // 3 saat kısıtlamasını kontrol et
     const tableReservations = Object.values(reservations).filter(res => res.tableId === selectedTable);
     
     if (tableReservations.length > 0) {
@@ -177,8 +177,8 @@ const Dashboard = () => {
         const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
         const timeDifference = Math.abs(newTimeHour - existingTimeHour);
         
-        if (timeDifference < 5) {
-          setWarningMessage('Bu masaya 5 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 5 saat sonra rezervasyon yapabilirsiniz.');
+                            if (timeDifference < 3) {
+                                  setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
           setShowWarningModal(true);
           return;
         }

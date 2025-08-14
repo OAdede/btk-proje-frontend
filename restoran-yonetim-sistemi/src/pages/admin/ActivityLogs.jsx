@@ -43,6 +43,8 @@ export default function ActivityLogs() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const pageSize = 100;
 
     useEffect(() => {
         // Varsayılan: tüm kayıtları yükle
@@ -57,16 +59,55 @@ export default function ActivityLogs() {
         await run(async () => activityLogService.getByUser(userId));
     };
     const fetchByEntity = async () => {
-        if (!entityType || !entityId) return;
-        await run(async () => activityLogService.getByEntity(entityType, entityId));
+        const typeRaw = String(entityType || '').trim();
+        const idRaw = String(entityId || '').trim();
+        if (!typeRaw && !idRaw) return;
+        const type = typeRaw.toUpperCase().replace(/[\s-]+/g, '_');
+        const id = idRaw;
+        await run(async () => {
+            // Sunucuya yalnızca her ikisi varken gidelim; aksi halde istemci tarafında filtreleyelim
+            if (type && id) {
+                try {
+                    return await activityLogService.getByEntity(type, id);
+                } catch { }
+            }
+            const all = await activityLogService.getAll();
+            return (all || []).filter(l => {
+                const t = String(l.entity_type || l.entityType || '').toUpperCase();
+                const i = String(l.entity_id ?? l.entityId ?? '');
+                const typeOk = type ? t === type : true;
+                const idOk = id ? i === id : true;
+                return typeOk && idOk;
+            });
+        });
     };
     const fetchByAction = async () => {
-        if (!actionType) return;
-        await run(async () => activityLogService.getByActionType(actionType));
+        const actionRaw = String(actionType || '').trim();
+        if (!actionRaw) return;
+        const action = actionRaw.toUpperCase().replace(/\s+/g, '_');
+        await run(async () => {
+            try {
+                return await activityLogService.getByActionType(action);
+            } catch {
+                const all = await activityLogService.getAll();
+                return (all || []).filter(l => String(l.action_type || l.actionType || '').toUpperCase() === action);
+            }
+        });
     };
     const fetchByDateRange = async () => {
         if (!startDate || !endDate) return;
         await run(async () => activityLogService.getByDateRange(startDate, endDate));
+    };
+
+    const resetFiltersToAll = async () => {
+        setUserId('');
+        setEntityType('');
+        setEntityId('');
+        setActionType('');
+        setStartDate('');
+        setEndDate('');
+        setSearch('');
+        await fetchAll();
     };
 
     const run = async (fn) => {
@@ -117,6 +158,17 @@ export default function ActivityLogs() {
         });
         return sorted;
     }, [logs, search, sortOrder]);
+
+    // Arama/sıralama veya yeni veri geldiğinde sayfayı başa al
+    useEffect(() => {
+        setPage(1);
+    }, [logs, search, sortOrder]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const startIndex = (safePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageItems = filteredLogs.slice(startIndex, endIndex);
 
     const styles = {
         page: {
@@ -221,6 +273,10 @@ export default function ActivityLogs() {
                 <button onClick={fetchByDateRange} style={styles.tabBtn(false)}>Tarih aralığı</button>
 
                 <input placeholder="Ara (mesaj, aksiyon, varlık, e-posta)" value={search} onChange={e => setSearch(e.target.value)} style={{ ...styles.input, gridColumn: '1 / -1' }} />
+
+                <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={resetFiltersToAll} style={styles.tabBtn(false)}>Tümünü getir (Filtreleri sıfırla)</button>
+                </div>
             </div>
 
             {error && (
@@ -257,7 +313,7 @@ export default function ActivityLogs() {
                                 <td style={styles.td} colSpan={7}>Kayıt bulunamadı</td>
                             </tr>
                         ) : (
-                            filteredLogs.map((log) => {
+                            pageItems.map((log) => {
                                 const id = log.id ?? log.log_id ?? Math.random().toString(36).slice(2);
                                 const action = log.action_type || log.actionType || '—';
                                 const entityType = log.entity_type || log.entityType || '—';
@@ -280,6 +336,19 @@ export default function ActivityLogs() {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Sayfalama */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '12px' }}>
+                <div style={{ color: colors.textSecondary, fontSize: '14px' }}>
+                    Toplam {filteredLogs.length} kayıt • Sayfa {safePage}/{totalPages} • Sayfa boyutu {pageSize}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button style={styles.tabBtn(false)} disabled={safePage <= 1} onClick={() => setPage(1)}>« İlk</button>
+                    <button style={styles.tabBtn(false)} disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>‹ Önceki</button>
+                    <button style={styles.tabBtn(false)} disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>Sonraki ›</button>
+                    <button style={styles.tabBtn(false)} disabled={safePage >= totalPages} onClick={() => setPage(totalPages)}>Son »</button>
+                </div>
             </div>
         </div>
     );

@@ -155,7 +155,7 @@ const ReservationsPage = () => {
         return { status: contextStatus || 'empty', reservations: [] };
     };
 
-    // 5 saat kısıtlamasını kontrol eden fonksiyon
+    // 3 saat kısıtlamasını kontrol eden fonksiyon
     const canMakeReservation = (existingReservations, newTime) => {
         if (existingReservations.length === 0) return true;
 
@@ -165,7 +165,7 @@ const ReservationsPage = () => {
             const existingTimeHour = parseInt(reservation.saat.split(':')[0]);
             const timeDifference = Math.abs(newTimeHour - existingTimeHour);
 
-            if (timeDifference < 5) {
+                            if (timeDifference < 3) {
                 return false;
             }
         }
@@ -212,7 +212,7 @@ const ReservationsPage = () => {
         if (tableStatus.status === 'reserved') {
             // Rezerve masaya yeni rezervasyon ekleme
             if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
-                setWarningMessage('Bu masaya 5 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 5 saat sonra rezervasyon yapabilirsiniz.');
+                                        setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
                 setShowWarningModal(true);
                 return;
             }

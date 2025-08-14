@@ -1,19 +1,79 @@
 /* StokUpdate.css */
 /* Temel Renk Değişkenleri */
 :root {
-  --primary: #6c4298; /* Morun ana tonu */
-  --secondary: #e9e4f1; /* Açık mor, arka plan için */
-  --success: #7ED321;
-  --warning: #F5A623;
-  --danger: #D0021B;
-  --info: #4a90e2; /* Mavi kaldı, isteğe bağlı değiştirebilirsiniz */
-  --text-dark: #333;
-  --text-light: #fff;
-  --border-color: #ddd;
-  --modal-bg: rgba(0, 0, 0, 0.5);
+  /* Karanlık mod için CSS değişkenleri */
+  --primary-bg: #473653;
+  --secondary-bg: #32263A;
+  --text-color: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #b0b0b0;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --button-edit: #fbbf24;
+  --button-delete: #f87171;
+  --button-add: #4ade80;
+  --border-radius: 8px;
+  --shadow: rgba(50, 38, 58, 0.3) 0px 4px 12px;
+  --modal-input-bg: #513653;
+  --border-color: #53364D;
+  --hover-bg: #53364D;
+  --card-bg: #513653;
+  --accent-bg: #53364D;
 }
 
-/* Genel Kapsayıcı ve Başlık */
+/* Karanlık mod için ek optimizasyonlar */
+body.dark-theme {
+  --primary-bg: #473653;
+  --secondary-bg: #32263A;
+  --text-color: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #b0b0b0;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --button-edit: #fbbf24;
+  --button-delete: #f87171;
+  --button-add: #4ade80;
+  --shadow: rgba(50, 38, 58, 0.3) 0px 4px 12px;
+  --modal-input-bg: #513653;
+  --border-color: #53364D;
+  --hover-bg: #53364D;
+  --card-bg: #513653;
+  --accent-bg: #53364D;
+}
+
+/* Açık tema için CSS değişkenleri */
+body.light-theme {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f0f0f0;
+  --text-color: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --success: #28a745;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --info: #007bff;
+  --button-edit: #ffc107;
+  --button-delete: #dc3545;
+  --button-add: #28a745;
+  --shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  --modal-input-bg: #e5e5f0;
+  --border-color: #ced4da;
+  --hover-bg: #e9ecef;
+  --card-bg: #ffffff;
+  --accent-bg: #e9ecef;
+}
+
+body {
+  background-color: var(--secondary-bg);
+  color: var(--text-color);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Genel stil iyileştirmeleri */
 .stok-update-container {
   font-family: 'Inter', sans-serif;
   max-width: 900px;
