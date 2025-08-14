@@ -46,9 +46,14 @@ export const ReservationProvider = ({ children }) => {
             
             // Backend'e gönderilecek veriyi hazırla
             const reservationData = {
-                ...formData,
-                tableId: tableId,
-                floor: getFloorFromTableId(tableId)
+                tableId: parseInt(tableId), // bigint
+                customerName: `${formData.ad} ${formData.soyad}`.trim(), // character varying
+                customerPhone: formData.telefon, // character varying
+                tarih: formData.tarih, // Tarih - backend'de buildLocalDateTime ile birleştirilecek
+                saat: formData.saat, // Saat - backend'de buildLocalDateTime ile birleştirilecek
+                not: formData.not || '', // special_request - character varying
+                statusId: 1, // integer
+                createdBy: userId // bigint
             };
 
             const newReservation = await reservationService.createReservation(reservationData);
