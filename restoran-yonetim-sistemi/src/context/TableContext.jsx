@@ -1,560 +1,752 @@
-import React, { createContext, useState, useEffect } from "react";
-import { reservationService } from "../services/reservationService";
-import { diningTableService } from "../services/diningTableService";
-import { salonService } from "../services/salonService";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 
 export const TableContext = createContext();
 
-const initialProducts = {
-    "Sıcak İçecekler": [
-        { id: 101, name: "Türk Kahvesi", price: 50, stock: 100, category: "Sıcak İçecekler" },
-        { id: 102, name: "Filtre Kahve", price: 70, stock: 100, category: "Sıcak İçecekler" },
-        { id: 103, name: "Espresso", price: 60, stock: 100, category: "Sıcak İçecekler" },
-        { id: 104, name: "Çay", price: 30, stock: 200, category: "Sıcak İçecekler" }
-    ],
-    "Soğuk İçecekler": [
-        { id: 201, name: "Kola", price: 50, stock: 150, category: "Soğuk İçecekler" },
-        { id: 202, name: "Ayran", price: 40, stock: 150, category: "Soğuk İçecekler" },
-        { id: 203, name: "Su", price: 20, stock: 300, category: "Soğuk İçecekler" }
-    ],
-    "Tatlılar": [
-        { id: 301, name: "Cheesecake", price: 120, stock: 50, category: "Tatlılar" },
-        { id: 302, name: "Tiramisu", price: 110, stock: 50, category: "Tatlılar" },
-        { id: 303, name: "Sufle", price: 130, stock: 40, category: "Tatlılar" }
-    ]
-};
-
-const initialTableStatus = Array.from({ length: 10 }, (_, i) => ({
-    id: i + 1,
-    status: 'empty',
-})).reduce((acc, table) => {
-    acc[table.id] = table.status;
-    return acc;
-}, {});
+const API_BASE_URL = "http://localhost:5174/api";
 
 const readFromLocalStorage = (key, initialValue) => {
     try {
         const item = window.localStorage.getItem(key);
         return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-        console.error("Error reading from localStorage", error);
+        console.error(`Error reading from localStorage for key "${key}"`, error);
         return initialValue;
     }
 };
 
+const saveToLocalStorage = (key, value) => {
+    try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.error(`Error saving to localStorage for key "${key}"`, error);
+    }
+};
+
 export function TableProvider({ children }) {
-    const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', initialTableStatus));
+    const [products, setProducts] = useState({});
+    const [productsById, setProductsById] = useState({});
+    const [ingredients, setIngredients] = useState({});
+    const [tables, setTables] = useState([]);
+    const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', {}));
     const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
     const [completedOrders, setCompletedOrders] = useState(() => readFromLocalStorage('completedOrders', {}));
-    const [products, setProducts] = useState(() => readFromLocalStorage('products', initialProducts));
+    
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
+    const [salons, setSalons] = useState([]);
     const [timestamps, setTimestamps] = useState({});
     const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
     
-    // Backend'den masa verilerini yükle
-    const [tables, setTables] = useState([]);
-    const [salons, setSalons] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Backend'den masa ve salon verilerini yükle
-    useEffect(() => {
-        loadTablesAndSalons();
-    }, []);
-
-    const loadTablesAndSalons = async () => {
+    const apiCall = async (endpoint, options) => {
         try {
-            setLoading(true);
-            setError(null);
+            console.log(`API çağrısı yapılıyor: ${endpoint}`);
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
             
-            // Salonları yükle
-            const salonData = await salonService.getAllSalons();
-            setSalons(salonData);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Sunucu hatası' }));
+                console.error(`API çağrısı hatası: ${endpoint}`, errorData);
+                throw new Error(errorData.message || "Beklenmedik bir hata oluştu.");
+            }
             
-            // Masaları yükle
-            const tableData = await diningTableService.getAllTables();
-            setTables(tableData);
+            if (response.status === 204) {
+                console.log(`API çağrısı başarılı (boş yanıt): ${endpoint}`);
+                return null;
+            }
+
+            const data = await response.json();
             
-            // Masa durumlarını güncelle
-            const newTableStatus = {};
-            tableData.forEach(table => {
-                newTableStatus[table.tableNumber] = table.statusName.toLowerCase();
-            });
-            setTableStatus(newTableStatus);
-            
-            console.log('Tables and salons loaded from backend:', { salonData, tableData });
-        } catch (error) {
-            console.error('Error loading tables and salons:', error);
-            setError(error.message);
-            // Hata durumunda localStorage'dan yükle
-            console.log('Falling back to localStorage data');
-        } finally {
-            setLoading(false);
+            console.log(`API çağrısı başarılı: ${endpoint}`, data);
+            return data;
+
+        } catch (err) {
+            console.error(`API çağrısı başarısız: ${endpoint}`, err);
+            throw err;
         }
     };
 
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        console.log("Veriler sunucudan alınıyor...");
+
+        try {
+            const [productsData, stocksData, productIngredientsData, diningTablesData, ordersData, salonsData] = await Promise.all([
+                apiCall('/products'),
+                apiCall('/stocks'),
+                apiCall('/product-ingredients'),
+                apiCall('/dining-tables'),
+                apiCall('/orders'),
+                apiCall('/salons'),
+            ]);
+        
+            if (!productsData || productsData.length === 0) {
+                console.warn("API'den ürün verisi gelmedi veya liste boş.");
+            }
+        
+            setTables(diningTablesData || []);
+            setSalons(salonsData || []);
+        
+            const newTableStatus = (diningTablesData || []).reduce((acc, table) => {
+                acc[table.tableNumber] = table.statusName.toLowerCase();
+                return acc;
+            }, {});
+            setTableStatus(newTableStatus);
+        
+            const newIngredients = (stocksData || []).reduce((acc, item) => {
+                acc[item.id] = {
+                    id: item.id,
+                    name: item.name,
+                    unit: item.unit,
+                    stockQuantity: item.stockQuantity,
+                    minStock: item.minStock || 0
+                };
+                return acc;
+            }, {});
+            console.log("İçerik verisi güncellendi:", newIngredients);
+            setIngredients(newIngredients);
+        
+            const newProductsByCategory = {};
+            const productsByIdTemp = {};
+        
+            (productsData || []).forEach(item => {
+                const categoryName = item.category || 'Diğer';
+                if (!newProductsByCategory[categoryName]) {
+                    newProductsByCategory[categoryName] = [];
+                }
+                const productWithRecipe = {
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    category: categoryName,
+                    description: item.description,
+                    recipe: []
+                };
+                newProductsByCategory[categoryName].push(productWithRecipe);
+                productsByIdTemp[item.id] = productWithRecipe;
+            });
+        
+            (productIngredientsData || []).forEach(item => {
+                const productId = item.product?.id;
+                if (productsByIdTemp[productId]) {
+                    productsByIdTemp[productId].recipe.push({
+                        ingredientId: item.ingredient.id,
+                        quantity: item.quantityPerUnit,
+                        name: item.ingredient.name
+                    });
+                } else {
+                    console.warn(`Tarif için ürün bulunamadı. Muhtemelen API'den gelmeyen bir ürünün tarifi var. Ürün ID: ${productId}`);
+                }
+            });
+        
+            console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
+            console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
+            
+            setProducts(newProductsByCategory);
+            setProductsById(productsByIdTemp);
+            
+            const ordersByTable = (ordersData || []).reduce((acc, order) => {
+                const tableId = order.tableId;
+                acc[tableId] = {
+                    ...order,
+                    items: (order.items || []).reduce((itemAcc, item) => {
+                        itemAcc[item.productId] = {
+                            id: item.productId,
+                            name: item.productName,
+                            price: item.unitPrice,
+                            count: item.quantity,
+                            note: item.note || ''
+                        };
+                        return itemAcc;
+                    }, {})
+                };
+                return acc;
+            }, {});
+            setOrders(ordersByTable);
+
+            const completedOrdersData = (ordersData || []).filter(order => order.status === "paid");
+            setCompletedOrders(completedOrdersData || {});
+            
+            const reservationsById = (ordersData || []).filter(order => order.status === "reserved").reduce((acc, res) => {
+                acc[res.id] = res;
+                return acc;
+            }, {});
+            setReservations(reservationsById);
+
+            console.log("Veriler başarıyla alındı ve işlendi.");
+            
+        } catch (err) {
+            console.error("Veriler alınırken hata:", err);
+            setError("Veriler sunucudan alınırken bir hata oluştu.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [apiCall]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    useEffect(() => {
+        saveToLocalStorage('tableStatus', tableStatus);
+        saveToLocalStorage('orders', orders);
+        saveToLocalStorage('completedOrders', completedOrders);
+        saveToLocalStorage('reservations', reservations);
+        saveToLocalStorage('orderHistory', orderHistory);
+    }, [tableStatus, orders, completedOrders, reservations, orderHistory]);
+
+    const findProductById = (productId) => {
+        const parsedProductId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
+        return productsById[parsedProductId] || null;
+    };
+    
+    const findProductRecipe = (productId) => { 
+        const product = findProductById(productId);
+        return product?.recipe || [];
+    };
+
+    const checkIngredientStock = (orderItems, isIncrease = false) => {
+        const tempIngredients = { ...ingredients };
+        for (const [id, item] of Object.entries(orderItems)) {
+            const recipe = findProductRecipe(id);
+            if (!recipe.length) continue;
+            for (const ingredient of recipe) {
+                const required = ingredient.quantity * item.count;
+                if (!tempIngredients[ingredient.ingredientId] || tempIngredients[ingredient.ingredientId].stockQuantity < required) {
+                    return false;
+                }
+                tempIngredients[ingredient.ingredientId].stockQuantity -= required;
+            }
+        }
+        return true;
+    };
+    
     const updateTableStatus = async (tableId, status) => {
         try {
-            // Backend'de güncelle
-            await diningTableService.updateTableStatus(tableId, status);
-            
-            // Local state'i güncelle
-            setTableStatus(prev => ({ ...prev, [tableId]: status }));
+            await apiCall(`/dining-tables/${tableId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ statusName: status })
+            });
+            await fetchData();
         } catch (error) {
-            console.error('Error updating table status in backend:', error);
-            // Hata durumunda sadece local state'i güncelle
-            setTableStatus(prev => ({ ...prev, [tableId]: status }));
+            console.error('Error updating table status:', error);
+            setError('Masa durumu güncellenirken bir hata oluştu.');
         }
     };
 
-    const saveFinalOrder = (tableId, finalItems) => {
-        const prevOrder = orders[tableId] || {};
-        const updatedProducts = { ...products };
-
-        const totalPrice = Object.values(finalItems).reduce(
-            (sum, item) => sum + item.price * item.count,
-            0
-        );
-        const isOrderEmpty = totalPrice === 0;
-
-        Object.entries(finalItems).forEach(([id, newItem]) => {
-            const prevItem = prevOrder[id];
-            const quantityDifference = (newItem.count || 0) - (prevItem?.count || 0);
-            Object.keys(updatedProducts).forEach(category => {
-                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
-                if (productIndex !== -1) {
-                    const newStock = updatedProducts[category][productIndex].stock - quantityDifference;
-                    updatedProducts[category][productIndex].stock = newStock >= 0 ? newStock : 0;
-                }
-            });
+    const saveFinalOrder = async (tableId, finalItems) => {
+        const isOrderEmpty = Object.keys(finalItems).length === 0;
+        if (!isOrderEmpty && !checkIngredientStock(finalItems)) {
+            alert("Maalesef stokta yeterli içerik yok!"); 
+            return;
+        }
+        
+        const orderItemsForBackend = Object.entries(finalItems).map(([id, item]) => {
+            const product = findProductById(id);
+            if (!product) {
+                throw new Error(`Ürün ID'si bulunamadı: ${id}`);
+            }
+            return {
+                productId: product.id,
+                productName: product.name,
+                quantity: item.count,
+                unitPrice: product.price,
+                totalPrice: item.count * product.price,
+                note: item.note || ''
+            };
         });
 
-        Object.keys(prevOrder).forEach(id => {
-            if (!finalItems[id]) {
-                const prevItem = prevOrder[id];
-                Object.keys(updatedProducts).forEach(category => {
-                    const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
-                    if (productIndex !== -1) {
-                        updatedProducts[category][productIndex].stock += prevItem.count;
-                    }
+        const orderData = {
+            tableId: parseInt(tableId),
+            userId: 1, 
+            waiterName: "Garson Adı", 
+            totalPrice: orderItemsForBackend.reduce((sum, item) => sum + item.totalPrice, 0),
+            items: orderItemsForBackend,
+        };
+        
+        try {
+            const currentOrder = orders[tableId];
+            if (currentOrder && currentOrder.id) {
+                 await apiCall(`/orders/${currentOrder.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+                 });
+            } else {
+                 await apiCall('/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData),
                 });
             }
-        });
-
-        setProducts(updatedProducts);
-
-        if (isOrderEmpty) {
-            const updatedOrders = { ...orders };
-            delete updatedOrders[tableId];
-            setOrders(updatedOrders);
-            setTimestamps(prev => {
-                const copy = { ...prev };
-                delete copy[tableId];
-                return copy;
-            });
-            updateTableStatus(tableId, "empty");
-        } else {
-            setOrders(prev => ({ ...prev, [tableId]: finalItems }));
-            setTimestamps(prev => ({ ...prev, [tableId]: Date.now() }));
+            
+            for (const [id, item] of Object.entries(finalItems)) {
+                const recipe = findProductRecipe(id);
+                for (const ingredient of recipe) {
+                    const movement = {
+                        id: 0,
+                        stockId: ingredient.ingredientId,
+                        change: -(ingredient.quantity * item.count),
+                        reason: "ORDER",
+                        note: "Sipariş",
+                        timestamp: new Date().toISOString()
+                    };
+                    await apiCall('/stock-movements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(movement)
+                    });
+                }
+            }
+            
+            await fetchData();
             updateTableStatus(tableId, "occupied");
+            
+        } catch (error) {
+            console.error("Sipariş kaydedilirken hata:", error);
+            setError(`Sipariş kaydedilirken hata oluştu: ${error.message}`);
         }
     };
-
-    const restoreStock = (order) => {
-        const updatedProducts = { ...products };
-        Object.entries(order).forEach(([id, item]) => {
-            Object.keys(updatedProducts).forEach(category => {
-                const productIndex = updatedProducts[category].findIndex(p => p.id === parseInt(id));
-                if (productIndex !== -1) {
-                    updatedProducts[category][productIndex].stock += item.count;
-                }
+    
+    const cancelOrder = async (tableId) => {
+        try {
+            const orderToCancel = orders[tableId];
+            if (!orderToCancel || !orderToCancel.id) return;
+            
+            await apiCall(`/orders/${orderToCancel.id}/cancel`, {
+                method: 'POST',
             });
-        });
-        setProducts(updatedProducts);
-    };
-
-    const cancelOrder = (tableId) => {
-        const currentOrder = orders[tableId];
-        if (currentOrder) {
-            restoreStock(currentOrder);
-            const updatedOrders = { ...orders };
-            delete updatedOrders[tableId];
-            setOrders(updatedOrders);
+            
+            for (const item of Object.values(orderToCancel.items)) {
+                const recipe = findProductRecipe(item.productId);
+                for (const ingredient of recipe) {
+                    const movement = {
+                        id: 0,
+                        stockId: ingredient.ingredientId,
+                        change: ingredient.quantity * item.quantity,
+                        reason: "CANCELLED_ORDER",
+                        note: "Sipariş İptali",
+                        timestamp: new Date().toISOString()
+                    };
+                    await apiCall('/stock-movements', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(movement)
+                    });
+                }
+            }
+            await fetchData();
             updateTableStatus(tableId, "empty");
-            setTimestamps(prev => {
-                const copy = { ...prev };
-                delete copy[tableId];
-                return copy;
-            });
+        } catch (error) {
+            console.error("Sipariş iptal edilirken hata:", error);
+            setError(`Sipariş iptal edilirken hata oluştu: ${error.message}`);
         }
     };
+    
+    const processPayment = async (tableId) => {
+        try {
+            const orderToPay = orders[tableId];
+            if (!orderToPay || !orderToPay.id) return;
 
-    const processPayment = (tableId) => {
-        const orderToComplete = orders[tableId];
-        if (orderToComplete) {
-            const completedOrderId = `completed-${Date.now()}`;
-            const completedOrderDetails = {
-                ...orderToComplete,
-                tableId: tableId,
-                creationDate: new Date().toISOString()
+            await apiCall(`/orders/${orderToPay.id}/pay`, {
+                method: 'POST',
+            });
+            await fetchData();
+            updateTableStatus(tableId, "empty");
+        } catch (error) {
+            console.error("Ödeme alınırken hata:", error);
+            setError(`Ödeme alınırken hata oluştu: ${error.message}`);
+        }
+    };
+    
+    const decreaseConfirmedOrderItem = async (tableId, itemToDecrease) => {
+        try {
+            const currentOrder = orders[tableId];
+            if (!currentOrder || !currentOrder.id) return;
+    
+            const updatedItems = { ...currentOrder.items };
+            if (updatedItems[itemToDecrease.id].count > 1) {
+                updatedItems[itemToDecrease.id].count -= 1;
+            } else {
+                delete updatedItems[itemToDecrease.id];
+            }
+    
+            const orderData = {
+                tableId: parseInt(tableId),
+                userId: 1, 
+                waiterName: "Garson Adı", 
+                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
+                items: Object.values(updatedItems).map(item => ({
+                    productId: item.id,
+                    productName: item.name,
+                    quantity: item.count,
+                    unitPrice: item.price,
+                    totalPrice: item.count * item.price,
+                    note: item.note || ''
+                })),
             };
-            setCompletedOrders(prev => ({
-                ...prev,
-                [completedOrderId]: completedOrderDetails
-            }));
-            setTableStatus(prev => ({ ...prev, [tableId]: 'empty' }));
-            setOrders(prev => {
-                const newOrders = { ...prev };
-                delete newOrders[tableId];
-                return newOrders;
+    
+            await apiCall(`/orders/${currentOrder.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+            });
+            await fetchData();
+    
+        } catch (error) {
+            console.error('Onaylanmış ürün azaltılırken hata:', error);
+            setError(`Sipariş ürünü azaltılırken bir hata oluştu: ${error.message}`);
+        }
+    };
+    
+    const increaseConfirmedOrderItem = async (tableId, itemToIncrease) => {
+        try {
+            const currentOrder = orders[tableId];
+            if (!currentOrder || !currentOrder.id) return;
+    
+            const updatedItems = { ...currentOrder.items };
+            updatedItems[itemToIncrease.id].count += 1;
+    
+            const orderData = {
+                tableId: parseInt(tableId),
+                userId: 1, 
+                waiterName: "Garson Adı", 
+                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
+                items: Object.values(updatedItems).map(item => ({
+                    productId: item.id,
+                    productName: item.name,
+                    quantity: item.count,
+                    unitPrice: item.price,
+                    totalPrice: item.count * item.price,
+                    note: item.note || ''
+                })),
+            };
+    
+            await apiCall(`/orders/${currentOrder.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+            });
+            await fetchData();
+    
+        } catch (error) {
+            console.error('Onaylanmış ürün artırılırken hata:', error);
+            setError(`Sipariş ürünü artırılırken bir hata oluştu: ${error.message}`);
+        }
+    };
+    
+    const removeConfirmedOrderItem = async (tableId, itemToRemove) => {
+        try {
+            const currentOrder = orders[tableId];
+            if (!currentOrder || !currentOrder.id) return;
+    
+            const updatedItems = { ...currentOrder.items };
+            delete updatedItems[itemToRemove.id];
+    
+            const orderData = {
+                tableId: parseInt(tableId),
+                userId: 1, 
+                waiterName: "Garson Adı", 
+                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.unitPrice * item.count, 0),
+                items: Object.values(updatedItems).map(item => ({
+                    productId: item.id,
+                    productName: item.name,
+                    quantity: item.count,
+                    unitPrice: item.price,
+                    totalPrice: item.count * item.price,
+                    note: item.note || ''
+                })),
+            };
+    
+            if (Object.keys(updatedItems).length === 0) {
+                await apiCall(`/orders/${currentOrder.id}`, { method: 'DELETE' });
+                await updateTableStatus(tableId, "empty");
+            } else {
+                await apiCall(`/orders/${currentOrder.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+                });
+            }
+            await fetchData();
+    
+        } catch (error) {
+            console.error('Onaylanmış ürün kaldırılırken hata:', error);
+            setError(`Sipariş ürünü kaldırılırken bir hata oluştu: ${error.message}`);
+        }
+    };
+    
+    const saveProductRecipe = async (productId, recipe) => {
+        if (!recipe || recipe.length === 0) return;
+
+        for (const recipeItem of recipe) {
+            await apiCall('/product-ingredients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: productId,
+                    ingredientId: recipeItem.ingredientId,
+                    quantityPerUnit: recipeItem.quantity,
+                })
             });
         }
     };
 
-    const removeConfirmedOrderItem = (tableId, itemToRemove) => {
-        setOrders(prevOrders => {
-            const newOrders = { ...prevOrders };
-            if (!newOrders[tableId]) return prevOrders;
-            delete newOrders[tableId][itemToRemove.id];
-            if (Object.keys(newOrders[tableId]).length === 0) {
-                delete newOrders[tableId];
-                setTableStatus(prevStatus => ({ ...prevStatus, [tableId]: 'empty' }));
-            }
-            return newOrders;
-        });
-        setProducts(prevProducts => {
-            const newProducts = JSON.parse(JSON.stringify(prevProducts));
-            const category = itemToRemove.category;
-            if (category && newProducts[category]) {
-                const productIndex = newProducts[category].findIndex(p => p.id === itemToRemove.id);
-                if (productIndex > -1) {
-                    newProducts[category][productIndex].stock += itemToRemove.count;
-                }
-            }
-            return newProducts;
-        });
-    };
+    const addProduct = async (category, productData) => {
+        try {
+            const newProduct = await apiCall('/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: productData.name,
+                    price: productData.price,
+                    description: productData.description,
+                    category: category
+                }),
+            });
+            
+            await saveProductRecipe(newProduct.id, productData.recipe);
+            await fetchData();
 
-    const decreaseConfirmedOrderItem = (tableId, itemToDecrease) => {
-        if (itemToDecrease.count <= 1) {
-            removeConfirmedOrderItem(tableId, itemToDecrease);
-        } else {
-            setOrders(prevOrders => {
-                const newOrders = { ...prevOrders };
-                newOrders[tableId][itemToDecrease.id].count -= 1;
-                return newOrders;
-            });
-            setProducts(prevProducts => {
-                const newProducts = JSON.parse(JSON.stringify(prevProducts));
-                const category = itemToDecrease.category;
-                const productIndex = newProducts[category].findIndex(p => p.id === itemToDecrease.id);
-                if (productIndex > -1) {
-                    newProducts[category][productIndex].stock += 1;
-                }
-                return newProducts;
-            });
+        } catch (error) {
+            console.error("Ürün eklenirken hata:", error);
+            setError(`Ürün eklenirken hata oluştu: ${error.message}`);
         }
     };
 
-    const increaseConfirmedOrderItem = (tableId, itemToIncrease) => {
-        const category = itemToIncrease.category;
-        const productInStock = products[category]?.find(p => p.id === itemToIncrease.id);
-        if (productInStock && productInStock.stock > 0) {
-            setOrders(prevOrders => {
-                const newOrders = { ...prevOrders };
-                newOrders[tableId][itemToIncrease.id].count += 1;
-                return newOrders;
-            });
-            setProducts(prevProducts => {
-                const newProducts = JSON.parse(JSON.stringify(prevProducts));
-                const productIndex = newProducts[category].findIndex(p => p.id === itemToIncrease.id);
-                if (productIndex > -1) {
-                    newProducts[category][productIndex].stock -= 1;
+    const deleteProduct = async (productId) => {
+        try {
+            const existingRecipe = await apiCall(`/product-ingredients/product/${productId}`);
+            if (existingRecipe && existingRecipe.length > 0) {
+                for (const item of existingRecipe) {
+                    await apiCall(`/product-ingredients/${productId}/${item.ingredient.id}`, { method: 'DELETE' });
                 }
-                return newProducts;
+            }
+            
+            await apiCall(`/products/${productId}`, {
+                method: 'DELETE',
             });
-        } else {
-            alert("Stokta yeterli ürün yok!");
+            await fetchData();
+        } catch (error) {
+            console.error("Ürün silinirken hata:", error);
+            setError(`Ürün silinirken hata oluştu: ${error.message}`);
+        }
+    };
+
+    const updateProduct = async (category, updatedProduct) => {
+        try {
+            await apiCall(`/products/${updatedProduct.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: updatedProduct.id,
+                    name: updatedProduct.name,
+                    price: updatedProduct.price,
+                    description: updatedProduct.description,
+                    category: category
+                }),
+            });
+            
+            const existingRecipe = await apiCall(`/product-ingredients/product/${updatedProduct.id}`);
+            if (existingRecipe && existingRecipe.length > 0) {
+                for (const item of existingRecipe) {
+                    await apiCall(`/product-ingredients/product/${updatedProduct.id}/ingredient/${item.ingredient.id}`, { method: 'DELETE' });
+                }
+            }
+
+            await saveProductRecipe(updatedProduct.id, updatedProduct.recipe);
+            await fetchData();
+            
+        } catch (error) {
+            console.error("Ürün güncellenirken hata:", error);
+            setError(`Ürün güncellenirken bir hata oluştu: ${error.message}`);
+        }
+    };
+
+   const deleteProductIngredient = async (productId, ingredientId) => {
+    try {
+        await apiCall(`/product-ingredients/${productId}/${Number(ingredientId)}`, {
+            method: 'DELETE',
+        });
+        await fetchData();
+    } catch (error) {
+        console.error('Reçete içerik silinirken beklenmedik bir hata oluştu:', error);
+        setError(`Reçete içeriği silinirken bir hata oluştu: ${error.message}`);
+        throw error;
+    }
+};
+    
+    const addProductIngredient = async (productId, newIngredientData) => {
+        try {
+            await apiCall('/product-ingredients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: productId,
+                    ingredientId: Number(newIngredientData.ingredientId),
+                    quantityPerUnit: Number(newIngredientData.quantity),
+                }),
+            });
+            await fetchData();
+        } catch (error) {
+            console.error('Reçeteye içerik eklenirken hata:', error);
+            setError(`Reçeteye içerik eklenirken bir hata oluştu: ${error.message}`);
+            throw error;
+        }
+    };
+    
+    const addIngredient = async (ingredientData) => {
+        try {
+            console.log("Yeni bir stok malzemesi ekleniyor:", ingredientData);
+
+            const newIngredient = await apiCall('/stocks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: ingredientData.name,
+                    unit: ingredientData.unit,
+                    stockQuantity: Number(ingredientData.stockQuantity),
+                    minStock: Number(ingredientData.minStock) || 0,
+                })
+            });
+
+            if (!newIngredient || !newIngredient.id) {
+                throw new Error("API'den geçerli bir stok malzemesi yanıtı alınamadı.");
+            }
+
+            console.log("Stok malzemesi başarıyla eklendi, stok hareketi oluşturuluyor:", newIngredient);
+
+            // Yeni eklenen stok malzemesi için başlangıç stok hareketini kaydediyoruz
+            const movement = {
+                stockId: newIngredient.id,
+                change: newIngredient.stockQuantity,
+                reason: "MANUAL_ADJUSTMENT",
+                note: "Yeni içerik eklendi (Başlangıç Stoğu)",
+            };
+            
+            await apiCall('/stock-movements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(movement)
+            });
+            
+            console.log("fetchData fonksiyonu çağrılıyor...");
+            await fetchData();
+            console.log("fetchData fonksiyonu tamamlandı.");
+
+            alert("İçerik başarıyla eklendi!");
+            
+        } catch (error) {
+            console.error("İçerik eklenirken hata:", error);
+            setError(`İçerik eklenirken hata oluştu: ${error.message}`);
+            alert(`Hata: İçerik eklenirken bir sorun oluştu. Detaylar için konsolu kontrol edin.`);
+        }
+    };
+
+    const updateIngredientStock = async (stockId, change, reason, note = "") => {
+        try {
+            if (change === 0) {
+                console.log("Stok miktarında değişiklik yok. İşlem atlanıyor.");
+                return;
+            }
+            
+            await apiCall('/stock-movements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    stockId: stockId,
+                    change: change, 
+                    reason: reason,
+                    note: note,
+                })
+            });
+            await fetchData();
+        } catch (error) {
+            console.error("Stok güncellenirken hata:", error);
+            setError(`Stok güncellenirken hata oluştu: ${error.message}`);
+            throw error;
         }
     };
 
     const addReservation = async (tableId, reservationData) => {
         try {
-            // Backend'e rezervasyon gönder
-            const backendReservation = await reservationService.createReservation({
-                ...reservationData,
-                tableId
+            const backendReservation = await apiCall('/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...reservationData, tableId })
             });
 
-            // Backend'den gelen ID'yi kullan
             const reservationId = backendReservation.id || crypto.randomUUID();
             const newReservation = {
                 id: reservationId,
                 tableId,
                 ...reservationData,
                 createdAt: backendReservation.createdAt || new Date().toISOString(),
-                backendId: backendReservation.id, // Backend ID'sini sakla
-                statusId: backendReservation.statusId,
-                statusName: backendReservation.statusName,
-                statusNameInTurkish: backendReservation.statusNameInTurkish,
-                salonId: backendReservation.salonId,
-                salonName: backendReservation.salonName
+                backendId: backendReservation.id,
             };
 
-            // Local state'i güncelle
             setReservations(prev => ({
                 ...prev,
                 [reservationId]: newReservation
             }));
-            setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
+            await updateTableStatus(tableId, "reserved");
 
-            console.log('Reservation added successfully to backend and local state:', newReservation);
             return reservationId;
         } catch (error) {
             console.error('Failed to create reservation in backend:', error);
-            
-            // Backend hatası durumunda sadece local state'e ekle (fallback)
-            const reservationId = crypto.randomUUID();
-            const newReservation = {
-                id: reservationId,
-                tableId,
-                ...reservationData,
-                createdAt: new Date().toISOString(),
-                backendError: true, // Backend hatası olduğunu işaretle
-                statusId: 1, // Varsayılan: confirmed
-                statusName: 'confirmed',
-                statusNameInTurkish: 'Onaylandı'
-            };
-            
-            setReservations(prev => ({
-                ...prev,
-                [reservationId]: newReservation
-            }));
-            setTableStatus(prev => ({ ...prev, [tableId]: 'reserved' }));
-            
-            // Kullanıcıya hata bildirimi göster
-            alert('Rezervasyon oluşturuldu ancak veritabanına kaydedilemedi. Lütfen daha sonra tekrar deneyin.');
-            
-            return reservationId;
+            setError(`Rezervasyon oluşturulurken hata oluştu: ${error.message}`);
         }
-    };
-
-    const addSpecialReservation = async (tables, reservationData) => {
-        const reservationIds = [];
-        
-        // Masa numarasını doğru formatta al (Z1, Z2, A1, A2 gibi)
-        const getTableNumber = (floorNumber, tableIndex) => {
-            const floorPrefix = floorNumber === 0 ? "Z" : String.fromCharCode(65 + floorNumber - 1);
-            return `${floorPrefix}${tableIndex + 1}`;
-        };
-        
-        for (const table of tables) {
-            try {
-                const tableReservationData = {
-                    ...reservationData,
-                    adSoyad: reservationData.adSoyad || `${reservationData.ad} ${reservationData.soyad}`.trim(),
-                    kisiSayisi: Math.min(table.capacity, reservationData.personCount),
-                    not: `${reservationData.reservationReason} (${tables.length} masa)`,
-                    specialReservation: true,
-                    relatedTables: tables.map(t => getTableNumber(t.floor, t.tableIndex)),
-                    selectedFloor: reservationData.selectedFloor,
-                    wholeFloorOption: reservationData.wholeFloorOption,
-                    floorClosingHours: reservationData.floorClosingHours,
-                    floorClosingAllDay: reservationData.floorClosingAllDay,
-                    specialRequests: reservationData.specialRequests
-                };
-                
-                // Backend'e gönder
-                const backendReservation = await reservationService.createReservation({
-                    ...tableReservationData,
-                    tableId: table.tableNumber
-                });
-                
-                const reservationId = backendReservation.id || crypto.randomUUID();
-                const newReservation = {
-                    id: reservationId,
-                    tableId: table.tableNumber,
-                    ...tableReservationData,
-                    createdAt: backendReservation.createdAt || new Date().toISOString(),
-                    backendId: backendReservation.id,
-                    statusId: backendReservation.statusId,
-                    statusName: backendReservation.statusName,
-                    statusNameInTurkish: backendReservation.statusNameInTurkish,
-                    salonId: backendReservation.salonId,
-                    salonName: backendReservation.salonName
-                };
-                
-                setReservations(prev => ({
-                    ...prev,
-                    [reservationId]: newReservation
-                }));
-                
-                setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'reserved' }));
-                reservationIds.push(reservationId);
-                
-            } catch (error) {
-                console.error(`Failed to create special reservation for table ${table.tableNumber}:`, error);
-                // Hata durumunda sadece local state'e ekle
-                const reservationId = crypto.randomUUID();
-                const newReservation = {
-                    id: reservationId,
-                    tableId: table.tableNumber,
-                    ...tableReservationData,
-                    createdAt: new Date().toISOString(),
-                    backendError: true,
-                    statusId: 1, // Varsayılan: confirmed
-                    statusName: 'confirmed',
-                    statusNameInTurkish: 'Onaylandı'
-                };
-                
-                setReservations(prev => ({
-                    ...prev,
-                    [reservationId]: newReservation
-                }));
-                
-                setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'reserved' }));
-                reservationIds.push(reservationId);
-            }
-        }
-        
-        return reservationIds;
     };
 
     const removeReservation = async (reservationId) => {
         try {
             const reservation = reservations[reservationId];
-            
             if (reservation && reservation.backendId) {
-                // Backend'den de sil
-                await reservationService.deleteReservation(reservation.backendId);
-                console.log('Reservation deleted from backend successfully');
+                await apiCall(`/reservations/${reservation.backendId}`, {
+                    method: 'DELETE'
+                });
             }
-        } catch (error) {
-            console.error('Failed to delete reservation from backend:', error);
-            // Backend hatası olsa bile local state'den silmeye devam et
-        }
-
-        // Local state'den sil
-        setReservations(prev => {
-            const newReservations = { ...prev };
-            const reservation = newReservations[reservationId];
-            
-            if (reservation) {
-                // Eğer özel rezervasyon ise, tüm ilgili rezervasyonları sil
-                if (reservation.specialReservation && reservation.relatedTables) {
-                    let deletedCount = 0;
-                    
-                    // Aynı kişi, tarih, saat olan tüm rezervasyonları bul ve sil
-                    Object.entries(newReservations).forEach(([id, res]) => {
-                        if (res.specialReservation && 
-                            res.ad === reservation.ad && 
-                            res.soyad === reservation.soyad && 
-                            res.telefon === reservation.telefon && 
-                            res.tarih === reservation.tarih && 
-                            res.saat === reservation.saat) {
-                            delete newReservations[id];
-                            deletedCount++;
-                            // Masa durumunu boş yap
-                            if (res.tableId) {
-                                setTableStatus(prevStatus => ({ ...prevStatus, [res.tableId]: 'empty' }));
-                            }
-                        }
-                    });
-                } else {
-                    // Normal rezervasyon ise sadece bu rezervasyonu sil
+            setReservations(prev => {
+                const newReservations = { ...prev };
+                const reservation = newReservations[reservationId];
+                if (reservation) {
                     delete newReservations[reservationId];
                     if (reservation.tableId) {
                         setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: 'empty' }));
                     }
                 }
-            }
-            
-            return newReservations;
-        });
-    };
-
-
-
-    const clearAllReservations = async () => {
-        try {
-            // Backend'deki tüm rezervasyonları sil
-            const allReservations = Object.values(reservations);
-            for (const reservation of allReservations) {
-                if (reservation.backendId) {
-                    try {
-                        await reservationService.deleteReservation(reservation.backendId);
-                    } catch (error) {
-                        console.error(`Failed to delete reservation ${reservation.id} from backend:`, error);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Failed to clear reservations from backend:', error);
-        }
-
-        // Local state'i temizle
-        setReservations({});
-        localStorage.setItem('reservations', JSON.stringify({}));
-        setTableStatus(prev => {
-            const newTableStatus = { ...prev };
-            Object.keys(newTableStatus).forEach(tableId => {
-                if (newTableStatus[tableId] === 'reserved') {
-                    newTableStatus[tableId] = 'empty';
-                }
+                return newReservations;
             });
-            return newTableStatus;
-        });
+        } catch (error) {
+            console.error('Failed to delete reservation from backend:', error);
+            setError(`Rezervasyon silinirken hata oluştu: ${error.message}`);
+        }
     };
 
     const updateReservation = async (reservationId, updatedData) => {
         try {
             const reservation = reservations[reservationId];
-            
             if (reservation && reservation.backendId) {
-                // Backend'de güncelle
-                await reservationService.updateReservation(reservation.backendId, updatedData);
-                console.log('Reservation updated in backend successfully');
+                await apiCall(`/reservations/${reservation.backendId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
             }
+            setReservations(prev => ({
+                ...prev,
+                [reservationId]: {
+                    ...prev[reservationId],
+                    ...updatedData,
+                    updatedAt: new Date().toISOString()
+                }
+            }));
         } catch (error) {
             console.error('Failed to update reservation in backend:', error);
+            setError(`Rezervasyon güncellenirken hata oluştu: ${error.message}`);
         }
-
-        // Local state'i güncelle
-        setReservations(prev => ({
-            ...prev,
-            [reservationId]: {
-                ...prev[reservationId],
-                ...updatedData,
-                updatedAt: new Date().toISOString()
-            }
-        }));
-    };
-
-    const addProduct = (category, newProduct) => {
-        setProducts(prevProducts => {
-            const newProducts = { ...prevProducts };
-            if (!newProducts[category]) newProducts[category] = [];
-            const newId = crypto.randomUUID();
-            newProducts[category].push({ ...newProduct, id: newId, category });
-            return newProducts;
-        });
-    };
-
-    const deleteProduct = (category, productId) => {
-        setProducts(prevProducts => {
-            const newProducts = { ...prevProducts };
-            newProducts[category] = newProducts[category].filter(p => p.id !== productId);
-            return newProducts;
-        });
-    };
-
-    const updateProduct = (category, updatedProduct) => {
-        setProducts(prevProducts => {
-            const newProducts = { ...prevProducts };
-            const productIndex = newProducts[category].findIndex(p => p.id === updatedProduct.id);
-            if (productIndex > -1) newProducts[category][productIndex] = updatedProduct;
-            return newProducts;
-        });
     };
 
     const addOrderHistoryEntry = (orderData, action, personnelName, personnelRole) => {
@@ -569,12 +761,7 @@ export function TableProvider({ children }) {
             timestamp: timestamp,
             tableId: orderData.tableId
         };
-
-        setOrderHistory(prev => {
-            const newHistory = [newEntry, ...prev];
-            localStorage.setItem('orderHistory', JSON.stringify(newHistory));
-            return newHistory;
-        });
+        setOrderHistory(prev => [newEntry, ...prev]);
     };
 
     const getOrderContent = (orderItems) => {
@@ -588,17 +775,6 @@ export function TableProvider({ children }) {
         return (action === "Sipariş Eklendi" || action === "Sipariş Onaylandı") ? `+${total} TL` : `-${total} TL`;
     };
 
-    // localStorage'e verileri kaydet
-    useEffect(() => {
-        localStorage.setItem('tableStatus', JSON.stringify(tableStatus));
-        localStorage.setItem('orders', JSON.stringify(orders));
-        localStorage.setItem('completedOrders', JSON.stringify(completedOrders));
-        localStorage.setItem('products', JSON.stringify(products));
-        localStorage.setItem('reservations', JSON.stringify(reservations));
-        localStorage.setItem('orderHistory', JSON.stringify(orderHistory));
-    }, [tableStatus, orders, completedOrders, products, reservations, orderHistory]);
-
-    // Güncel sipariş sayımı hesapla
     const now = new Date();
     const todayStr = now.toLocaleDateString();
     const currentMonth = now.getMonth();
@@ -618,45 +794,42 @@ export function TableProvider({ children }) {
     return (
         <TableContext.Provider
             value={{
-                // Existing state
+                products,
+                productsById,
+                ingredients,
                 tableStatus,
                 orders,
                 completedOrders,
-                products,
+                tables,
+                salons,
                 reservations,
                 orderHistory,
+                isLoading,
+                error,
                 dailyOrderCount: dailyCount,
                 monthlyOrderCount: monthlyCount,
                 yearlyOrderCount: yearlyCount,
-                
-                // New backend state
-                tables,
-                salons,
-                loading,
-                error,
-                
-                // Existing functions
                 updateTableStatus,
                 saveFinalOrder,
                 cancelOrder,
                 processPayment,
-                removeConfirmedOrderItem,
-                decreaseConfirmedOrderItem,
-                increaseConfirmedOrderItem,
-                addReservation,
-                addSpecialReservation,
-                removeReservation,
-                updateReservation,
-                clearAllReservations,
                 addProduct,
                 deleteProduct,
                 updateProduct,
+                updateIngredientStock,
+                findProductById,
+                addIngredient,
+                deleteProductIngredient,
+                addProductIngredient,
+                addReservation,
+                removeReservation,
+                updateReservation,
                 addOrderHistoryEntry,
                 getOrderContent,
                 calculateFinancialImpact,
-                
-                // New backend functions
-                loadTablesAndSalons
+                removeConfirmedOrderItem,
+                decreaseConfirmedOrderItem,
+                increaseConfirmedOrderItem
             }}
         >
             {children}

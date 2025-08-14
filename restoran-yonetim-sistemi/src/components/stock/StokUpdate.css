@@ -1,448 +1,279 @@
+/* StokUpdate.css */
+/* Temel Renk Değişkenleri */
 :root {
-  /* Karanlık mod için CSS değişkenleri */
-  --primary-bg: #473653;
-  --secondary-bg: #32263A;
-  --text-color: #ffffff;
-  --text-secondary: #e0e0e0;
-  --text-muted: #b0b0b0;
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --info: #60a5fa;
-  --button-edit: #fbbf24;
-  --button-delete: #f87171;
-  --button-add: #4ade80;
-  --border-radius: 8px;
-  --shadow: rgba(50, 38, 58, 0.3) 0px 4px 12px;
-  --modal-input-bg: #513653;
-  --border-color: #53364D;
-  --hover-bg: #53364D;
-  --card-bg: #513653;
-  --accent-bg: #53364D;
+  --primary: #6c4298; /* Morun ana tonu */
+  --secondary: #e9e4f1; /* Açık mor, arka plan için */
+  --success: #7ED321;
+  --warning: #F5A623;
+  --danger: #D0021B;
+  --info: #4a90e2; /* Mavi kaldı, isteğe bağlı değiştirebilirsiniz */
+  --text-dark: #333;
+  --text-light: #fff;
+  --border-color: #ddd;
+  --modal-bg: rgba(0, 0, 0, 0.5);
 }
 
-/* Karanlık mod için ek optimizasyonlar */
-body.dark-theme {
-  --primary-bg: #473653;
-  --secondary-bg: #32263A;
-  --text-color: #ffffff;
-  --text-secondary: #e0e0e0;
-  --text-muted: #b0b0b0;
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --info: #60a5fa;
-  --button-edit: #fbbf24;
-  --button-delete: #f87171;
-  --button-add: #4ade80;
-  --shadow: rgba(50, 38, 58, 0.3) 0px 4px 12px;
-  --modal-input-bg: #513653;
-  --border-color: #53364D;
-  --hover-bg: #53364D;
-  --card-bg: #513653;
-  --accent-bg: #53364D;
-}
-
-/* Açık tema için CSS değişkenleri */
-body.light-theme {
-  --primary-bg: #ffffff;
-  --secondary-bg: #f0f0f0;
-  --text-color: #333333;
-  --text-secondary: #666666;
-  --text-muted: #999999;
-  --success: #28a745;
-  --warning: #ffc107;
-  --danger: #dc3545;
-  --info: #007bff;
-  --button-edit: #ffc107;
-  --button-delete: #dc3545;
-  --button-add: #28a745;
-  --shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
-  --modal-input-bg: #e5e5f0;
-  --border-color: #ced4da;
-  --hover-bg: #e9ecef;
-  --card-bg: #ffffff;
-  --accent-bg: #e9ecef;
-}
-
-body {
-  background-color: var(--secondary-bg);
-  color: var(--text-color);
-  font-family: 'Poppins', sans-serif;
-}
-
-/* Genel stil iyileştirmeleri */
+/* Genel Kapsayıcı ve Başlık */
 .stok-update-container {
-  max-width: 1000px;
-  margin: 32px auto;
-  background: var(--primary-bg);
-  border-radius: 16px;
-  box-shadow: var(--shadow);
-  padding: 32px;
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--secondary);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: var(--text-dark);
 }
 
 .stok-update-title {
-  margin: 0 0 16px;
-  font-weight: 700;
   text-align: center;
-  color: var(--text-color);
-  font-size: 28px;
+  color: var(--primary);
+  margin-bottom: 2rem;
+  font-size: 2rem;
 }
 
-/* Tab Butonları */
+/* Sekme Butonları */
 .tab-buttons {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
 }
 
 .tab-button {
-  background: var(--accent-bg);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 10px 24px;
+  background-color: transparent;
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
   font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 120px;
-  text-align: center;
-}
-
-.tab-button.active {
-  background: var(--info);
-  color: #ffffff;
-  border-color: var(--info);
+  margin: 0 0.5rem;
 }
 
 .tab-button:hover {
-  background: var(--hover-bg);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  background-color: var(--primary);
+  color: var(--text-light);
+}
+
+.tab-button.active {
+  background-color: var(--primary);
+  color: var(--text-light);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Kategori Filtreleri */
 .category-filter-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
-  justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .category-filter-button {
-  background: var(--accent-bg);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 8px 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 100px;
-  text-align: center;
-}
-
-.category-filter-button.active {
-  background: var(--info);
-  color: #ffffff;
-  border-color: var(--info);
+    background-color: var(--secondary);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 .category-filter-button:hover {
-  background: var(--hover-bg);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+    background-color: var(--primary);
+    color: var(--text-light);
+}
+
+.category-filter-button.active {
+    background-color: var(--primary);
+    color: var(--text-light);
 }
 
 /* Ürün Ekleme Formu */
 .add-product-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  margin-bottom: 24px;
-  box-shadow: var(--shadow);
-  transition: all 0.3s ease;
-}
-
-.add-product-form:hover {
-  box-shadow: 0 8px 24px var(--shadow);
-}
-
-.add-product-form input,
-.add-product-form textarea,
-.add-product-form select {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--modal-input-bg);
-  color: var(--text-color);
-  font-size: 1em;
-  transition: all 0.3s ease;
-}
-
-.add-product-form input:focus,
-.add-product-form textarea:focus,
-.add-product-form select:focus {
-  outline: none;
-  border-color: var(--info);
-  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-  transform: translateY(-1px);
-}
-
-.add-product-form button {
-  padding: 12px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  background-color: var(--info);
-  color: #ffffff;
-  transition: all 0.3s ease;
-}
-
-.add-product-form button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-.recipe-form {
+    background-color: #f8f6fb; /* Açık mor tonu */
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
-    gap: 10px; 
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-.recipe-list {
-    background-color: var(--accent-bg);
-    padding: 15px;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
+.add-product-form-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
 }
 
-.recipe-list:hover {
-    box-shadow: var(--shadow);
+.form-inputs, .form-recipe {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
 }
 
-.recipe-list ul {
-  list-style: none;
-  padding: 0;
-  margin-top: 8px;
+.product-name-input, .product-price-input, .product-description-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    background-color: #fff;
+    font-size: 1rem;
+    color: var(--text-dark);
 }
 
-.recipe-list li {
-  margin-bottom: 4px;
-  font-size: 0.9em;
-  color: var(--text-secondary);
+.product-description-input {
+    resize: vertical;
 }
 
 .add-product-button {
-  background: var(--success);
-  color: #ffffff;
-  padding: 14px;
-  font-weight: 700;
-  border-radius: var(--border-radius);
-  transition: all 0.3s ease;
+    background-color: var(--info);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    align-self: flex-start;
 }
 
 .add-product-button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+    background-color: #3b7ad6;
 }
 
 /* Ürün Listesi */
-.product-list, .ingredient-list {
+.product-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 8px;
-  min-height: 550px;
+  gap: 1.5rem;
 }
 
-.product-list-item, .ingredient-list-item {
-  display: flex;
-  align-items: center;
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  padding: 12px 20px;
-  gap: 20px;
-  transition: all 0.3s ease;
-}
-
-.product-list-item:hover, .ingredient-list-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px var(--shadow);
-  border-color: var(--info);
-}
-
-.item-name { 
-  flex: 2; 
-  font-weight: 600; 
-  color: var(--text-color);
-}
-
-.item-price { 
-  flex: 1; 
-  font-weight: 500; 
-  color: var(--info);
-  text-align: center;
-}
-
-.item-stock { 
-  flex: 1; 
-  font-weight: 500; 
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.item-min-stock { 
-  flex: 1; 
-  font-weight: 500; 
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.item-status { 
-  flex: 1.5; 
-  text-align: center; 
-  font-weight: 600; 
-  color: #ffffff; 
-  padding: 4px 12px; 
+.product-list-item {
+  background-color: #fff;
+  padding: 1.5rem;
   border-radius: 12px;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.item-status:hover {
-  transform: scale(1.05);
+.item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 2;
 }
 
-.item-actions { 
-  display: flex; 
-  gap: 8px; 
-  flex-shrink: 0; 
+.item-name {
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
-.item-details { 
-  flex: 3; 
-  color: var(--text-color);
+.item-price {
+    font-size: 1.1rem;
+    color: var(--primary);
+    font-weight: 600;
 }
 
-.item-status-and-actions { 
-  display: flex; 
-  align-items: center; 
-  gap: 20px; 
+.item-description {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    margin-top: 0.5rem;
 }
 
 .item-recipe {
-  font-size: 0.9em;
-  margin-top: 8px;
-  color: var(--text-muted);
+    font-size: 0.9rem;
+    color: #666;
 }
 
-.item-recipe strong {
-  color: var(--text-color);
-  font-weight: 500;
+.item-status-and-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.item-recipe ul {
-  list-style: none;
-  padding: 0;
-  margin: 4px 0 0;
-}
-
-.item-recipe li {
-  font-size: 0.9em;
-  color: var(--text-secondary);
-}
-
-.status-success { background-color: var(--success); }
-.status-warning { background-color: var(--warning); }
-.status-danger { background-color: var(--danger); }
-.status-undefined { background-color: var(--info); }
-
-.edit-button,
-.delete-button {
-  border: none;
-  border-radius: 6px;
-  padding: 7px 18px;
+.item-status {
+  color: var(--text-light);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   font-weight: 600;
-  cursor: pointer;
-  color: #ffffff;
-  transition: all 0.3s ease;
+  text-align: center;
   min-width: 80px;
 }
 
-.edit-button { 
-  background: var(--button-edit); 
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.delete-button { 
-  background: var(--button-delete); 
+.edit-button {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 600;
 }
 
-.edit-button:hover,
+.edit-button:hover {
+  background-color: #5c3983; /* Morun koyu tonu */
+}
+
+.delete-button {
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-weight: 600;
+}
+
 .delete-button:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow);
-}
-
-.delete-button:disabled { 
-  opacity: 0.5; 
-  cursor: not-allowed; 
-}
-
-.no-products-message {
-  text-align: center;
-  color: var(--text-muted);
-  margin-top: 50px;
-  font-size: 18px;
+  background-color: #b30014;
 }
 
 /* Sayfalama */
 .pagination-buttons {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-top: 24px;
+  gap: 0.5rem;
+  margin-top: 2rem;
 }
 
 .pagination-buttons button {
-  background: var(--accent-bg);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: 600;
+  background-color: var(--secondary);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 40px;
-}
-
-.pagination-buttons button.active {
-  background: var(--info);
-  color: #ffffff;
-  border-color: var(--info);
 }
 
 .pagination-buttons button:hover {
-  background: var(--hover-bg);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  background-color: var(--primary);
+  color: var(--text-light);
 }
 
-.pagination-buttons button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.pagination-buttons button.active {
+  background-color: var(--primary);
+  color: var(--text-light);
 }
 
 /* Modal */
@@ -452,262 +283,257 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(50, 38, 58, 0.8);
+  background-color: var(--modal-bg);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
 }
 
 .edit-modal-content {
-    background: var(--primary-bg);
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    width: 400px;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-}
-
-.edit-modal-content:hover {
-    box-shadow: 0 12px 32px var(--shadow);
-}
-
-.modal-recipe-section {
-    background-color: var(--accent-bg);
-    padding: 16px 24px;
-    margin: 16px -24px 20px;
-    border-radius: 0 0 12px 12px;
-    border-top: 1px solid var(--border-color);
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .edit-modal-content h3 {
-    margin-top: 0;
-    color: var(--text-color);
-    font-weight: 700;
-    font-size: 1.5rem;
+  color: var(--primary);
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
 .edit-modal-form {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.modal-item-name {
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--text-color);
+    gap: 1rem;
 }
 
 .edit-modal-form label {
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--text-dark);
 }
 
 .edit-modal-form input {
-    padding: 10px;
-    border-radius: 6px;
+    padding: 0.75rem;
     border: 1px solid var(--border-color);
-    background: var(--modal-input-bg);
-    color: var(--text-color);
-    transition: all 0.3s ease;
-}
-
-.edit-modal-form input:focus {
-    outline: none;
-    border-color: var(--info);
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-    transform: translateY(-1px);
+    border-radius: 8px;
+    font-size: 1rem;
 }
 
 .edit-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.cancel-button,
+.cancel-button {
+  background-color: #ccc;
+  color: var(--text-dark);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background-color: #b3b3b3;
+}
+
 .save-button {
-    padding: 10px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    color: #ffffff;
-    transition: all 0.3s ease;
-    min-width: 80px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.cancel-button { 
-  background: var(--button-delete); 
-}
-
-.save-button { 
-  background: var(--info); 
-}
-
-.cancel-button:hover,
 .save-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+  background-color: #5c3983;
 }
 
-/* Tarif kısmı için özel stiller */
-.item-recipe strong {
-    font-weight: 600;
-    font-size: 1.1em;
-    color: var(--text-color);
-}
-
-.item-recipe ul {
-    list-style: none;
-    padding: 0;
-    margin-top: 8px;
+.modal-recipe-section strong {
+    color: var(--primary);
 }
 
 .modal-recipe-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
-    gap: 8px;
-    padding: 8px;
+    gap: 0.5rem;
+    background-color: #f0f0f0;
+    padding: 0.5rem;
     border-radius: 6px;
-    background: var(--modal-input-bg);
-    border: 1px solid var(--border-color);
 }
 
-.modal-recipe-item:hover {
-    background: var(--hover-bg);
-    border-color: var(--info);
-}
-
-.modal-recipe-item span:first-child {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-.modal-recipe-item .recipe-quantity-input {
+.recipe-quantity-input {
     width: 60px;
-    padding: 6px 8px;
-    border: none;
-    border-radius: 6px;
-    text-align: right;
-    background-color: var(--modal-input-bg);
-    color: var(--text-color);
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.modal-recipe-item .recipe-quantity-input:focus {
-    outline: none;
-    border: 1px solid var(--info);
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-}
-
-.modal-recipe-item span:nth-of-type(2) {
-    width: 30px;
-    text-align: left;
-    color: var(--text-muted);
-    font-weight: 400;
-}
-
-.modal-recipe-item .delete-button {
-    background-color: var(--button-delete);
-    color: #ffffff;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.8em;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-}
-
-.modal-recipe-item .delete-button:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow);
+    text-align: center;
 }
 
 .recipe-add-form {
-    margin-top: 20px;
+    margin-top: 1rem;
+    border-top: 1px solid #ddd;
+    padding-top: 1rem;
 }
 
-.recipe-add-form .recipe-form {
+.recipe-form-inputs {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 
-.recipe-add-form select,
-.recipe-add-form input {
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    background-color: var(--modal-input-bg);
-    color: var(--text-color);
-    flex-grow: 1;
-    transition: all 0.3s ease;
-}
-
-.recipe-add-form select:focus,
-.recipe-add-form input:focus {
-    outline: none;
-    border-color: var(--info);
-    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-    transform: translateY(-1px);
-}
-
-.recipe-add-form .modal-add-ingredient-button {
-    background-color: var(--button-add);
-    color: #ffffff;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-weight: 600;
+.modal-add-ingredient-button {
+    background-color: var(--success);
+    color: white;
     border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
     cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
 }
 
-.recipe-add-form .modal-add-ingredient-button:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+.modal-add-ingredient-button:hover {
+    background-color: #64b71d;
 }
 
-/* Responsive tasarım için ek stiller */
-@media (max-width: 768px) {
-  .stok-update-container {
-    margin: 16px;
-    padding: 20px;
-  }
-  
-  .tab-buttons {
+/* İçerik listesi */
+.ingredient-list {
+    display: flex;
     flex-direction: column;
+    gap: 1rem;
+}
+
+.ingredient-list-item {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* Hizalama için flexbox yerine grid kullanıyoruz */
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr; /* 5 sütun oluşturuldu, ilki daha geniş */
     align-items: center;
-  }
-  
-  .category-filter-buttons {
-    justify-content: center;
-  }
-  
-  .product-list-item, .ingredient-list-item {
-    flex-direction: column;
-    gap: 12px;
+    gap: 1.5rem;
+    flex-wrap: wrap; /* Gerekirse alt satıra geçme yeteneği korunuyor */
+}
+
+.item-stock, .item-min-stock {
+    font-weight: 600;
+    color: #555;
+}
+
+.no-products-message {
     text-align: center;
-  }
-  
-  .item-actions {
-    justify-content: center;
-  }
+    color: #666;
+    margin-top: 2rem;
+}
+
+/* Yeni eklenen CSS kodları */
+.ingredient-section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.add-ingredient-form {
+    background-color: #fff;
+    border: 1px solid #e0e7ec;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.add-ingredient-form h3 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+}
+
+.add-ingredient-inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.add-ingredient-inputs input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.add-ingredient-inputs .add-button {
+    padding: 10px 15px;
+    font-size: 1rem;
+    background-color: var(--info);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.add-ingredient-inputs .add-button:hover {
+    background-color: #3b7ad6;
+}
+
+/* Responsive tasarım için güncellemeler */
+@media (max-width: 768px) {
+    .stok-update-container {
+        padding: 1rem;
+        margin: 1rem auto;
+    }
+    
+    .add-product-form-content {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .add-product-button {
+        align-self: stretch;
+    }
+
+    .product-list-item, .ingredient-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .item-status-and-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .item-status {
+        width: 100%;
+        text-align: left;
+    }
+
+    .item-actions {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .ingredient-list-item {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .add-ingredient-inputs {
+        grid-template-columns: 1fr;
+    }
 }

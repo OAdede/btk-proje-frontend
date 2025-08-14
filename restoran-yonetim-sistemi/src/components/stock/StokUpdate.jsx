@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useMemo } from "react";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useTheme } from "../../context/ThemeContext";
@@ -7,24 +7,55 @@ import './StokUpdate.css';
 const URUN_SAYFASI = 10;
 
 function StokUpdate() {
-  const { products, ingredients, addProduct, deleteProduct, updateProduct, deleteProductIngredient, updateIngredientStock, addProductIngredient } = useContext(TableContext);
+  const { 
+    products, 
+    productsById, 
+    ingredients, 
+    addProduct, 
+    deleteProduct, 
+    updateProduct, 
+    deleteProductIngredient, 
+    updateIngredientStock, 
+    addProductIngredient,
+    addIngredient
+  } = useContext(TableContext);
   const { user } = useContext(AuthContext);
   const { colors } = useTheme();
 
   const [aktifSekme, setAktifSekme] = useState("urunler");
   const [aktifKategori, setAktifKategori] = useState("Tümü");
   const [mevcutSayfa, setMevcutSayfa] = useState(1);
-  const [yeniUrun, setYeniUrun] = useState({ name: "", price: "", description: "", recipe: [] });
+  const [yeniUrun, setYeniUrun] = useState({ name: "", price: "", description: "", category: "", recipe: [] });
   const [duzenleModal, setDuzenleModal] = useState({ acik: false, urun: null });
-  const [icerikGuncelleModal, setIcerikGuncelleModal] = useState({ acik: false, icerik: null, yeniMiktar: '' });
-  const [yeniIcerik, setYeniIcerik] = useState({ ingredientId: "", quantity: "" });
+  const [icerikGuncelleModal, setIcerikGuncelleModal] = useState({ 
+    acik: false, 
+    icerik: null, 
+    yeniMiktar: '', 
+    sebep: 'PURCHASE', 
+    not: '' 
+  });
   const [isDeleting, setIsDeleting] = useState(false);
   
   const [yeniModalIcerik, setYeniModalIcerik] = useState({ ingredientId: "", quantity: "" });
+  const [yeniUrunIcerik, setYeniUrunIcerik] = useState({ ingredientId: "", quantity: "" });
+  
+  const [yeniIcerik, setYeniIcerik] = useState({ name: "", unit: "", stockQuantity: "", minStock: "" });
 
   const isAdmin = user.role === 'admin';
 
-  const kategoriler = ["Tümü", ...Object.keys(products)];
+  const kategoriler = useMemo(() => ["Tümü", ...Object.keys(products)], [products]);
+
+  const gosterilecekUrunler = useMemo(() => {
+    const allProducts = Object.values(products).flat();
+    return aktifKategori === "Tümü"
+      ? allProducts
+      : products[aktifKategori] || [];
+  }, [products, aktifKategori]);
+
+  const sonUrunIndex = mevcutSayfa * URUN_SAYFASI;
+  const ilkUrunIndex = sonUrunIndex - URUN_SAYFASI;
+  const mevcutSayfaUrunleri = gosterilecekUrunler.slice(ilkUrunIndex, sonUrunIndex);
+  const toplamSayfaSayisi = Math.ceil(gosterilecekUrunler.length / URUN_SAYFASI);
 
   const getProductStockStatus = (product) => {
     if (!product.recipe || product.recipe.length === 0) {
@@ -40,7 +71,7 @@ function StokUpdate() {
       if (ingredient.stockQuantity < item.quantity) {
         return { durum: "Tükendi", renk: 'var(--danger)' };
       }
-      if (ingredient.stockQuantity < ingredient.minStock + item.quantity) {
+      if (ingredient.stockQuantity <= ingredient.minStock) {
         isCritical = true;
       }
     }
@@ -52,19 +83,9 @@ function StokUpdate() {
     return { durum: "Yeterli", renk: 'var(--success)' };
   };
 
-  const gosterilecekUrunler =
-    aktifKategori === "Tümü"
-      ? Object.values(products).flat().map(product => ({ ...product, category: product.category }))
-      : products[aktifKategori]?.map(product => ({ ...product, category: aktifKategori })) || [];
-
-  const sonUrunIndex = mevcutSayfa * URUN_SAYFASI;
-  const ilkUrunIndex = sonUrunIndex - URUN_SAYFASI;
-  const mevcutSayfaUrunleri = gosterilecekUrunler.slice(ilkUrunIndex, sonUrunIndex);
-  const toplamSayfaSayisi = Math.ceil(gosterilecekUrunler.length / URUN_SAYFASI);
-
-  const urunEkle = () => {
-    if (!yeniUrun.name || !yeniUrun.price || !aktifKategori || aktifKategori === "Tümü" || !yeniUrun.description || yeniUrun.recipe.length === 0) {
-      alert("Lütfen tüm alanları doldurun ve ürün tarifini ekleyin.");
+  const urunEkle = async () => {
+    if (!yeniUrun.name || !yeniUrun.price || !aktifKategori || aktifKategori === "Tümü" || !yeniUrun.description) {
+      alert("Lütfen tüm zorunlu alanları doldurun.");
       return;
     }
     const productData = {
@@ -73,16 +94,20 @@ function StokUpdate() {
       description: yeniUrun.description,
       recipe: yeniUrun.recipe,
     };
-    addProduct(aktifKategori, productData);
-    setYeniUrun({ name: "", price: "", description: "", recipe: [] });
+    try {
+      await addProduct(aktifKategori, productData);
+      setYeniUrun({ name: "", price: "", description: "", recipe: [] });
+      setYeniUrunIcerik({ ingredientId: "", quantity: "" });
+    } catch (error) {
+      alert(`Ürün eklenirken hata: ${error.message}`);
+    }
   };
 
   const urunSil = async (urun) => {
     if (window.confirm(`${urun.name} ürününü silmek istediğinizden emin misiniz?`)) {
       setIsDeleting(true);
       try {
-        await deleteProduct(urun.category, urun.id);
-        console.log(`Ürün ${urun.name} başarıyla silindi.`);
+        await deleteProduct(urun.id);
       } catch (error) {
         console.error('Ürün silinirken hata:', error);
         alert(`Ürün silinirken hata: ${error.message}`);
@@ -96,10 +121,14 @@ function StokUpdate() {
     setDuzenleModal({ acik: true, urun: { ...urun, recipe: urun.recipe || [] } });
   };
 
-  const miktarKaydet = () => {
+  const miktarKaydet = async () => {
     if (!duzenleModal.urun) return;
-    updateProduct(duzenleModal.urun.category, duzenleModal.urun);
-    setDuzenleModal({ acik: false, urun: null });
+    try {
+      await updateProduct(duzenleModal.urun.category, duzenleModal.urun);
+      setDuzenleModal({ acik: false, urun: null });
+    } catch (error) {
+      alert(`Ürün güncellenirken hata: ${error.message}`);
+    }
   };
 
   const handleModalChange = (field, value) => {
@@ -110,12 +139,14 @@ function StokUpdate() {
   };
 
   const handleAddRecipeItem = () => {
-    if (yeniIcerik.ingredientId && yeniIcerik.quantity) {
+    if (yeniUrunIcerik.ingredientId && yeniUrunIcerik.quantity) {
       setYeniUrun(prev => ({
         ...prev,
-        recipe: [...prev.recipe, { ingredientId: parseInt(yeniIcerik.ingredientId), quantity: Number(yeniIcerik.quantity) }]
+        recipe: [...prev.recipe, { ingredientId: parseInt(yeniUrunIcerik.ingredientId), quantity: Number(yeniUrunIcerik.quantity) }]
       }));
-      setYeniIcerik({ ingredientId: "", quantity: "" });
+      setYeniUrunIcerik({ ingredientId: "", quantity: "" });
+    } else {
+        alert("Lütfen içerik ve miktar giriniz.");
     }
   };
   
@@ -130,31 +161,38 @@ function StokUpdate() {
     const newQuantity = parseFloat(event.target.value);
     setDuzenleModal(prev => {
       const updatedRecipe = prev.urun.recipe.map(item => 
-          item.ingredientId === ingredientId ? { ...item, quantity: isNaN(newQuantity) ? '' : newQuantity } : item
+          item.ingredientId === ingredientId ? { ...item, quantity: isNaN(newQuantity) ? 0 : newQuantity } : item
       );
       return { ...prev, urun: { ...prev.urun, recipe: updatedRecipe } };
     });
   };
 
   const handleDeleteModalIngredient = async (ingredientId) => {
-    await deleteProductIngredient(duzenleModal.urun.id, ingredientId);
-    
-    setDuzenleModal(prev => {
-      const updatedRecipe = prev.urun.recipe.filter(item => item.ingredientId !== ingredientId);
-      return { ...prev, urun: { ...prev.urun, recipe: updatedRecipe } };
-    });
+      if (!duzenleModal.urun) return;
+      try {
+          await deleteProductIngredient(duzenleModal.urun.id, ingredientId);
+          setDuzenleModal(prev => {
+              const updatedRecipe = prev.urun.recipe.filter(item => item.ingredientId !== ingredientId);
+              return { ...prev, urun: { ...prev.urun, recipe: updatedRecipe } };
+          });
+      } catch (error) {
+          alert("Malzeme silinirken bir hata oluştu.");
+      }
   };
 
   const handleAddModalIngredient = async () => {
-    if (yeniModalIcerik.ingredientId && yeniModalIcerik.quantity) {
-        const newIngredientData = {
-            productId: duzenleModal.urun.id,
-            ingredientId: parseInt(yeniModalIcerik.ingredientId),
-            quantity: parseFloat(yeniModalIcerik.quantity),
-        };
-        
+    if (!yeniModalIcerik.ingredientId || !yeniModalIcerik.quantity) {
+        alert("Lütfen içerik ve miktar giriniz.");
+        return;
+    }
+    const newIngredientData = {
+        productId: duzenleModal.urun.id,
+        ingredientId: parseInt(yeniModalIcerik.ingredientId),
+        quantity: parseFloat(yeniModalIcerik.quantity),
+    };
+    
+    try {
         await addProductIngredient(duzenleModal.urun.id, newIngredientData);
-        
         setDuzenleModal(prev => {
             const updatedRecipe = [...(prev.urun.recipe || []), { 
                 ingredientId: newIngredientData.ingredientId, 
@@ -162,8 +200,9 @@ function StokUpdate() {
             }];
             return { ...prev, urun: { ...prev.urun, recipe: updatedRecipe } };
         });
-
         setYeniModalIcerik({ ingredientId: "", quantity: "" });
+    } catch (error) {
+        alert("Reçeteye içerik eklenirken bir hata oluştu.");
     }
   };
 
@@ -182,21 +221,48 @@ function StokUpdate() {
   };
     
   const handleOpenIngredientModal = (ingredient) => {
-    setIcerikGuncelleModal({ acik: true, icerik: ingredient, yeniMiktar: ingredient.stockQuantity });
+    setIcerikGuncelleModal({ 
+        acik: true, 
+        icerik: ingredient, 
+        yeniMiktar: ingredient.stockQuantity,
+        sebep: 'PURCHASE',
+        not: ''
+    });
   };
 
   const handleIngredientStockUpdate = async () => {
-    if (!icerikGuncelleModal.icerik || !icerikGuncelleModal.yeniMiktar) return;
+    if (!icerikGuncelleModal.icerik) return;
         
-    const { icerik, yeniMiktar } = icerikGuncelleModal;
-    const amount = Number(yeniMiktar) - icerik.stockQuantity;
+    const { icerik, yeniMiktar, sebep, not } = icerikGuncelleModal;
+    const change = Number(yeniMiktar) - icerik.stockQuantity;
         
     try {
-      await updateIngredientStock(icerik.id, amount);
-      setIcerikGuncelleModal({ acik: false, icerik: null, yeniMiktar: '' });
+      await updateIngredientStock(icerik.id, change, sebep, not);
+      setIcerikGuncelleModal({ acik: false, icerik: null, yeniMiktar: '', sebep: 'PURCHASE', not: '' });
     } catch (error) {
-      console.error('Stok güncellenirken bir hata oluştu:', error);
       alert('Stok güncellenirken bir hata oluştu.');
+    }
+  };
+  
+  const handleCloseEditModal = () => {
+    setDuzenleModal({ acik: false, urun: null });
+  };
+  
+  const handleAddIngredient = async () => {
+    if (!yeniIcerik.name || !yeniIcerik.unit || yeniIcerik.stockQuantity === "" || yeniIcerik.minStock === "") {
+      alert("Lütfen tüm içerik bilgilerini doldurun.");
+      return;
+    }
+    try {
+      await addIngredient({
+        name: yeniIcerik.name,
+        unit: yeniIcerik.unit,
+        stockQuantity: Number(yeniIcerik.stockQuantity),
+        minStock: Number(yeniIcerik.minStock),
+      });
+      setYeniIcerik({ name: "", unit: "", stockQuantity: "", minStock: "" });
+    } catch (error) {
+      alert(`İçerik eklenirken hata: ${error.message}`);
     }
   };
     
@@ -238,58 +304,71 @@ function StokUpdate() {
 
             {isAdmin && aktifKategori !== "Tümü" && (
                 <div className="add-product-form">
-                    <input
-                        type="text"
-                        placeholder="Ürün Adı"
-                        value={yeniUrun.name}
-                        onChange={e => setYeniUrun({ ...yeniUrun, name: e.target.value })}
-                        className="product-name-input"
-                    />
-                    <input
-                        type="number"
-                        placeholder="Fiyat (₺)"
-                        value={yeniUrun.price}
-                        onChange={e => setYeniUrun({ ...yeniUrun, price: e.target.value })}
-                        className="product-price-input"
-                    />
-                    <textarea
-                        placeholder="Açıklama"
-                        value={yeniUrun.description}
-                        onChange={e => setYeniUrun({ ...yeniUrun, description: e.target.value })}
-                        rows="3"
-                        className="product-description-input"
-                    />
-                    <div className="recipe-form">
-                        <select
-                            value={yeniIcerik.ingredientId}
-                            onChange={e => setYeniIcerik({ ...yeniIcerik, ingredientId: e.target.value })}
-                        >
-                            <option value="">İçerik Seçin</option>
-                            {Object.values(ingredients).map(ing => (
-                                <option key={ing.id} value={ing.id}>{ing.name}</option>
-                            ))}
-                        </select>
-                        <input
-                            type="number"
-                            placeholder="Miktar"
-                            value={yeniIcerik.quantity}
-                            onChange={e => setYeniIcerik({ ...yeniIcerik, quantity: e.target.value })}
-                        />
-                        <button type="button" onClick={handleAddRecipeItem}>Tarife Ekle</button>
-                    </div>
-                    {yeniUrun.recipe.length > 0 && (
-                        <div className="recipe-list">
-                            <strong>Tarif:</strong>
-                            <ul>
-                                {yeniUrun.recipe.map((item, index) => (
-                                    <li key={index} className="modal-recipe-item">
-                                        <span>{ingredients[item.ingredientId]?.name}: {item.quantity} {ingredients[item.ingredientId]?.unit}</span>
-                                        <button onClick={() => handleRemoveNewRecipeItem(index)}>Sil</button>
-                                    </li>
-                                ))}
-                            </ul>
+                    <div className="add-product-form-content">
+                        <div className="form-inputs">
+                            <input
+                                type="text"
+                                placeholder="Ürün Adı"
+                                value={yeniUrun.name}
+                                onChange={e => setYeniUrun({ ...yeniUrun, name: e.target.value })}
+                                className="product-name-input"
+                            />
+                            <input
+                                type="number"
+                                placeholder="Fiyat (₺)"
+                                value={yeniUrun.price}
+                                onChange={e => setYeniUrun({ ...yeniUrun, price: e.target.value })}
+                                className="product-price-input"
+                            />
+                            <textarea
+                                placeholder="Açıklama"
+                                value={yeniUrun.description}
+                                onChange={e => setYeniUrun({ ...yeniUrun, description: e.target.value })}
+                                rows="3"
+                                className="product-description-input"
+                            />
                         </div>
-                    )}
+                        
+                        <div className="form-recipe">
+                            <div className="modal-recipe-section">
+                                <strong>Tarif:</strong>
+                                {yeniUrun.recipe.length > 0 && (
+                                    <ul className="recipe-list">
+                                        {yeniUrun.recipe.map((item, index) => (
+                                            <li key={index} className="modal-recipe-item">
+                                                <span>
+                                                    {ingredients[item.ingredientId]?.name}: {item.quantity} {ingredients[item.ingredientId]?.unit}
+                                                </span>
+                                                <button onClick={() => handleRemoveNewRecipeItem(index)} className="delete-button">Sil</button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                <div className="recipe-add-form">
+                                    <strong>Tarife Malzeme Ekle:</strong>
+                                    <div className="recipe-form-inputs">
+                                        <select
+                                            value={yeniUrunIcerik.ingredientId}
+                                            onChange={e => setYeniUrunIcerik({ ...yeniUrunIcerik, ingredientId: e.target.value })}
+                                        >
+                                            <option value="">İçerik Seçin</option>
+                                            {Object.values(ingredients).map(ing => (
+                                                <option key={ing.id} value={ing.id}>{ing.name}</option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="number"
+                                            placeholder="Miktar"
+                                            value={yeniUrunIcerik.quantity}
+                                            onChange={e => setYeniUrunIcerik({ ...yeniUrunIcerik, quantity: e.target.value })}
+                                        />
+                                        <button type="button" onClick={handleAddRecipeItem} className="modal-add-ingredient-button">Ekle</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <button onClick={urunEkle} className="add-product-button">
                         Ekle
                     </button>
@@ -305,6 +384,7 @@ function StokUpdate() {
                                 <div className="item-details">
                                     <div className="item-name">{urun.name}</div>
                                     <div className="item-price">{urun.price} ₺</div>
+                                    <div className="item-description">{urun.description}</div>
                                     <div className="item-recipe">
                                         <strong>Tarif:</strong>
                                         {urun.recipe && urun.recipe.length > 0 ? (
@@ -373,7 +453,7 @@ function StokUpdate() {
                             <input
                                 type="number"
                                 value={duzenleModal.urun.price}
-                                onChange={e => handleModalChange('price', Number(e.target.value))}
+                                onChange={e => handleModalChange('price', e.target.value)}
                             />
                         </div>
 
@@ -412,7 +492,7 @@ function StokUpdate() {
 
                             <div className="recipe-add-form">
                                 <strong>Tarife Malzeme Ekle:</strong>
-                                <div className="recipe-form">
+                                <div className="recipe-form-inputs">
                                     <select
                                         value={yeniModalIcerik.ingredientId}
                                         onChange={e => setYeniModalIcerik({ ...yeniModalIcerik, ingredientId: e.target.value })}
@@ -434,7 +514,7 @@ function StokUpdate() {
                         </div>
 
                         <div className="edit-modal-actions">
-                            <button onClick={() => setDuzenleModal({ acik: false, urun: null })} className="cancel-button">
+                            <button onClick={handleCloseEditModal} className="cancel-button">
                                 İptal
                             </button>
                             <button onClick={miktarKaydet} className="save-button">
@@ -446,34 +526,69 @@ function StokUpdate() {
             )}
         </>
       ) : (
-        <div className="ingredient-list">
-            {Object.values(ingredients).length > 0 ? (
-                Object.values(ingredients).map((ingredient) => {
-                    const durum = getIngredientStatus(ingredient);
-                    return (
-                        <div key={ingredient.id} className="ingredient-list-item">
-                            <div className="item-name">{ingredient.name}</div>
-                            <div className="item-stock">{ingredient.stockQuantity} {ingredient.unit}</div>
-                            <div className="item-min-stock">Min: {ingredient.minStock} {ingredient.unit}</div>
-                            <div className="item-status" style={{ backgroundColor: durum.renk }}>
-                                {durum.durum}
-                            </div>
-                            {isAdmin && (
-                                <div className="item-actions">
-                                    <button
-                                        onClick={() => handleOpenIngredientModal(ingredient)}
-                                        className="edit-button"
-                                    >
-                                        Stok Güncelle
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })
-            ) : (
-                <p className="no-products-message">Hiç içerik bulunamadı.</p>
+        <div className="ingredient-section-container">
+            {isAdmin && (
+                <div className="add-ingredient-form">
+                    <h3>Yeni İçerik Ekle</h3>
+                    <div className="add-ingredient-inputs">
+                        <input
+                            type="text"
+                            placeholder="İçerik Adı"
+                            value={yeniIcerik.name}
+                            onChange={e => setYeniIcerik({ ...yeniIcerik, name: e.target.value })}
+                        />
+                        <input
+                            type="text"
+                            placeholder="Birim (kg, adet, ml)"
+                            value={yeniIcerik.unit}
+                            onChange={e => setYeniIcerik({ ...yeniIcerik, unit: e.target.value })}
+                        />
+                        <input
+                            type="number"
+                            placeholder="Başlangıç Stoğu"
+                            value={yeniIcerik.stockQuantity}
+                            onChange={e => setYeniIcerik({ ...yeniIcerik, stockQuantity: e.target.value })}
+                        />
+                        <input
+                            type="number"
+                            placeholder="Minimum Stok"
+                            value={yeniIcerik.minStock}
+                            onChange={e => setYeniIcerik({ ...yeniIcerik, minStock: e.target.value })}
+                        />
+                        <button onClick={handleAddIngredient} className="add-button">Ekle</button>
+                    </div>
+                </div>
             )}
+            
+            <div className="ingredient-list">
+                {Object.values(ingredients).length > 0 ? (
+                    Object.values(ingredients).map((ingredient) => {
+                        const durum = getIngredientStatus(ingredient);
+                        return (
+                            <div key={ingredient.id} className="ingredient-list-item">
+                                <div className="item-name">{ingredient.name}</div>
+                                <div className="item-stock">{ingredient.stockQuantity} {ingredient.unit}</div>
+                                <div className="item-min-stock">Min: {ingredient.minStock} {ingredient.unit}</div>
+                                <div className="item-status" style={{ backgroundColor: durum.renk }}>
+                                    {durum.durum}
+                                </div>
+                                {isAdmin && (
+                                    <div className="item-actions">
+                                        <button
+                                            onClick={() => handleOpenIngredientModal(ingredient)}
+                                            className="edit-button"
+                                        >
+                                            Stok Güncelle
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                ) : (
+                    <p className="no-products-message">Hiç içerik bulunamadı.</p>
+                )}
+            </div>
         </div>
       )}
       
@@ -489,10 +604,24 @@ function StokUpdate() {
                         value={icerikGuncelleModal.yeniMiktar}
                         onChange={e => setIcerikGuncelleModal(prev => ({ ...prev, yeniMiktar: e.target.value }))}
                     />
+                    <label>Değişim Sebebi:</label>
+                    <select
+                        value={icerikGuncelleModal.sebep}
+                        onChange={e => setIcerikGuncelleModal(prev => ({ ...prev, sebep: e.target.value }))}
+                    >
+                        <option value="PURCHASE">Satın Alma</option>
+                        <option value="WASTAGE">Fire</option>
+                        <option value="MANUAL_ADJUSTMENT">Manuel Ayar</option>
+                    </select>
+                    <label>Açıklama (İsteğe bağlı):</label>
+                    <textarea
+                        value={icerikGuncelleModal.not}
+                        onChange={e => setIcerikGuncelleModal(prev => ({ ...prev, not: e.target.value }))}
+                    />
                 </div>
                 <div className="edit-modal-actions">
                     <button
-                        onClick={() => setIcerikGuncelleModal({ acik: false, icerik: null, yeniMiktar: '' })}
+                        onClick={() => setIcerikGuncelleModal({ acik: false, icerik: null, yeniMiktar: '', sebep: 'PURCHASE', not: '' })}
                         className="cancel-button"
                     >
                         İptal
