@@ -36,7 +36,7 @@ const OrderHistoryPage = () => {
     const getStyles = () => ({
         container: {
             padding: '2rem',
-            backgroundColor: isDarkMode ? '#1a1a1a' : '#f8f9fa',
+            backgroundColor: isDarkMode ? '#32263A' : '#F5EFFF',
             minHeight: '100vh',
             color: isDarkMode ? '#ffffff' : '#333333'
         },
@@ -51,7 +51,7 @@ const OrderHistoryPage = () => {
         title: {
             fontSize: '2rem',
             fontWeight: 'bold',
-            color: isDarkMode ? '#ffffff' : '#333333',
+            color: isDarkMode ? '#ffffff' : '#513653',
             margin: 0
         },
         filters: {
@@ -63,41 +63,41 @@ const OrderHistoryPage = () => {
         searchInput: {
             padding: '0.75rem 1rem',
             borderRadius: '8px',
-            border: `1px solid ${isDarkMode ? '#4a4a4a' : '#ddd'}`,
-            backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#333333',
+            border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`,
+            backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
+            color: isDarkMode ? '#ffffff' : '#513653',
             fontSize: '1rem',
             minWidth: '250px'
         },
         select: {
             padding: '0.75rem 1rem',
             borderRadius: '8px',
-            border: `1px solid ${isDarkMode ? '#4a4a4a' : '#ddd'}`,
-            backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
-            color: isDarkMode ? '#ffffff' : '#333333',
+            border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`,
+            backgroundColor: isDarkMode ? '#473653' : '#E5D9F2',
+            color: isDarkMode ? '#ffffff' : '#513653',
             fontSize: '1rem',
             cursor: 'pointer'
         },
         table: {
             width: '100%',
-            backgroundColor: isDarkMode ? '#2a2a2a' : '#ffffff',
+            backgroundColor: isDarkMode ? '#473653' : '#ffffff',
             borderRadius: '12px',
             overflow: 'hidden',
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`
+            border: `1px solid ${isDarkMode ? '#513653' : '#CDC1FF'}`
         },
         tableHeader: {
-            backgroundColor: isDarkMode ? '#3a3a3a' : '#f8f9fa',
+            backgroundColor: isDarkMode ? '#513653' : '#E5D9F2',
             padding: '1rem',
             fontWeight: 'bold',
             textAlign: 'left',
-            borderBottom: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`,
-            color: isDarkMode ? '#ffffff' : '#333333'
+            borderBottom: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`,
+            color: isDarkMode ? '#ffffff' : '#513653'
         },
         tableCell: {
             padding: '1rem',
-            borderBottom: `1px solid ${isDarkMode ? '#4a4a4a' : '#e0e0e0'}`,
-            color: isDarkMode ? '#ffffff' : '#333333'
+            borderBottom: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`,
+            color: isDarkMode ? '#ffffff' : '#513653'
         },
         actionBadge: {
             padding: '0.5rem 1rem',
@@ -113,7 +113,7 @@ const OrderHistoryPage = () => {
         emptyState: {
             textAlign: 'center',
             padding: '3rem',
-            color: isDarkMode ? '#888888' : '#666666',
+            color: isDarkMode ? '#A294F9' : '#513653',
             fontSize: '1.1rem'
         }
     });
@@ -122,26 +122,26 @@ const OrderHistoryPage = () => {
         const baseStyle = getStyles().actionBadge;
         switch (action) {
             case 'Sipariş Eklendi':
-                return { ...baseStyle, backgroundColor: '#d4edda', color: '#155724' };
+                return { ...baseStyle, backgroundColor: isDarkMode ? '#32263A' : '#E5D9F2', color: isDarkMode ? '#A294F9' : '#513653', border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}` };
             case 'Sipariş Onaylandı':
-                return { ...baseStyle, backgroundColor: '#d1ecf1', color: '#0c5460' };
+                return { ...baseStyle, backgroundColor: isDarkMode ? '#473653' : '#F5EFFF', color: isDarkMode ? '#ffffff' : '#513653', border: `1px solid ${isDarkMode ? '#513653' : '#A294F9'}` };
             case 'Sipariş İptal Edildi':
-                return { ...baseStyle, backgroundColor: '#f8d7da', color: '#721c24' };
+                return { ...baseStyle, backgroundColor: isDarkMode ? '#32263A' : '#E5D9F2', color: isDarkMode ? '#A294F9' : '#513653', border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}` };
             case 'Sipariş Silindi':
-                return { ...baseStyle, backgroundColor: '#fff3cd', color: '#856404' };
+                return { ...baseStyle, backgroundColor: isDarkMode ? '#473653' : '#F5EFFF', color: isDarkMode ? '#ffffff' : '#513653', border: `1px solid ${isDarkMode ? '#513653' : '#A294F9'}` };
             default:
-                return { ...baseStyle, backgroundColor: '#e2e3e5', color: '#383d41' };
+                return { ...baseStyle, backgroundColor: isDarkMode ? '#32263A' : '#E5D9F2', color: isDarkMode ? '#A294F9' : '#513653', border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}` };
         }
     };
 
     const getFinancialImpactStyle = (impact) => {
         const baseStyle = getStyles().financialImpact;
         if (impact.startsWith('+')) {
-            return { ...baseStyle, color: '#28a745' };
+            return { ...baseStyle, color: isDarkMode ? '#A294F9' : '#513653' };
         } else if (impact.startsWith('-')) {
-            return { ...baseStyle, color: '#dc3545' };
+            return { ...baseStyle, color: isDarkMode ? '#A294F9' : '#513653' };
         }
-        return baseStyle;
+        return { ...baseStyle, color: isDarkMode ? '#ffffff' : '#513653' };
     };
 
     const styles = getStyles();
@@ -205,7 +205,7 @@ const OrderHistoryPage = () => {
                                             </div>
                                             <div style={{ 
                                                 fontSize: '0.875rem', 
-                                                color: isDarkMode ? '#888888' : '#666666' 
+                                                color: isDarkMode ? '#A294F9' : '#513653' 
                                             }}>
                                                 {item.personnelRole}
                                             </div>
@@ -213,11 +213,13 @@ const OrderHistoryPage = () => {
                                     </td>
                                     <td style={styles.tableCell}>
                                         <span style={{
-                                            backgroundColor: isDarkMode ? '#4a4a4a' : '#f0f0f0',
+                                            backgroundColor: isDarkMode ? '#513653' : '#E5D9F2',
+                                            color: isDarkMode ? '#ffffff' : '#513653',
                                             padding: '0.25rem 0.75rem',
                                             borderRadius: '12px',
                                             fontSize: '0.875rem',
-                                            fontWeight: '500'
+                                            fontWeight: '500',
+                                            border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`
                                         }}>
                                             {item.tableId}
                                         </span>

@@ -8,11 +8,11 @@
 }
 
 .order-history-table tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(161, 148, 249, 0.1);
 }
 
 [data-theme="dark"] .order-history-table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(161, 148, 249, 0.15);
 }
 
 .action-badge {
@@ -26,10 +26,10 @@
 .search-input:focus,
 .select-input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(81, 54, 83, 0.2);
+    box-shadow: 0 0 0 2px rgba(161, 148, 249, 0.3);
 }
 
 [data-theme="dark"] .search-input:focus,
 [data-theme="dark"] .select-input:focus {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(161, 148, 249, 0.4);
 }

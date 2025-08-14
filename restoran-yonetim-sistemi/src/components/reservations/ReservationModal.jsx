@@ -319,7 +319,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               backgroundColor: isDarkMode ? '#32263A' : '#F5EFFF',
               borderRadius: '6px'
             }}>
-              ⚠️ Bu masaya yeni rezervasyon eklerken 5 saat arayla rezervasyon yapabilirsiniz.
+                                      ⚠️ Bu masaya yeni rezervasyon eklerken 3 saat arayla rezervasyon yapabilirsiniz.
             </div>
           </div>
         )}
