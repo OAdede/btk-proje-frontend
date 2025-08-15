@@ -86,27 +86,42 @@ export default function SuccessNotification({ visible, onClose, reservationData 
           marginBottom: "15px",
           animation: "fadeInUp 0.6s ease-out 0.4s both"
         }}>
-          {reservationData?.isEdit ? "✅ Rezervasyon Güncellendi!" : "✅ Rezervasyon Başarılı!"}
+          {reservationData?.message ? "✅ Başarılı!" : 
+           reservationData?.isEdit ? "✅ Rezervasyon Güncellendi!" : "✅ Rezervasyon Başarılı!"}
         </h2>
 
-        {/* Rezervasyon Detayları */}
-        <div style={{
-          backgroundColor: isDarkMode ? "#3a3a3a" : "#f8f9fa",
-          padding: "15px",
-          borderRadius: "10px",
-          marginBottom: "20px",
-          animation: "fadeInUp 0.6s ease-out 0.5s both"
-        }}>
-          <div style={{ color: colors.textColor, fontSize: "0.9rem", lineHeight: "1.6" }}>
-            {reservationData?.masaNo && <div><strong>Masa:</strong> {reservationData?.masaNo}</div>}
-            <div><strong>Müşteri:</strong> {reservationData?.ad} {reservationData?.soyad}</div>
-            <div><strong>Tarih:</strong> {reservationData?.tarih}</div>
-            <div><strong>Saat:</strong> {reservationData?.saat}</div>
-            <div><strong>Kişi Sayısı:</strong> {reservationData?.kisiSayisi}</div>
-            {reservationData?.telefon && <div><strong>Telefon:</strong> {reservationData?.telefon}</div>}
-            {reservationData?.email && <div><strong>E-mail:</strong> {reservationData?.email}</div>}
+        {/* Rezervasyon Detayları veya Mesaj */}
+        {reservationData?.message ? (
+          <div style={{
+            backgroundColor: isDarkMode ? "#3a3a3a" : "#f8f9fa",
+            padding: "15px",
+            borderRadius: "10px",
+            marginBottom: "20px",
+            animation: "fadeInUp 0.6s ease-out 0.5s both"
+          }}>
+            <div style={{ color: colors.textColor, fontSize: "1rem", lineHeight: "1.6" }}>
+              {reservationData.message}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{
+            backgroundColor: isDarkMode ? "#3a3a3a" : "#f8f9fa",
+            padding: "15px",
+            borderRadius: "10px",
+            marginBottom: "20px",
+            animation: "fadeInUp 0.6s ease-out 0.5s both"
+          }}>
+            <div style={{ color: colors.textColor, fontSize: "0.9rem", lineHeight: "1.6" }}>
+              {reservationData?.masaNo && <div><strong>Masa:</strong> {reservationData?.masaNo}</div>}
+              <div><strong>Müşteri:</strong> {reservationData?.ad} {reservationData?.soyad}</div>
+              <div><strong>Tarih:</strong> {reservationData?.tarih}</div>
+              <div><strong>Saat:</strong> {reservationData?.saat}</div>
+              <div><strong>Kişi Sayısı:</strong> {reservationData?.kisiSayisi}</div>
+              {reservationData?.telefon && <div><strong>Telefon:</strong> {reservationData?.telefon}</div>}
+              {reservationData?.email && <div><strong>E-mail:</strong> {reservationData?.email}</div>}
+            </div>
+          </div>
+        )}
 
         {/* Tamam Butonu */}
         <button

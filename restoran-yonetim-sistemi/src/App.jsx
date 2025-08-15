@@ -32,6 +32,7 @@ import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
 import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
 import BackendTest from './components/dev/BackendTest.jsx';
 import ActivityLogs from './pages/admin/ActivityLogs.jsx';
+import NewFloor from './pages/admin/NewFloor.jsx';
 
 // Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
@@ -188,6 +189,7 @@ function App() {
               <Route path="order-history" element={<OrderHistoryPage />} />
               <Route path="restaurant-settings" element={<RestaurantSettings />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
+              <Route path="new-floor" element={<NewFloor />} />
             </Route>
 
             {/* Garson Paneli */}

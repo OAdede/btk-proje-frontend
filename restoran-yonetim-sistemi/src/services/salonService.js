@@ -1,125 +1,99 @@
 // Salon API Service - Backend communication layer
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
+const API_BASE_URL = 'http://localhost:5174/api';
 
 export const salonService = {
-    // Get all salons
-    async getAllSalons() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/salons`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+  async createSalon(salonData) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/salons`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(salonData)
+      });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+      const contentType = response.headers.get('content-type') || '';
+      let data;
+      
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
 
-            const result = await response.json();
-            console.log('Salons fetched successfully:', result);
-            return result;
-        } catch (error) {
-            console.error('Error fetching salons:', error);
-            throw error;
-        }
-    },
+      if (!response.ok) {
+        const message = typeof data === 'string' ? data : data?.message || `HTTP ${response.status}`;
+        throw new Error(message);
+      }
 
-    // Get salon by ID
-    async getSalonById(salonId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Salon fetched successfully:', result);
-            return result;
-        } catch (error) {
-            console.error('Error fetching salon:', error);
-            throw error;
-        }
-    },
-
-    // Create new salon
-    async createSalon(salonData) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/salons`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(salonData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Salon created successfully:', result);
-            return result;
-        } catch (error) {
-            console.error('Error creating salon:', error);
-            throw error;
-        }
-    },
-
-    // Update salon
-    async updateSalon(salonId, salonData) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(salonData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Salon updated successfully:', result);
-            return result;
-        } catch (error) {
-            console.error('Error updating salon:', error);
-            throw error;
-        }
-    },
-
-    // Delete salon
-    async deleteSalon(salonId) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            console.log('Salon deleted successfully');
-            return true;
-        } catch (error) {
-            console.error('Error deleting salon:', error);
-            throw error;
-        }
+      return data;
+    } catch (error) {
+      console.error('Salon oluşturma hatası:', error);
+      throw error;
     }
+  },
+
+  async getSalons() {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/salons`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+      let data;
+      
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      if (!response.ok) {
+        const message = typeof data === 'string' ? data : data?.message || `HTTP ${response.status}`;
+        throw new Error(message);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Salonları getirme hatası:', error);
+      throw error;
+    }
+  },
+
+  async deleteSalon(salonId) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+        
+        if (contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
+
+        const message = typeof data === 'string' ? data : data?.message || `HTTP ${response.status}`;
+        throw new Error(message);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Salon silme hatası:', error);
+      throw error;
+    }
+  }
 };
