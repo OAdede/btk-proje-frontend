@@ -307,5 +307,68 @@ export const authService = {
         } catch (error) {
             throw new Error(error.message || 'Bootstrap admin oluşturma başarısız oldu.');
         }
+    },
+
+    // Change password for logged-in user
+    async changePassword(currentPassword, newPassword) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Oturum açmanız gerekiyor');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword
+                })
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Şifre değiştirme işlemi başarısız oldu';
+                try {
+                    const errorText = await response.text();
+                    console.log('Change password error response:', errorText);
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch (jsonError) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch (textError) {
+                    console.log('Could not read error response:', textError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            // Handle successful response - could be JSON or text
+            try {
+                const responseText = await response.text();
+                console.log('Password change response:', responseText);
+                
+                // Try to parse as JSON first
+                try {
+                    const responseData = JSON.parse(responseText);
+                    console.log('Password changed successfully (JSON response)');
+                    return responseData;
+                } catch (jsonError) {
+                    // If it's not JSON, return the text as a success message
+                    console.log('Password changed successfully (text response)');
+                    return { message: responseText || 'Şifre başarıyla değiştirildi' };
+                }
+            } catch (readError) {
+                console.log('Could not read success response, but password was changed');
+                return { message: 'Şifre başarıyla değiştirildi' };
+            }
+        } catch (error) {
+            console.error('Change password error:', error);
+            throw new Error(error.message || 'Şifre değiştirme işlemi başarısız oldu');
+        }
     }
 };

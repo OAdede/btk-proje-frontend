@@ -7,6 +7,7 @@ import { TableContext } from "../../context/TableContext";
 import "./AdminLayout.css";
 import { userService } from "../../services/userService";
 import { personnelService } from "../../services/personnelService";
+import { authService } from "../../services/authService";
 
 const AdminSidebar = () => {
     const { logout, user, updatePhone } = useContext(AuthContext);
@@ -152,6 +153,14 @@ const AdminSidebar = () => {
     const [showProfileImageConfirm, setShowProfileImageConfirm] = useState(false);
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
+    
+    // Change Password Modal States
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
     const [tempImage, setTempImage] = useState(null);
 
     // Sayfa değişikliklerinde sidebar'ı kapat
@@ -462,6 +471,61 @@ const AdminSidebar = () => {
             alert('E-posta adresi başarıyla güncellendi!');
         } else {
             alert(`Yanlış doğrulama kodu! Doğru kod: ${expectedCode}`);
+        }
+    };
+
+    // Change Password Functions
+    const openChangePasswordModal = () => {
+        setShowChangePassword(true);
+        setPasswordError('');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+    };
+
+    const closeChangePasswordModal = () => {
+        setShowChangePassword(false);
+        setPasswordError('');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+    };
+
+    const handleChangePassword = async () => {
+        setPasswordError('');
+
+        // Validation
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            setPasswordError('Tüm alanları doldurunuz');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setPasswordError('Yeni şifreler eşleşmiyor');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setPasswordError('Yeni şifre en az 6 karakter olmalıdır');
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            setPasswordError('Yeni şifre mevcut şifreden farklı olmalıdır');
+            return;
+        }
+
+        setPasswordLoading(true);
+
+        try {
+            await authService.changePassword(currentPassword, newPassword);
+            alert('Şifreniz başarıyla değiştirildi!');
+            closeChangePasswordModal();
+        } catch (error) {
+            console.error('Change password error:', error);
+            setPasswordError(error.message || 'Şifre değiştirme başarısız oldu');
+        } finally {
+            setPasswordLoading(false);
         }
     };
 
@@ -1289,6 +1353,250 @@ const AdminSidebar = () => {
                                             Değiştir
                                         </button>
                                     </div>
+                                </div>
+
+                                {/* Şifre Değiştir */}
+                                <div style={{ marginBottom: '25px' }}>
+                                    <label style={{
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        marginBottom: '10px',
+                                        display: 'block'
+                                    }}>
+                                        Şifre
+                                    </label>
+                                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                        <button
+                                            onClick={openChangePasswordModal}
+                                            style={{
+                                                background: '#007bff',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        >
+                                            🔒 Şifre Değiştir
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {/* Şifre Değiştir Modal */}
+                    {showChangePassword && createPortal(
+                        <div
+                            style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(0, 0, 0, 0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 999999
+                            }}
+                            onClick={closeChangePasswordModal}
+                        >
+                            <div
+                                style={{
+                                    background: isDarkMode ? '#2d2d30' : '#ffffff',
+                                    borderRadius: '12px',
+                                    padding: '30px',
+                                    width: '90%',
+                                    maxWidth: '500px',
+                                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                                    border: isDarkMode ? '1px solid #555' : 'none',
+                                    position: 'relative'
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Modal Header */}
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '25px'
+                                }}>
+                                    <h3 style={{
+                                        margin: 0,
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        fontSize: '1.4rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        🔒 Şifre Değiştir
+                                    </h3>
+                                    <button
+                                        onClick={closeChangePasswordModal}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            fontSize: '24px',
+                                            color: colors.danger,
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold',
+                                            width: '30px',
+                                            height: '30px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: '50%',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                {/* Current Password */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        Mevcut Şifre
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        placeholder="Mevcut şifrenizi girin"
+                                        style={{
+                                            background: isDarkMode ? '#3a3a3a' : '#ffffff',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            fontSize: '1rem',
+                                            width: '100%',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+                                {/* New Password */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        Yeni Şifre
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Yeni şifrenizi girin (en az 6 karakter)"
+                                        style={{
+                                            background: isDarkMode ? '#3a3a3a' : '#ffffff',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            fontSize: '1rem',
+                                            width: '100%',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Confirm New Password */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label style={{
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        marginBottom: '8px',
+                                        display: 'block'
+                                    }}>
+                                        Yeni Şifre (Tekrar)
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Yeni şifrenizi tekrar girin"
+                                        style={{
+                                            background: isDarkMode ? '#3a3a3a' : '#ffffff',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            border: `1px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            fontSize: '1rem',
+                                            width: '100%',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Error Message */}
+                                {passwordError && (
+                                    <div style={{
+                                        color: colors.danger,
+                                        fontSize: '0.9rem',
+                                        marginBottom: '15px',
+                                        textAlign: 'center',
+                                        fontWeight: '500'
+                                    }}>
+                                        {passwordError}
+                                    </div>
+                                )}
+
+                                {/* Buttons */}
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '15px',
+                                    justifyContent: 'flex-end'
+                                }}>
+                                    <button
+                                        onClick={closeChangePasswordModal}
+                                        disabled={passwordLoading}
+                                        style={{
+                                            background: isDarkMode ? '#555' : '#6c757d',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '12px 20px',
+                                            borderRadius: '8px',
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            cursor: passwordLoading ? 'not-allowed' : 'pointer',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        İptal
+                                    </button>
+                                    <button
+                                        onClick={handleChangePassword}
+                                        disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                                        style={{
+                                            background: (passwordLoading || !currentPassword || !newPassword || !confirmPassword) ? '#6c757d' : '#007bff',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '12px 20px',
+                                            borderRadius: '8px',
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            cursor: (passwordLoading || !currentPassword || !newPassword || !confirmPassword) ? 'not-allowed' : 'pointer',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                    >
+                                        {passwordLoading ? 'Değiştiriliyor...' : 'Şifre Değiştir'}
+                                    </button>
                                 </div>
                             </div>
                         </div>,
