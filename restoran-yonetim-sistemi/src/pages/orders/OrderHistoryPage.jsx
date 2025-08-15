@@ -11,6 +11,10 @@ const OrderHistoryPage = () => {
     const [filteredHistory, setFilteredHistory] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAction, setSelectedAction] = useState('all');
+    const [selectedTable, setSelectedTable] = useState('all');
+    const [selectedPersonnel, setSelectedPersonnel] = useState('all');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -52,8 +56,26 @@ const OrderHistoryPage = () => {
         if (selectedAction !== 'all') {
             filtered = filtered.filter(item => item.action === selectedAction);
         }
+        if (selectedTable !== 'all') {
+            filtered = filtered.filter(item => item.tableId === selectedTable);
+        }
+        if (selectedPersonnel !== 'all') {
+            filtered = filtered.filter(item => item.personnelName === selectedPersonnel);
+        }
+        if (startDate) {
+            filtered = filtered.filter(item => {
+                const itemDate = new Date(item.timestamp.split(' ')[0].split('.').reverse().join('-'));
+                return itemDate >= new Date(startDate);
+            });
+        }
+        if (endDate) {
+            filtered = filtered.filter(item => {
+                const itemDate = new Date(item.timestamp.split(' ')[0].split('.').reverse().join('-'));
+                return itemDate <= new Date(endDate);
+            });
+        }
         setFilteredHistory(filtered);
-    }, [searchTerm, selectedAction, orderHistory]);
+    }, [searchTerm, selectedAction, selectedTable, selectedPersonnel, startDate, endDate, orderHistory]);
 
     const getStyles = () => ({
         container: {
@@ -172,7 +194,7 @@ const OrderHistoryPage = () => {
         <div style={styles.container}>
             <div style={styles.header}>
                 <h1 style={styles.title}>📋 Sipariş Geçmişi</h1>
-                <div style={styles.filters}>
+                <div style={{...styles.filters, flexWrap: 'wrap', gap: '0.5rem'}}>
                     <input
                         type="text"
                         placeholder="Sipariş, personel veya masa ara..."
@@ -191,6 +213,44 @@ const OrderHistoryPage = () => {
                         <option value="Sipariş İptal Edildi">Sipariş İptal Edildi</option>
                         <option value="Sipariş Silindi">Sipariş Silindi</option>
                     </select>
+                    <select
+                        value={selectedTable}
+                        onChange={e => setSelectedTable(e.target.value)}
+                        style={styles.select}
+                    >
+                        <option value="all">Tüm Masalar</option>
+                        {Array.from(new Set(orderHistory.map(item => item.tableId)))
+                            .filter(id => id && id !== '-')
+                            .map(id => (
+                                <option key={id} value={id}>{id}</option>
+                            ))}
+                    </select>
+                    <select
+                        value={selectedPersonnel}
+                        onChange={e => setSelectedPersonnel(e.target.value)}
+                        style={styles.select}
+                    >
+                        <option value="all">Tüm Personeller</option>
+                        {Array.from(new Set(orderHistory.map(item => item.personnelName)))
+                            .filter(name => name && name !== '-')
+                            .map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                    </select>
+                    <input
+                        type="date"
+                        value={startDate}
+                        onChange={e => setStartDate(e.target.value)}
+                        style={styles.select}
+                        title="Başlangıç Tarihi"
+                    />
+                    <input
+                        type="date"
+                        value={endDate}
+                        onChange={e => setEndDate(e.target.value)}
+                        style={styles.select}
+                        title="Bitiş Tarihi"
+                    />
                 </div>
             </div>
 

@@ -26,33 +26,28 @@ const PersonelEkleme = () => {
   const [success, setSuccess] = useState(null);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  // Telefon numarası formatı: 5xx xxx xx xx
+  // Telefon numarası formatı: 05xx xxx xx xx
   const formatPhoneNumber = (value) => {
     // Sadece rakamları al
-    const numbers = value.replace(/\D/g, '');
-    
-    // 5 ile başlamıyorsa 5 ekle
-    let formatted = numbers;
-    if (numbers.length > 0 && numbers[0] !== '5') {
-      formatted = '5' + numbers;
+    let numbers = value.replace(/\D/g, '');
+    // Eğer başında 0 yoksa ve 5 ile başlıyorsa başına 0 ekle
+    if (numbers.startsWith('5')) {
+      numbers = '0' + numbers;
     }
-    
-    // Maksimum 10 hane olacak şekilde kes
-    formatted = formatted.slice(0, 10);
-    
-    // Format uygula: 5xx xxx xx xx
+    // Maksimum 11 hane olacak şekilde kes
+    let formatted = numbers.slice(0, 11);
+    // Format uygula: 05xx xxx xx xx
     if (formatted.length >= 1) {
-      if (formatted.length <= 3) {
+      if (formatted.length <= 4) {
         formatted = formatted;
-      } else if (formatted.length <= 6) {
-        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3);
-      } else if (formatted.length <= 8) {
-        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6);
+      } else if (formatted.length <= 7) {
+        formatted = formatted.slice(0, 4) + ' ' + formatted.slice(4);
+      } else if (formatted.length <= 9) {
+        formatted = formatted.slice(0, 4) + ' ' + formatted.slice(4, 7) + ' ' + formatted.slice(7);
       } else {
-        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6, 8) + ' ' + formatted.slice(8);
+        formatted = formatted.slice(0, 4) + ' ' + formatted.slice(4, 7) + ' ' + formatted.slice(7, 9) + ' ' + formatted.slice(9);
       }
     }
-    
     return formatted;
   };
 
@@ -207,7 +202,9 @@ const PersonelEkleme = () => {
   };
 
   const validateForm = () => {
-    const validation = validationUtils.validatePersonnelForm(newPerson);
+    // Telefon numarasındaki boşlukları temizle
+    const personForValidation = { ...newPerson, phone: newPerson.phone.replace(/\s/g, '') };
+    const validation = validationUtils.validatePersonnelForm(personForValidation);
     if (!validation.isValid) {
       setError(validation.errors[0]); // Show first error
       return false;
