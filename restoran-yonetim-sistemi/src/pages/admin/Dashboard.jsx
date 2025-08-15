@@ -640,8 +640,13 @@ const Dashboard = () => {
         setTableToDelete(null);
 
         // Başarı mesajı göster
+        const deletedTableData = tables.find(t => t.id === tableToDelete);
+        const tableDisplayName = deletedTableData ? 
+          `${getAdminPrefixByIndex(getSalonIndexById(deletedTableData.salon?.id ?? deletedTableData.salonId))}${deletedTableData.tableNumber}` : 
+          'Masa';
+          
         setSuccessData({ 
-          message: `Masa başarıyla silindi`,
+          message: `${tableDisplayName} başarıyla silindi`,
           type: 'table_deleted'
         });
         setShowSuccess(true);
@@ -900,7 +905,21 @@ const Dashboard = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDeleteTableModal(table.id);
+                        // Backend'den gelen gerçek masa ID'sini kullan
+                        const backendTable = tables.find(t => 
+                          (t?.salon?.id ?? t?.salonId) === table.salonId && 
+                          t.tableNumber === parseInt(table.id)
+                        );
+                        const tableIdToDelete = backendTable?.id || table.id;
+                        
+                        console.log('Deleting table:', {
+                          displayNumber: table.displayNumber,
+                          frontendId: table.id,
+                          backendId: tableIdToDelete,
+                          backendTable: backendTable
+                        });
+                        
+                        openDeleteTableModal(tableIdToDelete);
                       }}
                       style={{
                         position: 'absolute',
@@ -1230,7 +1249,17 @@ const Dashboard = () => {
                 marginBottom: '30px',
                 fontSize: '1rem'
               }}>
-                <strong>Masa {tableToDelete ? getTableNumber(selectedFloor, parseInt(tableToDelete.split('-')[1]) - 1) : ''}</strong> masasını silmek istediğinizden emin misiniz?
+                <strong>Masa {(() => {
+                  if (!tableToDelete) return '';
+                  // Backend'den gelen masayı bul
+                  const tableToDeleteData = tables.find(t => t.id === tableToDelete);
+                  if (tableToDeleteData) {
+                    const salonIndex = getSalonIndexById(tableToDeleteData.salon?.id ?? tableToDeleteData.salonId);
+                    const prefix = getAdminPrefixByIndex(salonIndex);
+                    return `${prefix}${tableToDeleteData.tableNumber}`;
+                  }
+                  return tableToDelete;
+                })()}</strong> masasını silmek istediğinizden emin misiniz?
                 <br />
                 <small style={{ color: '#ff6b6b' }}>
                   Bu işlem geri alınamaz!
