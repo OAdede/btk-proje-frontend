@@ -158,11 +158,35 @@ const SalesChart = () => {
           return date.getMonth() === monthIndex && date.getFullYear() === selectedYearInt;
         });
         
-        // Sort by date (newest first, then reverse to get oldest first for the week)
-        filteredData.sort((a, b) => new Date(b.reportDate) - new Date(a.reportDate));
+        // Sort by date (oldest first for chronological order)
+        filteredData.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate));
         
-        // Get the most recent 7 days of data for the selected month
-        const weekData = filteredData.slice(0, 7).reverse();
+        // Get all days of data for the selected month
+        let monthData = filteredData;
+        
+        // If we don't have data for the selected month, create placeholder data for all days
+        if (monthData.length === 0) {
+          const selectedMonthIndex = months.findIndex(m => m.value === selectedMonth);
+          const selectedYearInt = parseInt(selectedYear);
+          
+          // Get the number of days in the selected month
+          const daysInMonth = new Date(selectedYearInt, selectedMonthIndex + 1, 0).getDate();
+          
+          // Create placeholder data for all days of the month
+          for (let i = 1; i <= daysInMonth; i++) {
+            const placeholderDate = new Date(selectedYearInt, selectedMonthIndex, i);
+            
+            monthData.push({
+              reportDate: placeholderDate.toISOString().split('T')[0],
+              totalRevenue: 0,
+              totalOrders: 0,
+              totalCustomers: 0
+            });
+          }
+        }
+        
+        // Use monthData instead of weekData
+        const weekData = monthData;
         
         if (weekData.length > 0) {
           // Combine daily data for the week

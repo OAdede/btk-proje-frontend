@@ -82,7 +82,7 @@ const ReportsPage = () => {
                 <div className="stat-card">
                     <div className="stat-icon">💰</div>
                     <div className="stat-content">
-                        <h3 className="stat-title">Toplam Kazanç</h3>
+                        <h3 className="stat-title">Bugünkü Toplam Kazanç</h3>
                         <p className="stat-value">{getTotalEarnings()}</p>
                     </div>
                 </div>
