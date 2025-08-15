@@ -1,14 +1,13 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom"; // useLocation eklendi
 import { createPortal } from "react-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import { TableContext } from "../../context/TableContext";
-import { personnelService } from "../../services/personnelService";
 import "./StaffLayout.css";
 
 const StaffSidebar = () => {
-    const { logout, user, updateProfileImage } = useContext(AuthContext);
+    const { logout, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation(); // location hook'u eklendi
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -32,107 +31,6 @@ const StaffSidebar = () => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
     const [tempImage, setTempImage] = useState(null);
-
-    // Profil bilgilerini backend'den yükle
-    useEffect(() => {
-        const loadProfileFromBackend = async () => {
-            if (!user?.email) {
-                console.log('[StaffProfile] No user email found');
-                return;
-            }
-
-            try {
-                console.log('[StaffProfile] Loading profile for:', user.email);
-                console.log('[StaffProfile] Current user object:', user);
-                
-                // Önce aktif kullanıcılar arasında ara
-                let data = null;
-                try {
-                    console.log('[StaffProfile] Fetching active users...');
-                    const actives = await personnelService.getActiveUsers();
-                    console.log('[StaffProfile] Active users response:', actives);
-                    data = (actives || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
-                    console.log('[StaffProfile] Found in actives:', data);
-                } catch (e) {
-                    console.warn('[StaffProfile] Active users fetch failed:', e?.message);
-                }
-
-                // Hâlâ yoksa /users (tüm kullanıcılar) üzerinden dene
-                if (!data && user?.email) {
-                    try {
-                        console.log('[StaffProfile] Fallback: searching by email in all users');
-                        const all = await personnelService.getAllUsers();
-                        console.log('[StaffProfile] All users response:', all);
-                        data = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
-                        console.log('[StaffProfile] Found in all users:', data);
-                    } catch (e) {
-                        console.warn('[StaffProfile] Fallback all users failed:', e?.message);
-                    }
-                }
-
-                if (!data) {
-                    console.log('[StaffProfile] No user data found in backend, using localStorage fallback');
-                    return; // Bulunamadıysa localStorage fallback ile kal
-                }
-
-                console.log('[StaffProfile] User data from backend:', data);
-
-                // Fotoğraf
-                if (data.photoBase64) {
-                    console.log('[StaffProfile] Found photoBase64, length:', data.photoBase64.length);
-                    const img = `data:image/jpeg;base64,${data.photoBase64}`;
-                    setProfileImage(img);
-                    localStorage.setItem('profileImage', img);
-                    console.log('[StaffProfile] Photo loaded from base64');
-                } else if (data.hasPhoto && data.id) {
-                    console.log('[StaffProfile] Found hasPhoto=true, user ID:', data.id);
-                    const imgUrl = `/api/users/${data.id}/photo`;
-                    setProfileImage(imgUrl);
-                    localStorage.setItem('profileImage', imgUrl);
-                    console.log('[StaffProfile] Photo loaded from API endpoint:', imgUrl);
-                } else {
-                    console.log('[StaffProfile] No photo found on profile payload. Available fields:', Object.keys(data));
-                    console.log('[StaffProfile] photoBase64:', data.photoBase64);
-                    console.log('[StaffProfile] hasPhoto:', data.hasPhoto);
-                    console.log('[StaffProfile] id:', data.id);
-                }
-
-                // İletişim
-                if (data.phoneNumber) {
-                    setPhoneNumber(data.phoneNumber);
-                    localStorage.setItem('phoneNumber', data.phoneNumber);
-                }
-                if (data.email) {
-                    setEmail(data.email);
-                    localStorage.setItem('email', data.email);
-                }
-            } catch (err) {
-                console.warn('Staff profil bilgisi alınamadı:', err.message);
-                console.error('Full error:', err);
-            }
-        };
-
-        // Kullanıcı değiştiğinde ilk olarak default değerlere dön
-        console.log('[StaffProfile] User changed, resetting to defaults');
-        setProfileImage('/default-avatar.png');
-        setPhoneNumber('');
-        setEmail('');
-
-        // AuthContext'ten gelen bilgileri kullan
-        if (user?.email) {
-            setEmail(user.email);
-        }
-        if (user?.phone) {
-            setPhoneNumber(user.phone);
-        }
-        if (user?.profileImage) {
-            console.log('[StaffProfile] Using profileImage from AuthContext:', user.profileImage);
-            setProfileImage(user.profileImage);
-        }
-
-        // Backend'den profil bilgilerini yükle
-        loadProfileFromBackend();
-    }, [user]);
 
     const getFloorLetter = (floorIndex) => {
         if (floorIndex === 0) return 'Z';
@@ -230,52 +128,14 @@ const StaffSidebar = () => {
     };
 
     // Profil fotoğrafını onaylama
-    const confirmProfileImage = async () => {
-        if (!tempProfileImage) return;
-
-        try {
-            // Backend'e yükle
-            const { userService } = await import('../../services/userService');
-            
-            // Kullanıcı ID'sini bul
-            let targetId = user?.userId;
-            if (!targetId && user?.email) {
-                try {
-                    const actives = await personnelService.getActiveUsers();
-                    const found = (actives || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase());
-                    if (found?.id !== undefined) targetId = found.id;
-                } catch (e) {
-                    console.warn('Active users fetch failed for photo upload:', e?.message);
-                }
-                
-                if (!targetId) {
-                    try {
-                        const all = await personnelService.getAllUsers();
-                        const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase());
-                        if (found?.id !== undefined) targetId = found.id;
-                    } catch (e) {
-                        console.warn('All users fetch failed for photo upload:', e?.message);
-                    }
-                }
-            }
-
-            if (!targetId) {
-                throw new Error('Kullanıcı ID bulunamadı');
-            }
-
-            // Backend'e yükle
-            await userService.uploadUserPhoto(targetId, tempProfileImage);
-            
-            // Başarılı ise UI güncelle
+    const confirmProfileImage = () => {
+        if (tempProfileImage) {
             setProfileImage(tempProfileImage);
             localStorage.setItem('profileImage', tempProfileImage);
-            // AuthContext'i de güncelle
-            updateProfileImage(tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
+            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert('Profil fotoğrafı başarıyla güncellendi!');
-        } catch (e) {
-            alert(e.message || 'Profil fotoğrafı güncellenemedi');
         }
     };
 
