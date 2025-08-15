@@ -487,7 +487,7 @@ const AdminSidebar = () => {
                     onClick={toggleSidebar}
                     style={{
                         position: 'fixed',
-                        top: '90px',
+                        top: '20px',
                         left: '20px',
                         zIndex: 1001,
                         background: isDarkMode ? colors.primary : '#A294F9',

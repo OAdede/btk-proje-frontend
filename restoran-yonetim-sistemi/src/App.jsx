@@ -32,7 +32,6 @@ import OrderHistoryPage from './pages/orders/OrderHistoryPage.jsx';
 import RestaurantSettings from './pages/admin/RestaurantSettings.jsx';
 import BackendTest from './components/dev/BackendTest.jsx';
 import ActivityLogs from './pages/admin/ActivityLogs.jsx';
-import NewFloor from './pages/admin/NewFloor.jsx';
 
 // Staff Pages
 import WaiterHome from './pages/staff/WaiterHome.jsx';
@@ -178,7 +177,6 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="new-floor" element={<NewFloor />} />
               <Route path="products" element={<ProductsPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="stock" element={<StokUpdate />} />

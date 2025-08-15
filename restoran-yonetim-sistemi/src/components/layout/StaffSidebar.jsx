@@ -219,7 +219,7 @@ const StaffSidebar = () => {
                 onClick={toggleSidebar}
                 style={{
                     position: 'fixed',
-                    top: '90px',
+                    top: '20px',
                     left: '20px',
                     zIndex: 1001,
                     background: '#10B981',

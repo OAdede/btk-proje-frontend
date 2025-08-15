@@ -1,80 +1,14 @@
-/* Added new rules for highest specificity and responsiveness */
-html body .top-nav,
-body .top-nav,
 .top-nav {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    transform: none !important;
-    pointer-events: auto !important;
-}
-
-.top-nav {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
-    width: 100% !important;
-}
-
-@media (max-width: 1024px) {
-    html body .top-nav, body .top-nav, .top-nav {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 9999 !important;
-        width: 100% !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        transform: none !important;
-        display: flex !important;
-    }
-}
-
-@media (max-width: 768px) {
-    html body .top-nav, body .top-nav, .top-nav {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 9999 !important;
-        width: 100% !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        transform: none !important;
-        display: flex !important;
-    }
-}
-
-@media (max-width: 480px) {
-    html body .top-nav, body .top-nav, .top-nav {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 9999 !important;
-        width: 100% !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        transform: none !important;
-        display: flex !important;
-    }
-}
-
-html body div.top-nav, body div.top-nav, div.top-nav, .top-nav {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    transform: none !important;
-    pointer-events: auto !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
-    width: 100% !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 0 24px;
+    height: 70px;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    top: 0;
+    z-index: 100;
 }
 
 .top-nav-left {

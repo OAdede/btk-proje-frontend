@@ -105,7 +105,6 @@
 .staff-main-content {
     flex: 1;
     padding: 40px;
-    padding-top: 110px;
     min-width: 0;
     background: var(--background);
 }
@@ -158,33 +157,15 @@
 
 /* Tablet için responsive tasarım */
 @media (max-width: 1024px) {
-    .mobile-sidebar-toggle {
-        display: flex !important;
-        top: 90px !important;
-        left: 20px !important;
-        z-index: 1001 !important;
-    }
-
     .staff-sidebar {
-        width: 280px;
-        min-width: 280px;
-        max-width: 320px;
+        width: 25%;
+        min-width: 180px;
+        max-width: 250px;
         padding: 20px 12px;
-        position: fixed;
-        top: 70px;
-        height: calc(100vh - 70px);
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-    }
-
-    .staff-sidebar.open {
-        transform: translateX(0);
     }
 
     .staff-main-content {
         padding: 30px;
-        padding-top: 110px;
     }
 
     .staff-sidebar-header h2 {
@@ -200,26 +181,14 @@
 /* Mobil için responsive tasarım */
 @media (max-width: 768px) {
     .staff-sidebar {
-        width: 280px;
-        min-width: 280px;
-        max-width: 320px;
+        width: 30%;
+        min-width: 160px;
+        max-width: 200px;
         padding: 16px 10px;
-        position: fixed;
-        top: 70px;
-        height: calc(100vh - 70px);
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-    }
-
-    .staff-sidebar.open {
-        transform: translateX(0);
     }
 
     .staff-main-content {
-        margin-left: 0;
         padding: 20px;
-        padding-top: 110px;
     }
 
     .staff-sidebar-header {
@@ -245,25 +214,14 @@
 /* Küçük mobil ekranlar için */
 @media (max-width: 480px) {
     .staff-sidebar {
-        width: 280px;
-        min-width: 280px;
-        max-width: 320px;
+        width: 35%;
+        min-width: 140px;
+        max-width: 180px;
         padding: 12px 8px;
-        position: fixed;
-        top: 70px;
-        height: calc(100vh - 70px);
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-    }
-
-    .staff-sidebar.open {
-        transform: translateX(0);
     }
 
     .staff-main-content {
         padding: 15px;
-        padding-top: 110px;
     }
 
     .staff-sidebar-header {
@@ -284,25 +242,14 @@
 /* Çok küçük ekranlar için */
 @media (max-width: 360px) {
     .staff-sidebar {
-        width: 280px;
-        min-width: 280px;
-        max-width: 320px;
+        width: 40%;
+        min-width: 120px;
+        max-width: 160px;
         padding: 10px 6px;
-        position: fixed;
-        top: 70px;
-        height: calc(100vh - 70px);
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-    }
-
-    .staff-sidebar.open {
-        transform: translateX(0);
     }
 
     .staff-main-content {
         padding: 12px;
-        padding-top: 110px;
     }
 
     .staff-sidebar-header {
@@ -323,25 +270,14 @@
 /* Landscape modda mobil için */
 @media (max-height: 500px) and (orientation: landscape) {
     .staff-sidebar {
-        width: 280px;
-        min-width: 280px;
-        max-width: 320px;
+        width: 25%;
+        min-width: 160px;
+        max-width: 200px;
         padding: 12px 8px;
-        position: fixed;
-        top: 70px;
-        height: calc(100vh - 70px);
-        z-index: 1000;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease-in-out;
-    }
-
-    .staff-sidebar.open {
-        transform: translateX(0);
     }
 
     .staff-main-content {
         padding: 12px;
-        padding-top: 110px;
     }
 
     .staff-sidebar-header {
@@ -350,7 +286,6 @@
 
     .staff-sidebar-header h2 {
         font-size: 1rem;
-        margin-bottom: 6px;
     }
 
     .staff-nav-item {
@@ -367,17 +302,12 @@
 @media (max-width: 768px) {
     .mobile-sidebar-toggle {
         display: flex !important;
-        top: 90px !important;
-        left: 20px !important;
-        z-index: 1001 !important;
     }
 
     .staff-sidebar {
         transform: translateX(-100%);
         transition: transform 0.3s ease-in-out;
         position: fixed;
-        top: 70px;
-        height: calc(100vh - 70px);
         z-index: 1000;
     }
 
@@ -388,7 +318,6 @@
     .staff-main-content {
         margin-left: 0 !important;
         padding: 20px;
-        padding-top: 110px;
     }
 
     .sidebar-overlay {
@@ -399,14 +328,12 @@
 @media (max-width: 480px) {
     .staff-main-content {
         padding: 15px;
-        padding-top: 110px;
     }
 }
 
 @media (max-width: 360px) {
     .staff-main-content {
         padding: 12px;
-        padding-top: 110px;
     }
 }
 
