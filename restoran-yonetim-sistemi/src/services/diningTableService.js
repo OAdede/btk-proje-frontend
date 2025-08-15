@@ -160,38 +160,17 @@ export const diningTableService = {
     // Create new table
     async createTable(tableData) {
         try {
-            // Ensure required fields are present
-            const requiredFields = ['tableNumber', 'capacity', 'salonId'];
-            for (const field of requiredFields) {
-                if (!tableData[field]) {
-                    throw new Error(`${field} is required for creating a table`);
-                }
-            }
-
-            // Prepare the data for backend
-            // Backend'de AVAILABLE durumu genellikle ID 1'dir
-            const backendData = {
-                tableNumber: tableData.tableNumber,
-                capacity: parseInt(tableData.capacity),
-                salonId: parseInt(tableData.salonId),
-                statusId: 1 // AVAILABLE durumu için varsayılan ID
-            };
-
-            console.log('Creating table with data:', backendData);
-
             const response = await fetch(`${API_BASE_URL}/dining-tables`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(backendData)
+                body: JSON.stringify(tableData)
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Backend error response:', errorText);
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const result = await response.json();
@@ -231,8 +210,6 @@ export const diningTableService = {
     // Delete table
     async deleteTable(tableId) {
         try {
-            console.log('Deleting table with ID:', tableId);
-
             const response = await fetch(`${API_BASE_URL}/dining-tables/${tableId}`, {
                 method: 'DELETE',
                 headers: {
@@ -242,9 +219,7 @@ export const diningTableService = {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Backend error response:', errorText);
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             console.log('Table deleted successfully');

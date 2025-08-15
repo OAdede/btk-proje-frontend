@@ -261,56 +261,6 @@ export const authService = {
         }
     },
 
-    // Change password (for authenticated users)
-    async changePassword(currentPassword, newPassword) {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
-            }
-
-            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword
-                })
-            });
-
-            if (!response.ok) {
-                let errorMessage = 'Şifre değiştirilirken bir hata oluştu';
-                try {
-                    const errorText = await response.text();
-                    console.log('Server error response:', errorText);
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (jsonError) {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
-                }
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const responseData = await response.json();
-                return responseData;
-            } catch (jsonError) {
-                console.log('Response is not JSON, returning empty object');
-                return {};
-            }
-        } catch (error) {
-            throw new Error(error.message || 'Şifre değiştirilirken bir hata oluştu.');
-        }
-    },
-
     // Bootstrap admin - create first admin account
     async bootstrapAdmin(email, name = 'Admin') {
         try {

@@ -32,74 +32,6 @@ export default function SuccessNotification({ visible, onClose, reservationData 
 
   if (!visible) return null;
 
-  // Mesaj türüne göre başlık ve içerik belirle
-  const getMessageContent = () => {
-    if (reservationData?.type === 'table_deleted') {
-      return {
-        title: "🗑️ Masa Silindi!",
-        content: (
-          <div style={{ color: colors.textColor, fontSize: "1rem", lineHeight: "1.6" }}>
-            <div><strong>{reservationData.message}</strong></div>
-          </div>
-        )
-      };
-    } else if (reservationData?.type === 'table_added') {
-      return {
-        title: "🍽️ Masa Eklendi!",
-        content: (
-          <div style={{ color: colors.textColor, fontSize: "1rem", lineHeight: "1.6" }}>
-            <div><strong>{reservationData.message}</strong></div>
-          </div>
-        )
-      };
-    } else if (reservationData?.type === 'salon_deleted') {
-      return {
-        title: "🗑️ Salon Silindi!",
-        content: (
-          <div style={{ color: colors.textColor, fontSize: "1rem", lineHeight: "1.6" }}>
-            <div><strong>{reservationData.message}</strong></div>
-          </div>
-        )
-      };
-    } else if (reservationData?.type === 'salon_added') {
-      return {
-        title: "🏢 Salon Eklendi!",
-        content: (
-          <div style={{ color: colors.textColor, fontSize: "1rem", lineHeight: "1.6" }}>
-            <div><strong>{reservationData.message}</strong></div>
-          </div>
-        )
-      };
-    } else if (reservationData?.type === 'salon_updated') {
-      return {
-        title: "✏️ Salon Güncellendi!",
-        content: (
-          <div style={{ color: colors.textColor, fontSize: "1rem", lineHeight: "1.6" }}>
-            <div><strong>{reservationData.message}</strong></div>
-          </div>
-        )
-      };
-    } else {
-      // Rezervasyon mesajları için eski format
-      return {
-        title: reservationData?.isEdit ? "✅ Rezervasyon Güncellendi!" : "✅ Rezervasyon Başarılı!",
-        content: (
-          <div style={{ color: colors.textColor, fontSize: "0.9rem", lineHeight: "1.6" }}>
-            {reservationData?.masaNo && <div><strong>Masa:</strong> {reservationData?.masaNo}</div>}
-            <div><strong>Müşteri:</strong> {reservationData?.ad} {reservationData?.soyad}</div>
-            <div><strong>Tarih:</strong> {reservationData?.tarih}</div>
-            <div><strong>Saat:</strong> {reservationData?.saat}</div>
-            <div><strong>Kişi Sayısı:</strong> {reservationData?.kisiSayisi}</div>
-            {reservationData?.telefon && <div><strong>Telefon:</strong> {reservationData?.telefon}</div>}
-            {reservationData?.email && <div><strong>E-mail:</strong> {reservationData?.email}</div>}
-          </div>
-        )
-      };
-    }
-  };
-
-  const messageContent = getMessageContent();
-
   return (
     <div style={{
       position: "fixed",
@@ -154,7 +86,6 @@ export default function SuccessNotification({ visible, onClose, reservationData 
           marginBottom: "15px",
           animation: "fadeInUp 0.6s ease-out 0.4s both"
         }}>
-<<<<<<< HEAD
           {reservationData?.message ? "✅ Başarılı!" : 
            reservationData?.isEdit ? "✅ Rezervasyon Güncellendi!" : "✅ Rezervasyon Başarılı!"}
         </h2>
@@ -191,21 +122,6 @@ export default function SuccessNotification({ visible, onClose, reservationData 
             </div>
           </div>
         )}
-=======
-          {messageContent.title}
-        </h2>
-
-        {/* Mesaj İçeriği */}
-        <div style={{
-          backgroundColor: isDarkMode ? "#3a3a3a" : "#f8f9fa",
-          padding: "15px",
-          borderRadius: "10px",
-          marginBottom: "20px",
-          animation: "fadeInUp 0.6s ease-out 0.5s both"
-        }}>
-          {messageContent.content}
-        </div>
->>>>>>> 78644f60a7f8f70c0238a5ac37d61126c1b27569
 
         {/* Tamam Butonu */}
         <button
