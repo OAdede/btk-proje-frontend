@@ -320,7 +320,7 @@ export function TableProvider({ children }) {
         }
     };
 
-    // Masa güncelleme fonksiyonu
+    // Masa güncelleme fonksiyonu (PATCH uçlarına bölünmüş)
     const updateTable = async (tableId, updateData) => {
         try {
             const table = tables.find(t => t.id === tableId);
@@ -329,22 +329,58 @@ export function TableProvider({ children }) {
                 throw new Error('Masa bulunamadı');
             }
 
-            const response = await apiCall(`/dining-tables/${tableId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tableNumber: updateData.name || table.tableNumber,
-                    capacity: updateData.capacity || table.capacity,
-                    salonId: table.salon?.id || table.salonId
-                })
-            });
+            console.log('Updating table with ID (PATCH mode):', tableId, 'Update data:', updateData, 'Current table:', table);
 
-            // Backend'den güncel veriyi al
+            // Yardımcı: isim/numaradan sayısal masa numarası çıkar
+            const extractTableNumber = (value, fallback) => {
+                if (value == null) return fallback;
+                if (typeof value === 'number') return value;
+                const text = String(value);
+                const match = text.match(/\d+/);
+                if (match) {
+                    const n = parseInt(match[0], 10);
+                    return Number.isNaN(n) ? fallback : n;
+                }
+                const n = Number(text);
+                return Number.isNaN(n) ? fallback : n;
+            };
+
+            const currentNumber = Number(table.tableNumber ?? table.number ?? 0);
+            const nextNumber = (updateData.tableNumber != null)
+                ? extractTableNumber(updateData.tableNumber, currentNumber)
+                : extractTableNumber(updateData.name, currentNumber);
+            const willChangeNumber = Number(nextNumber) !== Number(currentNumber);
+
+            const currentCapacity = Number(table.capacity ?? 0);
+            const nextCapacity = (updateData.capacity != null) ? Number(updateData.capacity) : currentCapacity;
+            const willChangeCapacity = Number(nextCapacity) !== Number(currentCapacity);
+
+            // Değişiklik yoksa erken çık
+            if (!willChangeNumber && !willChangeCapacity) {
+                console.log('No changes detected for table', tableId);
+                return;
+            }
+
+            // Sırasıyla patch et (bağımsızlar)
+            if (willChangeNumber) {
+                console.log('PATCH table-number ->', nextNumber);
+                await apiCall(`/dining-tables/${tableId}/table-number/${nextNumber}`, {
+                    method: 'PATCH'
+                });
+            }
+
+            if (willChangeCapacity) {
+                console.log('PATCH capacity ->', nextCapacity);
+                await apiCall(`/dining-tables/${tableId}/capacity/${nextCapacity}`, {
+                    method: 'PATCH'
+                });
+            }
+
+            // Güncel verileri yükle
             await loadTablesAndSalons();
-
-            console.log(`Table ${tableId} updated successfully`);
+            console.log(`Table ${tableId} updated successfully via PATCH.`);
         } catch (error) {
-            console.error(`Error updating table ${tableId}:`, error);
+            console.error(`Error updating table ${tableId} (PATCH):`, error);
             throw error;
         }
     };
@@ -359,13 +395,13 @@ export function TableProvider({ children }) {
             }
 
             // Masada aktif sipariş var mı kontrol et
-            const activeOrder = orders[table.tableNumber];
+            const activeOrder = orders[String(table.id)];
             if (activeOrder && Object.keys(activeOrder).length > 0) {
                 throw new Error('Bu masada aktif sipariş bulunuyor. Önce siparişi tamamlayın.');
             }
 
             // Masada rezervasyon var mı kontrol et
-            const hasReservation = Object.values(reservations).some(res => res.tableId === table.tableNumber);
+            const hasReservation = Object.values(reservations).some(res => String(res.tableId) === String(table.id));
             if (hasReservation) {
                 throw new Error('Bu masada rezervasyon bulunuyor. Önce rezervasyonu iptal edin.');
             }
@@ -380,6 +416,33 @@ export function TableProvider({ children }) {
             console.log(`Table ${tableId} deleted successfully`);
         } catch (error) {
             console.error(`Error deleting table ${tableId}:`, error);
+            throw error;
+        }
+    };
+
+    // Masa oluşturma fonksiyonu
+    const createTable = async ({ tableNumber, capacity, salonId }) => {
+        try {
+            if (tableNumber == null || capacity == null || salonId == null) {
+                throw new Error('Eksik alan: tableNumber, capacity ve salonId zorunludur');
+            }
+
+            const payload = {
+                tableNumber: Number(tableNumber),
+                capacity: Number(capacity),
+                salonId: Number(salonId),
+                statusId: 1 // AVAILABLE
+            };
+
+            await apiCall('/dining-tables', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            await loadTablesAndSalons();
+        } catch (error) {
+            console.error('Masa eklenirken hata:', error);
             throw error;
         }
     };
@@ -1024,6 +1087,7 @@ export function TableProvider({ children }) {
                 updateTableStatus,
                 updateTable,
                 deleteTable,
+                createTable,
                 saveFinalOrder,
                 cancelOrder,
                 processPayment,

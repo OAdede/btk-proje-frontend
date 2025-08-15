@@ -5,7 +5,7 @@ import { TableContext } from '../../context/TableContext';
 
 const TableManagementModal = ({ show, onHide, table }) => {
   const { colors } = useContext(ThemeContext);
-  const { updateTable, deleteTable } = useContext(TableContext);
+  const { updateTable, deleteTable, updateTableStatus, tables } = useContext(TableContext);
   
   const [tableName, setTableName] = useState(table?.name || '');
   const [capacity, setCapacity] = useState(table?.capacity || 4);
@@ -16,12 +16,38 @@ const TableManagementModal = ({ show, onHide, table }) => {
   // Modal açıldığında verileri resetle
   React.useEffect(() => {
     if (show && table) {
-      setTableName(table.name || '');
+      console.log('TableManagementModal received table:', table);
+      setTableName(table.name || String(table.tableNumber) || '');
       setCapacity(table.capacity || 4);
       setError('');
       setShowDeleteConfirm(false);
     }
   }, [show, table]);
+
+  const isAvailable = React.useMemo(() => {
+    try {
+      const backendTable = (tables || []).find(t => String(t?.id) === String(table?.id));
+      const status = String(
+        backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+      ).toLowerCase();
+      return status === 'available';
+    } catch {
+      return false;
+    }
+  }, [tables, table]);
+
+  const handleEmpty = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      await updateTableStatus(table.id, 'empty');
+      onHide();
+    } catch (err) {
+      setError(err.message || 'Masayı boşaltırken bir hata oluştu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!tableName.trim()) {
@@ -29,7 +55,8 @@ const TableManagementModal = ({ show, onHide, table }) => {
       return;
     }
 
-    if (capacity < 1 || capacity > 20) {
+    const numericCapacity = parseInt(capacity, 10);
+    if (Number.isNaN(numericCapacity) || numericCapacity < 1 || numericCapacity > 20) {
       setError('Kişi sayısı 1-20 arasında olmalıdır');
       return;
     }
@@ -39,13 +66,15 @@ const TableManagementModal = ({ show, onHide, table }) => {
 
     try {
       if (updateTable) {
+        console.log('Saving table with ID:', table.id, 'Name:', tableName.trim(), 'Capacity:', numericCapacity);
         await updateTable(table.id, {
           name: tableName.trim(),
-          capacity: parseInt(capacity)
+          capacity: numericCapacity
         });
       }
       onHide();
     } catch (err) {
+      console.error('Error saving table:', err);
       setError(err.message || 'Güncelleme sırasında bir hata oluştu');
     } finally {
       setIsLoading(false);
@@ -87,7 +116,7 @@ const TableManagementModal = ({ show, onHide, table }) => {
         }}
       >
         <Modal.Title style={{ color: colors.text }}>
-          🏷️ Masa Yönetimi - {table.name || `Masa ${table.id}`}
+          🏷️ Masa Yönetimi - {table.name || `Masa ${table.tableNumber || table.id}`}
         </Modal.Title>
       </Modal.Header>
       
@@ -165,7 +194,20 @@ const TableManagementModal = ({ show, onHide, table }) => {
                 🗑️ Masayı Sil
               </Button>
               
-              <div>
+              <div className="d-flex align-items-center">
+                <Button
+                  variant="outline-warning"
+                  onClick={handleEmpty}
+                  disabled={isLoading || isAvailable}
+                  className="me-2"
+                  style={{
+                    borderColor: '#ffc107',
+                    color: '#ffc107'
+                  }}
+                  title={isAvailable ? 'Masa zaten boş' : 'Masayı boşalt'}
+                >
+                  ♻️ Masayı Boşalt
+                </Button>
                 <Button
                   variant="outline-secondary"
                   onClick={onHide}
@@ -199,7 +241,7 @@ const TableManagementModal = ({ show, onHide, table }) => {
               Masayı Silmek İstediğinize Emin misiniz?
             </h5>
             <p style={{ color: colors.textSecondary, marginBottom: '25px' }}>
-              <strong>{table.name || `Masa ${table.id}`}</strong> kalıcı olarak silinecek. 
+              <strong>{table.name || `Masa ${table.tableNumber || table.id}`}</strong> kalıcı olarak silinecek. 
               Bu işlem geri alınamaz.
             </p>
             

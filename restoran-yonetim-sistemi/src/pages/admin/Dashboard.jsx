@@ -8,13 +8,16 @@ import WarningModal from "../../components/common/WarningModal";
 import TableManagementModal from "../../components/tables/TableManagementModal";
 import "./Dashboard.css";
 import { settingsService } from '../../services/settingsService';
+import { diningTableService } from '../../services/diningTableService';
+import { salonService } from '../../services/salonService';
+import { useNavigate } from 'react-router-dom';
 
 
 
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons, createTable, deleteTable: deleteTableFromCtx } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -65,8 +68,10 @@ const Dashboard = () => {
   const [reservationToDelete, setReservationToDelete] = useState(null);
   const [showAddTableModal, setShowAddTableModal] = useState(false);
   const [newTableCapacity, setNewTableCapacity] = useState(4);
+  const [newTableNumber, setNewTableNumber] = useState('');
   const [showTableManagementModal, setShowTableManagementModal] = useState(false);
   const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
+  const navigate = useNavigate();
 
   // Restoran ismini backend'den al
   useEffect(() => {
@@ -200,11 +205,15 @@ const Dashboard = () => {
       setShowReservationModal(true);
     } else if (showTableLayoutMode) {
       // Masa düzeni modunda masa yönetimi modalını aç
-      const tableData = tables?.find(t => t.id === table.id) || table;
+      const tableData = tables?.find(t => String(t.tableNumber ?? t.id) === String(table.id)) || table;
+      console.log('Opening table management for:', table, 'Found backend table:', tableData);
       setSelectedTableForManagement({
-        ...tableData,
-        name: tableData.displayNumber || table.name || `Masa ${table.id}`,
-        capacity: tableData.capacity || 4
+        id: tableData?.id || table.backendId,  // Backend ID'sini kullan
+        tableNumber: tableData?.tableNumber ?? table.id,
+        name: String(tableData?.tableNumber ?? table.id),
+        capacity: tableData?.capacity || table.capacity || 4,
+        salon: tableData?.salon,
+        salonId: tableData?.salonId || tableData?.salon?.id
       });
       setShowTableManagementModal(true);
     } else {
@@ -437,6 +446,7 @@ const Dashboard = () => {
   const handleAddTableClose = () => {
     setShowAddTableModal(false);
     setNewTableCapacity(4);
+    setNewTableNumber('');
   };
 
   // Masa yönetimi modalını kapatma fonksiyonu
@@ -445,27 +455,47 @@ const Dashboard = () => {
     setSelectedTableForManagement(null);
   };
 
-  // Masa ekleme onaylama fonksiyonu
-  const handleAddTableConfirm = () => {
-    const newTableIndex = tableCounts[selectedFloor];
-    const newTableId = getTableNumber(selectedFloor, newTableIndex);
+  // Masa ekleme onaylama fonksiyonu (backend'e kaydeder)
+  const handleAddTableConfirm = async () => {
+    try {
+      // Seçili salon
+      const currentSalonId = selectedSalonId || (derivedSalons[0]?.id);
+      if (!currentSalonId) {
+        alert('Önce bir salon seçin');
+        return;
+      }
 
-    // Yeni masayı ekle
-    setTableCounts(prev => ({
-      ...prev,
-      [selectedFloor]: prev[selectedFloor] + 1
-    }));
+      // Masa numarası kullanıcıdan
+      if (!newTableNumber || String(newTableNumber).trim() === '') {
+        alert('Lütfen masa numarası girin');
+        return;
+      }
+      const desiredNumber = parseInt(String(newTableNumber).trim(), 10);
+      if (Number.isNaN(desiredNumber) || desiredNumber <= 0) {
+        alert('Geçerli bir masa numarası girin (pozitif sayı)');
+        return;
+      }
 
-    // Yeni masanın kapasitesini kaydet
-    const newCapacities = {
-      ...tableCapacities,
-      [newTableId]: newTableCapacity
-    };
-    setTableCapacities(newCapacities);
-    localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
+      // Bu salonda çakışma kontrolü
+      const inSalon = (tables || []).filter(t => (t?.salon?.id ?? t?.salonId) === currentSalonId);
+      const exists = inSalon.some(t => Number(t.tableNumber) === desiredNumber);
+      if (exists) {
+        alert(`Bu salonda ${desiredNumber} numaralı masa zaten var.`);
+        return;
+      }
 
-    setShowAddTableModal(false);
-    setNewTableCapacity(4);
+      await createTable({
+        tableNumber: desiredNumber,
+        capacity: newTableCapacity,
+        salonId: currentSalonId
+      });
+
+      setShowAddTableModal(false);
+      setNewTableCapacity(4);
+      setNewTableNumber('');
+    } catch (e) {
+      alert(`Masa eklenirken hata: ${e.message}`);
+    }
   };
 
   // Kat ekleme fonksiyonu
@@ -483,27 +513,45 @@ const Dashboard = () => {
   };
 
   // Kat silme fonksiyonu
-  const deleteFloor = () => {
+  const deleteFloor = async () => {
+    console.log('deleteFloor fonksiyonu çağrıldı, floorToDelete:', floorToDelete);
     if (floorToDelete !== null) {
-      setFloors(prev => prev.filter(floor => floor !== floorToDelete));
-      setTableCounts(prev => {
-        const newCounts = { ...prev };
-        delete newCounts[floorToDelete];
-        return newCounts;
-      });
-      setFloorNames(prev => {
-        const newNames = { ...prev };
-        delete newNames[floorToDelete];
-        return newNames;
-      });
-
-      // Eğer silinen kat seçili kattaysa, ilk kata geç
-      if (selectedFloor === floorToDelete) {
-        setSelectedFloor(floors[0]);
+      try {
+        // 1) Önce bu salona ait tüm masaları sil
+        const salonTables = tables.filter(t => (t?.salon?.id ?? t?.salonId) === floorToDelete);
+        console.log('Silinecek masalar:', salonTables.map(t => t.id));
+        for (const table of salonTables) {
+          try {
+            await diningTableService.deleteTable(table.id);
+            console.log('Masa silindi:', table.id);
+          } catch (error) {
+            if (String(error.message || '').includes('404')) {
+              console.warn(`Masa ${table.tableNumber || table.id} zaten silinmiş.`);
+              continue;
+            }
+            console.error('Masa silme hatası:', error);
+            throw new Error(`Masa ${table.tableNumber || table.id} silinemedi: ${error.message}`);
+          }
+        }
+        // 2) Şimdi salonu sil
+        console.log('Salon siliniyor:', floorToDelete);
+        await salonService.deleteSalon(floorToDelete);
+        // 3) Verileri tazele
+        await loadTablesAndSalons();
+        // 4) Modal'ı kapat
+        setShowDeleteFloorModal(false);
+        setFloorToDelete(null);
+        // 5) Başarı mesajı göster
+        setSuccessData({ message: 'Kat ve tüm masaları başarıyla silindi' });
+        setShowSuccess(true);
+        console.log('Kat silme işlemi tamamlandı.');
+      } catch (error) {
+        console.error('Kat silme hatası:', error);
+        setWarningMessage(`Kat silinirken hata oluştu: ${error.message}`);
+        setShowWarningModal(true);
       }
-
-      setShowDeleteFloorModal(false);
-      setFloorToDelete(null);
+    } else {
+      console.warn('deleteFloor: floorToDelete null!');
     }
   };
 
@@ -514,27 +562,63 @@ const Dashboard = () => {
   };
 
   // Masa silme fonksiyonu
-  const deleteTable = () => {
-    if (tableToDelete !== null) {
-      setTableCounts(prev => ({
-        ...prev,
-        [selectedFloor]: Math.max(0, prev[selectedFloor] - 1)
-      }));
+  const deleteTable = async () => {
+    if (tableToDelete && (tableToDelete.id != null)) {
+      try {
+        // Ön kontrol: backend tablosunu bul
+        const backendTable = (tables || []).find(t => String(t.id) === String(tableToDelete.id));
 
-      // Silinen masanın kapasitesini de kaldır
-      const newCapacities = { ...tableCapacities };
-      delete newCapacities[tableToDelete];
-      setTableCapacities(newCapacities);
-      localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
+        if (!backendTable) {
+          alert('Masa bulunamadı. Lütfen sayfayı yenileyip tekrar deneyin.');
+          return;
+        }
 
-      setShowDeleteTableModal(false);
-      setTableToDelete(null);
+        // 1) Durum kontrolü – kırmızı (occupied) veya sarı (reserved) ise engelle
+        const statusName = String(
+          backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+        ).toLowerCase();
+        if (statusName && statusName !== 'available') {
+          if (statusName === 'occupied') {
+            alert('Bu masa dolu. Silmeden önce masayı boşaltın.');
+          } else if (statusName === 'reserved') {
+            alert('Bu masa rezerve. Silmeden önce rezervasyonu iptal edin.');
+          } else {
+            alert(`Bu masa (${statusName}) durumunda. Silmeden önce masayı boşaltın.`);
+          }
+          return;
+        }
+
+        // Not: Yeşil (available) masalar için sipariş/rezervasyon kontrolü atlanır.
+        // Bazı durumlarda backend'den eski sipariş kaydı gelebilir; yeşil masalar silinebilmeli.
+
+        // Tüm kontroller geçti, sil (Context fonksiyonu)
+        await deleteTableFromCtx(tableToDelete.id);
+
+        // Başarılı silme sonrası masaları yeniden yükle
+        if (loadTablesAndSalons) {
+          await loadTablesAndSalons();
+        }
+
+        setShowDeleteTableModal(false);
+        setTableToDelete(null);
+
+        // Başarı mesajı göster
+        setSuccessData({
+          message: `Masa başarıyla silindi`,
+          type: 'table_deleted'
+        });
+        setShowSuccess(true);
+
+      } catch (error) {
+        console.error('Error deleting table:', error);
+        alert(`Masa silinirken hata oluştu: ${error.message}`);
+      }
     }
   };
 
   // Masa silme modalını aç
-  const openDeleteTableModal = (tableId) => {
-    setTableToDelete(tableId);
+  const openDeleteTableModal = (tableInfo) => {
+    setTableToDelete(tableInfo);
     setShowDeleteTableModal(true);
   };
 
@@ -779,7 +863,7 @@ const Dashboard = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDeleteTableModal(table.id);
+                        openDeleteTableModal({ id: table.backendId || table.id, displayNumber: table.displayNumber, tableNumber: table.id });
                       }}
                       style={{
                         position: 'absolute',
@@ -1031,7 +1115,7 @@ const Dashboard = () => {
           {/* Kat düzeni modunda + butonu */}
           {showFloorLayoutMode && (
             <div
-              onClick={addFloor}
+              onClick={() => navigate('/admin/new-floor')}
               style={{
                 padding: "1rem",
                 marginBottom: "1rem",
@@ -1109,7 +1193,7 @@ const Dashboard = () => {
                 marginBottom: '30px',
                 fontSize: '1rem'
               }}>
-                <strong>Masa {tableToDelete ? getTableNumber(selectedFloor, parseInt(tableToDelete.split('-')[1]) - 1) : ''}</strong> masasını silmek istediğinizden emin misiniz?
+                <strong>Masa {tableToDelete?.displayNumber || tableToDelete?.tableNumber || ''}</strong> masasını silmek istediğinizden emin misiniz?
                 <br />
                 <small style={{ color: '#ff6b6b' }}>
                   Bu işlem geri alınamaz!
@@ -1887,11 +1971,38 @@ const Dashboard = () => {
               </h3>
               <p style={{
                 color: isDarkMode ? '#cccccc' : '#666666',
-                marginBottom: '20px',
+                marginBottom: '12px',
                 fontSize: '1rem'
               }}>
-                Yeni masanın kaç kişilik olacağını seçin:
+                Masa numarasını ve kapasiteyi seçin:
               </p>
+              <div style={{
+                textAlign: 'left',
+                marginBottom: '16px'
+              }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '6px',
+                  color: isDarkMode ? '#ffffff' : '#333333',
+                  fontWeight: 600
+                }}>Masa Numarası</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newTableNumber}
+                  onChange={(e) => setNewTableNumber(e.target.value)}
+                  placeholder="Örn: 97"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: `2px solid ${isDarkMode ? '#473653' : '#e0e0e0'}`,
+                    background: isDarkMode ? '#473653' : '#ffffff',
+                    color: isDarkMode ? '#ffffff' : '#333333',
+                    fontSize: '16px'
+                  }}
+                />
+              </div>
               <div style={{
                 display: 'flex',
                 gap: '10px',
