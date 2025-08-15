@@ -1,22 +1,47 @@
-import React, { useState, useContext, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { AuthContext } from '../../context/AuthContext';
-import { TableContext } from '../../context/TableContext';
 import './OrderHistoryPage.css';
+import { fetchAllOrders } from '../../../services/orderHistoryService';
 
 const OrderHistoryPage = () => {
+
     const { isDarkMode, colors } = useTheme();
-    const { user } = useContext(AuthContext);
-    const { orderHistory } = useContext(TableContext);
+    const [orderHistory, setOrderHistory] = useState([]);
     const [filteredHistory, setFilteredHistory] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAction, setSelectedAction] = useState('all');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+
+    // Backend'den sipariş geçmişini çek
+    useEffect(() => {
+        setLoading(true);
+        fetchAllOrders()
+            .then(data => {
+                // Backend datasını UI'da kullanılacak formata dönüştür
+                const mapped = (data || []).map(order => ({
+                    id: order.orderId,
+                    orderContent: order.items.map(i => `${i.productName} x${i.quantity}`).join(', '),
+                    action: 'Sipariş Onaylandı', // Backend'den gelmiyor, örnek olarak sabit
+                    personnelName: order.waiterName || '-',
+                    personnelRole: '', // Eğer backend'den rol gelirse ekle
+                    tableId: order.tableId ? order.tableId.toString() : '-',
+                    timestamp: new Date(order.createdAt).toLocaleString('tr-TR'),
+                    financialImpact: `+${order.totalPrice}₺`,
+                }));
+                setOrderHistory(mapped);
+                setLoading(false);
+            })
+            .catch(err => {
+                setError('Sipariş geçmişi alınamadı.');
+                setLoading(false);
+            });
+    }, []);
 
     useEffect(() => {
-        // Use real data from context
         let filtered = orderHistory || [];
-
-        // Filter by search term
         if (searchTerm) {
             filtered = filtered.filter(item =>
                 item.orderContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -24,12 +49,9 @@ const OrderHistoryPage = () => {
                 item.tableId.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-
-        // Filter by action
         if (selectedAction !== 'all') {
             filtered = filtered.filter(item => item.action === selectedAction);
         }
-
         setFilteredHistory(filtered);
     }, [searchTerm, selectedAction, orderHistory]);
 
@@ -172,81 +194,87 @@ const OrderHistoryPage = () => {
                 </div>
             </div>
 
-            <div style={styles.table}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr>
-                            <th style={styles.tableHeader}>Sipariş İçeriği</th>
-                            <th style={styles.tableHeader}>İşlem</th>
-                            <th style={styles.tableHeader}>Personel</th>
-                            <th style={styles.tableHeader}>Masa</th>
-                            <th style={styles.tableHeader}>Tarih/Saat</th>
-                            <th style={styles.tableHeader}>Finansal Etki</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredHistory.length > 0 ? (
-                            filteredHistory.map((item) => (
-                                <tr key={item.id || crypto.randomUUID()}>
-                                    <td style={styles.tableCell}>
-                                        <div style={{ fontWeight: '500' }}>
-                                            {item.orderContent}
-                                        </div>
-                                    </td>
-                                    <td style={styles.tableCell}>
-                                        <span style={getActionBadgeStyle(item.action)}>
-                                            {item.action}
-                                        </span>
-                                    </td>
-                                    <td style={styles.tableCell}>
-                                        <div>
+            {loading ? (
+                <div style={styles.emptyState}>Yükleniyor...</div>
+            ) : error ? (
+                <div style={styles.emptyState}>{error}</div>
+            ) : (
+                <div style={styles.table}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr>
+                                <th style={styles.tableHeader}>Sipariş İçeriği</th>
+                                <th style={styles.tableHeader}>İşlem</th>
+                                <th style={styles.tableHeader}>Personel</th>
+                                <th style={styles.tableHeader}>Masa</th>
+                                <th style={styles.tableHeader}>Tarih/Saat</th>
+                                <th style={styles.tableHeader}>Finansal Etki</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredHistory.length > 0 ? (
+                                filteredHistory.map((item) => (
+                                    <tr key={item.id || crypto.randomUUID()}>
+                                        <td style={styles.tableCell}>
                                             <div style={{ fontWeight: '500' }}>
-                                                {item.personnelName}
+                                                {item.orderContent}
                                             </div>
-                                            <div style={{ 
-                                                fontSize: '0.875rem', 
-                                                color: isDarkMode ? '#A294F9' : '#513653' 
+                                        </td>
+                                        <td style={styles.tableCell}>
+                                            <span style={getActionBadgeStyle(item.action)}>
+                                                {item.action}
+                                            </span>
+                                        </td>
+                                        <td style={styles.tableCell}>
+                                            <div>
+                                                <div style={{ fontWeight: '500' }}>
+                                                    {item.personnelName}
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '0.875rem', 
+                                                    color: isDarkMode ? '#A294F9' : '#513653' 
+                                                }}>
+                                                    {item.personnelRole}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style={styles.tableCell}>
+                                            <span style={{
+                                                backgroundColor: isDarkMode ? '#513653' : '#E5D9F2',
+                                                color: isDarkMode ? '#ffffff' : '#513653',
+                                                padding: '0.25rem 0.75rem',
+                                                borderRadius: '12px',
+                                                fontSize: '0.875rem',
+                                                fontWeight: '500',
+                                                border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`
                                             }}>
-                                                {item.personnelRole}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={styles.tableCell}>
-                                        <span style={{
-                                            backgroundColor: isDarkMode ? '#513653' : '#E5D9F2',
-                                            color: isDarkMode ? '#ffffff' : '#513653',
-                                            padding: '0.25rem 0.75rem',
-                                            borderRadius: '12px',
-                                            fontSize: '0.875rem',
-                                            fontWeight: '500',
-                                            border: `1px solid ${isDarkMode ? '#473653' : '#CDC1FF'}`
-                                        }}>
-                                            {item.tableId}
-                                        </span>
-                                    </td>
-                                    <td style={styles.tableCell}>
-                                        {item.timestamp}
-                                    </td>
-                                    <td style={styles.tableCell}>
-                                        <span style={getFinancialImpactStyle(item.financialImpact)}>
-                                            {item.financialImpact}
-                                        </span>
+                                                {item.tableId}
+                                            </span>
+                                        </td>
+                                        <td style={styles.tableCell}>
+                                            {item.timestamp}
+                                        </td>
+                                        <td style={styles.tableCell}>
+                                            <span style={getFinancialImpactStyle(item.financialImpact)}>
+                                                {item.financialImpact}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" style={styles.emptyState}>
+                                        {searchTerm || selectedAction !== 'all' 
+                                            ? 'Arama kriterlerinize uygun sipariş geçmişi bulunamadı.'
+                                            : 'Henüz sipariş geçmişi bulunmuyor.'
+                                        }
                                     </td>
                                 </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="6" style={styles.emptyState}>
-                                    {searchTerm || selectedAction !== 'all' 
-                                        ? 'Arama kriterlerinize uygun sipariş geçmişi bulunamadı.'
-                                        : 'Henüz sipariş geçmişi bulunmuyor.'
-                                    }
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
