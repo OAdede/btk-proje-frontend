@@ -72,15 +72,8 @@ const Dashboard = () => {
   const [showTableManagementModal, setShowTableManagementModal] = useState(false);
   const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
   const navigate = useNavigate();
-  // Salon prefix yönetimi
-  const [salonPrefixes, setSalonPrefixes] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('salonPrefixes') || '{}');
-    } catch { return {}; }
-  });
   const [showAddSalonModal, setShowAddSalonModal] = useState(false);
   const [newSalonName, setNewSalonName] = useState('');
-  const [newSalonPrefix, setNewSalonPrefix] = useState('');
 
   // Restoran ismini backend'den al
   useEffect(() => {
@@ -198,9 +191,7 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('tableCapacities', JSON.stringify(tableCapacities));
   }, [tableCapacities]);
-  useEffect(() => {
-    localStorage.setItem('salonPrefixes', JSON.stringify(salonPrefixes));
-  }, [salonPrefixes]);
+  
 
   const handleReservationClick = (tableId) => {
     setSelectedTable(tableId);
@@ -826,33 +817,49 @@ const Dashboard = () => {
                   key={table.id || crypto.randomUUID()}
                   style={{
                     background: `
-                      linear-gradient(135deg, #8a5a3b 0%, #6f4e37 65%, #5b3d2e 100%),
-                      repeating-linear-gradient(12deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, rgba(0,0,0,0.10) 1px, rgba(0,0,0,0.10) 3px),
-                      radial-gradient(100% 60% at 25% 15%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%),
-                      radial-gradient(90% 70% at 80% 80%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 40%)
+                      linear-gradient(135deg, #c19a6b 0%, #b08968 20%, #a67c52 40%, #8b6f47 60%, #6f4e37 80%, #5b3d2e 100%),
+                      radial-gradient(ellipse 100% 80% at 30% 25%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 30%, rgba(0,0,0,0.05) 60%),
+                      radial-gradient(ellipse 80% 60% at 75% 75%, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.06) 50%),
+                      linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.03) 100%)
                     `,
-                    color: '#f6f1eb',
+                    color: '#f8f4f0',
                     height: "150px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
-                    borderRadius: "14px",
+                    borderRadius: "20px",
                     cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || tableReservations.length > 0 || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
                     userSelect: "none",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2), 0 8px 18px rgba(0,0,0,0.22)",
+                    transition: "transform 0.4s ease, box-shadow 0.4s ease",
+                    boxShadow: "inset 0 3px 0 rgba(255,255,255,0.25), inset 0 -3px 0 rgba(0,0,0,0.2), 0 15px 35px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08)",
                     position: 'relative',
-                    border: '1px solid rgba(0,0,0,0.25)',
+                    border: '2px solid rgba(139, 69, 19, 0.25)',
                     overflow: 'visible',
-                    textShadow: '0 1px 2px rgba(0,0,0,0.45)'
+                    textShadow: '0 1px 3px rgba(255,255,255,0.8)'
                   }}
                   onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: tableReservations[0] })}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.boxShadow = 'inset 0 3px 0 rgba(255,255,255,0.3), inset 0 -3px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'inset 0 3px 0 rgba(255,255,255,0.25), inset 0 -3px 0 rgba(0,0,0,0.2), 0 15px 35px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08)';
+                  }}
                   title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
                 >
-                  <div style={{ position:'absolute', top:0, left:0, right:0, height:6, background:'rgba(255,255,255,0.28)', borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+                  <div style={{ 
+                    position:'absolute', 
+                    top:0, 
+                    left:0, 
+                    right:0, 
+                    height:10, 
+                    background:'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.12) 100%)', 
+                    borderTopLeftRadius:20, 
+                    borderTopRightRadius:20,
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)'
+                  }} />
                   <div style={{
                     position: 'absolute',
                     top: '10px',
@@ -864,11 +871,52 @@ const Dashboard = () => {
                     boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                     border: '2px solid rgba(255,255,255,0.65)'
                   }} />
-                  {/* Masa ayakları (üstten görünüm) */}
-                  <div style={{ position:'absolute', top:-8, left:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
-                  <div style={{ position:'absolute', top:-8, right:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
-                  <div style={{ position:'absolute', bottom:-8, left:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
-                  <div style={{ position:'absolute', bottom:-8, right:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
+                  {/* Zarif masa ayakları */}
+                  {/* Zarif yuvarlak masa ayakları */}
+                  <div style={{ 
+                    position:'absolute', 
+                    top:-14, 
+                    left:20, 
+                    width:14, 
+                    height:18, 
+                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
+                    borderRadius:'50%',
+                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(139, 69, 19, 0.4)'
+                  }} />
+                  <div style={{ 
+                    position:'absolute', 
+                    top:-14, 
+                    right:20, 
+                    width:14, 
+                    height:18, 
+                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
+                    borderRadius:'50%',
+                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(139, 69, 19, 0.4)'
+                  }} />
+                  <div style={{ 
+                    position:'absolute', 
+                    bottom:-14, 
+                    left:20, 
+                    width:14, 
+                    height:18, 
+                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
+                    borderRadius:'50%',
+                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(139, 69, 19, 0.4)'
+                  }} />
+                  <div style={{ 
+                    position:'absolute', 
+                    bottom:-14, 
+                    right:20, 
+                    width:14, 
+                    height:18, 
+                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
+                    borderRadius:'50%',
+                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
+                    border: '2px solid rgba(139, 69, 19, 0.4)'
+                  }} />
                   {/* Rezervasyon modunda + işareti */}
                   {showReservationMode && status.text === 'Boş' && (
                     <div style={{
@@ -934,28 +982,39 @@ const Dashboard = () => {
 
                   {/* Masa kapasitesi */}
                   <div style={{
-                    fontSize: "0.85rem",
-                    color: "rgba(255,255,255,0.9)",
-                    marginBottom: 2,
-                    fontWeight: 600
+                    fontSize: "0.9rem",
+                    color: "#2c1810",
+                    marginBottom: 4,
+                    fontWeight: 700,
+                    textShadow: '0 1px 2px rgba(255,255,255,0.9)'
                   }}>
                     {table.capacity} Kişilik
                   </div>
-                  <div style={{ fontSize: 33, fontWeight: 800, letterSpacing: 0.5, textShadow:'0 2px 6px rgba(0,0,0,0.25)' }}>
+                  <div style={{ 
+                    fontSize: 35, 
+                    fontWeight: 900, 
+                    letterSpacing: 1, 
+                    textShadow:'0 2px 8px rgba(255,255,255,0.9), 0 1px 3px rgba(0,0,0,0.3)',
+                    color: '#2c1810'
+                  }}>
                     {table.displayNumber}
                   </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize: 14, marginTop: 6, fontWeight: 600 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize: 14, marginTop: 8, fontWeight: 600 }}>
                     <span style={{
-                      background: 'rgba(0,0,0,0.25)',
+                      background: 'rgba(255,255,255,0.85)',
+                      color: '#2c1810',
                       borderRadius: 12,
-                      padding: '2px 10px',
-                      backdropFilter: 'blur(1px)'
+                      padding: '3px 12px',
+                      backdropFilter: 'blur(2px)',
+                      border: '1px solid rgba(139, 69, 19, 0.2)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}>{status.text}</span>
                     {Object.keys(order).length > 0 && (
                       <span style={{
-                        background: 'rgba(255,255,255,0.28)',
+                        background: 'rgba(139, 69, 19, 0.9)',
+                        color: '#fff',
                         borderRadius: 12,
-                        padding: '1px 8px',
+                        padding: '2px 8px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1207,30 +1266,23 @@ const Dashboard = () => {
                 <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Adı</label>
                 <input value={newSalonName} onChange={(e)=>setNewSalonName(e.target.value)} placeholder="Örn: ANA SALON" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
               </div>
-              <div style={{ textAlign: 'left', marginBottom: '18px' }}>
-                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Kodu (Örn: A)</label>
-                <input value={newSalonPrefix} onChange={(e)=>setNewSalonPrefix(e.target.value)} maxLength={2} placeholder="A" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16, textTransform:'uppercase' }} />
-                <small style={{ color: isDarkMode? '#ddd':'#666' }}>Bu harf masa numaralarının başında görünecek (örn: A97)</small>
-              </div>
+              
               <div style={{ display:'flex', gap:15, justifyContent:'center' }}>
                 <button onClick={async ()=>{
                   const name = (newSalonName||'').trim();
-                  let prefix = (newSalonPrefix||'').trim().toUpperCase();
                   if (!name) { alert('Salon adı zorunlu'); return; }
-                  if (!prefix || !/^[A-ZÇĞİÖŞÜ]$/.test(prefix[0])) { alert('Geçerli bir tek harf girin'); return; }
+                  if (name.length < 3) { alert('Salon adı en az 3 karakter olmalı'); return; }
+                  const duplicate = (derivedSalons||[]).some(s => String(s.name||'').toLowerCase() === name.toLowerCase());
+                  if (duplicate) { alert('Bu isimde bir salon zaten var'); return; }
                   try {
-                    const created = await salonService.createSalon({ name, prefix });
-                    const sid = created?.id;
-                    if (sid != null) {
-                      setSalonPrefixes(prev=>{ const next={...prev}; next[String(sid)] = prefix[0]; return next; });
-                    }
+                    await salonService.createSalon({ name });
                     await loadTablesAndSalons?.();
-                    setShowAddSalonModal(false); setNewSalonName(''); setNewSalonPrefix('');
+                    setShowAddSalonModal(false); setNewSalonName('');
                   } catch(err){
                     alert(`Salon eklenirken hata: ${err.message}`);
                   }
                 }} style={{ background:'#4CAF50', color:'#fff', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>Ekle</button>
-                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonPrefix(''); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
+                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
               </div>
             </div>
           </div>

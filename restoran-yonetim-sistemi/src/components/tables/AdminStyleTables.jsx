@@ -103,13 +103,10 @@ export default function AdminStyleTables({ roleOverride }) {
             const tableNum = table?.tableNumber ?? table?.number ?? table?.id;
             const idStr = tableNum != null ? String(tableNum) : String(table?.id ?? '');
             const salonId = getTableSalonId(table);
-            const salonIdx = getSalonIndexById(salonId);
-            const prefix = getAdminPrefixByIndex(salonIdx);
-            const adminDisplay = `${prefix}${idStr}`;
             return {
                 id: idStr, // masa numarası (UI)
                 backendId: String(table?.id), // backend masa id
-                displayNumber: adminDisplay,
+                displayNumber: idStr, // sadece sayı göster
                 capacity: table?.capacity || 4,
                 salonId: salonId,
                 salonName: getTableSalonName(table),
