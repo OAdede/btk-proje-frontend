@@ -319,6 +319,70 @@ export function TableProvider({ children }) {
         }
     };
 
+    // Masa güncelleme fonksiyonu
+    const updateTable = async (tableId, updateData) => {
+        try {
+            const table = tables.find(t => t.id === tableId);
+            if (!table) {
+                console.warn(`Table with id ${tableId} not found`);
+                throw new Error('Masa bulunamadı');
+            }
+
+            const response = await apiCall(`/dining-tables/${tableId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tableNumber: updateData.name || table.tableNumber,
+                    capacity: updateData.capacity || table.capacity,
+                    salonId: table.salon?.id || table.salonId
+                })
+            });
+
+            // Backend'den güncel veriyi al
+            await loadTablesAndSalons();
+
+            console.log(`Table ${tableId} updated successfully`);
+        } catch (error) {
+            console.error(`Error updating table ${tableId}:`, error);
+            throw error;
+        }
+    };
+
+    // Masa silme fonksiyonu
+    const deleteTable = async (tableId) => {
+        try {
+            const table = tables.find(t => t.id === tableId);
+            if (!table) {
+                console.warn(`Table with id ${tableId} not found`);
+                throw new Error('Masa bulunamadı');
+            }
+
+            // Masada aktif sipariş var mı kontrol et
+            const activeOrder = orders[table.tableNumber];
+            if (activeOrder && Object.keys(activeOrder).length > 0) {
+                throw new Error('Bu masada aktif sipariş bulunuyor. Önce siparişi tamamlayın.');
+            }
+
+            // Masada rezervasyon var mı kontrol et
+            const hasReservation = Object.values(reservations).some(res => res.tableId === table.tableNumber);
+            if (hasReservation) {
+                throw new Error('Bu masada rezervasyon bulunuyor. Önce rezervasyonu iptal edin.');
+            }
+
+            const response = await apiCall(`/dining-tables/${tableId}`, {
+                method: 'DELETE'
+            });
+
+            // Backend'den güncel veriyi al
+            await loadTablesAndSalons();
+
+            console.log(`Table ${tableId} deleted successfully`);
+        } catch (error) {
+            console.error(`Error deleting table ${tableId}:`, error);
+            throw error;
+        }
+    };
+
     // Dışarıdan manuel yenileme: sadece salon+masa hafif yüklemesi
     // Not: fetchData ayrıca tüm verileri getirir; burada hızlı grid güncellemesi sağlanır
 
@@ -944,6 +1008,8 @@ export function TableProvider({ children }) {
                 monthlyOrderCount: monthlyCount,
                 yearlyOrderCount: yearlyCount,
                 updateTableStatus,
+                updateTable,
+                deleteTable,
                 saveFinalOrder,
                 cancelOrder,
                 processPayment,

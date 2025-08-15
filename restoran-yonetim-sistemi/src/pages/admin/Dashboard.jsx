@@ -4,6 +4,7 @@ import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
 import SuccessNotification from "../../components/reservations/SuccessNotification";
 import WarningModal from "../../components/common/WarningModal";
+import TableManagementModal from "../../components/tables/TableManagementModal";
 import "./Dashboard.css";
 
 
@@ -62,6 +63,8 @@ const Dashboard = () => {
   const [reservationToDelete, setReservationToDelete] = useState(null);
   const [showAddTableModal, setShowAddTableModal] = useState(false);
   const [newTableCapacity, setNewTableCapacity] = useState(4);
+  const [showTableManagementModal, setShowTableManagementModal] = useState(false);
+  const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
 
   // Restoran ismini localStorage'dan al
   useEffect(() => {
@@ -179,6 +182,15 @@ const Dashboard = () => {
       // Rezervasyon modunda boş masaya tıklandığında rezervasyon modalını aç
       setSelectedTable(table.id);
       setShowReservationModal(true);
+    } else if (showTableLayoutMode) {
+      // Masa düzeni modunda masa yönetimi modalını aç
+      const tableData = tables?.find(t => t.id === table.id) || table;
+      setSelectedTableForManagement({
+        ...tableData,
+        name: tableData.displayNumber || table.name || `Masa ${table.id}`,
+        capacity: tableData.capacity || 4
+      });
+      setShowTableManagementModal(true);
     } else {
       // Normal modda masa detaylarını göster
       // Eğer masada rezervasyon varsa, rezervasyon detaylarını göster
@@ -409,6 +421,12 @@ const Dashboard = () => {
   const handleAddTableClose = () => {
     setShowAddTableModal(false);
     setNewTableCapacity(4);
+  };
+
+  // Masa yönetimi modalını kapatma fonksiyonu
+  const handleTableManagementClose = () => {
+    setShowTableManagementModal(false);
+    setSelectedTableForManagement(null);
   };
 
   // Masa ekleme onaylama fonksiyonu
@@ -1945,6 +1963,13 @@ const Dashboard = () => {
         )}
 
       </div>
+
+      {/* Masa Yönetimi Modalı */}
+      <TableManagementModal
+        show={showTableManagementModal}
+        onHide={handleTableManagementClose}
+        table={selectedTableForManagement}
+      />
     </>
   );
 };
