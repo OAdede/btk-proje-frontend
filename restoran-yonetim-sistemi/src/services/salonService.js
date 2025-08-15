@@ -53,17 +53,31 @@ export const salonService = {
     // Create new salon
     async createSalon(salonData) {
         try {
+            // Ensure required fields are present
+            if (!salonData.name) {
+                throw new Error('Salon name is required');
+            }
+
+            // Prepare the data for backend
+            const backendData = {
+                name: salonData.name.trim()
+            };
+
+            console.log('Creating salon with data:', backendData);
+
             const response = await fetch(`${API_BASE_URL}/salons`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(salonData)
+                body: JSON.stringify(backendData)
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Backend error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
             const result = await response.json();
@@ -78,17 +92,31 @@ export const salonService = {
     // Update salon
     async updateSalon(salonId, salonData) {
         try {
+            // Ensure required fields are present
+            if (!salonData.name) {
+                throw new Error('Salon name is required');
+            }
+
+            // Prepare the data for backend
+            const backendData = {
+                name: salonData.name.trim()
+            };
+
+            console.log('Updating salon with data:', salonId, backendData);
+
             const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(salonData)
+                body: JSON.stringify(backendData)
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Backend error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
             const result = await response.json();
@@ -103,6 +131,8 @@ export const salonService = {
     // Delete salon
     async deleteSalon(salonId) {
         try {
+            console.log('Deleting salon:', salonId);
+
             const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
                 method: 'DELETE',
                 headers: {
@@ -112,7 +142,9 @@ export const salonService = {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Backend error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
             console.log('Salon deleted successfully');

@@ -116,6 +116,9 @@ export function TableProvider({ children }) {
             setTables(diningTablesData || []);
             setSalons(salonsData || []);
 
+            // Debug: Masa verilerini kontrol et
+            console.log('Backend\'den gelen masa verileri:', diningTablesData);
+
             const newTableStatus = (diningTablesData || []).reduce((acc, table) => {
                 acc[table.tableNumber] = table.statusName.toLowerCase();
                 return acc;

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext.jsx';
 import { useTheme } from '../../context/ThemeContext';
 import './TopNav.css';
+import { settingsService } from '../../services/settingsService';
 
 const TopNav = () => {
     const { user, logout } = useContext(AuthContext);
@@ -11,10 +11,24 @@ const TopNav = () => {
     const { colors, isDarkMode } = useTheme();
     const [restaurantName, setRestaurantName] = useState('Restoran Yönetim Sistemi');
 
-    // Restoran ismini localStorage'dan al
+    // Restoran ismini backend'den al
     useEffect(() => {
-        const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
-        setRestaurantName(name);
+        const loadRestaurantName = async () => {
+            try {
+                const settings = await settingsService.getRestaurantSettings();
+                if (settings.restaurantName) {
+                    setRestaurantName(settings.restaurantName);
+                    localStorage.setItem('restaurantName', settings.restaurantName);
+                }
+            } catch (error) {
+                console.error('Error loading restaurant name:', error);
+                // Fallback to localStorage if API fails
+                const cachedName = localStorage.getItem('restaurantName');
+                if (cachedName) setRestaurantName(cachedName);
+            }
+        };
+
+        loadRestaurantName();
     }, []);
 
     // localStorage değişikliklerini ve custom event'leri dinle

@@ -1,5 +1,8 @@
+/* Force navigation to always be visible with highest specificity */
+html body .top-nav,
+body .top-nav,
 .top-nav {
-    display: flex;
+    display: flex !important;
     justify-content: space-between;
     align-items: center;
     background: #ffffff;
@@ -7,8 +10,16 @@
     height: 70px;
     border-bottom: 1px solid #e9ecef;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    top: 0;
-    z-index: 100;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    width: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
 }
 
 .top-nav-left {
@@ -325,4 +336,162 @@
         padding: 4px 8px;
         font-size: 0.75rem;
     }
+}
+
+/* Ensure navigation is always visible on all screen sizes */
+@media (max-width: 1024px) {
+    .top-nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        display: flex !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .top-nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        display: flex !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        display: flex !important;
+    }
+}
+
+/* Ensure navigation is never hidden by any other CSS rules */
+.top-nav,
+.top-nav * {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+}
+
+.top-nav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    width: 100% !important;
+}
+
+/* Ensure navigation is always visible on all screen sizes with highest specificity */
+@media (max-width: 1024px) {
+    html body .top-nav,
+    body .top-nav,
+    .top-nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        display: flex !important;
+    }
+}
+
+@media (max-width: 768px) {
+    html body .top-nav,
+    body .top-nav,
+    .top-nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        display: flex !important;
+    }
+}
+
+@media (max-width: 480px) {
+    html body .top-nav,
+    body .top-nav,
+    .top-nav {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 9999 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        display: flex !important;
+    }
+}
+
+/* Ensure navigation is never hidden by any other CSS rules with highest specificity */
+html body .top-nav,
+body .top-nav,
+.top-nav,
+.top-nav * {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+}
+
+html body .top-nav,
+body .top-nav,
+.top-nav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    width: 100% !important;
+}
+
+/* Ensure navigation is never hidden by any other CSS rules with highest specificity possible */
+html body div.top-nav,
+body div.top-nav,
+div.top-nav,
+.top-nav {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    width: 100% !important;
 }
