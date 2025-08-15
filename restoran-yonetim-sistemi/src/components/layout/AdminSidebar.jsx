@@ -7,6 +7,7 @@ import { TableContext } from "../../context/TableContext";
 import "./AdminLayout.css";
 import { userService } from "../../services/userService";
 import { personnelService } from "../../services/personnelService";
+import { authService } from "../../services/authService";
 
 const AdminSidebar = () => {
     const { logout, user, updatePhone } = useContext(AuthContext);
@@ -153,6 +154,15 @@ const AdminSidebar = () => {
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
     const [tempImage, setTempImage] = useState(null);
+
+    // Change password state
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [changePasswordError, setChangePasswordError] = useState('');
+    const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     // Sayfa değişikliklerinde sidebar'ı kapat
     const handleNavClick = () => {
@@ -465,6 +475,62 @@ const AdminSidebar = () => {
         }
     };
 
+    // Şifre değiştirme
+    const handleChangePassword = async () => {
+        // Clear previous messages
+        setChangePasswordError('');
+        setChangePasswordSuccess('');
+        
+        // Validation
+        if (!currentPassword.trim()) {
+            setChangePasswordError('Mevcut şifrenizi girin');
+            return;
+        }
+        
+        if (!newPassword.trim()) {
+            setChangePasswordError('Yeni şifrenizi girin');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            setChangePasswordError('Yeni şifre en az 6 karakter olmalıdır');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            setChangePasswordError('Yeni şifreler eşleşmiyor');
+            return;
+        }
+        
+        if (currentPassword === newPassword) {
+            setChangePasswordError('Yeni şifre mevcut şifreden farklı olmalıdır');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        
+        try {
+            await authService.changePassword(currentPassword, newPassword);
+            setChangePasswordSuccess('Şifreniz başarıyla değiştirildi!');
+            
+            // Clear form
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            
+            // Auto-close success message and modal after 3 seconds
+            setTimeout(() => {
+                setShowChangePassword(false);
+                setChangePasswordSuccess('');
+            }, 3000);
+            
+        } catch (error) {
+            setChangePasswordError(error.message || 'Şifre değiştirilirken bir hata oluştu');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
     // Detect viewport to decide hamburger visibility
     useEffect(() => {
         const onResize = () => {
@@ -487,7 +553,7 @@ const AdminSidebar = () => {
                     onClick={toggleSidebar}
                     style={{
                         position: 'fixed',
-                        top: '20px',
+                        top: '90px',
                         left: '20px',
                         zIndex: 1001,
                         background: isDarkMode ? colors.primary : '#A294F9',
@@ -1300,6 +1366,57 @@ const AdminSidebar = () => {
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Şifre Değiştir */}
+                                <div style={{ marginBottom: '25px' }}>
+                                    <label style={{
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        marginBottom: '10px',
+                                        display: 'block'
+                                    }}>
+                                        Şifre Değiştir
+                                    </label>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            onClick={() => setShowChangePassword(true)}
+                                            style={{
+                                                background: 'linear-gradient(90deg, #6c5ce7 0%, #a29bfe 100%)',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 20px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.target.style.transform = 'translateY(-1px)';
+                                                e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.target.style.transform = 'translateY(0)';
+                                                e.target.style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            🔒 Şifre Değiştir
+                                        </button>
+                                    </div>
+                                    <small style={{ 
+                                        color: isDarkMode ? '#888' : '#666', 
+                                        fontSize: '0.8rem',
+                                        display: 'block',
+                                        marginTop: '8px'
+                                    }}>
+                                        Güvenliğiniz için şifrenizi düzenli olarak güncelleyin
+                                    </small>
+                                </div>
                             </div>
                         </div>,
                         document.body
@@ -1736,6 +1853,305 @@ const AdminSidebar = () => {
                                         </button>
                                     </div>
                                 )}
+                            </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {/* Şifre Değiştirme Modal */}
+                    {showChangePassword && createPortal(
+                        <div
+                            style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(0, 0, 0, 0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 999999
+                            }}
+                            onClick={() => {
+                                setShowChangePassword(false);
+                                setChangePasswordError('');
+                                setChangePasswordSuccess('');
+                                setCurrentPassword('');
+                                setNewPassword('');
+                                setConfirmPassword('');
+                            }}
+                        >
+                            <div
+                                style={{
+                                    background: isDarkMode ? '#2a2a2a' : '#ffffff',
+                                    borderRadius: '15px',
+                                    padding: '30px',
+                                    minWidth: '450px',
+                                    maxWidth: '500px',
+                                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                                    border: `1px solid ${colors.border}`,
+                                    position: 'relative',
+                                    maxHeight: '80vh',
+                                    overflowY: 'auto'
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Header */}
+                                <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center', 
+                                    marginBottom: '25px' 
+                                }}>
+                                    <h2 style={{
+                                        fontSize: '1.5rem',
+                                        fontWeight: '700',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        margin: 0
+                                    }}>
+                                        🔒 Şifre Değiştir
+                                    </h2>
+                                    <button
+                                        onClick={() => {
+                                            setShowChangePassword(false);
+                                            setChangePasswordError('');
+                                            setChangePasswordSuccess('');
+                                            setCurrentPassword('');
+                                            setNewPassword('');
+                                            setConfirmPassword('');
+                                        }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            fontSize: '24px',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            cursor: 'pointer',
+                                            padding: '5px',
+                                            borderRadius: '50%',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.background = isDarkMode ? '#404040' : '#f0f0f0';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.background = 'none';
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {/* Error message */}
+                                {changePasswordError && (
+                                    <div style={{
+                                        background: '#ffeaa7',
+                                        color: '#d63031',
+                                        padding: '12px',
+                                        borderRadius: '8px',
+                                        marginBottom: '20px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        ⚠️ {changePasswordError}
+                                    </div>
+                                )}
+
+                                {/* Success message */}
+                                {changePasswordSuccess && (
+                                    <div style={{
+                                        background: '#d1f2eb',
+                                        color: '#00b894',
+                                        padding: '12px',
+                                        borderRadius: '8px',
+                                        marginBottom: '20px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '600'
+                                    }}>
+                                        ✅ {changePasswordSuccess}
+                                    </div>
+                                )}
+
+                                {/* Form */}
+                                <div>
+                                    {/* Current Password */}
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <label style={{
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            marginBottom: '8px',
+                                            display: 'block'
+                                        }}>
+                                            Mevcut Şifre
+                                        </label>
+                                        <input
+                                            type="password"
+                                            placeholder="Mevcut şifrenizi girin"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#ffffff',
+                                                color: isDarkMode ? '#ffffff' : '#333333',
+                                                border: `2px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                width: '100%',
+                                                outline: 'none',
+                                                transition: 'border-color 0.3s ease'
+                                            }}
+                                            onFocus={(e) => {
+                                                e.target.style.borderColor = '#6c5ce7';
+                                            }}
+                                            onBlur={(e) => {
+                                                e.target.style.borderColor = isDarkMode ? '#555' : '#ddd';
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* New Password */}
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <label style={{
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            marginBottom: '8px',
+                                            display: 'block'
+                                        }}>
+                                            Yeni Şifre
+                                        </label>
+                                        <input
+                                            type="password"
+                                            placeholder="Yeni şifrenizi girin (en az 6 karakter)"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#ffffff',
+                                                color: isDarkMode ? '#ffffff' : '#333333',
+                                                border: `2px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                width: '100%',
+                                                outline: 'none',
+                                                transition: 'border-color 0.3s ease'
+                                            }}
+                                            onFocus={(e) => {
+                                                e.target.style.borderColor = '#6c5ce7';
+                                            }}
+                                            onBlur={(e) => {
+                                                e.target.style.borderColor = isDarkMode ? '#555' : '#ddd';
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Confirm New Password */}
+                                    <div style={{ marginBottom: '25px' }}>
+                                        <label style={{
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            color: isDarkMode ? '#ffffff' : '#333333',
+                                            marginBottom: '8px',
+                                            display: 'block'
+                                        }}>
+                                            Yeni Şifre (Tekrar)
+                                        </label>
+                                        <input
+                                            type="password"
+                                            placeholder="Yeni şifrenizi tekrar girin"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            style={{
+                                                background: isDarkMode ? '#3a3a3a' : '#ffffff',
+                                                color: isDarkMode ? '#ffffff' : '#333333',
+                                                border: `2px solid ${isDarkMode ? '#555' : '#ddd'}`,
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                width: '100%',
+                                                outline: 'none',
+                                                transition: 'border-color 0.3s ease'
+                                            }}
+                                            onFocus={(e) => {
+                                                e.target.style.borderColor = '#6c5ce7';
+                                            }}
+                                            onBlur={(e) => {
+                                                e.target.style.borderColor = isDarkMode ? '#555' : '#ddd';
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end' }}>
+                                        <button
+                                            onClick={() => {
+                                                setShowChangePassword(false);
+                                                setChangePasswordError('');
+                                                setChangePasswordSuccess('');
+                                                setCurrentPassword('');
+                                                setNewPassword('');
+                                                setConfirmPassword('');
+                                            }}
+                                            disabled={isChangingPassword}
+                                            style={{
+                                                background: isDarkMode ? '#555' : '#6c757d',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 24px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                cursor: isChangingPassword ? 'not-allowed' : 'pointer',
+                                                transition: 'all 0.3s ease',
+                                                opacity: isChangingPassword ? 0.6 : 1
+                                            }}
+                                        >
+                                            İptal
+                                        </button>
+                                        <button
+                                            onClick={handleChangePassword}
+                                            disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                                            style={{
+                                                background: (isChangingPassword || !currentPassword || !newPassword || !confirmPassword) 
+                                                    ? '#6c757d' 
+                                                    : 'linear-gradient(90deg, #6c5ce7 0%, #a29bfe 100%)',
+                                                color: 'white',
+                                                border: 'none',
+                                                padding: '12px 24px',
+                                                borderRadius: '8px',
+                                                fontSize: '1rem',
+                                                fontWeight: '600',
+                                                cursor: (isChangingPassword || !currentPassword || !newPassword || !confirmPassword) 
+                                                    ? 'not-allowed' 
+                                                    : 'pointer',
+                                                transition: 'all 0.3s ease',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                minWidth: '120px',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            {isChangingPassword ? (
+                                                <>
+                                                    <span style={{ 
+                                                        display: 'inline-block',
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        border: '2px solid #ffffff',
+                                                        borderTop: '2px solid transparent',
+                                                        borderRadius: '50%',
+                                                        animation: 'spin 1s linear infinite'
+                                                    }}></span>
+                                                    Değiştiriliyor...
+                                                </>
+                                            ) : (
+                                                '🔒 Şifreyi Değiştir'
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>,
                         document.body
