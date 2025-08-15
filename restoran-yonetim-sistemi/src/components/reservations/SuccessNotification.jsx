@@ -133,7 +133,7 @@ export default function SuccessNotification({ visible, onClose, reservationData 
           Tamam
         </button>
 
-        <style jsx>{`
+        <style>{`
           @keyframes slideIn {
             from {
               transform: translateY(-50px);
