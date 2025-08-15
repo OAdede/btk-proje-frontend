@@ -7,6 +7,8 @@ import ReservationModal from "../../components/reservations/ReservationModal";
 import SuccessNotification from "../../components/reservations/SuccessNotification";
 import WarningModal from "../../components/common/WarningModal";
 import TableManagementModal from "../../components/tables/TableManagementModal";
+import { diningTableService } from "../../services/diningTableService";
+import { salonService } from "../../services/salonService";
 import "./Dashboard.css";
 import { settingsService } from '../../services/settingsService';
 import { salonService } from '../../services/salonService';
@@ -69,6 +71,8 @@ const Dashboard = () => {
   const [reservationToDelete, setReservationToDelete] = useState(null);
   const [showAddTableModal, setShowAddTableModal] = useState(false);
   const [newTableCapacity, setNewTableCapacity] = useState(4);
+  const [newTableNumber, setNewTableNumber] = useState('');
+  const [selectedSalonForNewTable, setSelectedSalonForNewTable] = useState(null);
   const [showTableManagementModal, setShowTableManagementModal] = useState(false);
   const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
 
@@ -125,14 +129,39 @@ const Dashboard = () => {
   };
 
   // Kat ismi kaydetme fonksiyonu
-  const handleFloorNameSave = (floorNumber, newName) => {
+  const handleFloorNameSave = async (floorNumber, newName) => {
     if (newName.trim()) {
-      setFloorNames(prev => ({
-        ...prev,
-        [floorNumber]: newName.trim()
-      }));
+      try {
+        // Backend'e salon adı güncelleme isteği gönder
+        const updateData = {
+          name: newName.trim()
+        };
+
+        console.log('Updating salon name:', floorNumber, updateData);
+        
+        await salonService.updateSalon(floorNumber, updateData);
+
+        // Başarılı güncelleme sonrası salonları yeniden yükle
+        if (loadTablesAndSalons) {
+          await loadTablesAndSalons();
+        }
+
+        setEditingFloor(null);
+
+        // Başarı mesajı göster
+        setSuccessData({ 
+          message: `Salon adı "${newName.trim()}" olarak güncellendi`,
+          type: 'salon_updated'
+        });
+        setShowSuccess(true);
+
+      } catch (error) {
+        console.error('Error updating salon name:', error);
+        alert(`Salon adı güncellenirken hata oluştu: ${error.message}`);
+      }
+    } else {
+      setEditingFloor(null);
     }
-    setEditingFloor(null);
   };
 
   // Kat ismi iptal etme fonksiyonu
@@ -434,6 +463,7 @@ const Dashboard = () => {
 
   // Masa ekleme fonksiyonu
   const addTable = () => {
+    setSelectedSalonForNewTable(selectedSalonId);
     setShowAddTableModal(true);
   };
 
@@ -441,6 +471,8 @@ const Dashboard = () => {
   const handleAddTableClose = () => {
     setShowAddTableModal(false);
     setNewTableCapacity(4);
+    setNewTableNumber('');
+    setSelectedSalonForNewTable(null);
   };
 
   // Masa yönetimi modalını kapatma fonksiyonu
@@ -450,44 +482,112 @@ const Dashboard = () => {
   };
 
   // Masa ekleme onaylama fonksiyonu
-  const handleAddTableConfirm = () => {
-    const newTableIndex = tableCounts[selectedFloor];
-    const newTableId = getTableNumber(selectedFloor, newTableIndex);
+  const handleAddTableConfirm = async () => {
+    try {
+      // Seçili salon ID'sini al
+      if (!selectedSalonForNewTable) {
+        alert('Lütfen önce bir salon seçin');
+        return;
+      }
 
-    // Yeni masayı ekle
-    setTableCounts(prev => ({
-      ...prev,
-      [selectedFloor]: prev[selectedFloor] + 1
-    }));
+      // Masa numarası kontrolü
+      if (!newTableNumber || newTableNumber.trim() === '') {
+        alert('Lütfen masa numarası girin');
+        return;
+      }
 
-    // Yeni masanın kapasitesini kaydet
-    const newCapacities = {
-      ...tableCapacities,
-      [newTableId]: newTableCapacity
-    };
-    setTableCapacities(newCapacities);
-    localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
+      const tableNumber = parseInt(newTableNumber);
+      if (isNaN(tableNumber) || tableNumber <= 0) {
+        alert('Geçerli bir masa numarası girin (pozitif sayı)');
+        return;
+      }
 
-    setShowAddTableModal(false);
-    setNewTableCapacity(4);
+      // Mevcut masaları filtrele ve masa numarası çakışmasını kontrol et
+      const currentTablesInSalon = tables.filter(t => 
+        (t?.salon?.id ?? t?.salonId) === selectedSalonForNewTable
+      );
+      
+      // Aynı salon içinde aynı masa numarası var mı kontrol et
+      const existingTable = currentTablesInSalon.find(t => t.tableNumber === tableNumber);
+      if (existingTable) {
+        alert(`Bu salon içinde ${tableNumber} numaralı masa zaten mevcut!`);
+        return;
+      }
+
+      console.log('Current tables in salon:', currentTablesInSalon);
+      console.log('New table number:', tableNumber);
+
+      // Backend'e masa ekleme isteği gönder
+      const newTableData = {
+        tableNumber: tableNumber,
+        capacity: newTableCapacity,
+        salonId: selectedSalonForNewTable
+      };
+
+      console.log('Adding new table with data:', newTableData);
+      
+      await diningTableService.createTable(newTableData);
+
+      // Başarılı ekleme sonrası masaları yeniden yükle
+      if (loadTablesAndSalons) {
+        await loadTablesAndSalons();
+      }
+
+      setShowAddTableModal(false);
+      setNewTableCapacity(4);
+      setNewTableNumber('');
+      setSelectedSalonForNewTable(null);
+
+      // Başarı mesajı göster
+      setSuccessData({ 
+        message: `Masa ${tableNumber} başarıyla eklendi`,
+        type: 'table_added'
+      });
+      setShowSuccess(true);
+
+    } catch (error) {
+      console.error('Error adding table:', error);
+      alert(`Masa eklenirken hata oluştu: ${error.message}`);
+    }
   };
 
   // Kat ekleme fonksiyonu
-  const addFloor = () => {
-    const newFloorNumber = Math.max(...floors) + 1;
-    setFloors(prev => [...prev, newFloorNumber]);
-    setTableCounts(prev => ({
-      ...prev,
-      [newFloorNumber]: 0 // Yeni katta başlangıçta 0 masa
-    }));
-    setFloorNames(prev => ({
-      ...prev,
-      [newFloorNumber]: `Kat ${newFloorNumber}`
-    }));
+  const addFloor = async () => {
+    try {
+      // Yeni salon adını belirle
+      const newSalonNumber = (derivedSalons || []).length + 1;
+      const newSalonName = `Kat ${newSalonNumber}`;
+
+      // Backend'e salon ekleme isteği gönder
+      const newSalonData = {
+        name: newSalonName
+      };
+
+      console.log('Adding new salon with data:', newSalonData);
+      
+      await salonService.createSalon(newSalonData);
+
+      // Başarılı ekleme sonrası salonları yeniden yükle
+      if (loadTablesAndSalons) {
+        await loadTablesAndSalons();
+      }
+
+      // Başarı mesajı göster
+      setSuccessData({ 
+        message: `Salon "${newSalonName}" başarıyla eklendi`,
+        type: 'salon_added'
+      });
+      setShowSuccess(true);
+
+    } catch (error) {
+      console.error('Error adding salon:', error);
+      alert(`Salon eklenirken hata oluştu: ${error.message}`);
+    }
   };
 
   // Kat silme fonksiyonu
   const deleteFloor = async () => {
+<<<<<<< HEAD
     console.log('deleteFloor fonksiyonu çağrıldı');
     console.log('floorToDelete:', floorToDelete);
     
@@ -536,6 +636,40 @@ const Dashboard = () => {
       }
     } else {
       console.log('floorToDelete null, işlem yapılmıyor');
+=======
+    if (floorToDelete !== null) {
+      try {
+        // Backend'den salonu sil
+        await salonService.deleteSalon(floorToDelete);
+        
+        // Başarılı silme sonrası salonları yeniden yükle
+        if (loadTablesAndSalons) {
+          await loadTablesAndSalons();
+        }
+
+        // Eğer silinen salon seçili salonduysa, ilk salona geç
+        if (selectedSalonId === floorToDelete) {
+          const remainingSalons = derivedSalons.filter(s => s.id !== floorToDelete);
+          if (remainingSalons.length > 0) {
+            setSelectedSalonId(remainingSalons[0].id);
+          }
+        }
+
+        setShowDeleteFloorModal(false);
+        setFloorToDelete(null);
+
+        // Başarı mesajı göster
+        setSuccessData({ 
+          message: `Salon başarıyla silindi`,
+          type: 'salon_deleted'
+        });
+        setShowSuccess(true);
+
+      } catch (error) {
+        console.error('Error deleting salon:', error);
+        alert(`Salon silinirken hata oluştu: ${error.message}`);
+      }
+>>>>>>> 78644f60a7f8f70c0238a5ac37d61126c1b27569
     }
   };
 
@@ -546,21 +680,36 @@ const Dashboard = () => {
   };
 
   // Masa silme fonksiyonu
-  const deleteTable = () => {
+  const deleteTable = async () => {
     if (tableToDelete !== null) {
-      setTableCounts(prev => ({
-        ...prev,
-        [selectedFloor]: Math.max(0, prev[selectedFloor] - 1)
-      }));
+      try {
+        // Backend'den masayı sil
+        await diningTableService.deleteTable(tableToDelete);
+        
+        // Başarılı silme sonrası masaları yeniden yükle
+        if (loadTablesAndSalons) {
+          await loadTablesAndSalons();
+        }
 
-      // Silinen masanın kapasitesini de kaldır
-      const newCapacities = { ...tableCapacities };
-      delete newCapacities[tableToDelete];
-      setTableCapacities(newCapacities);
-      localStorage.setItem('tableCapacities', JSON.stringify(newCapacities));
+        setShowDeleteTableModal(false);
+        setTableToDelete(null);
 
-      setShowDeleteTableModal(false);
-      setTableToDelete(null);
+        // Başarı mesajı göster
+        const deletedTableData = tables.find(t => t.id === tableToDelete);
+        const tableDisplayName = deletedTableData ? 
+          `${getAdminPrefixByIndex(getSalonIndexById(deletedTableData.salon?.id ?? deletedTableData.salonId))}${deletedTableData.tableNumber}` : 
+          'Masa';
+          
+        setSuccessData({ 
+          message: `${tableDisplayName} başarıyla silindi`,
+          type: 'table_deleted'
+        });
+        setShowSuccess(true);
+
+      } catch (error) {
+        console.error('Error deleting table:', error);
+        alert(`Masa silinirken hata oluştu: ${error.message}`);
+      }
     }
   };
 
@@ -811,7 +960,21 @@ const Dashboard = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        openDeleteTableModal(table.id);
+                        // Backend'den gelen gerçek masa ID'sini kullan
+                        const backendTable = tables.find(t => 
+                          (t?.salon?.id ?? t?.salonId) === table.salonId && 
+                          t.tableNumber === parseInt(table.id)
+                        );
+                        const tableIdToDelete = backendTable?.id || table.id;
+                        
+                        console.log('Deleting table:', {
+                          displayNumber: table.displayNumber,
+                          frontendId: table.id,
+                          backendId: tableIdToDelete,
+                          backendTable: backendTable
+                        });
+                        
+                        openDeleteTableModal(tableIdToDelete);
                       }}
                       style={{
                         position: 'absolute',
@@ -1141,7 +1304,17 @@ const Dashboard = () => {
                 marginBottom: '30px',
                 fontSize: '1rem'
               }}>
-                <strong>Masa {tableToDelete ? getTableNumber(selectedFloor, parseInt(tableToDelete.split('-')[1]) - 1) : ''}</strong> masasını silmek istediğinizden emin misiniz?
+                <strong>Masa {(() => {
+                  if (!tableToDelete) return '';
+                  // Backend'den gelen masayı bul
+                  const tableToDeleteData = tables.find(t => t.id === tableToDelete);
+                  if (tableToDeleteData) {
+                    const salonIndex = getSalonIndexById(tableToDeleteData.salon?.id ?? tableToDeleteData.salonId);
+                    const prefix = getAdminPrefixByIndex(salonIndex);
+                    return `${prefix}${tableToDeleteData.tableNumber}`;
+                  }
+                  return tableToDelete;
+                })()}</strong> masasını silmek istediğinizden emin misiniz?
                 <br />
                 <small style={{ color: '#ff6b6b' }}>
                   Bu işlem geri alınamaz!
@@ -1917,6 +2090,75 @@ const Dashboard = () => {
               }}>
                 🍽️ Yeni Masa Ekle
               </h3>
+              
+                             {/* Salon Seçimi */}
+               <div style={{
+                 marginBottom: '20px',
+                 textAlign: 'left'
+               }}>
+                 <label style={{
+                   color: isDarkMode ? '#ffffff' : '#333333',
+                   fontSize: '1rem',
+                   fontWeight: 'bold',
+                   marginBottom: '8px',
+                   display: 'block'
+                 }}>
+                   Salon Seçin:
+                 </label>
+                 <select
+                   value={selectedSalonForNewTable || ''}
+                   onChange={(e) => setSelectedSalonForNewTable(e.target.value)}
+                   style={{
+                     width: '100%',
+                     padding: '10px',
+                     borderRadius: '8px',
+                     border: `2px solid ${isDarkMode ? '#473653' : '#e0e0e0'}`,
+                     background: isDarkMode ? '#473653' : '#ffffff',
+                     color: isDarkMode ? '#ffffff' : '#333333',
+                     fontSize: '16px'
+                   }}
+                 >
+                   <option value="">Salon seçin...</option>
+                   {(derivedSalons || []).map((salon) => (
+                     <option key={salon.id} value={salon.id}>
+                       {salon.name}
+                     </option>
+                   ))}
+                 </select>
+               </div>
+
+               {/* Masa Numarası Seçimi */}
+               <div style={{
+                 marginBottom: '20px',
+                 textAlign: 'left'
+               }}>
+                 <label style={{
+                   color: isDarkMode ? '#ffffff' : '#333333',
+                   fontSize: '1rem',
+                   fontWeight: 'bold',
+                   marginBottom: '8px',
+                   display: 'block'
+                 }}>
+                   Masa Numarası:
+                 </label>
+                 <input
+                   type="number"
+                   min="1"
+                   value={newTableNumber}
+                   onChange={(e) => setNewTableNumber(e.target.value)}
+                   placeholder="Masa numarası girin..."
+                   style={{
+                     width: '100%',
+                     padding: '10px',
+                     borderRadius: '8px',
+                     border: `2px solid ${isDarkMode ? '#473653' : '#e0e0e0'}`,
+                     background: isDarkMode ? '#473653' : '#ffffff',
+                     color: isDarkMode ? '#ffffff' : '#333333',
+                     fontSize: '16px'
+                   }}
+                 />
+               </div>
+              
               <p style={{
                 color: isDarkMode ? '#cccccc' : '#666666',
                 marginBottom: '20px',
@@ -1973,22 +2215,23 @@ const Dashboard = () => {
                 gap: '15px',
                 justifyContent: 'center'
               }}>
-                <button
-                  onClick={handleAddTableConfirm}
-                  style={{
-                    background: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  Masa Ekle
-                </button>
+                                 <button
+                   onClick={handleAddTableConfirm}
+                   disabled={!selectedSalonForNewTable || !newTableNumber}
+                   style={{
+                     background: (selectedSalonForNewTable && newTableNumber) ? '#4CAF50' : '#cccccc',
+                     color: 'white',
+                     border: 'none',
+                     padding: '12px 24px',
+                     borderRadius: '8px',
+                     cursor: (selectedSalonForNewTable && newTableNumber) ? 'pointer' : 'not-allowed',
+                     fontSize: '16px',
+                     fontWeight: 'bold',
+                     transition: 'all 0.3s ease'
+                   }}
+                 >
+                   Masa Ekle
+                 </button>
                 <button
                   onClick={handleAddTableClose}
                   style={{

@@ -32,12 +32,53 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
 
   const tableCapacity = getTableCapacity(masaNo);
 
+  // İsim formatlaması - baş harfleri büyük yap
+  const capitalizeWords = (text) => {
+    return text.replace(/\b\w/g, (match) => match.toUpperCase());
+  };
+
+  // Telefon formatlaması - 5xx xxx xx xx
+  const formatPhoneNumber = (phone) => {
+    // Sadece rakamları al
+    const numbers = phone.replace(/\D/g, '');
+    
+    // 5 ile başlamazsa ve boş değilse 5 ekle
+    let formatted = numbers;
+    if (numbers.length > 0 && !numbers.startsWith('5')) {
+      formatted = '5' + numbers;
+    }
+    
+    // Formatla: 5xx xxx xx xx
+    if (formatted.length <= 3) {
+      return formatted;
+    } else if (formatted.length <= 6) {
+      return formatted.slice(0, 3) + ' ' + formatted.slice(3);
+    } else if (formatted.length <= 8) {
+      return formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6);
+    } else {
+      return formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6, 8) + ' ' + formatted.slice(8, 10);
+    }
+  };
+
   // Form alanlarını güncelle
   const handleInputChange = (field, value) => {
     console.log(`handleInputChange: ${field} = ${value}`);
+    
+    let processedValue = value;
+    
+    // İsim ve soyisim için otomatik büyük harf
+    if (field === 'ad' || field === 'soyad') {
+      processedValue = capitalizeWords(value);
+    }
+    
+    // Telefon için otomatik formatlama
+    if (field === 'telefon') {
+      processedValue = formatPhoneNumber(value);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   };
 
@@ -256,6 +297,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
               placeholder="5XX XXX XX XX"
               value={formData.telefon}
               onChange={(e) => handleInputChange('telefon', e.target.value)}
+              maxLength="13"
               required
               style={{
                 padding: "12px",
