@@ -813,8 +813,8 @@ const Dashboard = () => {
           {/* Masalar Grid */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: "1.5rem"
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "1.75rem"
           }}>
             {displayTables.map((table) => {
               const status = getStatus(table.id);
@@ -825,25 +825,50 @@ const Dashboard = () => {
                 <div
                   key={table.id || crypto.randomUUID()}
                   style={{
-                    backgroundColor: status.color,
-                    color: status.textColor,
-                    height: "140px",
+                    background: `
+                      linear-gradient(135deg, #8a5a3b 0%, #6f4e37 65%, #5b3d2e 100%),
+                      repeating-linear-gradient(12deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 1px, rgba(0,0,0,0.10) 1px, rgba(0,0,0,0.10) 3px),
+                      radial-gradient(100% 60% at 25% 15%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 45%),
+                      radial-gradient(90% 70% at 80% 80%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 40%)
+                    `,
+                    color: '#f6f1eb',
+                    height: "150px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
-                    borderRadius: "12px",
+                    borderRadius: "14px",
                     cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || tableReservations.length > 0 || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
                     userSelect: "none",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    position: 'relative'
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2), 0 8px 18px rgba(0,0,0,0.22)",
+                    position: 'relative',
+                    border: '1px solid rgba(0,0,0,0.25)',
+                    overflow: 'visible',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.45)'
                   }}
                   onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: tableReservations[0] })}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
                 >
+                  <div style={{ position:'absolute', top:0, left:0, right:0, height:6, background:'rgba(255,255,255,0.28)', borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+                  <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    backgroundColor: status.color,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                    border: '2px solid rgba(255,255,255,0.65)'
+                  }} />
+                  {/* Masa ayakları (üstten görünüm) */}
+                  <div style={{ position:'absolute', top:-8, left:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
+                  <div style={{ position:'absolute', top:-8, right:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
+                  <div style={{ position:'absolute', bottom:-8, left:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
+                  <div style={{ position:'absolute', bottom:-8, right:14, width:16, height:10, background:'#342419', borderRadius:'50% / 60%', boxShadow:'0 3px 6px rgba(0,0,0,0.35)' }} />
                   {/* Rezervasyon modunda + işareti */}
                   {showReservationMode && status.text === 'Boş' && (
                     <div style={{
@@ -909,29 +934,32 @@ const Dashboard = () => {
 
                   {/* Masa kapasitesi */}
                   <div style={{
-                    fontSize: "0.8rem",
-                    color: "rgba(255,255,255,0.7)",
-                    marginBottom: "2px",
-                    fontWeight: "400"
+                    fontSize: "0.85rem",
+                    color: "rgba(255,255,255,0.9)",
+                    marginBottom: 2,
+                    fontWeight: 600
                   }}>
                     {table.capacity} Kişilik
                   </div>
-                  <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
+                  <div style={{ fontSize: 33, fontWeight: 800, letterSpacing: 0.5, textShadow:'0 2px 6px rgba(0,0,0,0.25)' }}>
                     {table.displayNumber}
                   </div>
-                  <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "500" }}>
-                    {status.text}
+                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize: 14, marginTop: 6, fontWeight: 600 }}>
+                    <span style={{
+                      background: 'rgba(0,0,0,0.25)',
+                      borderRadius: 12,
+                      padding: '2px 10px',
+                      backdropFilter: 'blur(1px)'
+                    }}>{status.text}</span>
                     {Object.keys(order).length > 0 && (
                       <span style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
+                        background: 'rgba(255,255,255,0.28)',
+                        borderRadius: 12,
+                        padding: '1px 8px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '12px',
-                        marginLeft: '8px'
+                        fontSize: 12
                       }}>
                         {Object.keys(order).length}
                       </span>

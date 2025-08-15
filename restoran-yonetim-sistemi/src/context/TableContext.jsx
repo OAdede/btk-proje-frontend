@@ -394,10 +394,26 @@ export function TableProvider({ children }) {
                 throw new Error('Masa bulunamadı');
             }
 
+            const statusLower = String(table?.status?.name || table?.statusName || '').toLowerCase();
+
             // Masada aktif sipariş var mı kontrol et
-            const activeOrder = orders[String(table.id)];
+            const backendTableKey = String(table.id);
+            const activeOrder = orders[backendTableKey];
             if (activeOrder && Object.keys(activeOrder).length > 0) {
-                throw new Error('Bu masada aktif sipariş bulunuyor. Önce siparişi tamamlayın.');
+                if (statusLower === 'available') {
+                    // Masa boşaltılmış ama sipariş kaydı kalmış olabilir; otomatik iptal etmeyi dene
+                    try {
+                        if (activeOrder.id) {
+                            await apiCall(`/orders/${activeOrder.id}`, { method: 'DELETE' });
+                        }
+                        // Yerel durumu temizle
+                        setOrders(prev => { const next = { ...prev }; delete next[backendTableKey]; return next; });
+                    } catch (e) {
+                        console.warn('Boş masadaki artakalan sipariş silinemedi, silme işlemine devam ediliyor:', e);
+                    }
+                } else {
+                    throw new Error('Bu masada aktif sipariş bulunuyor. Önce siparişi tamamlayın.');
+                }
             }
 
             // Masada rezervasyon var mı kontrol et
@@ -406,9 +422,7 @@ export function TableProvider({ children }) {
                 throw new Error('Bu masada rezervasyon bulunuyor. Önce rezervasyonu iptal edin.');
             }
 
-            const response = await apiCall(`/dining-tables/${tableId}`, {
-                method: 'DELETE'
-            });
+            await apiCall(`/dining-tables/${tableId}`, { method: 'DELETE' });
 
             // Backend'den güncel veriyi al
             await loadTablesAndSalons();
