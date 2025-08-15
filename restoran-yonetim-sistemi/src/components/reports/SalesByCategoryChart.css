@@ -16,6 +16,82 @@
   transform: scale(1.02);
 }
 
+/* Açık tema için tablo stilleri */
+.light-theme .sales-by-category-chart .table tbody tr {
+  background-color: #CBC3E3 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
+}
+
+.light-theme .sales-by-category-chart .table tbody tr td {
+  background-color: #CBC3E3 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.light-theme .sales-by-category-chart .table tbody tr:hover {
+  background-color: #F5EFFF !important;
+  color: #2D1B69 !important;
+}
+
+.light-theme .sales-by-category-chart .table tbody tr:hover td {
+  background-color: #F5EFFF !important;
+  color: #2D1B69 !important;
+}
+
+.light-theme .sales-by-category-chart .table thead tr {
+  background-color: #E5D9F2 !important;
+  color: #2D1B69 !important;
+}
+
+.light-theme .sales-by-category-chart .table thead tr th {
+  background-color: #E5D9F2 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Koyu tema için tablo stilleri */
+.dark-theme .sales-by-category-chart .table tbody tr {
+  background-color: var(--tableRowBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.dark-theme .sales-by-category-chart .table tbody tr td {
+  background-color: var(--tableRowBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.dark-theme .sales-by-category-chart .table tbody tr:hover {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table tbody tr:hover td {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table thead tr {
+  background-color: var(--tableHeaderBackground) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table thead tr th {
+  background-color: var(--tableHeaderBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .sales-by-category-chart .chart-container {

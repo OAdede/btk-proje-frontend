@@ -81,13 +81,64 @@
 
 .dark-theme .sales-chart .form-select {
   background-color: var(--accentBackground) !important;
-  color: var(--text) !important;
+  color: #2c3e50 !important;
   border-color: var(--border) !important;
 }
 
 .dark-theme .sales-chart .form-select option {
   background-color: var(--accentBackground) !important;
-  color: var(--text) !important;
+  color: #2c3e50 !important;
+}
+
+/* Karanlık tema için dropdown option'ları için daha spesifik stiller */
+.dark-theme .sales-chart .form-select option:hover {
+  background-color: var(--hover) !important;
+  color: #2c3e50 !important;
+}
+
+.dark-theme .sales-chart .form-select option:checked {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .sales-chart .form-select option:focus {
+  background-color: var(--hover) !important;
+  color: #2c3e50 !important;
+}
+
+/* Dropdown menüsü için genel stiller */
+.dark-theme .sales-chart .form-select {
+  background-color: var(--accentBackground) !important;
+  color: #2c3e50 !important;
+  border-color: var(--border) !important;
+}
+
+.dark-theme .sales-chart .form-select:focus {
+  background-color: var(--accentBackground) !important;
+  color: #2c3e50 !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25) !important;
+}
+
+/* Açık tema için dropdown option'ları */
+.light-theme .sales-chart .form-select option {
+  background-color: #ffffff !important;
+  color: #2c3e50 !important;
+}
+
+.light-theme .sales-chart .form-select option:hover {
+  background-color: #f8f9fa !important;
+  color: #2c3e50 !important;
+}
+
+.light-theme .sales-chart .form-select option:checked {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+.light-theme .sales-chart .form-select option:focus {
+  background-color: #f8f9fa !important;
+  color: #2c3e50 !important;
 }
 
 /* SalesChart bileşenindeki buton renklerini tema ile entegre etme */

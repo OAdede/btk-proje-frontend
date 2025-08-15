@@ -24,6 +24,67 @@
   }
 }
 
+/* Açık tema için dropdown stilleri */
+.light-theme .employee-performance-table .form-select {
+  background-color: #ffffff !important;
+  color: #2c3e50 !important;
+  border-color: #dee2e6 !important;
+}
+
+.light-theme .employee-performance-table .form-select option {
+  background-color: #ffffff !important;
+  color: #2c3e50 !important;
+}
+
+.light-theme .employee-performance-table .form-select option:hover {
+  background-color: #f8f9fa !important;
+  color: #2c3e50 !important;
+}
+
+.light-theme .employee-performance-table .form-select option:checked {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+.light-theme .employee-performance-table .form-select option:focus {
+  background-color: #f8f9fa !important;
+  color: #2c3e50 !important;
+}
+
+/* Karanlık tema için dropdown stilleri */
+.dark-theme .employee-performance-table .form-select {
+  background-color: var(--accentBackground) !important;
+  color: #2c3e50 !important;
+  border-color: var(--border) !important;
+}
+
+.dark-theme .employee-performance-table .form-select option {
+  background-color: var(--accentBackground) !important;
+  color: #2c3e50 !important;
+}
+
+.dark-theme .employee-performance-table .form-select option:hover {
+  background-color: var(--hover) !important;
+  color: #2c3e50 !important;
+}
+
+.dark-theme .employee-performance-table .form-select option:checked {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+.dark-theme .employee-performance-table .form-select option:focus {
+  background-color: var(--hover) !important;
+  color: #2c3e50 !important;
+}
+
+.dark-theme .employee-performance-table .form-select:focus {
+  background-color: var(--accentBackground) !important;
+  color: #2c3e50 !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25) !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .employee-performance-table .table {
