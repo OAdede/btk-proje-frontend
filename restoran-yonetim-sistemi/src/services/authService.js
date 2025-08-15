@@ -219,5 +219,93 @@ export const authService = {
             console.error('Token validation error:', error);
             return false;
         }
+    },
+
+    // Check user count for bootstrap process
+    async getUserCount() {
+        console.log('getUserCount called');
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/user-count`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                }
+            });
+
+            console.log('getUserCount response status:', response.status);
+
+            if (!response.ok) {
+                let errorMessage = 'Kullanıcı sayısı kontrolü başarısız oldu';
+                try {
+                    const errorText = await response.text();
+                    console.log('Server error response:', errorText);
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch (jsonError) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch (textError) {
+                    console.log('Could not read response as text:', textError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            const responseData = await response.json();
+            console.log('getUserCount response data:', responseData);
+            return responseData;
+        } catch (error) {
+            console.error('getUserCount error:', error);
+            throw new Error(error.message || 'Kullanıcı sayısı kontrolü başarısız oldu.');
+        }
+    },
+
+    // Bootstrap admin - create first admin account
+    async bootstrapAdmin(email, name = 'Admin') {
+        try {
+            // Get frontend URL for the reset link
+            const frontendUrl = process.env.FRONTEND_URL || window.location.origin;
+
+            const response = await fetch(`${API_BASE_URL}/auth/bootstrap-admin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    name,
+                    frontendUrl: frontendUrl
+                })
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Bootstrap admin oluşturma başarısız oldu';
+                try {
+                    const errorText = await response.text();
+                    console.log('Server error response:', errorText);
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                    } catch (jsonError) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                } catch (textError) {
+                    console.log('Could not read response as text:', textError);
+                }
+                throw new Error(errorMessage);
+            }
+
+            try {
+                const responseData = await response.json();
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty object');
+                return {};
+            }
+        } catch (error) {
+            throw new Error(error.message || 'Bootstrap admin oluşturma başarısız oldu.');
+        }
     }
 };

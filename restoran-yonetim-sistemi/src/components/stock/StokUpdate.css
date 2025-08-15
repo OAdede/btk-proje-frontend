@@ -155,14 +155,15 @@ body {
 
 /* Ürün Ekleme Formu */
 .add-product-form {
-    background-color: #f8f6fb; /* Açık mor tonu */
+    background-color: var(--card-background);
     padding: 2rem;
     border-radius: 12px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 2px 4px var(--shadow);
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     margin-bottom: 2rem;
+    border: 1px solid var(--border);
 }
 
 .add-product-form-content {
@@ -181,11 +182,11 @@ body {
 .product-name-input, .product-price-input, .product-description-input {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--primary);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    background-color: #fff;
+    background-color: var(--surface-background);
     font-size: 1rem;
-    color: var(--text-dark);
+    color: var(--text);
 }
 
 .product-description-input {
@@ -217,14 +218,22 @@ body {
 }
 
 .product-list-item {
-  background-color: #fff;
+  background-color: var(--card-background);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  transition: all 0.3s ease;
+}
+
+.product-list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--shadow);
+  border-color: var(--primary);
 }
 
 .item-details {
@@ -237,6 +246,7 @@ body {
 .item-name {
     font-size: 1.25rem;
     font-weight: 700;
+    color: var(--text);
 }
 
 .item-price {
@@ -248,13 +258,13 @@ body {
 .item-description {
     font-size: 1rem;
     font-weight: bold;
-    color: #333;
+    color: var(--text-secondary);
     margin-top: 0.5rem;
 }
 
 .item-recipe {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .item-status-and-actions {
@@ -279,33 +289,35 @@ body {
 }
 
 .edit-button {
-  background-color: var(--primary);
-  color: white;
+  background-color: var(--warning);
+  color: var(--text);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   font-weight: 600;
 }
 
 .edit-button:hover {
-  background-color: #5c3983; /* Morun koyu tonu */
+  background-color: var(--warningHover);
+  transform: scale(1.05);
 }
 
 .delete-button {
   background-color: var(--danger);
-  color: white;
+  color: var(--text);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   font-weight: 600;
 }
 
 .delete-button:hover {
-  background-color: #b30014;
+  background-color: var(--dangerHover);
+  transform: scale(1.05);
 }
 
 /* Sayfalama */
