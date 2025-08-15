@@ -359,6 +359,38 @@ export const analyticsService = {
         }
     },
 
+    // Get all yearly sales summaries
+    async getAllYearlySalesSummaries() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/daily-sales-summary/yearly`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`All yearly sales API error: ${response.status} ${response.statusText}`);
+                return [];
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('All yearly sales summaries loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning empty array');
+                return [];
+            }
+        } catch (error) {
+            console.error('All yearly sales service error:', error);
+            return [];
+        }
+    },
+
     // Get monthly sales summary with year and month parameters
     async getMonthlySalesSummary(year, month) {
         try {
