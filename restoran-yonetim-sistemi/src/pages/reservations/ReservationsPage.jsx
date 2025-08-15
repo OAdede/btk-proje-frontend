@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { getTableNumber, getTableNameFromId } from '../../utils/tableUtils';
 import { useNavigate } from 'react-router-dom';
 import { TableContext } from '../../context/TableContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -39,26 +40,7 @@ const ReservationsPage = () => {
         return floorNumber === 0 ? "Zemin" : `Kat ${floorNumber}`;
     };
 
-    // Masa numarasını al
-    const getTableNumber = (floorNumber, tableIndex) => {
-        const floorPrefix = floorNumber === 0 ? "Z" : String.fromCharCode(65 + floorNumber - 1);
-        return `${floorPrefix}${tableIndex + 1}`;
-    };
-
-    // Table ID'yi masa numarasına çevir (örn: "1" -> "Z1", "9" -> "A1")
-    const getTableNameFromId = (tableId) => {
-        if (!tableId || typeof tableId !== 'string') return tableId;
-
-        const id = parseInt(tableId);
-        if (id <= 8) {
-            return `Z${id}`;
-        } else if (id <= 16) {
-            return `A${id - 8}`;
-        } else if (id <= 24) {
-            return `B${id - 16}`;
-        }
-        return tableId;
-    };
+    // ...existing code...
 
     // Masa numarasını Table ID'ye çevir (örn: "Z1" -> "1", "A1" -> "9", "B1" -> "17")
     const getTableIdFromName = (tableName) => {
