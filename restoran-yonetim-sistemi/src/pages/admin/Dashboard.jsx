@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo } from "react";
+import { getTableNumber } from "../../utils/tableUtils";
 import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
 import ReservationModal from "../../components/reservations/ReservationModal";
