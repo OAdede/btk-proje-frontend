@@ -174,9 +174,11 @@ export function TableProvider({ children }) {
             setProducts(newProductsByCategory);
             setProductsById(productsByIdTemp);
 
+            // Siparişleri backend masa ID'si ile indeksle (çakışmayı önler)
             const ordersByTable = (ordersData || []).reduce((acc, order) => {
-                const tableId = order.tableId;
-                acc[tableId] = {
+                const keyBackendId = String(order.tableId);
+                acc[keyBackendId] = {
+                    id: order.orderId ?? order.id,
                     ...order,
                     items: (order.items || []).reduce((itemAcc, item) => {
                         itemAcc[item.productId] = {
@@ -294,7 +296,20 @@ export function TableProvider({ children }) {
                 return String(s).toUpperCase();
             };
             const backendStatus = mapStatus(status);
-            await apiCall(`/dining-tables/${tableId}/status/${backendStatus}`, {
+            // UI'de tableId masa numarası olabilir; backend gerçek ID ister
+            const findBackendTableId = () => {
+                const numeric = Number(tableId);
+                // Önce id eşleşmesi
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return byId.id;
+                // Sonra tableNumber eşleşmesi
+                const byNumber = (tables || []).find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
+                if (byNumber?.id != null) return byNumber.id;
+                return tableId; // son çare: verilen değeri kullan
+            };
+            const backendTableId = findBackendTableId();
+
+            await apiCall(`/dining-tables/${backendTableId}/status/${backendStatus}`, {
                 method: 'PATCH'
             });
             await fetchData();
@@ -329,12 +344,16 @@ export function TableProvider({ children }) {
             };
         });
 
+        // Backend OrderRequestDTO: { userId: int, tableId: int, items: [{productId, quantity}] }
+        const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+        const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+            ? parseInt(roleInfo.userId, 10)
+            : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+
         const orderData = {
             tableId: parseInt(tableId),
-            userId: 1,
-            waiterName: "Garson Adı",
-            totalPrice: orderItemsForBackend.reduce((sum, item) => sum + item.totalPrice, 0),
-            items: orderItemsForBackend,
+            userId: numericUserId,
+            items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
         try {
@@ -343,7 +362,7 @@ export function TableProvider({ children }) {
                 await apiCall(`/orders/${currentOrder.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+                    body: JSON.stringify(orderData),
                 });
             } else {
                 await apiCall('/orders', {
@@ -394,9 +413,7 @@ export function TableProvider({ children }) {
             const orderToCancel = orders[tableId];
             if (!orderToCancel || !orderToCancel.id) return;
 
-            await apiCall(`/orders/${orderToCancel.id}/cancel`, {
-                method: 'POST',
-            });
+            await apiCall(`/orders/${orderToCancel.id}`, { method: 'DELETE' });
 
             // Sadece admin rolleri stok iade hareketi oluşturabilir
             {
@@ -437,11 +454,47 @@ export function TableProvider({ children }) {
             const orderToPay = orders[tableId];
             if (!orderToPay || !orderToPay.id) return;
 
-            await apiCall(`/orders/${orderToPay.id}/pay`, {
-                method: 'POST',
-            });
+            // Tutarı hesapla (fallback: backend totalPrice yoksa local hesap)
+            const amount = (() => {
+                const items = Object.values(orderToPay.items || {});
+                if (typeof orderToPay.totalPrice === 'number') return orderToPay.totalPrice;
+                return items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.count) || 0), 0);
+            })();
+
+            // Kasiyer ID'sini JWT'den sayıya çevir
+            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+
+            // 1) Ödeme kaydı oluştur (yetki yoksa atla)
+            try {
+                await apiCall('/payments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+                    body: JSON.stringify({
+                        orderId: orderToPay.id,
+                        cashierId: numericUserId,
+                        amount: amount,
+                        method: 'CASH'
+                    })
+                });
+            } catch (e) {
+                if (String(e?.message || '').toLowerCase().includes('unauthorized')) {
+                    console.warn('Payments API unauthorized for this role. Skipping payment record and proceeding to close order.');
+                } else {
+                    throw e;
+                }
+            }
+
+            // 2) Siparişi kapat (sil)
+            await apiCall(`/orders/${orderToPay.id}`, { method: 'DELETE' });
+
+            // 3) Masayı boşalt ve yerel durumu temizle
+            await updateTableStatus(tableId, 'empty');
+            setOrders(prev => { const next = { ...prev }; delete next[tableId]; return next; });
+            setCompletedOrders(prev => ({ ...prev, [orderToPay.id]: orderToPay }));
             await fetchData();
-            updateTableStatus(tableId, "empty");
         } catch (error) {
             console.error("Ödeme alınırken hata:", error);
             setError(`Ödeme alınırken hata oluştu: ${error.message}`);
@@ -460,18 +513,16 @@ export function TableProvider({ children }) {
                 delete updatedItems[itemToDecrease.id];
             }
 
+            const roleInfo2 = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId2 = typeof roleInfo2?.userId === 'string' && /^\d+$/.test(roleInfo2.userId)
+                ? parseInt(roleInfo2.userId, 10)
+                : (typeof roleInfo2?.userId === 'number' ? roleInfo2.userId : 1);
             const orderData = {
                 tableId: parseInt(tableId),
-                userId: 1,
-                waiterName: "Garson Adı",
-                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.price * item.count, 0),
+                userId: numericUserId2,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
-                    productName: item.name,
                     quantity: item.count,
-                    unitPrice: item.price,
-                    totalPrice: item.count * item.price,
-                    note: item.note || ''
                 })),
             };
 
@@ -496,18 +547,16 @@ export function TableProvider({ children }) {
             const updatedItems = { ...currentOrder.items };
             updatedItems[itemToIncrease.id].count += 1;
 
+            const roleInfo3 = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId3 = typeof roleInfo3?.userId === 'string' && /^\d+$/.test(roleInfo3.userId)
+                ? parseInt(roleInfo3.userId, 10)
+                : (typeof roleInfo3?.userId === 'number' ? roleInfo3.userId : 1);
             const orderData = {
                 tableId: parseInt(tableId),
-                userId: 1,
-                waiterName: "Garson Adı",
-                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.price * item.count, 0),
+                userId: numericUserId3,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
-                    productName: item.name,
                     quantity: item.count,
-                    unitPrice: item.price,
-                    totalPrice: item.count * item.price,
-                    note: item.note || ''
                 })),
             };
 
@@ -532,18 +581,16 @@ export function TableProvider({ children }) {
             const updatedItems = { ...currentOrder.items };
             delete updatedItems[itemToRemove.id];
 
+            const roleInfo4 = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId4 = typeof roleInfo4?.userId === 'string' && /^\d+$/.test(roleInfo4.userId)
+                ? parseInt(roleInfo4.userId, 10)
+                : (typeof roleInfo4?.userId === 'number' ? roleInfo4.userId : 1);
             const orderData = {
                 tableId: parseInt(tableId),
-                userId: 1,
-                waiterName: "Garson Adı",
-                totalPrice: Object.values(updatedItems).reduce((sum, item) => sum + item.price * item.count, 0),
+                userId: numericUserId4,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
-                    productName: item.name,
                     quantity: item.count,
-                    unitPrice: item.price,
-                    totalPrice: item.count * item.price,
-                    note: item.note || ''
                 })),
             };
 

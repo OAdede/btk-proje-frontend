@@ -107,10 +107,10 @@ export default function AdminStyleTables({ roleOverride }) {
             const prefix = getAdminPrefixByIndex(salonIdx);
             const adminDisplay = `${prefix}${idStr}`;
             return {
-                id: idStr,
+                id: idStr, // masa numarası (UI)
+                backendId: String(table?.id), // backend masa id
                 displayNumber: adminDisplay,
                 capacity: table?.capacity || 4,
-                backendId: table?.id,
                 salonId: salonId,
                 salonName: getTableSalonName(table),
                 originalTableNumber: tableNum
@@ -195,11 +195,8 @@ export default function AdminStyleTables({ roleOverride }) {
             backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name
         )?.toLowerCase?.();
         const status = backendStatus || tableStatus[tableId] || 'empty';
-        if (status === 'occupied') {
-            navigate(`/${effectiveRole}/summary/${tableId}`);
-        } else {
-            navigate(`/${effectiveRole}/order/${tableId}`);
-        }
+        // Dolu masada da yeni ürün ekleme/düzenleme için sipariş ekranına git
+        navigate(`/${effectiveRole}/order/${tableId}`);
     };
 
     // Re-render every minute to keep timers fresh
