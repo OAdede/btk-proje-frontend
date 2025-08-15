@@ -231,6 +231,8 @@ export const diningTableService = {
     // Delete table
     async deleteTable(tableId) {
         try {
+            console.log('Deleting table with ID:', tableId);
+
             const response = await fetch(`${API_BASE_URL}/dining-tables/${tableId}`, {
                 method: 'DELETE',
                 headers: {
@@ -240,7 +242,9 @@ export const diningTableService = {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Backend error response:', errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
 
             console.log('Table deleted successfully');
