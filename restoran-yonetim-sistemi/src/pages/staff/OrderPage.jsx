@@ -26,17 +26,28 @@ export default function OrderPage() {
         increaseConfirmedOrderItem
     } = useContext(TableContext);
 
-    const confirmedOrders = orders[tableId] || {};
+    // UI'de gelen tableId masa numarası olabilir; backend id ile de deneyelim
+    const confirmedOrders = (() => {
+        // Doğrudan anahtar
+        if (orders?.[tableId]?.items) return orders[tableId].items;
+        // Backend id'yi tahmin et: orders anahtarları backend id; tables içinden eşleştirmek için TableContext'te map yoksa doğrudan fallback
+        const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
+        return possible?.items || {};
+    })();
 
     useEffect(() => {
-        const existingOrder = orders[tableId] || {};
+        const existingItems = (() => {
+            if (orders?.[tableId]?.items) return orders[tableId].items;
+            const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
+            return possible?.items || {};
+        })();
         // Her bir ürün için 'note' alanı olduğundan emin ol
-        Object.keys(existingOrder).forEach(key => {
-            if (!existingOrder[key].note) {
-                existingOrder[key].note = '';
-            }
-        });
-        setCart(existingOrder);
+        const normalized = Object.keys(existingItems).reduce((acc, key) => {
+            const item = existingItems[key];
+            acc[key] = { ...item, note: item.note || '' };
+            return acc;
+        }, {});
+        setCart(normalized);
     }, [tableId, orders]);
 
     const handleQuantityChange = (product, delta) => {

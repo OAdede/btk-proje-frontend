@@ -11,11 +11,15 @@ export default function SummaryPage() {
     const { orders, saveFinalOrder } = useContext(TableContext);
     const { colors } = useTheme();
 
-    const currentOrder = orders[tableId] || {};
+    const currentOrder = (() => {
+        if (orders?.[tableId]?.items) return orders[tableId].items;
+        const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
+        return possible?.items || {};
+    })();
 
     const totalPrice = useMemo(() =>
         Object.values(currentOrder).reduce(
-            (sum, item) => sum + item.price * item.count,
+            (sum, item) => sum + (Number(item.price) || 0) * (Number(item.count) || 0),
             0
         ), [currentOrder]);
 
@@ -32,19 +36,19 @@ export default function SummaryPage() {
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
     return (
-        <div style={{ 
-            padding: 30, 
-            maxWidth: '600px', 
-            margin: 'auto', 
-            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 
-            backgroundColor: colors.cardBackground, 
-            border: `1px solid ${colors.border}`, 
+        <div style={{
+            padding: 30,
+            maxWidth: '600px',
+            margin: 'auto',
+            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            backgroundColor: colors.cardBackground,
+            border: `1px solid ${colors.border}`,
             borderRadius: '10px',
             color: colors.text,
             boxShadow: `0 4px 12px ${colors.shadow}`
         }}>
-            <h1 style={{ 
-                textAlign: 'center', 
+            <h1 style={{
+                textAlign: 'center',
                 marginBottom: '30px',
                 color: colors.text
             }}>{pageTitle}</h1>
@@ -52,14 +56,14 @@ export default function SummaryPage() {
             {Object.keys(currentOrder).length === 0 ? (
                 <div style={{ textAlign: "center" }}>
                     <p style={{ color: colors.text }}>Bu masaya ait görüntülenecek bir sipariş yok.</p>
-                    <button 
-                        onClick={() => navigate(`/${user.role}/home`)} 
-                        style={{ 
-                            padding: "10px 20px", 
-                            borderRadius: "8px", 
-                            border: "none", 
-                            backgroundColor: colors.primary, 
-                            color: "white", 
+                    <button
+                        onClick={() => navigate(`/${user.role}/home`)}
+                        style={{
+                            padding: "10px 20px",
+                            borderRadius: "8px",
+                            border: "none",
+                            backgroundColor: colors.primary,
+                            color: "white",
                             cursor: "pointer",
                             transition: "all 0.3s ease"
                         }}
@@ -79,8 +83,8 @@ export default function SummaryPage() {
                 <>
                     <ul style={{ listStyleType: 'none', padding: 0 }}>
                         {Object.entries(currentOrder).map(([id, item]) => (
-                            <li key={id} style={{ 
-                                padding: '15px 0', 
+                            <li key={id} style={{
+                                padding: '15px 0',
                                 borderBottom: `1px solid ${colors.border}`,
                                 color: colors.text
                             }}>
@@ -105,25 +109,25 @@ export default function SummaryPage() {
                             </li>
                         ))}
                     </ul>
-                    <p style={{ 
-                        textAlign: 'right', 
-                        fontSize: '1.2em', 
-                        fontWeight: 'bold', 
+                    <p style={{
+                        textAlign: 'right',
+                        fontSize: '1.2em',
+                        fontWeight: 'bold',
                         marginTop: '20px',
                         color: colors.text
                     }}>
                         <strong>Toplam: <span style={{ color: colors.success }}>{totalPrice}₺</span></strong>
                     </p>
                     <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between' }}>
-                        <button 
-                            onClick={handleGoBack} 
-                            style={{ 
-                                backgroundColor: "#6c757d", 
-                                color: "white", 
-                                padding: "15px 30px", 
-                                borderRadius: "8px", 
-                                border: "none", 
-                                cursor: "pointer", 
+                        <button
+                            onClick={handleGoBack}
+                            style={{
+                                backgroundColor: "#6c757d",
+                                color: "white",
+                                padding: "15px 30px",
+                                borderRadius: "8px",
+                                border: "none",
+                                cursor: "pointer",
                                 fontSize: '16px',
                                 transition: "all 0.3s ease"
                             }}
@@ -140,13 +144,13 @@ export default function SummaryPage() {
                         </button>
                         <button
                             onClick={handleConfirm}
-                            style={{ 
-                                backgroundColor: colors.success, 
-                                color: "white", 
-                                padding: "15px 30px", 
-                                borderRadius: "8px", 
-                                border: "none", 
-                                cursor: "pointer", 
+                            style={{
+                                backgroundColor: colors.success,
+                                color: "white",
+                                padding: "15px 30px",
+                                borderRadius: "8px",
+                                border: "none",
+                                cursor: "pointer",
                                 fontSize: '16px',
                                 transition: "all 0.3s ease"
                             }}
