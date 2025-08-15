@@ -92,7 +92,7 @@ export function TableProvider({ children }) {
 
             const tasks = [
                 apiCall('/products'),                // 0
-                isAdmin ? apiCall('/stocks') : Promise.resolve([]), // 1
+                apiCall('/stocks'),                  // 1 - tüm roller için okuma (backend GET yetkisi verildi)
                 apiCall('/product-ingredients'),     // 2
                 apiCall('/dining-tables'),           // 3
                 apiCall('/orders'),                  // 4
@@ -149,6 +149,7 @@ export function TableProvider({ children }) {
                     price: item.price,
                     category: categoryName,
                     description: item.description,
+                    isActive: item.isActive !== false,
                     recipe: []
                 };
                 newProductsByCategory[categoryName].push(productWithRecipe);
@@ -723,11 +724,23 @@ export function TableProvider({ children }) {
                 }
             }
 
-            await apiCall(`/products/${productId}`, {
-                method: 'DELETE',
-            });
+            await apiCall(`/products/${productId}`, { method: 'DELETE' });
             await fetchData();
         } catch (error) {
+            // Eğer ürün siparişlerde referanslıysa silme yerine arşivle (isActive=false)
+            const msg = String(error?.message || '').toLowerCase();
+            if (msg.includes('referenced') || msg.includes('cannot be deleted')) {
+                const product = findProductById(productId);
+                if (product) {
+                    try {
+                        await updateProduct(product.category, { ...product, isActive: false });
+                        alert(`Ürün siparişlerde kullanıldığı için silinemedi. Ürün pasif hale getirildi: ${product.name}`);
+                        return;
+                    } catch (e) {
+                        console.error('Ürün pasif edilirken hata:', e);
+                    }
+                }
+            }
             console.error("Ürün silinirken hata:", error);
             setError(`Ürün silinirken hata oluştu: ${error.message}`);
         }
@@ -743,7 +756,8 @@ export function TableProvider({ children }) {
                     name: updatedProduct.name,
                     price: updatedProduct.price,
                     description: updatedProduct.description,
-                    category: category
+                    category: category,
+                    isActive: updatedProduct.isActive !== false
                 }),
             });
 
