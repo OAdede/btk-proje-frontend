@@ -3,6 +3,7 @@
     flex-direction: column;
     min-height: 100vh;
     background-color: var(--background);
+    padding-top: 70px;
 }
 
 .admin-content-wrapper {

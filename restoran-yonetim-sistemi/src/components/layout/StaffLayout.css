@@ -1,8 +1,8 @@
 .staff-layout {
     display: flex;
-    flex-direction: column;
     min-height: 100vh;
     background-color: var(--background);
+    padding-top: 70px;
 }
 
 .staff-content-wrapper {
@@ -10,10 +10,11 @@
     flex: 1;
 }
 
+/* Desktop/default: sidebar always visible as a left column */
 .staff-sidebar {
-    min-width: 200px;
+    width: 260px;
+    min-width: 260px;
     max-width: 300px;
-    width: 20%;
     background: var(--sidebar);
     border-right: 1px solid var(--border);
     padding: 24px 16px;
@@ -21,9 +22,11 @@
     box-shadow: 0 2px 8px var(--shadow);
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    position: sticky;
-    top: 0;
+    height: calc(100vh - 70px);
+    position: fixed;
+    left: 0;
+    top: 70px;
+    z-index: 10;
 }
 
 .staff-sidebar-header {
@@ -105,8 +108,11 @@
 .staff-main-content {
     flex: 1;
     padding: 40px;
+    padding-top: 110px;
     min-width: 0;
     background: var(--background);
+    margin-left: 260px;
+    transition: margin-left 0.3s ease-in-out;
 }
 
 /* Light theme variables */
