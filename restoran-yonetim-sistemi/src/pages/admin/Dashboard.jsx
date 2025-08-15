@@ -7,6 +7,7 @@ import SuccessNotification from "../../components/reservations/SuccessNotificati
 import WarningModal from "../../components/common/WarningModal";
 import TableManagementModal from "../../components/tables/TableManagementModal";
 import "./Dashboard.css";
+import { settingsService } from '../../services/settingsService';
 
 
 
@@ -67,10 +68,24 @@ const Dashboard = () => {
   const [showTableManagementModal, setShowTableManagementModal] = useState(false);
   const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
 
-  // Restoran ismini localStorage'dan al
+  // Restoran ismini backend'den al
   useEffect(() => {
-    const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
-    setRestaurantName(name);
+    const loadRestaurantName = async () => {
+      try {
+        const settings = await settingsService.getRestaurantSettings();
+        if (settings.restaurantName) {
+          setRestaurantName(settings.restaurantName);
+          localStorage.setItem('restaurantName', settings.restaurantName);
+        }
+      } catch (error) {
+        console.error('Error loading restaurant name:', error);
+        // Fallback to localStorage if API fails
+        const cachedName = localStorage.getItem('restaurantName');
+        if (cachedName) setRestaurantName(cachedName);
+      }
+    };
+
+    loadRestaurantName();
   }, []);
 
   // Restoran ismi değişikliklerini dinle
