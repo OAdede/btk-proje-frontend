@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from "react";
+import React, { useState, useContext, useMemo, useEffect } from "react";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import { useTheme } from "../../context/ThemeContext";
@@ -21,6 +21,23 @@ function StokUpdate() {
   } = useContext(TableContext);
   const { user } = useContext(AuthContext);
   const { colors } = useTheme();
+
+  // CSS değişkenlerini dinamik olarak ayarla
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--card-background', colors.cardBackground);
+    root.style.setProperty('--surface-background', colors.surfaceBackground);
+    root.style.setProperty('--text', colors.text);
+    root.style.setProperty('--text-secondary', colors.textSecondary);
+    root.style.setProperty('--border', colors.border);
+    root.style.setProperty('--shadow', colors.shadow);
+    root.style.setProperty('--warning', colors.warning);
+    root.style.setProperty('--warningHover', colors.warningHover);
+    root.style.setProperty('--danger', colors.danger);
+    root.style.setProperty('--dangerHover', colors.dangerHover);
+    root.style.setProperty('--success', colors.success);
+    root.style.setProperty('--primary', colors.primary);
+  }, [colors]);
 
   const [aktifSekme, setAktifSekme] = useState("urunler");
   const [aktifKategori, setAktifKategori] = useState("Tümü");

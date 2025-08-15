@@ -52,8 +52,10 @@ export const ThemeProvider = ({ children }) => {
       borderLight: '#3A2636', // Açık kenarlık
       success: '#4ade80', // Yeşil - başarı
       danger: '#f87171', // Kırmızı - tehlike
+      dangerHover: '#ef4444', // Koyu kırmızı hover
       primary: '#a78bfa', // Mor - birincil
       warning: '#fbbf24', // Sarı - uyarı
+      warningHover: '#f59e0b', // Koyu sarı hover
       info: '#60a5fa', // Mavi - bilgi
       hover: '#53364D', // Hover efekti
       shadow: 'rgba(50, 38, 58, 0.3)', // Gölge rengi
@@ -74,8 +76,10 @@ export const ThemeProvider = ({ children }) => {
       borderLight: '#E5D9F2', // Açık mor kenarlık
       success: '#10B981', // Yeşil - başarı
       danger: '#EF4444', // Kırmızı - tehlike
+      dangerHover: '#dc2626', // Koyu kırmızı hover
       primary: '#A294F9', // Mor - birincil
       warning: '#F59E0B', // Sarı - uyarı
+      warningHover: '#d97706', // Koyu sarı hover
       info: '#3B82F6', // Mavi - bilgi
       hover: '#CDC1FF', // Hover efekti
       shadow: 'rgba(162, 148, 249, 0.1)', // Gölge rengi
