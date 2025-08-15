@@ -708,16 +708,6 @@ const AdminSidebar = () => {
                         </div>
                     </NavLink>
                     <NavLink
-                        to="/admin/new-floor"
-                        className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
-                        onClick={handleNavClick}
-                    >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>➕</span>
-                            <span>Yeni Kat</span>
-                        </div>
-                    </NavLink>
-                    <NavLink
                         to="/admin/restaurant-settings"
                         className={({ isActive }) => isActive ? "admin-nav-item active" : "admin-nav-item"}
                         onClick={handleNavClick}

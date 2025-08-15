@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { getTableNumber } from "../../utils/tableUtils";
 import { TableContext } from "../../context/TableContext";
 import { ThemeContext } from "../../context/ThemeContext";
@@ -9,15 +8,12 @@ import WarningModal from "../../components/common/WarningModal";
 import TableManagementModal from "../../components/tables/TableManagementModal";
 import "./Dashboard.css";
 import { settingsService } from '../../services/settingsService';
-import { salonService } from '../../services/salonService';
-import { diningTableService } from '../../services/diningTableService';
 
 
 
 
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
@@ -487,55 +483,27 @@ const Dashboard = () => {
   };
 
   // Kat silme fonksiyonu
-  const deleteFloor = async () => {
-    console.log('deleteFloor fonksiyonu çağrıldı');
-    console.log('floorToDelete:', floorToDelete);
-    
+  const deleteFloor = () => {
     if (floorToDelete !== null) {
-      try {
-        console.log('Salon silme işlemi başlıyor...');
-        
-        // 1) Önce bu salona ait tüm masaları sil
-        const salonTables = tables.filter(t => (t?.salon?.id ?? t?.salonId) === floorToDelete);
-        console.log(`${salonTables.length} masa bulundu, siliniyor...`);
-        
-        for (const table of salonTables) {
-          try {
-            await diningTableService.deleteTable(table.id);
-            console.log(`Masa ${table.id} silindi`);
-          } catch (error) {
-            console.error(`Masa ${table.id} silinirken hata:`, error);
-            // Masa silinmezse salon da silinemez, hata ver
-            throw new Error(`Masa ${table.tableNumber || table.id} silinemedi: ${error.message}`);
-          }
-        }
-        
-        // 2) Şimdi salonu sil
-        console.log('Tüm masalar silindi, salon siliniyor...');
-        await salonService.deleteSalon(floorToDelete);
-        console.log('Salon başarıyla silindi');
-        
-        // 3) Verileri tazele
-        console.log('Veriler tazeleniyor...');
-        await loadTablesAndSalons();
-        console.log('Veriler tazelendi');
-        
-        // 4) Modal'ı kapat
-        setShowDeleteFloorModal(false);
-        setFloorToDelete(null);
-        
-        // 5) Başarı mesajı göster
-        setSuccessData({ message: 'Kat ve tüm masaları başarıyla silindi' });
-        setShowSuccess(true);
-        console.log('İşlem tamamlandı');
-      } catch (error) {
-        console.error('Kat silme hatası:', error);
-        // Hata mesajı göster
-        setWarningMessage(`Kat silinirken hata oluştu: ${error.message}`);
-        setShowWarningModal(true);
+      setFloors(prev => prev.filter(floor => floor !== floorToDelete));
+      setTableCounts(prev => {
+        const newCounts = { ...prev };
+        delete newCounts[floorToDelete];
+        return newCounts;
+      });
+      setFloorNames(prev => {
+        const newNames = { ...prev };
+        delete newNames[floorToDelete];
+        return newNames;
+      });
+
+      // Eğer silinen kat seçili kattaysa, ilk kata geç
+      if (selectedFloor === floorToDelete) {
+        setSelectedFloor(floors[0]);
       }
-    } else {
-      console.log('floorToDelete null, işlem yapılmıyor');
+
+      setShowDeleteFloorModal(false);
+      setFloorToDelete(null);
     }
   };
 
@@ -1063,7 +1031,7 @@ const Dashboard = () => {
           {/* Kat düzeni modunda + butonu */}
           {showFloorLayoutMode && (
             <div
-              onClick={() => navigate('/admin/new-floor')}
+              onClick={addFloor}
               style={{
                 padding: "1rem",
                 marginBottom: "1rem",
