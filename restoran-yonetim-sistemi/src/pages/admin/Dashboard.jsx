@@ -72,6 +72,15 @@ const Dashboard = () => {
   const [showTableManagementModal, setShowTableManagementModal] = useState(false);
   const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
   const navigate = useNavigate();
+  // Salon prefix yönetimi
+  const [salonPrefixes, setSalonPrefixes] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('salonPrefixes') || '{}');
+    } catch { return {}; }
+  });
+  const [showAddSalonModal, setShowAddSalonModal] = useState(false);
+  const [newSalonName, setNewSalonName] = useState('');
+  const [newSalonPrefix, setNewSalonPrefix] = useState('');
 
   // Restoran ismini backend'den al
   useEffect(() => {
@@ -147,10 +156,7 @@ const Dashboard = () => {
   const getAdminPrefixByIndex = (idx) => (idx <= 0 ? 'Z' : String.fromCharCode(65 + (idx - 1)));
   const getAdminDisplayFor = (table) => {
     const tableNum = table?.tableNumber ?? table?.id;
-    const salonId = table?.salon?.id ?? table?.salonId;
-    const idx = getSalonIndexById(salonId);
-    const prefix = getAdminPrefixByIndex(idx);
-    return `${prefix}${tableNum}`;
+    return String(tableNum);
   };
 
   // Masa kapasitelerini yöneten state
@@ -192,6 +198,9 @@ const Dashboard = () => {
   useEffect(() => {
     localStorage.setItem('tableCapacities', JSON.stringify(tableCapacities));
   }, [tableCapacities]);
+  useEffect(() => {
+    localStorage.setItem('salonPrefixes', JSON.stringify(salonPrefixes));
+  }, [salonPrefixes]);
 
   const handleReservationClick = (tableId) => {
     setSelectedTable(tableId);
@@ -1115,7 +1124,7 @@ const Dashboard = () => {
           {/* Kat düzeni modunda + butonu */}
           {showFloorLayoutMode && (
             <div
-              onClick={() => navigate('/admin/new-floor')}
+              onClick={() => setShowAddSalonModal(true)}
               style={{
                 padding: "1rem",
                 marginBottom: "1rem",
@@ -1155,6 +1164,49 @@ const Dashboard = () => {
           message={warningMessage}
           onClose={() => setShowWarningModal(false)}
         />
+
+        {/* Yeni Salon Ekle Modal */}
+        {showAddSalonModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <div style={{
+              backgroundColor: isDarkMode ? '#513653' : '#ffffff', padding: '2rem', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', maxWidth: '420px', width: '90%', textAlign: 'center', border: `2px solid ${isDarkMode ? '#473653' : '#e0e0e0'}`
+            }}>
+              <h3 style={{ color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '16px' }}>🏢 Yeni Salon Ekle</h3>
+              <div style={{ textAlign: 'left', marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Adı</label>
+                <input value={newSalonName} onChange={(e)=>setNewSalonName(e.target.value)} placeholder="Örn: ANA SALON" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
+              </div>
+              <div style={{ textAlign: 'left', marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Kodu (Örn: A)</label>
+                <input value={newSalonPrefix} onChange={(e)=>setNewSalonPrefix(e.target.value)} maxLength={2} placeholder="A" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16, textTransform:'uppercase' }} />
+                <small style={{ color: isDarkMode? '#ddd':'#666' }}>Bu harf masa numaralarının başında görünecek (örn: A97)</small>
+              </div>
+              <div style={{ display:'flex', gap:15, justifyContent:'center' }}>
+                <button onClick={async ()=>{
+                  const name = (newSalonName||'').trim();
+                  let prefix = (newSalonPrefix||'').trim().toUpperCase();
+                  if (!name) { alert('Salon adı zorunlu'); return; }
+                  if (!prefix || !/^[A-ZÇĞİÖŞÜ]$/.test(prefix[0])) { alert('Geçerli bir tek harf girin'); return; }
+                  try {
+                    const created = await salonService.createSalon({ name, prefix });
+                    const sid = created?.id;
+                    if (sid != null) {
+                      setSalonPrefixes(prev=>{ const next={...prev}; next[String(sid)] = prefix[0]; return next; });
+                    }
+                    await loadTablesAndSalons?.();
+                    setShowAddSalonModal(false); setNewSalonName(''); setNewSalonPrefix('');
+                  } catch(err){
+                    alert(`Salon eklenirken hata: ${err.message}`);
+                  }
+                }} style={{ background:'#4CAF50', color:'#fff', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>Ekle</button>
+                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonPrefix(''); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Masa Silme Modal */}
         {showDeleteTableModal && (
