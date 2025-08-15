@@ -54,15 +54,15 @@
   word-break: break-word;
 }
 
-/* Koyu tema için tablo stilleri */
+/* Koyu tema için tablo stilleri - CSS değişkenleri ile */
 .dark-theme .sales-by-category-chart .table tbody tr {
-  background-color: var(--tableRowBackground) !important;
+  background-color: var(--cardBackground) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
 }
 
 .dark-theme .sales-by-category-chart .table tbody tr td {
-  background-color: var(--tableRowBackground) !important;
+  background-color: var(--cardBackground) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
   word-wrap: break-word;
@@ -80,16 +80,163 @@
 }
 
 .dark-theme .sales-by-category-chart .table thead tr {
-  background-color: var(--tableHeaderBackground) !important;
+  background-color: var(--surfaceBackground) !important;
   color: var(--text) !important;
 }
 
 .dark-theme .sales-by-category-chart .table thead tr th {
-  background-color: var(--tableHeaderBackground) !important;
+  background-color: var(--surfaceBackground) !important;
   color: var(--text) !important;
   border-color: var(--border) !important;
   word-wrap: break-word;
   word-break: break-word;
+}
+
+/* Karanlık tema için genel card ve container stilleri - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .card {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.dark-theme .sales-by-category-chart .card-title {
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .card-body {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tablo container stilleri - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table-responsive {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tüm tablo elementleri - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table * {
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table tbody * {
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table thead * {
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için chart container - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .chart-container {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tüm text elementleri - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart p,
+.dark-theme .sales-by-category-chart span,
+.dark-theme .sales-by-category-chart div,
+.dark-theme .sales-by-category-chart h1,
+.dark-theme .sales-by-category-chart h2,
+.dark-theme .sales-by-category-chart h3,
+.dark-theme .sales-by-category-chart h4,
+.dark-theme .sales-by-category-chart h5,
+.dark-theme .sales-by-category-chart h6 {
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için kategori detayları tablosu - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table-responsive {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.dark-theme .sales-by-category-chart .table-responsive .table {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  margin-bottom: 0 !important;
+}
+
+.dark-theme .sales-by-category-chart .table-responsive .table thead th {
+  background-color: var(--surfaceBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  font-size: 11px !important;
+  padding: 8px 6px !important;
+  font-weight: 600 !important;
+}
+
+.dark-theme .sales-by-category-chart .table-responsive .table tbody td {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  font-size: 11px !important;
+  padding: 6px !important;
+}
+
+.dark-theme .sales-by-category-chart .table-responsive .table tbody tr:hover td {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için kategori detayları container - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .mt-3 {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Karanlık tema için h6 başlık - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart h6 {
+  color: var(--text) !important;
+  font-size: 14px !important;
+  margin-bottom: 10px !important;
+  font-weight: 600 !important;
+}
+
+/* Karanlık tema için tüm tablo elementlerini override et - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table * {
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table thead * {
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table tbody * {
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tablo satırları - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table tbody tr {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .sales-by-category-chart .table tbody tr:hover {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tablo hücreleri - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table td,
+.dark-theme .sales-by-category-chart .table th {
+  border-color: var(--border) !important;
+}
+
+/* Karanlık tema için tablo başlıkları - CSS değişkenleri ile */
+.dark-theme .sales-by-category-chart .table thead th {
+  background-color: var(--surfaceBackground) !important;
+  color: var(--text) !important;
+  font-weight: 600 !important;
 }
 
 /* Responsive adjustments */

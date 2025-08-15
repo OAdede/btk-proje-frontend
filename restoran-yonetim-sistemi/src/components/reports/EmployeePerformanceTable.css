@@ -85,6 +85,159 @@
   box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25) !important;
 }
 
+/* Açık tema için tablo stilleri */
+.light-theme .employee-performance-table .table tbody tr {
+  background-color: #CBC3E3 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
+}
+
+.light-theme .employee-performance-table .table tbody tr td {
+  background-color: #CBC3E3 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.light-theme .employee-performance-table .table tbody tr:hover {
+  background-color: #F5EFFF !important;
+  color: #2D1B69 !important;
+}
+
+.light-theme .employee-performance-table .table tbody tr:hover td {
+  background-color: #F5EFFF !important;
+  color: #2D1B69 !important;
+}
+
+.light-theme .employee-performance-table .table thead tr {
+  background-color: #E5D9F2 !important;
+  color: #2D1B69 !important;
+}
+
+.light-theme .employee-performance-table .table thead tr th {
+  background-color: #E5D9F2 !important;
+  color: #2D1B69 !important;
+  border-color: #CDC1FF !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Karanlık tema için tablo stilleri - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .table tbody tr {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.dark-theme .employee-performance-table .table tbody tr td {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.dark-theme .employee-performance-table .table tbody tr:hover {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table tbody tr:hover td {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table thead tr {
+  background-color: var(--surfaceBackground) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table thead tr th {
+  background-color: var(--surfaceBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Karanlık tema için genel card ve container stilleri - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .card {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.dark-theme .employee-performance-table .card-title {
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .card-body {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tablo container stilleri - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .table-responsive {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tüm tablo elementleri - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .table * {
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table tbody * {
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table thead * {
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tüm text elementleri - CSS değişkenleri ile */
+.dark-theme .employee-performance-table p,
+.dark-theme .employee-performance-table span,
+.dark-theme .employee-performance-table div,
+.dark-theme .employee-performance-table h1,
+.dark-theme .employee-performance-table h2,
+.dark-theme .employee-performance-table h3,
+.dark-theme .employee-performance-table h4,
+.dark-theme .employee-performance-table h5,
+.dark-theme .employee-performance-table h6 {
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tablo satırları - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .table tbody tr {
+  background-color: var(--cardBackground) !important;
+  color: var(--text) !important;
+}
+
+.dark-theme .employee-performance-table .table tbody tr:hover {
+  background-color: var(--hover) !important;
+  color: var(--text) !important;
+}
+
+/* Karanlık tema için tablo hücreleri - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .table td,
+.dark-theme .employee-performance-table .table th {
+  border-color: var(--border) !important;
+}
+
+/* Karanlık tema için tablo başlıkları - CSS değişkenleri ile */
+.dark-theme .employee-performance-table .table thead th {
+  background-color: var(--surfaceBackground) !important;
+  color: var(--text) !important;
+  font-weight: 600 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .employee-performance-table .table {

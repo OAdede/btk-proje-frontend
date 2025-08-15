@@ -245,17 +245,15 @@ const SalesByCategoryChart = () => {
             </div>
 
             {/* Kategori Detay Tablosu */}
-            <div className="mt-3" style={{ backgroundColor: colors.surface, borderRadius: '8px', padding: '15px', border: `1px solid ${colors.border}` }}>
-              <h6 style={{ color: colors.text, fontSize: '14px', marginBottom: '10px' }}>
-                Kategori Detayları
-              </h6>
+            <div className="mt-3 sales-by-category-chart">
+              <h6>Kategori Detayları</h6>
               <div className="table-responsive">
-                <table className="table table-sm" style={{ color: colors.text, fontSize: '12px' }}>
+                <table className="table table-sm">
                   <thead>
-                    <tr style={{ backgroundColor: colors.cardBackground }}>
-                      <th style={{ color: colors.text, fontSize: '11px' }}>Kategori</th>
-                      <th style={{ color: colors.text, fontSize: '11px' }}>Satış</th>
-                      <th style={{ color: colors.text, fontSize: '11px' }}>Oran</th>
+                    <tr>
+                      <th>Kategori</th>
+                      <th>Satış</th>
+                      <th>Oran</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -272,7 +270,7 @@ const SalesByCategoryChart = () => {
                       if (validData.length === 0) {
                         return (
                           <tr>
-                            <td colSpan="3" style={{ color: colors.textSecondary, fontSize: '11px', textAlign: 'center' }}>
+                            <td colSpan="3" className="text-center">
                               Bu dönemde satış verisi bulunamadı
                             </td>
                           </tr>
@@ -282,14 +280,14 @@ const SalesByCategoryChart = () => {
                       return validData.map((item, index) => {
                         const percentage = total > 0 ? ((item.sales / total) * 100).toFixed(1) : '0';
                         return (
-                          <tr key={index} style={{ backgroundColor: colors.cardBackground }}>
-                            <td style={{ color: colors.text, fontSize: '11px', fontWeight: '500' }}>
+                          <tr key={index}>
+                            <td className="fw-medium">
                               {item.category}
                             </td>
-                            <td style={{ color: colors.text, fontSize: '11px' }}>
+                            <td>
                               ₺{item.sales.toLocaleString()}
                             </td>
-                            <td style={{ color: colors.text, fontSize: '11px' }}>
+                            <td>
                               %{percentage}
                             </td>
                           </tr>
