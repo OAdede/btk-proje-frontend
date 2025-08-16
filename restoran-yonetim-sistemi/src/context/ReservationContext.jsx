@@ -49,16 +49,19 @@ export const ReservationProvider = ({ children }) => {
             
             console.log('addReservation çağrıldı:', { tableId, formData, userId });
             
+            
             // Backend'e gönderilecek veriyi hazırla
             const reservationData = {
-                tableId: parseInt(tableId), // bigint
+                tableId: numericTableId, // Backend'de masa numarası olarak gönder, masa ID'sine çevrilecek
                 customerName: `${formData.ad} ${formData.soyad}`.trim(), // character varying
+                email: formData.email || '', // character varying (email alanı)
                 customerPhone: formData.telefon, // character varying
+                personCount: parseInt(formData.personCount) || 1, // integer (person_count alanı)
                 tarih: formData.tarih, // Tarih - backend'de buildLocalDateTime ile birleştirilecek
                 saat: formData.saat, // Saat - backend'de buildLocalDateTime ile birleştirilecek
-                not: formData.not || '', // special_request - character varying
-                statusId: 1, // integer
-                createdBy: userId // bigint
+                not: formData.not || '', // special_requests - character varying
+                statusId: 1, // integer - backend'de 1L olarak işlenecek
+                createdBy: userId // integer
             };
 
             console.log('Backend\'e gönderilecek veri:', reservationData);

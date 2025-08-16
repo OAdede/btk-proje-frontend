@@ -12,17 +12,16 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     return `${today.getFullYear()}-${month}-${day}`;
   };
 
-  const [formData, setFormData] = useState({
+   const [formData, setFormData] = useState({
     ad: "",
     soyad: "",
     telefon: "",
     email: "",
     tarih: getTodayDate(),
     saat: "12:00",
-    kisiSayisi: "2",
+    personCount: "2", // kisiSayisi yerine personCount kullan
     not: "",
   });
-
   // Masa kapasitesini al
   const getTableCapacity = (tableNumber) => {
     if (!tableNumber) return 4;
