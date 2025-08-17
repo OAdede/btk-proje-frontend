@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom"; // useLocation eklendi
 import { createPortal } from "react-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -6,6 +6,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { TableContext } from "../../context/TableContext";
 import "./StaffLayout.css";
 import { authService } from "../../services/authService";
+import { userService } from "../../services/userService";
+import { personnelService } from "../../services/personnelService";
 
 const StaffSidebar = () => {
     const { logout, user } = useContext(AuthContext);
@@ -18,9 +20,131 @@ const StaffSidebar = () => {
     const removeReservation = tableContext?.removeReservation || (() => { });
     const [showSettings, setShowSettings] = useState(false);
     const [showProfileSettings, setShowProfileSettings] = useState(false);
-    const [profileImage, setProfileImage] = useState(localStorage.getItem('profileImage') || '/default-avatar.png');
-    const [phoneNumber, setPhoneNumber] = useState(localStorage.getItem('phoneNumber') || '');
-    const [email, setEmail] = useState(localStorage.getItem('email') || (user ? user.email : ''));
+    const [profileImage, setProfileImage] = useState('/default-avatar.png');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [email, setEmail] = useState('');
+    const [displayName, setDisplayName] = useState('');
+    const [displayRole, setDisplayRole] = useState('');
+    
+    // Kullanıcı profilini yükle (önce AuthContext, sonra backend id ile, yoksa email ile arama)
+    useEffect(() => {
+        const initFromAuth = () => {
+            console.log('[Profile] AuthContext.user:', user);
+            // İsim ve rolü anında göster (backend gelene kadar)
+            const nameFromAuth = user?.name || (user?.email ? user.email.split('@')[0] : '') || 'Kullanıcı';
+            const roleFromAuth = (() => {
+                if (!user?.role) return '';
+                const r = String(user.role).toLowerCase();
+                if (r === 'admin') return 'Admin';
+                if (r === 'garson' || r === 'waiter') return 'Garson';
+                if (r === 'kasiyer' || r === 'cashier') return 'Kasiyer';
+                return user.role;
+            })();
+            setDisplayName(nameFromAuth);
+            setDisplayRole(roleFromAuth);
+            if (user?.email) setEmail(user.email);
+            if (user?.phone) setPhoneNumber(user.phone);
+            if (user?.profileImage) setProfileImage(user.profileImage);
+        };
+
+        const resolveFromApi = async () => {
+            try {
+                const id = user?.userId;
+                let data = null;
+
+                // Sadece sayısal id ile /users/{id} dene
+                const isNumericId = id !== undefined && id !== null && String(id).match(/^\d+$/);
+                if (isNumericId) {
+                    console.log('[Profile] Fetching by numeric id:', id);
+                    try {
+                        data = await userService.getUserById(id);
+                    } catch (e) {
+                        console.warn('[Profile] Fetch by id failed:', e?.message);
+                    }
+                }
+
+                // ID yoksa veya bulunamazsa email ile aktif/pasif listelerde ara
+                if (!data && user?.email) {
+                    try {
+                        console.log('[Profile] Searching by email in active/inactive lists:', user.email);
+                        const [actives, inactives] = await Promise.all([
+                            personnelService.getActiveUsers(),
+                            personnelService.getInactiveUsers(),
+                        ]);
+                        const all = [...(actives || []), ...(inactives || [])];
+                        data = all.find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
+                    } catch { }
+                }
+
+                // Hâlâ yoksa /users (tüm kullanıcılar) üzerinden dene
+                if (!data && user?.email) {
+                    try {
+                        console.log('[Profile] Fallback: searching by email in all users');
+                        const all = await personnelService.getAllUsers();
+                        data = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
+                    } catch (e) {
+                        console.warn('[Profile] Fallback all users failed:', e?.message);
+                    }
+                }
+
+                if (!data) return; // Bulunamadıysa AuthContext fallback ile kal
+
+                // İsim
+                const name = data.name || user?.name || displayName || 'Kullanıcı';
+                setDisplayName(name);
+                localStorage.setItem('displayName', name);
+
+                // Rol
+                const roleLabel = (() => {
+                    const roles = Array.isArray(data.roles) ? data.roles : [];
+                    const first = roles[0];
+                    if (first === 0 || user?.role === 'admin') return 'Admin';
+                    if (first === 1 || user?.role === 'garson' || user?.role === 'waiter') return 'Garson';
+                    if (first === 2 || user?.role === 'kasiyer' || user?.role === 'cashier') return 'Kasiyer';
+                    return displayRole || user?.role || 'Kullanıcı';
+                })();
+                setDisplayRole(roleLabel);
+                localStorage.setItem('displayRole', roleLabel);
+
+                // Fotoğraf
+                if (data.photoBase64) {
+                    const img = `data:image/jpeg;base64,${data.photoBase64}`;
+                    setProfileImage(img);
+                    localStorage.setItem('profileImage', img);
+                } else if (data.hasPhoto && data.id) {
+                    const imgUrl = `/api/users/${data.id}/photo`;
+                    setProfileImage(imgUrl);
+                    localStorage.setItem('profileImage', imgUrl);
+                } else {
+                    console.log('[Profile] No photo found on profile payload');
+                }
+
+                // İletişim
+                if (data.phoneNumber) {
+                    setPhoneNumber(data.phoneNumber);
+                    localStorage.setItem('phoneNumber', data.phoneNumber);
+                }
+                if (data.email) {
+                    setEmail(data.email);
+                    localStorage.setItem('email', data.email);
+                }
+            } catch (err) {
+                console.warn('Profil bilgisi alınamadı:', err.message);
+            }
+        };
+
+        // Kullanıcı değiştiğinde ilk olarak default değerlere dön
+        setProfileImage('/default-avatar.png');
+        setDisplayName('');
+        setDisplayRole('');
+        setEmail('');
+        setPhoneNumber('');
+
+        initFromAuth();
+        resolveFromApi();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]);
+
     const [showPhoneVerification, setShowPhoneVerification] = useState(false);
     const [showEmailVerification, setShowEmailVerification] = useState(false);
     const [phoneVerificationCode, setPhoneVerificationCode] = useState('');
@@ -137,14 +261,45 @@ const StaffSidebar = () => {
     };
 
     // Profil fotoğrafını onaylama
-    const confirmProfileImage = () => {
-        if (tempProfileImage) {
+    const confirmProfileImage = async () => {
+        if (!tempProfileImage) return;
+        const isNumeric = (val) => val !== undefined && val !== null && /^\d+$/.test(String(val));
+
+        const findUserIdByEmail = async (email) => {
+            if (!email) return null;
+            try {
+                const [actives, inactives] = await Promise.all([
+                    personnelService.getActiveUsers(),
+                    personnelService.getInactiveUsers(),
+                ]);
+                const all = [...(actives || []), ...(inactives || [])];
+                const found = all.find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+                if (found?.id !== undefined) return found.id;
+            } catch { }
+            try {
+                const all = await personnelService.getAllUsers();
+                const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(email).toLowerCase());
+                if (found?.id !== undefined) return found.id;
+            } catch { }
+            return null;
+        };
+
+        try {
+            let targetId = user?.userId;
+            if (!isNumeric(targetId)) {
+                targetId = await findUserIdByEmail(user?.email);
+            }
+            if (!isNumeric(targetId)) throw new Error('Kullanıcı ID bulunamadı');
+            // Backend'e yükle
+            await userService.uploadUserPhoto(targetId, tempProfileImage);
+            // Başarılı ise UI güncelle
             setProfileImage(tempProfileImage);
             localStorage.setItem('profileImage', tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
-            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert('Profil fotoğrafı başarıyla güncellendi!');
+        } catch (e) {
+            alert(e.message || 'Profil fotoğrafı güncellenemedi');
         }
     };
 
@@ -156,29 +311,61 @@ const StaffSidebar = () => {
 
     // Telefon numarası değiştirme
     const handlePhoneChange = () => {
-        if (tempPhone && tempPhone.length === 10) {
+        if (!tempPhone || tempPhone.length !== 11 || !tempPhone.startsWith('0')) {
+            alert('Lütfen telefon numarasını 0 ile başlayacak ve 11 hane olacak şekilde giriniz.');
+            return;
+        }
+        if (tempPhone && tempPhone.length === 11 && tempPhone.startsWith('0')) {
             setShowPhoneVerification(true);
             // SMS doğrulama kodu gönder (simülasyon)
             const code = Math.floor(100000 + Math.random() * 900000);
-            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`SMS doğrulama kodu: ${code}`);
         }
     };
 
     // Telefon doğrulama
-    const verifyPhone = () => {
-        // Simülasyon için rastgele kod oluştur ve kontrol et
-        const expectedCode = '123456'; // Sabit kod
+    const verifyPhone = async () => {
+        const expectedCode = '123456';
         if (phoneVerificationCode === expectedCode) {
-            setPhoneNumber(tempPhone);
-            localStorage.setItem('phoneNumber', tempPhone);
-            setShowPhoneVerification(false);
-            setTempPhone('');
-            setPhoneVerificationCode('');
-            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
-            alert('Telefon numarası başarıyla güncellendi!');
+            try {
+                const isNumeric = (val) => val !== undefined && val !== null && /^\d+$/.test(String(val));
+                const findUserIdByEmail = async (email) => {
+                    if (!email) return null;
+                    try {
+                        const [actives, inactives] = await Promise.all([
+                            personnelService.getActiveUsers(),
+                            personnelService.getInactiveUsers(),
+                        ]);
+                        const all = [...(actives || []), ...(inactives || [])];
+                        const found = all.find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase());
+                        if (found?.id !== undefined) return found.id;
+                    } catch { }
+                    try {
+                        const all = await personnelService.getAllUsers();
+                        const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase());
+                        if (found?.id !== undefined) return found.id;
+                    } catch { }
+                    return null;
+                };
+
+                let targetId = user?.userId;
+                if (!isNumeric(targetId)) {
+                    targetId = await findUserIdByEmail(user?.email);
+                }
+                if (!isNumeric(targetId)) throw new Error('Kullanıcı ID bulunamadı');
+
+                await userService.updateUserPhone(targetId, tempPhone);
+
+                setPhoneNumber(tempPhone);
+                localStorage.setItem('phoneNumber', tempPhone);
+                setShowPhoneVerification(false);
+                setTempPhone('');
+                setPhoneVerificationCode('');
+                alert('Telefon numarası başarıyla güncellendi!');
+            } catch (e) {
+                alert(e.message || 'Telefon numarası güncellenemedi');
+            }
         } else {
-            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`Yanlış doğrulama kodu! Doğru kod: ${expectedCode}`);
         }
     };
@@ -191,23 +378,56 @@ const StaffSidebar = () => {
             const code = Math.floor(100000 + Math.random() * 900000);
             // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`E-posta doğrulama kodu: ${code}`);
+        } else if (!tempEmail) {
+            alert('Lütfen e-posta adresi girin');
+        } else {
+            alert('Geçerli bir e-posta adresi girin');
         }
     };
 
     // E-posta doğrulama
-    const verifyEmail = () => {
-        // Simülasyon için sabit kod kontrol et
-        const expectedCode = '123456'; // Sabit kod
+    const verifyEmail = async () => {
+        const expectedCode = '123456';
         if (emailVerificationCode === expectedCode) {
-            setEmail(tempEmail);
-            localStorage.setItem('email', tempEmail);
-            setShowEmailVerification(false);
-            setTempEmail('');
-            setEmailVerificationCode('');
-            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
-            alert('E-posta adresi başarıyla güncellendi!');
+            try {
+                const isNumeric = (val) => val !== undefined && val !== null && /^\d+$/.test(String(val));
+                const findUserIdByEmail = async (email) => {
+                    if (!email) return null;
+                    try {
+                        const [actives, inactives] = await Promise.all([
+                            personnelService.getActiveUsers(),
+                            personnelService.getInactiveUsers(),
+                        ]);
+                        const all = [...(actives || []), ...(inactives || [])];
+                        const found = all.find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase());
+                        if (found?.id !== undefined) return found.id;
+                    } catch { }
+                    try {
+                        const all = await personnelService.getAllUsers();
+                        const found = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase());
+                        if (found?.id !== undefined) return found.id;
+                    } catch { }
+                    return null;
+                };
+
+                let targetId = user?.userId;
+                if (!isNumeric(targetId)) {
+                    targetId = await findUserIdByEmail(user?.email);
+                }
+                if (!isNumeric(targetId)) throw new Error('Kullanıcı ID bulunamadı');
+
+                await userService.updateUserEmail(targetId, tempEmail);
+
+                setEmail(tempEmail);
+                localStorage.setItem('email', tempEmail);
+                setShowEmailVerification(false);
+                setTempEmail('');
+                setEmailVerificationCode('');
+                alert('E-posta adresi başarıyla güncellendi!');
+            } catch (e) {
+                alert(e.message || 'E-posta adresi güncellenemedi');
+            }
         } else {
-            // alert yerine özel bir modal veya mesaj kutusu kullanılmalı
             alert(`Yanlış doğrulama kodu! Doğru kod: ${expectedCode}`);
         }
     };
@@ -349,6 +569,9 @@ const StaffSidebar = () => {
                             border: `3px solid ${colors.primary}`,
                             marginBottom: '10px'
                         }}
+                        onError={(e) => {
+                            e.target.src = '/default-avatar.png';
+                        }}
                     />
                     <div
                         style={{
@@ -358,7 +581,7 @@ const StaffSidebar = () => {
                             textAlign: 'center'
                         }}
                     >
-                        {user ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1) : 'Kullanıcı'}
+                        {displayName || 'Kullanıcı'}
                     </div>
                     <div
                         style={{
@@ -369,7 +592,7 @@ const StaffSidebar = () => {
                             marginTop: '5px'
                         }}
                     >
-                        {user ? (user.role === 'garson' ? 'Garson' : user.role === 'kasiyer' ? 'Kasiyer' : 'Yönetici') : 'Rol Belirtilmemiş'}
+                        {displayRole || 'Rol Belirtilmemiş'}
                     </div>
                 </div>
 
@@ -464,7 +687,7 @@ const StaffSidebar = () => {
                         >
                             <div
                                 style={{
-                                    background: colors.card,
+                                    background: isDarkMode ? '#2a2a2a' : '#ffffff',
                                     borderRadius: '15px',
                                     padding: '30px',
                                     minWidth: '400px',
@@ -508,7 +731,7 @@ const StaffSidebar = () => {
                                 <div style={{
                                     fontSize: '1.2rem',
                                     fontWeight: '700',
-                                    color: colors.text,
+                                    color: isDarkMode ? '#ffffff' : '#333333',
                                     marginBottom: '20px',
                                     textAlign: 'center'
                                 }}>
@@ -518,7 +741,7 @@ const StaffSidebar = () => {
                                 <div style={{
                                     fontSize: '1rem',
                                     fontWeight: '600',
-                                    color: colors.text,
+                                    color: isDarkMode ? '#ffffff' : '#333333',
                                     marginBottom: '15px'
                                 }}>
                                     Tema Seçimi
@@ -563,6 +786,14 @@ const StaffSidebar = () => {
                                         onClick={() => {
                                             setShowProfileSettings(true);
                                             setShowSettings(false);
+                                            // Mevcut değerleri temp değişkenlerine kopyala
+                                            setTempPhone('');
+                                            setTempEmail('');
+                                            // Doğrulama modlarını sıfırla
+                                            setShowPhoneVerification(false);
+                                            setShowEmailVerification(false);
+                                            setPhoneVerificationCode('');
+                                            setEmailVerificationCode('');
                                         }}
                                         style={{
                                             background: 'linear-gradient(90deg, #ff6b6b 0%, #ee5a24 100%)',
@@ -595,7 +826,7 @@ const StaffSidebar = () => {
 
                                 <div style={{
                                     fontSize: '0.9rem',
-                                    color: colors.textSecondary,
+                                    color: isDarkMode ? '#cccccc' : '#666666',
                                     textAlign: 'center',
                                     fontStyle: 'italic'
                                 }}>
@@ -621,7 +852,17 @@ const StaffSidebar = () => {
                                 justifyContent: 'center',
                                 zIndex: 999999
                             }}
-                            onClick={() => setShowProfileSettings(false)}
+                            onClick={() => {
+                                setShowProfileSettings(false);
+                                // Temp değişkenlerini sıfırla
+                                setTempPhone('');
+                                setTempEmail('');
+                                setTempProfileImage(null);
+                                setShowPhoneVerification(false);
+                                setShowEmailVerification(false);
+                                setPhoneVerificationCode('');
+                                setEmailVerificationCode('');
+                            }}
                         >
                             <div
                                 style={{
@@ -643,6 +884,14 @@ const StaffSidebar = () => {
                                         onClick={() => {
                                             setShowProfileSettings(false);
                                             setShowSettings(true);
+                                            // Temp değişkenlerini sıfırla
+                                            setTempPhone('');
+                                            setTempEmail('');
+                                            setTempProfileImage(null);
+                                            setShowPhoneVerification(false);
+                                            setShowEmailVerification(false);
+                                            setPhoneVerificationCode('');
+                                            setEmailVerificationCode('');
                                         }}
                                         style={{
                                             background: 'none',
@@ -666,7 +915,17 @@ const StaffSidebar = () => {
                                         ← Geri
                                     </button>
                                     <button
-                                        onClick={() => setShowProfileSettings(false)}
+                                        onClick={() => {
+                                            setShowProfileSettings(false);
+                                            // Temp değişkenlerini sıfırla
+                                            setTempPhone('');
+                                            setTempEmail('');
+                                            setTempProfileImage(null);
+                                            setShowPhoneVerification(false);
+                                            setShowEmailVerification(false);
+                                            setPhoneVerificationCode('');
+                                            setEmailVerificationCode('');
+                                        }}
                                         style={{
                                             position: 'absolute',
                                             top: '15px',
@@ -708,14 +967,34 @@ const StaffSidebar = () => {
 
                                 {/* Profil Fotoğrafı */}
                                 <div style={{ marginBottom: '25px' }}>
-                                    <label style={{ fontSize: '1rem', fontWeight: '600', color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '10px', display: 'block' }}>
+                                    <label style={{
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        color: isDarkMode ? '#ffffff' : '#333333',
+                                        marginBottom: '10px',
+                                        display: 'block'
+                                    }}>
                                         Profil Fotoğrafı
                                     </label>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '15px' }}>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '20px',
+                                        marginBottom: '15px'
+                                    }}>
                                         <img
                                             src={tempProfileImage || profileImage}
                                             alt="Profil"
-                                            style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #ddd' }}
+                                            style={{
+                                                width: '80px',
+                                                height: '80px',
+                                                borderRadius: '50%',
+                                                objectFit: 'cover',
+                                                border: '3px solid #ddd'
+                                            }}
+                                            onError={(e) => {
+                                                e.target.src = '/default-avatar.png';
+                                            }}
                                         />
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             <button
@@ -781,7 +1060,7 @@ const StaffSidebar = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={user ? user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1) : 'Kullanıcı'}
+                                        value={displayName || 'Kullanıcı'}
                                         disabled
                                         style={{
                                             background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
@@ -806,7 +1085,7 @@ const StaffSidebar = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={user ? (user.role === 'garson' ? 'Garson' : 'Kasiyer') : ''}
+                                        value={displayRole || 'Rol Belirtilmemiş'}
                                         disabled
                                         style={{
                                             background: isDarkMode ? '#3a3a3a' : '#f8f9fa',
@@ -891,6 +1170,9 @@ const StaffSidebar = () => {
                                             </button>
                                         </div>
                                     )}
+                                    <small style={{ color: '#888', fontSize: '0.8rem', marginTop: '5px', display: 'block' }}>
+                                        Mevcut: {phoneNumber || 'Belirtilmemiş'}
+                                    </small>
                                 </div>
 
                                 {/* E-posta Adresi */}
@@ -963,6 +1245,9 @@ const StaffSidebar = () => {
                                             </button>
                                         </div>
                                     )}
+                                    <small style={{ color: '#888', fontSize: '0.8rem', marginTop: '5px', display: 'block' }}>
+                                        Mevcut: {email || 'Belirtilmemiş'}
+                                    </small>
                                 </div>
 
                                 {/* Şifre Değiştir */}
