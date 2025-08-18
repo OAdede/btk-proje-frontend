@@ -10,7 +10,7 @@ export default function TablesGridPage() {
     const [selectedFloor, setSelectedFloor] = useState(1);
 
 
-    const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
+    const gridTableIds = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
 
     const statusInfo = {
         "empty": { text: "Boş", color: "#4caf50", textColor: "#fff" },
@@ -103,9 +103,8 @@ export default function TablesGridPage() {
                     gridTemplateColumns: "repeat(4, 1fr)",
                     gap: "1.5rem"
                 }}>
-                    {tables.map((tableId) => {
+                    {gridTableIds.map((tableId) => {
                         const status = getStatus(tableId);
-                        const occupancy = getTableOccupancy(tableId);
                         return (
                             <div
                                 key={tableId}
@@ -129,37 +128,6 @@ export default function TablesGridPage() {
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 title={`Masa ${tableId}`}
                             >
-                                {/* Occupancy Indicator */}
-                                {occupancy && (
-                                    <div
-                                        style={{
-                                            position: 'absolute',
-                                            top: '8px',
-                                            right: '8px',
-                                            background: 'rgba(0, 0, 0, 0.7)',
-                                            color: 'white',
-                                            padding: '2px 6px',
-                                            borderRadius: '10px',
-                                            fontSize: '10px',
-                                            fontWeight: 'bold',
-                                            zIndex: 10,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '2px'
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                width: '8px',
-                                                height: '8px',
-                                                borderRadius: '50%',
-                                                backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
-                                                               occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
-                                            }}
-                                        />
-                                        {Math.round(occupancy.rate)}%
-                                    </div>
-                                )}
                                 <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
                                     {tableId.split("-")[1]}
                                 </div>
