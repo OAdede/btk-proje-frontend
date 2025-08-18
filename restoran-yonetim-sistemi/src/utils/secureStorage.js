@@ -43,7 +43,7 @@ class SecureStorage {
     constructor() {
         this.memoryStore = new Map(); // For highly sensitive temporary data
         this.initialized = false;
-        if (import.meta.env?.DEV) {
+    if (import.meta.env?.DEV && import.meta?.env?.VITE_DEBUG_STORAGE === 'true') {
             // Only enable verbose monitoring in development
             this.setupStorageMonitoring();
         }
@@ -84,7 +84,7 @@ class SecureStorage {
         // Clear any expired data on initialization
     this.cleanupExpiredData();
         this.initialized = true;
-    if (import.meta.env?.DEV) console.log('[SecureStorage] Initialized');
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log('[SecureStorage] Initialized');
     }
 
     /**
@@ -123,14 +123,14 @@ class SecureStorage {
      */
     classifyData(key) {
         if (SECURITY_CONFIG.SENSITIVE_KEYS.includes(key)) {
-            if (import.meta.env?.DEV) console.log(`[SecureStorage] Classified "${key}" as SENSITIVE`);
+            if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Classified "${key}" as SENSITIVE`);
             return 'SENSITIVE';
         }
         if (SECURITY_CONFIG.PII_KEYS.includes(key)) {
-            if (import.meta.env?.DEV) console.log(`[SecureStorage] Classified "${key}" as PII`);
+            if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Classified "${key}" as PII`);
             return 'PII';
         }
-        if (import.meta.env?.DEV) console.log(`[SecureStorage] Classified "${key}" as GENERAL`);
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Classified "${key}" as GENERAL`);
         return 'GENERAL';
     }
 
@@ -141,14 +141,14 @@ class SecureStorage {
      * @param {Object} options - Storage options
      */
     setItem(key, value, options = {}) {
-        if (import.meta.env?.DEV) console.log(`[SecureStorage] Setting "${key}" (type: ${typeof value})`);
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Setting "${key}" (type: ${typeof value})`);
         const classification = this.classifyData(key);
         const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
 
         switch (classification) {
             case 'SENSITIVE':
                 // Store sensitive data in memory only (tokens should use HttpOnly cookies)
-                if (import.meta.env?.DEV) console.warn(`[SecureStorage] Storing sensitive data "${key}" in memory.`);
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.warn(`[SecureStorage] Storing sensitive data "${key}" in memory.`);
                 this.memoryStore.set(key, {
                     value: stringValue,
                     timestamp: Date.now(),
@@ -164,7 +164,7 @@ class SecureStorage {
                     expiry: options.expiry || (Date.now() + 7 * 24 * 60 * 60 * 1000)
                 };
                 localStorage.setItem(`encrypted_${key}`, JSON.stringify(piiMeta));
-                if (import.meta.env?.DEV) console.log(`[SecureStorage] Stored encrypted PII: ${key}`);
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Stored encrypted PII: ${key}`);
                 break;
 
             default:
@@ -174,9 +174,9 @@ class SecureStorage {
                     timestamp: Date.now(),
                     expiry: options.expiry || (Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days default
                 };
-                if (import.meta.env?.DEV) console.log(`[SecureStorage] Storing GENERAL key: "${key}"`);
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Storing GENERAL key: "${key}"`);
                 localStorage.setItem(key, JSON.stringify(generalData));
-                if (import.meta.env?.DEV) console.log(`[SecureStorage] Stored GENERAL data "${key}" with expiry: ${new Date(generalData.expiry).toISOString()}`);
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Stored GENERAL data "${key}" with expiry: ${new Date(generalData.expiry).toISOString()}`);
                 break;
         }
     }
@@ -187,7 +187,7 @@ class SecureStorage {
      * @returns {any} Retrieved data or null
      */
     getItem(key) {
-        if (import.meta.env?.DEV) console.log(`[SecureStorage] Getting "${key}"`);
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Getting "${key}"`);
         const classification = this.classifyData(key);
 
         switch (classification) {
@@ -197,7 +197,7 @@ class SecureStorage {
                 if (memoryData) {
                     if (Date.now() > memoryData.expiry) {
                         this.memoryStore.delete(key);
-                        if (import.meta.env?.DEV) console.log(`[SecureStorage] Expired sensitive data removed: ${key}`);
+                        if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Expired sensitive data removed: ${key}`);
                         return null;
                     }
                     // Parse JSON if it's a JSON string, otherwise return as-is
@@ -233,27 +233,27 @@ class SecureStorage {
 
             default:
                 // General data with expiration check
-                if (import.meta.env?.DEV) console.log(`[SecureStorage] Looking for key: "${key}"`);
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Looking for key: "${key}"`);
                 const storedData = localStorage.getItem(key);
-                if (import.meta.env?.DEV) console.log(`[SecureStorage] Raw data for "${key}":`, storedData ? storedData.substring(0, 100) + '...' : 'null');
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Raw data for "${key}":`, storedData ? storedData.substring(0, 100) + '...' : 'null');
                 
                 if (storedData) {
                     try {
                         const parsed = JSON.parse(storedData);
                         if (parsed.expiry && Date.now() > parsed.expiry) {
                             localStorage.removeItem(key);
-                            if (import.meta.env?.DEV) console.log(`[SecureStorage] Expired general data removed: ${key}`);
+                            if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Expired general data removed: ${key}`);
                             return null;
                         }
-                        if (import.meta.env?.DEV) console.log(`[SecureStorage] Retrieved GENERAL data "${key}"`);
+                        if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Retrieved GENERAL data "${key}"`);
                         return parsed.value;
                     } catch (error) {
-                        if (import.meta.env?.DEV) console.log(`[SecureStorage] Legacy data detected for "${key}", returning as-is`);
+                        if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Legacy data detected for "${key}", returning as-is`);
                         // Handle legacy localStorage data (non-structured)
                         return storedData;
                     }
                 }
-                if (import.meta.env?.DEV) console.log(`[SecureStorage] No data found for "${key}"`);
+                if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] No data found for "${key}"`);
                 return null;
         }
     }
@@ -277,7 +277,7 @@ class SecureStorage {
                 break;
         }
 
-    if (import.meta.env?.DEV) console.log(`[SecureStorage] Removed ${classification} data: ${key}`);
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log(`[SecureStorage] Removed ${classification} data: ${key}`);
     }
 
     /**
@@ -306,7 +306,7 @@ class SecureStorage {
             }
         }
 
-    if (import.meta.env?.DEV) console.log('[SecureStorage] Cleanup completed');
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log('[SecureStorage] Cleanup completed');
     }
 
     /**
@@ -323,7 +323,7 @@ class SecureStorage {
             }
         }
 
-    if (import.meta.env?.DEV) console.log('[SecureStorage] All secure data cleared');
+    if (import.meta?.env?.VITE_DEBUG_STORAGE === 'true') console.log('[SecureStorage] All secure data cleared');
     }
 
     /**

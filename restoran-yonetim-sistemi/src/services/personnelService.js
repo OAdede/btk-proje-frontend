@@ -7,6 +7,7 @@ import httpClient from '../utils/httpClient.js';
 import tokenManager from '../utils/tokenManager.js';
 
 // Role mapping for backend (0=admin, 1=waiter, 2=cashier)
+const DEBUG_SERVICES = (import.meta?.env?.VITE_DEBUG_SERVICES === 'true');
 const roleMapping = {
   'garson': 'waiter',
   'kasiyer': 'cashier',
@@ -24,7 +25,7 @@ export const personnelService = {
             // Map role to backend format
             const roleName = roleMapping[personnelData.role] || 'waiter';
             
-            console.log('Role mapping:', {
+            if (DEBUG_SERVICES) console.log('Role mapping:', {
                 originalRole: personnelData.role,
                 mappedRole: roleName,
                 backendExpected: ['admin', 'waiter', 'cashier', 'manager'],
@@ -63,7 +64,7 @@ export const personnelService = {
                 roleName: roleName
             };
 
-            console.log('Sending request data:', {
+            if (DEBUG_SERVICES) console.log('Sending request data:', {
                 name: requestData.name,
                 email: requestData.email,
                 phoneNumber: requestData.phoneNumber,
@@ -80,7 +81,7 @@ export const personnelService = {
                 body: JSON.stringify(requestData)
             });
             
-            console.log('Registration response:', responseData);
+            if (DEBUG_SERVICES) console.log('Registration response received');
             return responseData;
         } catch (error) {
             throw new Error(error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
@@ -91,10 +92,10 @@ export const personnelService = {
     async getAllUsers() {
         try {
             const responseData = await httpClient.requestJson('/users');
-            console.log('Users loaded successfully:', responseData.length, 'users');
+            if (DEBUG_SERVICES) console.log('Users loaded successfully:', responseData.length);
 
             if (responseData.length > 0) {
-                console.log('Sample user data:', {
+                if (DEBUG_SERVICES) console.log('Sample user data:', {
                     id: responseData[0].id,
                     name: responseData[0].name,
                     hasPhoto: responseData[0].hasPhoto,
@@ -114,7 +115,7 @@ export const personnelService = {
     async getActiveUsers() {
         try {
             const responseData = await httpClient.requestJson('/users/active');
-            console.log('Active users loaded successfully:', responseData.length, 'users');
+            if (DEBUG_SERVICES) console.log('Active users loaded successfully:', responseData.length);
             return responseData;
 
             if (token) {

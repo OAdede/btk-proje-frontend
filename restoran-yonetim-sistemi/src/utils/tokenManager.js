@@ -26,7 +26,8 @@ const TOKEN_CONFIG = {
     
     // Security settings
     AUTO_LOGOUT_ON_EXPIRED: true,
-    LOG_TOKEN_OPERATIONS: import.meta.env.DEV,
+    // Only log token operations if explicitly enabled
+    LOG_TOKEN_OPERATIONS: (import.meta?.env?.VITE_DEBUG_AUTH === 'true'),
     
     // Migration flags
     USE_SECURE_STORAGE: true,          // Enable secure storage
@@ -56,7 +57,7 @@ class TokenManager {
             if (TOKEN_CONFIG.USE_SECURE_STORAGE) {
                 if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) console.log('[TokenManager] Retrieving token from secure storage');
                 token = secureStorage.getItem(TOKEN_CONFIG.TOKEN_KEY);
-                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) console.log('[TokenManager] SecureStorage returned:', token ? `${token.substring(0, 30)}...` : 'null');
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) console.log('[TokenManager] SecureStorage returned: ', Boolean(token));
             }
             
             // Fallback to legacy localStorage for backwards compatibility

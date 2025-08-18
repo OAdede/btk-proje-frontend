@@ -21,7 +21,8 @@ const API_CONFIG = {
     baseURL: import.meta?.env?.VITE_API_BASE_URL || '/api',
     timeout: 10000, // 10 seconds
     retryAttempts: 2,
-    logRequests: import.meta.env.DEV,
+    // Only log when explicitly enabled
+    logRequests: (import.meta?.env?.VITE_DEBUG_HTTP === 'true'),
 };
 
 /**

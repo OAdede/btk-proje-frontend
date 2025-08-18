@@ -41,9 +41,10 @@ export function TableProvider({ children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const DEBUG_TABLES = (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
     const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
-            console.log(`API çağrısı yapılıyor: ${endpoint}`);
+            if (DEBUG_TABLES) console.log(`API çağrısı: ${endpoint}`);
             const token = tokenManager.getToken();
             const mergedOptions = { ...options };
             const defaultHeaders = {
@@ -66,25 +67,25 @@ export function TableProvider({ children }) {
             }
 
             if (response.status === 204) {
-                console.log(`API çağrısı başarılı (boş yanıt): ${endpoint}`);
+                if (DEBUG_TABLES) console.log(`API çağrısı başarılı (204): ${endpoint}`);
                 return null;
             }
 
             const data = await response.json();
 
-            console.log(`API çağrısı başarılı: ${endpoint}`, data);
+            if (DEBUG_TABLES) console.log(`API çağrısı başarılı: ${endpoint}`);
             return data;
 
         } catch (err) {
-            console.error(`API çağrısı başarısız: ${endpoint}`, err);
+        if (DEBUG_TABLES) console.error(`API çağrısı başarısız: ${endpoint}`, err?.message || err);
             throw err;
         }
-    }, []);
+    }, [DEBUG_TABLES]);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        console.log("Veriler sunucudan alınıyor...");
+    if (DEBUG_TABLES) console.log("Veriler sunucudan alınıyor...");
 
         try {
             const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
@@ -133,7 +134,7 @@ export function TableProvider({ children }) {
                 };
                 return acc;
             }, {});
-            console.log("İçerik verisi güncellendi:", newIngredients);
+            if (DEBUG_TABLES) console.log("İçerik verisi güncellendi");
             setIngredients(newIngredients);
 
             const newProductsByCategory = {};
@@ -170,8 +171,7 @@ export function TableProvider({ children }) {
                 }
             });
 
-            console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
-            console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
+            if (DEBUG_TABLES) console.log("İşlenen ürün verileri hazır");
 
             setProducts(newProductsByCategory);
             setProductsById(productsByIdTemp);
@@ -206,7 +206,7 @@ export function TableProvider({ children }) {
             }, {});
             setReservations(reservationsById);
 
-            console.log("Veriler başarıyla alındı ve işlendi.");
+            if (DEBUG_TABLES) console.log("Veriler başarıyla alındı ve işlendi.");
 
         } catch (err) {
             console.error("Veriler alınırken hata:", err);
