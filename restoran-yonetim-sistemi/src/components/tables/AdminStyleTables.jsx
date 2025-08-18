@@ -122,6 +122,28 @@ export default function AdminStyleTables({ roleOverride }) {
         }
     }, [loading, tables, loadTablesAndSalons]);
 
+    // Calculate occupancy using current table status as a proxy
+    const getTableOccupancy = (tableId) => {
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+        if (!backendTable) return null;
+        const capacity = backendTable?.capacity || 4;
+        const statusName = String(
+            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+        ).toLowerCase();
+        // If reserved, try to use reservation headcount
+        if (statusName === 'reserved') {
+            const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(tableId));
+            const people = Number(res?.kisiSayisi);
+            if (Number.isFinite(people) && people > 0) {
+                const rate = Math.min((people / capacity) * 100, 100);
+                return { rate, people, capacity };
+            }
+            return { rate: 60, people: null, capacity };
+        }
+        if (statusName === 'occupied') return { rate: 100, people: null, capacity };
+        return { rate: 0, people: null, capacity };
+    };
+
     const statusInfo = {
         empty: { text: 'Boş', color: '#4caf50', textColor: '#fff' },
         bos: { text: 'Boş', color: '#4caf50', textColor: '#fff' },
@@ -227,6 +249,7 @@ export default function AdminStyleTables({ roleOverride }) {
                         const status = getStatus(table.id);
                         const order = orders?.[table.id] || {};
                         const tableReservations = Object.values(reservations).filter((res) => res.tableId === table.id);
+                        const occupancy = getTableOccupancy(table.id);
                         return (
                             <div
                                 key={table.id}
@@ -250,6 +273,37 @@ export default function AdminStyleTables({ roleOverride }) {
                                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                                 title={`Masa ${table.displayNumber}`}
                             >
+                                {/* Occupancy Indicator */}
+                                {occupancy && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            background: 'rgba(0, 0, 0, 0.7)',
+                                            color: 'white',
+                                            padding: '2px 6px',
+                                            borderRadius: '10px',
+                                            fontSize: '10px',
+                                            fontWeight: 'bold',
+                                            zIndex: 10,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '2px'
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                borderRadius: '50%',
+                                                backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
+                                                               occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
+                                            }}
+                                        />
+                                        {Math.round(occupancy.rate)}%
+                                    </div>
+                                )}
                                 <div
                                     style={{
                                         fontSize: '0.8rem',

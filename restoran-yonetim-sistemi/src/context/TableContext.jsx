@@ -34,6 +34,7 @@ export function TableProvider({ children }) {
 
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [salons, setSalons] = useState([]);
+    const [tableStatuses, setTableStatuses] = useState([]);
     const [timestamps, setTimestamps] = useState({});
     const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
 
@@ -1241,6 +1242,36 @@ export function TableProvider({ children }) {
         }
     };
 
+    const loadTableStatuses = useCallback(async () => {
+        try {
+            // Raw fetch to tolerate non-JSON responses gracefully
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/table-statuses`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+            const text = await res.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : [];
+            } catch (e) {
+                console.error('Failed to parse /table-statuses JSON. Returning empty list. Raw:', text);
+                data = [];
+            }
+            if (!Array.isArray(data)) {
+                console.warn('Unexpected /table-statuses format, coercing to array');
+                data = [];
+            }
+            setTableStatuses(data);
+        } catch (error) {
+            console.error('Failed to load table statuses:', error);
+            setError(`Masa durumları yüklenirken hata oluştu: ${error.message}`);
+        }
+    }, []);
+
     const addOrderHistoryEntry = (orderData, action, personnelName, personnelRole) => {
         const timestamp = new Date().toLocaleString('tr-TR');
         const newEntry = {
@@ -1294,6 +1325,7 @@ export function TableProvider({ children }) {
                 completedOrders,
                 tables,
                 salons,
+                tableStatuses,
                 reservations,
                 orderHistory,
                 isLoading,
@@ -1310,6 +1342,7 @@ export function TableProvider({ children }) {
                 cancelOrder,
                 processPayment,
                 loadTablesAndSalons,
+                loadTableStatuses,
                 addProduct,
                 deleteProduct,
                 updateProduct,

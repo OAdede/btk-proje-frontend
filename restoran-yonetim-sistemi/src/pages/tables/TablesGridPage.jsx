@@ -5,9 +5,10 @@ import { AuthContext } from "../../context/AuthContext";
 
 export default function TablesGridPage() {
     const navigate = useNavigate();
-    const { tableStatus, updateTableStatus, reservations } = useContext(TableContext);
+    const { tableStatus, updateTableStatus, reservations, tables } = useContext(TableContext);
     const { user } = useContext(AuthContext);
     const [selectedFloor, setSelectedFloor] = useState(1);
+
 
     const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
 
@@ -64,6 +65,21 @@ export default function TablesGridPage() {
         return statusInfo[status] || statusInfo["empty"];
     };
 
+    // Calculate occupancy using current table status as a proxy
+    const getTableOccupancy = (tableId) => {
+        const backendTable = tables?.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+        if (!backendTable) return null;
+        const capacity = backendTable?.capacity || 4;
+        const statusName = String(
+            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+        ).toLowerCase();
+        let rate = 0;
+        if (statusName === 'occupied') rate = 100;
+        else if (statusName === 'reserved') rate = 60;
+        else rate = 0;
+        return { rate, people: null, capacity };
+    };
+
 
 
     const handleTableClick = (tableId) => {
@@ -89,6 +105,7 @@ export default function TablesGridPage() {
                 }}>
                     {tables.map((tableId) => {
                         const status = getStatus(tableId);
+                        const occupancy = getTableOccupancy(tableId);
                         return (
                             <div
                                 key={tableId}
@@ -105,12 +122,44 @@ export default function TablesGridPage() {
                                     userSelect: "none",
                                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                    position: "relative",
                                 }}
                                 onClick={() => handleTableClick(tableId)}
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 title={`Masa ${tableId}`}
                             >
+                                {/* Occupancy Indicator */}
+                                {occupancy && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            background: 'rgba(0, 0, 0, 0.7)',
+                                            color: 'white',
+                                            padding: '2px 6px',
+                                            borderRadius: '10px',
+                                            fontSize: '10px',
+                                            fontWeight: 'bold',
+                                            zIndex: 10,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '2px'
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                borderRadius: '50%',
+                                                backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
+                                                               occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
+                                            }}
+                                        />
+                                        {Math.round(occupancy.rate)}%
+                                    </div>
+                                )}
                                 <div style={{ fontSize: "2.5rem", fontWeight: "bold" }}>
                                     {tableId.split("-")[1]}
                                 </div>

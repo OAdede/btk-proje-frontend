@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons, createTable, deleteTable: deleteTableFromCtx, deleteTableForce } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, tableStatuses, loadTablesAndSalons, loadTableStatuses, createTable, deleteTable: deleteTableFromCtx, deleteTableForce } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -110,6 +110,8 @@ const Dashboard = () => {
     return () => window.removeEventListener('restaurantNameChanged', handleRestaurantNameChange);
   }, []);
 
+  // No external table-statuses dependency; occupancy computed locally
+
 
 
   // Bugünün tarihini al (sadece gün-ay formatında)
@@ -178,6 +180,27 @@ const Dashboard = () => {
 
     return savedCapacities;
   });
+
+  // Calculate occupancy for a table using current backend tables and reservations
+  const getTableOccupancy = (tableId) => {
+    const backendTable = (tables || []).find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+    if (!backendTable) return null;
+    const capacity = backendTable?.capacity || 4;
+    const statusName = String(
+      backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+    ).toLowerCase();
+    if (statusName === 'reserved') {
+      const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(tableId));
+      const people = Number(res?.kisiSayisi ?? res?.personCount);
+      if (Number.isFinite(people) && people > 0) {
+        const rate = Math.min((people / capacity) * 100, 100);
+        return { rate, people, capacity };
+      }
+      return { rate: 60, people: null, capacity };
+    }
+    if (statusName === 'occupied') return { rate: 100, people: null, capacity };
+    return { rate: 0, people: null, capacity };
+  };
 
   // Backend'den gelen masaları seçili salona göre göster
   const displayTables = useMemo(() => {
@@ -822,6 +845,7 @@ const Dashboard = () => {
               const status = getStatus(table.id);
               const order = orders[table.id] || {};
               const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
+              const occupancy = getTableOccupancy(table.id);
 
               return (
                 <div
@@ -853,6 +877,37 @@ const Dashboard = () => {
                   }}
                   title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
                 >
+                  {/* Occupancy Indicator */}
+                  {occupancy && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        color: 'white',
+                        padding: '2px 6px',
+                        borderRadius: '10px',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        zIndex: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2px'
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
+                                         occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
+                        }}
+                      />
+                      {Math.round(occupancy.rate)}%
+                    </div>
+                  )}
                   {/* Ahşap süsler kaldırıldı, sade renkli kart */}
                   {/* Rezervasyon modunda + işareti */}
                   {showReservationMode && status.text === 'Boş' && (

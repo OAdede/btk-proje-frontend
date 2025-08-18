@@ -6,8 +6,9 @@ import "./TablesPage.css";
 const TablesPage = () => {
     const navigate = useNavigate();
     // CONTEXT'TEN DOĞRU VERİLER ALINDI
-    const { tableStatus } = useContext(TableContext);
+    const { tableStatus, tables } = useContext(TableContext);
     const [activeFloor, setActiveFloor] = useState("kat1");
+
 
     const kat1Tables = Array.from({ length: 8 }, (_, i) => ({ id: `${i + 1}`, name: `${i + 1}` }));
     const kat2Tables = Array.from({ length: 8 }, (_, i) => ({ id: `${i + 9}`, name: `${i + 9}` }));
@@ -40,6 +41,21 @@ const TablesPage = () => {
         }
     }
 
+    // Calculate occupancy using current table status as a proxy
+    const getTableOccupancy = (tableId) => {
+        const backendTable = tables?.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+        if (!backendTable) return null;
+        const capacity = backendTable?.capacity || 4;
+        const statusName = String(
+            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+        ).toLowerCase();
+        let rate = 0;
+        if (statusName === 'occupied') rate = 100;
+        else if (statusName === 'reserved') rate = 60;
+        else rate = 0;
+        return { rate, people: null, capacity };
+    };
+
     const currentTables = activeFloor === "kat1" ? kat1Tables : kat2Tables;
 
     return (
@@ -66,16 +82,49 @@ const TablesPage = () => {
                     {currentTables.map((table) => {
                         // Statü okunması basitleştirildi
                         const status = tableStatus[table.id] || "bos";
+                        const occupancy = getTableOccupancy(table.id);
                         return (
                             <div
                                 key={table.id || crypto.randomUUID()}
                                 className="table-card"
                                 style={{
                                     background: statusColors[status],
-                                    color: statusTextColor[status]
+                                    color: statusTextColor[status],
+                                    position: 'relative'
                                 }}
                                 onClick={() => handleTableClick(table.id)}
                             >
+                                {/* Occupancy Indicator */}
+                                {occupancy && (
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            top: '8px',
+                                            right: '8px',
+                                            background: 'rgba(0, 0, 0, 0.7)',
+                                            color: 'white',
+                                            padding: '2px 6px',
+                                            borderRadius: '10px',
+                                            fontSize: '10px',
+                                            fontWeight: 'bold',
+                                            zIndex: 10,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '2px'
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                borderRadius: '50%',
+                                                backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
+                                                               occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
+                                            }}
+                                        />
+                                        {Math.round(occupancy.rate)}%
+                                    </div>
+                                )}
                                 <div className="table-number">{table.name}</div>
                                 <div className="table-status">{getStatusText(status)}</div>
                             </div>
