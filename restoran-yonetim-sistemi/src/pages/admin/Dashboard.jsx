@@ -76,6 +76,7 @@ const Dashboard = () => {
   const [newSalonName, setNewSalonName] = useState('');
   const [newSalonCapacity, setNewSalonCapacity] = useState(100);
   const [newSalonTableCount, setNewSalonTableCount] = useState(0);
+  const [newSalonTableStartNumber, setNewSalonTableStartNumber] = useState(0);
 
   // Restoran ismini backend'den al
   useEffect(() => {
@@ -1283,6 +1284,10 @@ const Dashboard = () => {
                   <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Masa Sayısı</label>
                   <input type="number" min={0} value={newSalonTableCount} onChange={(e)=>setNewSalonTableCount(parseInt(e.target.value || '0', 10))} placeholder="Örn: 10" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
                 </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Masa Başlangıç Numarası</label>
+                  <input type="number" min={0} value={newSalonTableStartNumber} onChange={(e)=>setNewSalonTableStartNumber(parseInt(e.target.value || '0', 10))} placeholder="Örn: 150" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
+                </div>
               </div>
               
               <div style={{ display:'flex', gap:15, justifyContent:'center' }}>
@@ -1297,10 +1302,11 @@ const Dashboard = () => {
                     const createdSalon = await salonService.createSalon({ name, capacity: validCapacity });
                     // Eğer masa sayısı > 0 ise, 1..N arası masa oluştur
                     const count = Number.isFinite(newSalonTableCount) && newSalonTableCount > 0 ? newSalonTableCount : 0;
+                    const base = Number.isFinite(newSalonTableStartNumber) ? newSalonTableStartNumber : 0;
                     if (count > 0 && createdSalon?.id) {
                       for (let i = 1; i <= count; i++) {
                         try {
-                          await createTable({ tableNumber: i, capacity: 4, salonId: createdSalon.id });
+                          await createTable({ tableNumber: base + i, capacity: 4, salonId: createdSalon.id });
                         } catch(err) {
                           console.error('Masa oluşturulamadı:', i, err);
                         }
@@ -1311,11 +1317,12 @@ const Dashboard = () => {
                     setNewSalonName('');
                     setNewSalonCapacity(100);
                     setNewSalonTableCount(0);
+                    setNewSalonTableStartNumber(0);
                   } catch(err){
                     alert(`Salon eklenirken hata: ${err.message}`);
                   }
                 }} style={{ background:'#4CAF50', color:'#fff', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>Ekle</button>
-                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonCapacity(100); setNewSalonTableCount(0); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
+                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonCapacity(100); setNewSalonTableCount(0); setNewSalonTableStartNumber(0); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
               </div>
             </div>
           </div>
