@@ -55,8 +55,6 @@ export const salonService = {
         try {
             const name = String(salonData?.name || '').trim();
             if (!name) throw new Error('Salon adı zorunludur');
-            const providedCapacity = Number.parseInt(salonData?.capacity, 10);
-            const capacity = Number.isFinite(providedCapacity) && providedCapacity > 0 ? providedCapacity : 100;
 
             const doRequest = async (payload) => {
                 console.log('Sending payload to backend:', payload);
@@ -72,12 +70,11 @@ export const salonService = {
                 return response;
             };
 
-            // Try with name, description and capacity first (backend requires capacity)
+            // Try with name and description first (backend requires capacity)
             const description = String(salonData?.description || '').trim();
             let response = await doRequest({ 
                 name, 
-                description,
-                capacity
+                description
             });
 
             if (!response.ok) {
@@ -112,8 +109,8 @@ export const salonService = {
                 const needsCode = status === 400 && (combined.includes('code') || combined.includes('prefix'));
                 if (needsCode) {
                     const autoCode = (name.charAt(0) || 'S').toUpperCase().replace(/[^A-ZÇĞİÖŞÜ]/g, 'S').slice(0, 1);
-                    console.log('Backend requires code, retrying with:', { name, description, code: autoCode, capacity });
-                    response = await doRequest({ name, description, code: autoCode, capacity });
+                    console.log('Backend requires code, retrying with:', { name, description, code: autoCode });
+                    response = await doRequest({ name, description, code: autoCode });
                 }
 
                 if (!response.ok) {
