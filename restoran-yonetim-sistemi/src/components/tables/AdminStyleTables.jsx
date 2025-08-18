@@ -15,6 +15,10 @@ export default function AdminStyleTables({ roleOverride }) {
     const effectiveRole = roleOverride || user?.role;
     const { tableStatus, reservations, updateTableStatus, orders, tables, salons, loading, error, loadTablesAndSalons } = useContext(TableContext);
     const { isDarkMode } = useContext(ThemeContext);
+    
+    // Occupancy data state
+    const [occupancyData, setOccupancyData] = useState(null);
+    const [loadingOccupancy, setLoadingOccupancy] = useState(false);
 
     // Dinamik salon seçimi: backend salons listesinden veya tables'tan türet
     const derivedSalons = useMemo(() => {
@@ -123,6 +127,40 @@ export default function AdminStyleTables({ roleOverride }) {
         }
     }, [loading, tables, loadTablesAndSalons]);
 
+    // Occupancy API'sini çağır
+    const fetchOccupancyData = async () => {
+        try {
+            setLoadingOccupancy(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/salons/occupancy', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setOccupancyData(data);
+            } else {
+                console.error('Failed to fetch occupancy data:', response.status);
+            }
+        } catch (error) {
+            console.error('Error fetching occupancy data:', error);
+        } finally {
+            setLoadingOccupancy(false);
+        }
+    };
+
+    // Occupancy verilerini yükle
+    useEffect(() => {
+        fetchOccupancyData();
+        // Her 30 saniyede bir güncelle
+        const interval = setInterval(fetchOccupancyData, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
     // (Per-table occupancy badge removed; only floor badge remains)
 
     const statusInfo = {
@@ -229,6 +267,27 @@ export default function AdminStyleTables({ roleOverride }) {
 
     const floorOccupancy = calculateFloorOccupancy();
 
+    // İstatistikleri hesapla
+    const backendTablesForStats = useMemo(() => {
+        const list = selectedSalonId ? (tables || []).filter(t => (t?.salon?.id ?? t?.salonId) === selectedSalonId) : (tables || []);
+        return list;
+    }, [tables, selectedSalonId]);
+    
+    const totalTables = backendTablesForStats.length;
+    
+    // Hibrit yaklaşım: Order items'ı olan VEYA backend'de occupied olan masalar
+    const occupiedTables = backendTablesForStats.filter(t => 
+        t.activeOrderItemsCount > 0 || String(t?.statusName ?? '').toLowerCase() === 'occupied'
+    ).length;
+    
+    // Rezerveli masalar sarı (reserved)
+    const reservedTables = backendTablesForStats.filter(t => 
+        String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'reserved'
+    ).length;
+    
+    // Geri kalan masalar yeşil (available/empty)
+    const emptyTables = totalTables - occupiedTables - reservedTables;
+
     return (
         <>
             {/* Sadece admin için stok uyarısını göster */}
@@ -247,35 +306,119 @@ export default function AdminStyleTables({ roleOverride }) {
                     {getSalonDisplayNameById(selectedSalonId)} - Masa Seçimi
                 </h2>
                 
-                {/* Kat Yoğunluğu Display */}
-                {selectedSalonId && (
-                    <div
-                        style={{
-                            background: isDarkMode ? '#2d3748' : '#f8f9fa',
-                            border: `1px solid ${isDarkMode ? '#4a5568' : '#dee2e6'}`,
-                            borderRadius: '12px',
-                            padding: '1rem',
-                            marginBottom: '1.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '1rem',
-                        }}
-                    >
-                        <div
-                            style={{
-                                background: isDarkMode ? '#007bff' : '#513653',
-                                color: 'white',
-                                borderRadius: '8px',
-                                padding: '0.5rem 1rem',
-                                fontWeight: 'bold',
-                                fontSize: '1.1rem',
-                            }}
-                        >
-                            Kat Yoğunluğu: {floorOccupancy.used}/{floorOccupancy.total}
+                {/* İstatistikler */}
+                <div style={{
+                    display: 'flex',
+                    gap: '20px',
+                    marginBottom: '30px',
+                    justifyContent: 'center',
+                    flexWrap: 'wrap'
+                }}>
+                    <div style={{
+                        background: '#3949ab',
+                        color: 'white',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                            {(() => {
+                                if (loadingOccupancy) return '...';
+                                if (!occupancyData || !occupancyData.salons) return '0%';
+                                
+                                const currentSalon = occupancyData.salons.find(s => String(s.id) === String(selectedSalonId));
+                                if (!currentSalon) return '0%';
+                                
+                                return `${Math.round(currentSalon.occupancyRate)}%`;
+                            })()}
                         </div>
-                        {/* Yüzdelik doluluk kaldırıldı */}
+                        <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: 4 }}>Kat Doluluk Oranı</div>
                     </div>
-                )}
+                    <div style={{
+                        background: '#ff9800',
+                        color: 'white',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                            {(() => {
+                                if (loadingOccupancy) return '...';
+                                if (!occupancyData || !occupancyData.salons) return '0';
+                                
+                                const currentSalon = occupancyData.salons.find(s => String(s.id) === String(selectedSalonId));
+                                if (!currentSalon) return '0';
+                                
+                                return currentSalon.capacity;
+                            })()}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: 4 }}>Kapasite</div>
+                    </div>
+                    <div style={{
+                        background: '#4caf50',
+                        color: 'white',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{emptyTables}</div>
+                        <div style={{ fontSize: '14px' }}>Boş Masa</div>
+                    </div>
+                    <div style={{
+                        background: '#f44336',
+                        color: 'white',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{occupiedTables}</div>
+                        <div style={{ fontSize: '14px' }}>Dolu Masa</div>
+                    </div>
+                    <div style={{
+                        background: '#ffeb3b',
+                        color: '#222',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{reservedTables}</div>
+                        <div style={{ fontSize: '14px' }}>Rezerve</div>
+                    </div>
+                    <div style={{
+                        background: '#2196f3',
+                        color: 'white',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{totalTables}</div>
+                        <div style={{ fontSize: '14px' }}>Toplam Masa</div>
+                    </div>
+                    <div style={{
+                        background: '#9c27b0',
+                        color: 'white',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        textAlign: 'center',
+                        minWidth: '120px'
+                    }}>
+                        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                            {(() => {
+                                if (loadingOccupancy) return '...';
+                                if (!occupancyData || !occupancyData.totalRestaurantOccupancy) return '0%';
+                                
+                                return `${Math.round(occupancyData.totalRestaurantOccupancy)}%`;
+                            })()}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: 4 }}>Genel Doluluk</div>
+                    </div>
+                </div>
                 <div
                     style={{
                         display: 'grid',
