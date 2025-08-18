@@ -75,7 +75,12 @@ export function TableProvider({ children }) {
             return data;
 
         } catch (err) {
-            console.error(`API çağrısı başarısız: ${endpoint}`, err);
+            // Stocks endpoint'i için 401 hatasını sessizce geç
+            if (endpoint === '/stocks' && err.message === 'Unauthorized') {
+                throw err; // Hatayı yukarı fırlat ama loglama
+            } else {
+                console.error(`API çağrısı başarısız: ${endpoint}`, err);
+            }
             throw err;
         }
     }, []);
@@ -128,18 +133,59 @@ export function TableProvider({ children }) {
             const roleInfo = token ? getRoleInfoFromToken(token) : {};
             const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
 
+            // API çağrıları - stocks için tüm rollerde dene, 401 alırsan boş döndür
+            const safeStocksCall = async () => {
+                try {
+                    return await apiCall('/stocks');
+                } catch (error) {
+                    if (error.message && error.message.includes('Unauthorized')) {
+                        // Garson ve diğer yetkisiz roller için sessizce boş array döndür
+                        return [];
+                    }
+                    throw error; // Diğer hataları yukarı fırlat
+                }
+            };
+
+            // Orders API çağrısı için güvenli wrapper
+            const safeOrdersCall = async () => {
+                try {
+                    return await apiCall('/orders');
+                } catch (error) {
+                    console.warn("Orders endpoint hatası:", error.message || error);
+                    if (error.message && (
+                        error.message.includes('500') ||
+                        error.message.includes('Internal Server Error') ||
+                        error.message.includes('isCompleted')
+                    )) {
+                        console.log("Orders endpoint'inde backend hatası, boş array döndürülüyor");
+                        return [];
+                    }
+                    throw error; // Diğer hataları yukarı fırlat
+                }
+            };
+
             const tasks = [
                 apiCall('/products'),                // 0
-                apiCall('/stocks'),                  // 1 - tüm roller için okuma (backend GET yetkisi verildi)
+                safeStocksCall(),                   // 1 - tüm roller için dene
                 apiCall('/product-ingredients'),     // 2
                 apiCall('/dining-tables'),           // 3
-                apiCall('/orders'),                  // 4
+                safeOrdersCall(),                   // 4 - güvenli orders çağrısı
                 apiCall('/salons'),                  // 5
             ];
 
             const results = await Promise.allSettled(tasks);
 
-            const safe = (idx, fallback) => results[idx]?.status === 'fulfilled' ? results[idx].value : fallback;
+            const safe = (idx, fallback) => {
+                if (results[idx]?.status === 'fulfilled') {
+                    return results[idx].value;
+                } else if (results[idx]?.status === 'rejected') {
+                    const error = results[idx].reason;
+                    console.warn(`API çağrısı başarısız (index ${idx}):`, error.message || error);
+                    return fallback;
+                }
+                return fallback;
+            };
+            
             const productsData = safe(0, []);
             const stocksData = safe(1, []);
             const productIngredientsData = safe(2, []);
@@ -160,50 +206,21 @@ export function TableProvider({ children }) {
             }, {});
             setTableStatus(newTableStatus);
 
-            // Öncelik: stoklar uçundan doldur
-            let newIngredients = (stocksData || []).reduce((acc, item) => {
-                // Ensure stockQuantity is a valid number
-                const stockQuantity = Number(item.stockQuantity);
-                const minStock = Number(item.minStock) || 0;
-
-                if (isNaN(stockQuantity)) {
-                    console.warn(`Invalid stock quantity for ingredient ${item.name} (ID: ${item.id}): ${item.stockQuantity}, setting to 0`);
+            const newIngredients = (stocksData || []).reduce((acc, item) => {
+                if (item && item.id) {
+                    acc[item.id] = {
+                        id: item.id,
+                        name: item.name || 'Bilinmeyen Malzeme',
+                        unit: item.unit || '',
+                        stockQuantity: item.stockQuantity || 0,
+                        minStock: item.minQuantity || item.minStock || 0  // Backend'de minQuantity olarak geliyor
+                    };
                 }
-
-                acc[item.id] = {
-                    id: item.id,
-                    name: item.name,
-                    unit: item.unit,
-                    stockQuantity: isNaN(stockQuantity) ? 0 : stockQuantity,
-                    minStock: isNaN(minStock) ? 0 : minStock
-                };
                 return acc;
             }, {});
-
-            // Fallback: admin olmayan roller /stocks alamazsa, /product-ingredients içindeki ingredient alanından stokları toparla
-            if (Object.keys(newIngredients).length === 0 && Array.isArray(productIngredientsData) && productIngredientsData.length > 0) {
-                newIngredients = (productIngredientsData || []).reduce((acc, item) => {
-                    try {
-                        const ing = item.ingredient || {};
-                        const id = ing.id != null ? ing.id : item?.ingredientId;
-                        if (id == null) return acc;
-                        const stockQuantity = Number(ing.stockQuantity);
-                        acc[id] = {
-                            id: id,
-                            name: ing.name || (item?.ingredient?.name) || `Ingredient-${id}`,
-                            unit: ing.unit || '',
-                            stockQuantity: isNaN(stockQuantity) ? 0 : stockQuantity,
-                            minStock: Number(ing.minStock) || 0,
-                        };
-                    } catch { }
-                    return acc;
-                }, {});
-                if (Object.keys(newIngredients).length === 0) {
-                    console.warn('Stocks API yetkisiz ve product-ingredients içinde ingredient stoğu bulunamadı; stoklar 0 görünebilir.');
-                }
-            }
-            console.log("İçerik verisi güncellendi:", newIngredients);
-            setIngredients(newIngredients);
+            console.log("Stocks'tan ingredient verisi:", newIngredients);
+            console.log("Kullanıcı rolü:", roleInfo);
+            console.log("Admin kontrolü:", isAdmin);
 
             const newProductsByCategory = {};
             const productsByIdTemp = {};
@@ -226,8 +243,26 @@ export function TableProvider({ children }) {
                 productsByIdTemp[item.id] = productWithRecipe;
             });
 
+            // Eğer stocks API'den ingredient verileri gelmemişse, product-ingredients'dan doldur
+            const ingredientsFromProductIngredients = {};
+            
             (productIngredientsData || []).forEach(item => {
                 const productId = item.product?.id;
+                
+                // Ingredient bilgilerini topla (stocks API'den gelmemişse)
+                if (item.ingredient && item.ingredient.id) {
+                    const ingredientId = item.ingredient.id;
+                    if (!newIngredients[ingredientId]) {
+                        ingredientsFromProductIngredients[ingredientId] = {
+                            id: ingredientId,
+                            name: item.ingredient.name || 'Bilinmeyen Malzeme',
+                            unit: item.ingredient.unit || '',
+                            stockQuantity: item.ingredient.stockQuantity || 0,
+                            minStock: item.ingredient.minQuantity || item.ingredient.minStock || 0  // Backend'de minQuantity
+                        };
+                    }
+                }
+                
                 if (productsByIdTemp[productId]) {
                     // Ensure quantityPerUnit is a valid number
                     const quantity = Number(item.quantityPerUnit);
@@ -245,40 +280,28 @@ export function TableProvider({ children }) {
                 }
             });
 
-            // Calculate stock for each product based on available ingredients (frontend hesaplama)
-            Object.values(productsByIdTemp).forEach(product => {
-                product.stock = calculateProductStock(product, newIngredients);
+            // Ingredients state'ini güncelle - stocks ve product-ingredients verilerini birleştir
+            const finalIngredients = { ...newIngredients, ...ingredientsFromProductIngredients };
+            console.log("Product-ingredients'dan ek ingredient verileri:", ingredientsFromProductIngredients);
+            console.log("Final ingredients:", finalIngredients);
+            setIngredients(finalIngredients);
+
+            // Reçete verilerini products array'ine de kopyala ve stok hesapla
+            Object.keys(newProductsByCategory).forEach(categoryName => {
+                newProductsByCategory[categoryName].forEach(product => {
+                    if (productsByIdTemp[product.id] && productsByIdTemp[product.id].recipe) {
+                        product.recipe = productsByIdTemp[product.id].recipe;
+                    }
+                    // Her ürün için stok hesapla
+                    product.stock = calculateProductStock(product, finalIngredients);
+                });
             });
 
-            // Opsiyonel: Backend hazırsa /products/available-quantities ile stok adedini doğrula/override et
-            try {
-                const avail = await apiCall('/products/available-quantities');
-                if (Array.isArray(avail)) {
-                    for (const row of avail) {
-                        const pid = row.productId ?? row.id ?? row.productID;
-                        const qty = Number(row.availableQuantity ?? row.available ?? row.quantity);
-                        if (pid != null && !Number.isNaN(qty) && productsByIdTemp[pid]) {
-                            productsByIdTemp[pid].stock = qty;
-                        }
-                    }
-                }
-            } catch (e) {
-                // bu uç yoksa veya yetkisizse sessiz geç
-            }
-
-            console.log("Stok hesaplamaları tamamlandı. Örnek ürünler:",
-                Object.values(productsByIdTemp).slice(0, 3).map(p => ({
-                    name: p.name,
-                    stock: p.stock,
-                    recipeLength: p.recipe?.length || 0
-                }))
-            );
-
-            // Log products with zero stock for debugging
-            const zeroStockProducts = Object.values(productsByIdTemp).filter(p => p.stock === 0 && p.recipe.length > 0);
-            if (zeroStockProducts.length > 0) {
-                console.log("Ürünler sıfır stok ile:", zeroStockProducts.map(p => ({ name: p.name, id: p.id, recipeLength: p.recipe.length })));
-            }
+            // ProductsById objesine de stok bilgisini ekle
+            Object.keys(productsByIdTemp).forEach(productId => {
+                const product = productsByIdTemp[productId];
+                product.stock = calculateProductStock(product, finalIngredients);
+            });
 
             console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
             console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
@@ -287,43 +310,52 @@ export function TableProvider({ children }) {
             setProductsById(productsByIdTemp);
 
             // Siparişleri backend masa ID'si ile indeksle (çakışmayı önler)
-            // Siparişleri masa NUMARASINA göre indeksle (UI route parametresiyle uyumlu)
-            const tableIdToNumber = (diningTablesData || []).reduce((map, t) => {
-                if (t && t.id != null) {
-                    map[String(t.id)] = t.tableNumber ?? t.number ?? t.id;
-                }
-                return map;
-            }, {});
-            const ordersByTable = (ordersData || []).reduce((acc, order) => {
-                const backendIdStr = String(order.tableId);
-                const tableNumber = tableIdToNumber[backendIdStr] ?? backendIdStr;
-                const keyTableNumber = String(tableNumber);
-                acc[keyTableNumber] = {
-                    id: order.orderId ?? order.id,
-                    ...order,
-                    items: (order.items || []).reduce((itemAcc, item) => {
-                        itemAcc[item.productId] = {
-                            id: item.productId,
-                            name: item.productName,
-                            price: item.unitPrice,
-                            count: item.quantity,
-                            note: item.note || ''
-                        };
-                        return itemAcc;
-                    }, {})
-                };
-                return acc;
-            }, {});
-            setOrders(ordersByTable);
+            try {
+                const ordersByTable = (ordersData || []).reduce((acc, order) => {
+                    if (!order || !order.tableId) return acc; // Geçersiz order'ları atla
+                    
+                    const keyBackendId = String(order.tableId);
+                    acc[keyBackendId] = {
+                        id: order.orderId ?? order.id,
+                        ...order,
+                        items: (order.items || []).reduce((itemAcc, item) => {
+                            if (!item || !item.productId) return itemAcc; // Geçersiz item'ları atla
+                            
+                            itemAcc[item.productId] = {
+                                id: item.productId,
+                                name: item.productName || 'Bilinmeyen Ürün',
+                                price: item.unitPrice || 0,
+                                count: item.quantity || 0,
+                                note: item.note || ''
+                            };
+                            return itemAcc;
+                        }, {})
+                    };
+                    return acc;
+                }, {});
+                setOrders(ordersByTable);
 
-            const completedOrdersData = (ordersData || []).filter(order => order.status === "paid");
-            setCompletedOrders(completedOrdersData || {});
+                const completedOrdersData = (ordersData || []).filter(order => 
+                    order && order.status === "paid"
+                );
+                setCompletedOrders(completedOrdersData || {});
 
-            const reservationsById = (ordersData || []).filter(order => order.status === "reserved").reduce((acc, res) => {
-                acc[res.id] = res;
-                return acc;
-            }, {});
-            setReservations(reservationsById);
+                const reservationsById = (ordersData || [])
+                    .filter(order => order && order.status === "reserved")
+                    .reduce((acc, res) => {
+                        if (res && res.id) {
+                            acc[res.id] = res;
+                        }
+                        return acc;
+                    }, {});
+                setReservations(reservationsById);
+            } catch (orderProcessingError) {
+                console.error("Sipariş verileri işlenirken hata:", orderProcessingError);
+                // Fallback: boş verilerle devam et
+                setOrders({});
+                setCompletedOrders({});
+                setReservations({});
+            }
 
             console.log("Veriler başarıyla alındı ve işlendi.");
 
@@ -354,6 +386,7 @@ export function TableProvider({ children }) {
             console.error('loadTablesAndSalons hata:', err);
         }
     }, [apiCall]);
+
 
     const initializedRef = useRef(false);
     useEffect(() => {
@@ -749,7 +782,7 @@ export function TableProvider({ children }) {
                                 id: 0,
                                 stockId: ingredient.ingredientId,
                                 change: ingredient.quantity * item.count,
-                                reason: "CANCELLED_ORDER",
+                                reason: "RETURN",
                                 note: "Sipariş İptali",
                                 timestamp: new Date().toISOString()
                             };
@@ -1093,15 +1126,40 @@ export function TableProvider({ children }) {
         try {
             console.log("Yeni bir stok malzemesi ekleniyor:", ingredientData);
 
+            // Girdi doğrulama
+            if (!ingredientData.name || !ingredientData.name.trim()) {
+                throw new Error("İçerik adı boş olamaz.");
+            }
+            if (!ingredientData.unit || !ingredientData.unit.trim()) {
+                throw new Error("Birim boş olamaz.");
+            }
+            
+            const validUnits = ["KG", "ADET", "L"];
+            if (!validUnits.includes(ingredientData.unit.trim().toUpperCase())) {
+                throw new Error("Geçerli birim seçin: KG, ADET veya L");
+            }
+            
+            const stockQuantity = Number(ingredientData.stockQuantity);
+            const minStock = Number(ingredientData.minStock);
+            
+            if (isNaN(stockQuantity) || stockQuantity < 0) {
+                throw new Error("Başlangıç stoğu geçerli bir pozitif sayı olmalıdır.");
+            }
+            if (isNaN(minStock) || minStock < 0) {
+                throw new Error("Minimum stok geçerli bir pozitif sayı olmalıdır.");
+            }
+
+            const payload = {
+                name: ingredientData.name.trim(),
+                unit: ingredientData.unit.trim().toUpperCase(), // Birim her zaman büyük harfle
+                stockQuantity: parseFloat(stockQuantity), // Double type için parseFloat
+                minQuantity: parseFloat(minStock), // Double type için parseFloat
+            };
+
             const newIngredient = await apiCall('/stocks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: ingredientData.name,
-                    unit: ingredientData.unit,
-                    stockQuantity: Number(ingredientData.stockQuantity),
-                    minStock: Number(ingredientData.minStock) || 0,
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!newIngredient || !newIngredient.id) {
@@ -1110,30 +1168,33 @@ export function TableProvider({ children }) {
 
             console.log("Stok malzemesi başarıyla eklendi, stok hareketi oluşturuluyor:", newIngredient);
 
-            // Yeni eklenen stok malzemesi için başlangıç stok hareketini kaydediyoruz
-            const movement = {
-                stockId: newIngredient.id,
-                change: newIngredient.stockQuantity,
-                reason: "MANUAL_ADJUSTMENT",
-                note: "Yeni içerik eklendi (Başlangıç Stoğu)",
-            };
+            // Sadece pozitif başlangıç stoğu varsa stok hareketi kaydet
+            if (stockQuantity > 0) {
+                const movement = {
+                    stockId: newIngredient.id,
+                    change: stockQuantity,
+                    reason: "ADJUSTMENT",
+                    note: "Yeni içerik eklendi (Başlangıç Stoğu)",
+                };
 
-            await apiCall('/stock-movements', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(movement)
-            });
+                await apiCall('/stock-movements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(movement)
+                });
+            }
 
             console.log("fetchData fonksiyonu çağrılıyor...");
             await fetchData();
             console.log("fetchData fonksiyonu tamamlandı.");
 
-            alert("İçerik başarıyla eklendi!");
+            return { success: true, message: "İçerik başarıyla eklendi!" };
 
         } catch (error) {
             console.error("İçerik eklenirken hata:", error);
-            setError(`İçerik eklenirken hata oluştu: ${error.message}`);
-            alert(`Hata: İçerik eklenirken bir sorun oluştu. Detaylar için konsolu kontrol edin.`);
+            const errorMessage = error.message || "Bilinmeyen bir hata oluştu";
+            setError(`İçerik eklenirken hata oluştu: ${errorMessage}`);
+            throw new Error(errorMessage);
         }
     };
 
@@ -1148,8 +1209,8 @@ export function TableProvider({ children }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    stockId: stockId,
-                    change: change,
+                    stockId: Number(stockId),
+                    change: parseFloat(change), // Double type için parseFloat
                     reason: reason,
                     note: note,
                 })
@@ -1159,6 +1220,117 @@ export function TableProvider({ children }) {
             console.error("Stok güncellenirken hata:", error);
             setError(`Stok güncellenirken hata oluştu: ${error.message}`);
             throw error;
+        }
+    };
+
+    const updateIngredientMinQuantity = async (stockId, minQuantity) => {
+        try {
+            console.log(`Minimum stok güncelleniyor - ID: ${stockId}, Min Quantity: ${minQuantity}`);
+            
+            // Girdi doğrulama
+            const minQty = Number(minQuantity);
+            if (isNaN(minQty) || minQty < 0) {
+                throw new Error("Minimum stok geçerli bir pozitif sayı olmalıdır.");
+            }
+
+            await apiCall(`/stocks/${stockId}/min-quantity?minQuantity=${parseFloat(minQty)}`, {
+                method: 'PATCH',  // API dokümantasyonuna göre PATCH method
+                headers: { 'Content-Type': 'application/json' }
+                // minQuantity query parameter olarak gönderiliyor
+            });
+
+            await fetchData();
+            return { success: true, message: "Minimum stok başarıyla güncellendi!" };
+
+        } catch (error) {
+            console.error('Minimum stok güncellenirken hata:', error);
+            setError(`Minimum stok güncellenirken bir hata oluştu: ${error.message}`);
+            throw error;
+        }
+    };
+
+    const deleteIngredient = async (ingredientId) => {
+        try {
+            console.log("Stok malzemesi siliniyor:", ingredientId);
+
+            // Önce bu malzemeyi kullanan ürünleri kontrol et
+            const productsUsingIngredient = Object.values(productsById).filter(product => 
+                product.recipe && product.recipe.some(item => item.ingredientId === Number(ingredientId))
+            );
+
+            if (productsUsingIngredient.length > 0) {
+                const productNames = productsUsingIngredient.map(p => p.name).join(', ');
+                throw new Error(`Bu malzeme şu ürünlerde kullanılıyor: ${productNames}. Önce bu ürünlerden malzemeyi kaldırın.`);
+            }
+
+            // Önce bu malzemeyle ilgili tüm stok hareketlerini sil
+            try {
+                console.log("Stok hareketleri siliniyor...");
+                
+                // Backend'de bulk delete endpoint'i çalışmıyor, direkt alternatif yöntem kullan
+                console.log("Bulk delete endpoint backend'de mevcut değil, alternatif yöntem kullanılıyor");
+                
+                // Tüm stok hareketlerini çek ve ilgili olanları tek tek sil
+                const allMovements = await apiCall('/stock-movements');
+                const movementsToDelete = allMovements.filter(movement => 
+                    movement.stockId === Number(ingredientId) || movement.stock?.id === Number(ingredientId)
+                );
+                
+                console.log(`${movementsToDelete.length} adet stok hareketi bulundu, tek tek siliniyor...`);
+                
+                for (const movement of movementsToDelete) {
+                    try {
+                        await apiCall(`/stock-movements/${movement.id}`, {
+                            method: 'DELETE'
+                        });
+                        console.log(`Stok hareketi ${movement.id} başarıyla silindi`);
+                    } catch (individualError) {
+                        console.warn(`Stok hareketi ${movement.id} silinirken hata:`, individualError.message || individualError);
+                    }
+                }
+                console.log("Stok hareketleri tek tek silme ile tamamlandı");
+                
+            } catch (movementError) {
+                console.warn("Stok hareketleri silinirken hata:", movementError.message || movementError);
+                console.log("Stok hareketi silme başarısız, yine de malzeme silme işlemine devam ediliyor...");
+            }
+
+            // Şimdi stok malzemesini sil
+            try {
+                await apiCall(`/stocks/${ingredientId}`, {
+                    method: 'DELETE'
+                });
+                console.log("Malzeme başarıyla silindi");
+                
+                await fetchData();
+                return { success: true, message: "Malzeme başarıyla silindi!" };
+                
+            } catch (deleteError) {
+                console.error("Malzeme silinirken hata:", deleteError);
+                
+                // Spesifik hata mesajları
+                if (deleteError.message && deleteError.message.includes('foreign key')) {
+                    throw new Error("Bu malzeme başka kayıtlarda kullanıldığı için silinemiyor. Önce bu malzemeyi kullanan tüm kayıtları temizleyin.");
+                } else if (deleteError.message && (deleteError.message.includes('403') || deleteError.message.includes('Forbidden'))) {
+                    throw new Error("Bu işlem için yetkiniz bulunmuyor. Lütfen sistem yöneticisi ile iletişime geçin.");
+                } else if (deleteError.message && deleteError.message.includes('404')) {
+                    throw new Error("Silinmeye çalışılan malzeme bulunamadı. Sayfa yenilenerek güncel veriler alınıyor...");
+                } else {
+                    throw new Error(`Malzeme silinirken beklenmedik bir hata oluştu: ${deleteError.message || deleteError}`);
+                }
+            }
+
+        } catch (error) {
+            console.error("Malzeme silinirken hata:", error);
+            let errorMessage = error.message || "Malzeme silinirken bir hata oluştu";
+            
+            // Foreign key constraint hatası için özel mesaj
+            if (errorMessage.includes('foreign key constraint') || errorMessage.includes('still referenced')) {
+                errorMessage = "Bu malzeme sistem kayıtlarında kullanıldığı için silinemiyor. Lütfen sistem yöneticisi ile iletişime geçin.";
+            }
+            
+            setError(`Malzeme silinirken hata oluştu: ${errorMessage}`);
+            throw new Error(errorMessage);
         }
     };
 
@@ -1314,8 +1486,10 @@ export function TableProvider({ children }) {
                 deleteProduct,
                 updateProduct,
                 updateIngredientStock,
+                updateIngredientMinQuantity,
                 findProductById,
                 addIngredient,
+                deleteIngredient,
                 deleteProductIngredient,
                 addProductIngredient,
                 addReservation,

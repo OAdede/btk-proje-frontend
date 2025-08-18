@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TableContext } from '../../context/TableContext';
 import { AuthContext } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
+import StockWarning from '../common/StockWarning';
 
 // A unified admin-style tables grid for all roles
 // - For admin: this component can be reused later with custom handlers
@@ -204,15 +205,19 @@ export default function AdminStyleTables({ roleOverride }) {
     }, []);
 
     return (
-        <div
-            style={{
-                padding: '2rem',
-                display: 'flex',
-                gap: '2rem',
-                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-            }}
-        >
-            <div style={{ flex: 1 }}>
+        <>
+            {/* Sadece admin için stok uyarısını göster */}
+            {effectiveRole === 'admin' && <StockWarning />}
+            
+            <div
+                style={{
+                    padding: '2rem',
+                    display: 'flex',
+                    gap: '2rem',
+                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                }}
+            >
+                <div style={{ flex: 1 }}>
                 <h2 style={{ fontSize: '2rem', color: isDarkMode ? '#e0e0e0' : '#343a40', marginBottom: '1.5rem' }}>
                     {getSalonDisplayNameById(selectedSalonId)} - Masa Seçimi
                 </h2>
@@ -330,6 +335,7 @@ export default function AdminStyleTables({ roleOverride }) {
                 ))}
             </div>
         </div>
+        </>
     );
 }
 

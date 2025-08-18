@@ -16,8 +16,10 @@ function StokUpdate() {
         updateProduct,
         deleteProductIngredient,
         updateIngredientStock,
+        updateIngredientMinQuantity,
         addProductIngredient,
         addIngredient,
+        deleteIngredient,
     } = useContext(TableContext);
     const { user } = useContext(AuthContext);
     const { colors } = useTheme();
@@ -56,6 +58,7 @@ function StokUpdate() {
         acik: false,
         icerik: null,
         yeniMiktar: "",
+        yeniMinMiktar: "",
         sebep: "PURCHASE",
         not: "",
     });
@@ -291,6 +294,7 @@ function StokUpdate() {
             acik: true,
             icerik: ingredient,
             yeniMiktar: ingredient.stockQuantity,
+            yeniMinMiktar: ingredient.minStock,
             sebep: "PURCHASE",
             not: "",
         });
@@ -299,20 +303,34 @@ function StokUpdate() {
     const handleIngredientStockUpdate = async () => {
         if (!icerikGuncelleModal.icerik) return;
 
-        const { icerik, yeniMiktar, sebep, not } = icerikGuncelleModal;
-        const change = Number(yeniMiktar) - icerik.stockQuantity;
+        const { icerik, yeniMiktar, yeniMinMiktar, sebep, not } = icerikGuncelleModal;
+        const stockChange = Number(yeniMiktar) - icerik.stockQuantity;
+        const minStockChange = Number(yeniMinMiktar) !== icerik.minStock;
 
         try {
-            await updateIngredientStock(icerik.id, change, sebep, not);
+            // Stok miktarı değişmişse stok hareketi yap
+            if (stockChange !== 0) {
+                await updateIngredientStock(icerik.id, stockChange, sebep, not);
+            }
+
+            // Minimum stok değişmişse minimum stok güncelle
+            if (minStockChange) {
+                await updateIngredientMinQuantity(icerik.id, yeniMinMiktar);
+            }
+
+            // Modal'ı kapat
             setIcerikGuncelleModal({
                 acik: false,
                 icerik: null,
                 yeniMiktar: "",
+                yeniMinMiktar: "",
                 sebep: "PURCHASE",
                 not: "",
             });
+
+            alert("Stok bilgileri başarıyla güncellendi!");
         } catch (error) {
-            alert("Stok güncellenirken bir hata oluştu.");
+            alert(`Stok güncellenirken hata oluştu: ${error.message}`);
         }
     };
 
@@ -320,7 +338,11 @@ function StokUpdate() {
         setDuzenleModal({ acik: false, urun: null });
     };
 
+    const [isAddingIngredient, setIsAddingIngredient] = useState(false);
+    const [isDeletingIngredient, setIsDeletingIngredient] = useState({});
+
     const handleAddIngredient = async () => {
+        // Form validasyonu
         if (
             !yeniIcerik.name ||
             !yeniIcerik.unit ||
@@ -330,16 +352,67 @@ function StokUpdate() {
             alert("Lütfen tüm içerik bilgilerini doldurun.");
             return;
         }
+
+        // Birim seçimi kontrolü
+        if (!["KG", "ADET", "L"].includes(yeniIcerik.unit)) {
+            alert("Lütfen geçerli bir birim seçin (KG, ADET veya L).");
+            return;
+        }
+
+        // Sayısal değer validasyonu
+        const stockQuantity = Number(yeniIcerik.stockQuantity);
+        const minStock = Number(yeniIcerik.minStock);
+
+        if (isNaN(stockQuantity) || stockQuantity < 0) {
+            alert("Başlangıç stoğu geçerli bir pozitif sayı olmalıdır.");
+            return;
+        }
+        if (isNaN(minStock) || minStock < 0) {
+            alert("Minimum stok geçerli bir pozitif sayı olmalıdır.");
+            return;
+        }
+
+        setIsAddingIngredient(true);
         try {
-            await addIngredient({
+            const result = await addIngredient({
                 name: yeniIcerik.name,
                 unit: yeniIcerik.unit,
-                stockQuantity: Number(yeniIcerik.stockQuantity),
-                minStock: Number(yeniIcerik.minStock),
+                stockQuantity: stockQuantity,
+                minStock: minStock,
             });
-            setYeniIcerik({ name: "", unit: "", stockQuantity: "", minStock: "" });
+            
+            if (result && result.success) {
+                alert(result.message || "İçerik başarıyla eklendi!");
+                setYeniIcerik({ name: "", unit: "", stockQuantity: "", minStock: "" });
+            }
         } catch (error) {
-            alert(`İçerik eklenirken hata: ${error.message}`);
+            const errorMessage = error.message || "İçerik eklenirken bir hata oluştu.";
+            alert(`Hata: ${errorMessage}`);
+            console.error("İçerik ekleme hatası:", error);
+        } finally {
+            setIsAddingIngredient(false);
+        }
+    };
+
+    const handleDeleteIngredient = async (ingredient) => {
+        const confirmMessage = `"${ingredient.name}" malzemesini silmek istediğinizden emin misiniz?\n\nBu işlem:\n• Malzemeyi kalıcı olarak silecek\n• İlgili tüm stok hareketlerini silecek\n• Geri alınamaz\n\nDevam etmek istiyor musunuz?`;
+        
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        setIsDeletingIngredient(prev => ({ ...prev, [ingredient.id]: true }));
+        try {
+            const result = await deleteIngredient(ingredient.id);
+            if (result && result.success) {
+                alert(result.message || "Malzeme başarıyla silindi!");
+            }
+        } catch (error) {
+            const errorMessage = error.message || "Malzeme silinirken bir hata oluştu.";
+            alert(`Hata: ${errorMessage}`);
+            console.error("Malzeme silme hatası:", error);
+        } finally {
+            setIsDeletingIngredient(prev => ({ ...prev, [ingredient.id]: false }));
         }
     };
 
@@ -431,15 +504,19 @@ function StokUpdate() {
 
                                 <div className="form-recipe">
                                     <div className="modal-recipe-section">
-                                        <strong>Reçete:</strong>
+                                        <strong>{yeniUrun.name || 'Yeni Ürün'} Reçetesi:</strong>
                                         {yeniUrun.recipe.length > 0 && (
                                             <ul className="recipe-list">
                                                 {yeniUrun.recipe.map((item, index) => (
                                                     <li key={index} className="modal-recipe-item">
                                                         <span>
-                                                            {ingredients[item.ingredientId]?.name}:{" "}
-                                                            {item.quantity}{" "}
-                                                            {ingredients[item.ingredientId]?.unit}
+                                                            <span className="ingredient-name">
+                                                                {ingredients[item.ingredientId]?.name}
+                                                            </span>:{" "}
+                                                            <span className="ingredient-quantity">
+                                                                {item.quantity}{" "}
+                                                                {ingredients[item.ingredientId]?.unit}
+                                                            </span>
                                                         </span>
                                                         <button
                                                             onClick={() => handleRemoveNewRecipeItem(index)}
@@ -514,19 +591,23 @@ function StokUpdate() {
                                                 {urun.description}
                                             </div>
                                             <div className="item-recipe">
-                                                <strong>Reçete:</strong>
+                                                <strong>{urun.name} Reçetesi:</strong>
                                                 {urun.recipe && urun.recipe.length > 0 ? (
                                                     <ul>
                                                         {urun.recipe.map((item, index) => (
                                                             <li key={index}>
-                                                                {ingredients[item.ingredientId]?.name}:{" "}
-                                                                {item.quantity}{" "}
-                                                                {ingredients[item.ingredientId]?.unit}
+                                                                <span className="ingredient-name">
+                                                                    {ingredients[item.ingredientId]?.name}
+                                                                </span>:{" "}
+                                                                <span className="ingredient-quantity">
+                                                                    {item.quantity}{" "}
+                                                                    {ingredients[item.ingredientId]?.unit}
+                                                                </span>
                                                             </li>
                                                         ))}
                                                     </ul>
                                                 ) : (
-                                                    <span>Reçete bulunamadı.</span>
+                                                    <span>{urun.name} reçetesi bulunamadı.</span>
                                                 )}
                                             </div>
                                         </div>
@@ -607,13 +688,13 @@ function StokUpdate() {
 
                                 <div className="modal-recipe-section">
                                     <div className="item-recipe">
-                                        <strong>Reçete:</strong>
+                                        <strong>{duzenleModal.urun.name} Reçetesi:</strong>
                                         {duzenleModal.urun.recipe &&
                                             duzenleModal.urun.recipe.length > 0 ? (
                                             <ul>
                                                 {duzenleModal.urun.recipe.map((item, index) => (
                                                     <li key={index} className="modal-recipe-item">
-                                                        <span>{ingredients[item.ingredientId]?.name}</span>
+                                                        <span className="ingredient-name">{ingredients[item.ingredientId]?.name}</span>
                                                         <input
                                                             type="number"
                                                             value={item.quantity}
@@ -625,7 +706,7 @@ function StokUpdate() {
                                                             }
                                                             className="recipe-quantity-input"
                                                         />
-                                                        <span>{ingredients[item.ingredientId]?.unit}</span>
+                                                        <span className="ingredient-quantity">{ingredients[item.ingredientId]?.unit}</span>
                                                         <button
                                                             onClick={() =>
                                                                 handleDeleteModalIngredient(item.ingredientId)
@@ -712,16 +793,22 @@ function StokUpdate() {
                                         setYeniIcerik({ ...yeniIcerik, name: e.target.value })
                                     }
                                 />
-                                <input
-                                    type="text"
-                                    placeholder="Birim (kg, adet, ml)"
+                                <select
                                     value={yeniIcerik.unit}
                                     onChange={(e) =>
                                         setYeniIcerik({ ...yeniIcerik, unit: e.target.value })
                                     }
-                                />
+                                    className="unit-select"
+                                >
+                                    <option value="">Birim Seçin</option>
+                                    <option value="KG">KG (Kilogram)</option>
+                                    <option value="ADET">ADET (Adet)</option>
+                                    <option value="L">L (Litre)</option>
+                                </select>
                                 <input
                                     type="number"
+                                    min="0"
+                                    step="0.01"
                                     placeholder="Başlangıç Stoğu"
                                     value={yeniIcerik.stockQuantity}
                                     onChange={(e) =>
@@ -733,14 +820,20 @@ function StokUpdate() {
                                 />
                                 <input
                                     type="number"
+                                    min="0"
+                                    step="0.01"
                                     placeholder="Minimum Stok"
                                     value={yeniIcerik.minStock}
                                     onChange={(e) =>
                                         setYeniIcerik({ ...yeniIcerik, minStock: e.target.value })
                                     }
                                 />
-                                <button onClick={handleAddIngredient} className="add-button">
-                                    Ekle
+                                <button 
+                                    onClick={handleAddIngredient} 
+                                    className="add-button"
+                                    disabled={isAddingIngredient}
+                                >
+                                    {isAddingIngredient ? "Ekleniyor..." : "Ekle"}
                                 </button>
                             </div>
                         </div>
@@ -752,29 +845,45 @@ function StokUpdate() {
                                 const durum = getIngredientStatus(ingredient);
                                 return (
                                     <div key={ingredient.id} className="ingredient-list-item">
-                                        <div className="item-name">{ingredient.name}</div>
-                                        <div className="item-stock">
-                                            {ingredient.stockQuantity} {ingredient.unit}
-                                        </div>
-                                        <div className="item-min-stock">
-                                            Min: {ingredient.minStock} {ingredient.unit}
-                                        </div>
-                                        <div
-                                            className="item-status"
-                                            style={{ backgroundColor: durum.renk }}
-                                        >
-                                            {durum.durum}
-                                        </div>
-                                        {isAdmin && (
-                                            <div className="item-actions">
-                                                <button
-                                                    onClick={() => handleOpenIngredientModal(ingredient)}
-                                                    className="edit-button"
-                                                >
-                                                    Stok Güncelle
-                                                </button>
+                                        <div className="item-details">
+                                            <div className="item-name">{ingredient.name}</div>
+                                            <div className="item-stock-info">
+                                                <div className="item-stock">
+                                                    <strong>Mevcut Stok:</strong> {ingredient.stockQuantity} {ingredient.unit}
+                                                </div>
+                                                {isAdmin && (
+                                                    <div className="item-min-stock">
+                                                        <strong>Min. Stok:</strong> {ingredient.minStock} {ingredient.unit}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+                                        </div>
+
+                                        <div className="item-status-and-actions">
+                                            <div
+                                                className="item-status"
+                                                style={{ backgroundColor: durum.renk }}
+                                            >
+                                                {durum.durum}
+                                            </div>
+                                            {isAdmin && (
+                                                <div className="item-actions">
+                                                    <button
+                                                        onClick={() => handleOpenIngredientModal(ingredient)}
+                                                        className="edit-button"
+                                                    >
+                                                        Stok Güncelle
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteIngredient(ingredient)}
+                                                        className="delete-button"
+                                                        disabled={isDeletingIngredient[ingredient.id]}
+                                                    >
+                                                        {isDeletingIngredient[ingredient.id] ? "Siliniyor..." : "Sil"}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 );
                             })
@@ -788,7 +897,7 @@ function StokUpdate() {
             {isAdmin && icerikGuncelleModal.acik && (
                 <div className="edit-modal-overlay">
                     <div className="edit-modal-content">
-                        <h3>İçerik Stoğunu Güncelle</h3>
+                        <h3>İçerik Bilgilerini Güncelle</h3>
                         <div className="edit-modal-form">
                             <div className="modal-item-name">
                                 {icerikGuncelleModal.icerik?.name}
@@ -798,11 +907,28 @@ function StokUpdate() {
                             </label>
                             <input
                                 type="number"
+                                min="0"
+                                step="0.01"
                                 value={icerikGuncelleModal.yeniMiktar}
                                 onChange={(e) =>
                                     setIcerikGuncelleModal((prev) => ({
                                         ...prev,
                                         yeniMiktar: e.target.value,
+                                    }))
+                                }
+                            />
+                            <label>
+                                Minimum Stok ({icerikGuncelleModal.icerik?.unit}):
+                            </label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={icerikGuncelleModal.yeniMinMiktar}
+                                onChange={(e) =>
+                                    setIcerikGuncelleModal((prev) => ({
+                                        ...prev,
+                                        yeniMinMiktar: e.target.value,
                                     }))
                                 }
                             />
@@ -817,8 +943,8 @@ function StokUpdate() {
                                 }
                             >
                                 <option value="PURCHASE">Satın Alma</option>
-                                <option value="WASTAGE">Fire</option>
-                                <option value="MANUAL_ADJUSTMENT">Manuel Ayar</option>
+                                <option value="WASTE">Fire</option>
+                                <option value="ADJUSTMENT">Manuel Ayar</option>
                             </select>
                             <label>Açıklama (İsteğe bağlı):</label>
                             <textarea
@@ -838,6 +964,7 @@ function StokUpdate() {
                                         acik: false,
                                         icerik: null,
                                         yeniMiktar: "",
+                                        yeniMinMiktar: "",
                                         sebep: "PURCHASE",
                                         not: "",
                                     })
