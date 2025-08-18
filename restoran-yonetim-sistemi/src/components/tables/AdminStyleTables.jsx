@@ -207,47 +207,11 @@ export default function AdminStyleTables({ roleOverride }) {
     }, []);
 
     // Floor (kat) occupancy computed from current salon selection
-    const renderFloorOccupancyBadge = () => {
-        if (!selectedSalonId) return null;
-        const inSalon = (tables || []).filter(t => String(t?.salon?.id ?? t?.salonId) === String(selectedSalonId));
-        const totalCapacity = inSalon.reduce((s, t) => s + (Number(t?.capacity) || 4), 0);
-        if (totalCapacity <= 0) return null;
-        let used = 0;
-        inSalon.forEach(t => {
-            const statusName = String(t?.status?.name ?? t?.statusName ?? t?.status_name ?? '').toLowerCase();
-            const cap = Number(t?.capacity) || 4;
-            if (statusName === 'occupied') {
-                used += cap;
-            } else if (statusName === 'reserved') {
-                const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(t?.tableNumber ?? t?.id));
-                const ppl = Number(res?.kisiSayisi ?? res?.personCount);
-                used += Number.isFinite(ppl) && ppl > 0 ? Math.min(ppl, cap) : Math.ceil(cap / 2);
-            }
-        });
-        const label = `${used}/${totalCapacity}`;
-        return (
-            <div
-                style={{
-                    position: 'fixed',
-                    top: '56px',
-                    right: '16px',
-                    background: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.7)',
-                    color: '#fff',
-                    padding: '8px 12px',
-                    borderRadius: '12px',
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    zIndex: 9999,
-                }}
-            >
-                Kat Yoğunluğu: {label}
-            </div>
-        );
-    };
+    // Top-right floor occupancy badge removed
 
     return (
         <>
-            {renderFloorOccupancyBadge()}
+            {/* top-right floor occupancy badge removed */}
             {/* Sadece admin için stok uyarısını göster */}
             {effectiveRole === 'admin' && <StockWarning />}
             

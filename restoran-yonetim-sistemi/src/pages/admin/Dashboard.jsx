@@ -402,6 +402,27 @@ const Dashboard = () => {
   const occupiedTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'occupied').length;
   const reservedTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'reserved').length;
 
+  // Kat yoğunluğu (kullanılan/kapasite)
+  const totalCapacityInSalon = useMemo(() => {
+    return (backendTablesForStats || []).reduce((sum, t) => sum + (Number(t?.capacity) || 4), 0);
+  }, [backendTablesForStats]);
+
+  const usedCapacityInSalon = useMemo(() => {
+    let used = 0;
+    (backendTablesForStats || []).forEach(t => {
+      const statusName = String(t?.status?.name ?? t?.statusName ?? t?.status_name ?? '').toLowerCase();
+      const cap = Number(t?.capacity) || 4;
+      if (statusName === 'occupied') {
+        used += cap;
+      } else if (statusName === 'reserved') {
+        const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(t?.tableNumber ?? t?.id));
+        const ppl = Number(res?.kisiSayisi ?? res?.personCount);
+        used += Number.isFinite(ppl) && ppl > 0 ? Math.min(ppl, cap) : Math.ceil(cap / 2);
+      }
+    });
+    return used;
+  }, [backendTablesForStats, reservations]);
+
   // Waiter ile aynı status sistemi
   const statusInfo = {
     "empty": { text: "Boş", color: "#22c55e", textColor: "#ffffff" },
@@ -658,42 +679,7 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* Kat Yoğunluğu Badge */}
-      {selectedSalonId && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '56px',
-            right: '16px',
-            background: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            padding: '8px 12px',
-            borderRadius: '12px',
-            fontWeight: 'bold',
-            fontSize: '12px',
-            zIndex: 9999,
-          }}
-        >
-          Kat Yoğunluğu: {(() => {
-            const inSalon = (tables || []).filter(t => String(t?.salon?.id ?? t?.salonId) === String(selectedSalonId));
-            const totalCapacity = inSalon.reduce((s, t) => s + (Number(t?.capacity) || 4), 0);
-            if (totalCapacity <= 0) return '0/0';
-            let used = 0;
-            inSalon.forEach(t => {
-              const statusName = String(t?.status?.name ?? t?.statusName ?? t?.status_name ?? '').toLowerCase();
-              const cap = Number(t?.capacity) || 4;
-              if (statusName === 'occupied') {
-                used += cap;
-              } else if (statusName === 'reserved') {
-                const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(t?.tableNumber ?? t?.id));
-                const ppl = Number(res?.kisiSayisi ?? res?.personCount);
-                used += Number.isFinite(ppl) && ppl > 0 ? Math.min(ppl, cap) : Math.ceil(cap / 2);
-              }
-            });
-            return `${used}/${totalCapacity}`;
-          })()}
-        </div>
-      )}
+      {/* top-right floor occupancy badge removed */}
       <SuccessNotification
         visible={showSuccess}
         onClose={() => setShowSuccess(false)}
@@ -778,6 +764,19 @@ const Dashboard = () => {
             justifyContent: 'center',
             flexWrap: 'wrap'
           }}>
+            <div style={{
+              background: '#3949ab',
+              color: 'white',
+              padding: '15px 25px',
+              borderRadius: '10px',
+              textAlign: 'center',
+              minWidth: '140px'
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Kat Yoğunluğu</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 4 }}>
+                {usedCapacityInSalon}/{totalCapacityInSalon}
+              </div>
+            </div>
             <div style={{
               background: '#4caf50',
               color: 'white',
