@@ -80,6 +80,44 @@ export function TableProvider({ children }) {
         }
     }, []);
 
+    // Stock calculation function to determine how many units of a product can be made from available ingredients
+    const calculateProductStock = (product, ingredients) => {
+        if (!product.recipe || product.recipe.length === 0) {
+            return 0; // No recipe means no stock
+        }
+        
+        let maxPossibleUnits = Infinity;
+        
+        for (const recipeItem of product.recipe) {
+            const ingredient = ingredients[recipeItem.ingredientId];
+            if (!ingredient) {
+                console.warn(`Missing ingredient data for product ${product.name} (ID: ${product.id}), ingredient ID: ${recipeItem.ingredientId}`);
+                return 0; // Missing ingredient data
+            }
+            
+            if (typeof ingredient.stockQuantity !== 'number' || isNaN(ingredient.stockQuantity)) {
+                console.warn(`Invalid stock quantity for ingredient ${ingredient.name} (ID: ${ingredient.id}): ${ingredient.stockQuantity}`);
+                return 0; // Invalid stock quantity
+            }
+            
+            if (typeof recipeItem.quantity !== 'number' || isNaN(recipeItem.quantity) || recipeItem.quantity <= 0) {
+                console.warn(`Invalid recipe quantity for product ${product.name} (ID: ${product.id}), ingredient ${ingredient.name}: ${recipeItem.quantity}`);
+                return 0; // Invalid recipe quantity
+            }
+            
+            // Calculate how many units can be made with this ingredient
+            const unitsPossible = Math.floor(ingredient.stockQuantity / recipeItem.quantity);
+            maxPossibleUnits = Math.min(maxPossibleUnits, unitsPossible);
+        }
+        
+        const finalStock = maxPossibleUnits === Infinity ? 0 : maxPossibleUnits;
+        if (finalStock === 0 && product.recipe.length > 0) {
+            console.log(`Product ${product.name} (ID: ${product.id}) has 0 stock due to insufficient ingredients`);
+        }
+        
+        return finalStock;
+    };
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
@@ -123,12 +161,20 @@ export function TableProvider({ children }) {
             setTableStatus(newTableStatus);
 
             const newIngredients = (stocksData || []).reduce((acc, item) => {
+                // Ensure stockQuantity is a valid number
+                const stockQuantity = Number(item.stockQuantity);
+                const minStock = Number(item.minStock) || 0;
+                
+                if (isNaN(stockQuantity)) {
+                    console.warn(`Invalid stock quantity for ingredient ${item.name} (ID: ${item.id}): ${item.stockQuantity}, setting to 0`);
+                }
+                
                 acc[item.id] = {
                     id: item.id,
                     name: item.name,
                     unit: item.unit,
-                    stockQuantity: item.stockQuantity,
-                    minStock: item.minStock || 0
+                    stockQuantity: isNaN(stockQuantity) ? 0 : stockQuantity,
+                    minStock: isNaN(minStock) ? 0 : minStock
                 };
                 return acc;
             }, {});
@@ -159,15 +205,40 @@ export function TableProvider({ children }) {
             (productIngredientsData || []).forEach(item => {
                 const productId = item.product?.id;
                 if (productsByIdTemp[productId]) {
+                    // Ensure quantityPerUnit is a valid number
+                    const quantity = Number(item.quantityPerUnit);
+                    if (isNaN(quantity) || quantity <= 0) {
+                        console.warn(`Invalid recipe quantity for product ${productsByIdTemp[productId].name} (ID: ${productId}), ingredient ${item.ingredient.name}: ${item.quantityPerUnit}, setting to 1`);
+                    }
+                    
                     productsByIdTemp[productId].recipe.push({
                         ingredientId: item.ingredient.id,
-                        quantity: item.quantityPerUnit,
+                        quantity: isNaN(quantity) || quantity <= 0 ? 1 : quantity,
                         name: item.ingredient.name
                     });
                 } else {
                     console.warn(`Tarif için ürün bulunamadı. Muhtemelen API'den gelmeyen bir ürünün tarifi var. Ürün ID: ${productId}`);
                 }
             });
+
+            // Calculate stock for each product based on available ingredients
+            Object.values(productsByIdTemp).forEach(product => {
+                product.stock = calculateProductStock(product, newIngredients);
+            });
+
+            console.log("Stok hesaplamaları tamamlandı. Örnek ürünler:", 
+                Object.values(productsByIdTemp).slice(0, 3).map(p => ({ 
+                    name: p.name, 
+                    stock: p.stock, 
+                    recipeLength: p.recipe?.length || 0 
+                }))
+            );
+
+            // Log products with zero stock for debugging
+            const zeroStockProducts = Object.values(productsByIdTemp).filter(p => p.stock === 0 && p.recipe.length > 0);
+            if (zeroStockProducts.length > 0) {
+                console.log("Ürünler sıfır stok ile:", zeroStockProducts.map(p => ({ name: p.name, id: p.id, recipeLength: p.recipe.length })));
+            }
 
             console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
             console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
