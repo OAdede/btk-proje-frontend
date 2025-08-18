@@ -207,11 +207,30 @@ export default function AdminStyleTables({ roleOverride }) {
     }, []);
 
     // Floor (kat) occupancy computed from current salon selection
-    // Top-right floor occupancy badge removed
+    const calculateFloorOccupancy = () => {
+        if (!selectedSalonId) return { used: 0, total: 0 };
+        const inSalon = (tables || []).filter(t => String(t?.salon?.id ?? t?.salonId) === String(selectedSalonId));
+        const totalCapacity = inSalon.reduce((s, t) => s + (Number(t?.capacity) || 4), 0);
+        if (totalCapacity <= 0) return { used: 0, total: 0 };
+        let used = 0;
+        inSalon.forEach(t => {
+            const statusName = String(t?.status?.name ?? t?.statusName ?? t?.status_name ?? '').toLowerCase();
+            const cap = Number(t?.capacity) || 4;
+            if (statusName === 'occupied') {
+                used += cap;
+            } else if (statusName === 'reserved') {
+                const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(t?.tableNumber ?? t?.id));
+                const ppl = Number(res?.kisiSayisi ?? res?.personCount);
+                used += Number.isFinite(ppl) && ppl > 0 ? Math.min(ppl, cap) : Math.ceil(cap / 2);
+            }
+        });
+        return { used, total: totalCapacity };
+    };
+
+    const floorOccupancy = calculateFloorOccupancy();
 
     return (
         <>
-            {/* top-right floor occupancy badge removed */}
             {/* Sadece admin için stok uyarısını göster */}
             {effectiveRole === 'admin' && <StockWarning />}
             
@@ -227,6 +246,36 @@ export default function AdminStyleTables({ roleOverride }) {
                 <h2 style={{ fontSize: '2rem', color: isDarkMode ? '#e0e0e0' : '#343a40', marginBottom: '1.5rem' }}>
                     {getSalonDisplayNameById(selectedSalonId)} - Masa Seçimi
                 </h2>
+                
+                {/* Kat Yoğunluğu Display */}
+                {selectedSalonId && (
+                    <div
+                        style={{
+                            background: isDarkMode ? '#2d3748' : '#f8f9fa',
+                            border: `1px solid ${isDarkMode ? '#4a5568' : '#dee2e6'}`,
+                            borderRadius: '12px',
+                            padding: '1rem',
+                            marginBottom: '1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem',
+                        }}
+                    >
+                        <div
+                            style={{
+                                background: isDarkMode ? '#007bff' : '#513653',
+                                color: 'white',
+                                borderRadius: '8px',
+                                padding: '0.5rem 1rem',
+                                fontWeight: 'bold',
+                                fontSize: '1.1rem',
+                            }}
+                        >
+                            Kat Yoğunluğu: {floorOccupancy.used}/{floorOccupancy.total}
+                        </div>
+                        {/* Yüzdelik doluluk kaldırıldı */}
+                    </div>
+                )}
                 <div
                     style={{
                         display: 'grid',
@@ -238,7 +287,6 @@ export default function AdminStyleTables({ roleOverride }) {
                         const status = getStatus(table.id);
                         const order = orders?.[table.id] || {};
                         const tableReservations = Object.values(reservations).filter((res) => res.tableId === table.id);
-                        const occupancy = getTableOccupancy(table.id);
                         return (
                             <div
                                 key={table.id}
