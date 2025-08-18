@@ -379,13 +379,13 @@ const Dashboard = () => {
 
   // Waiter ile aynı status sistemi
   const statusInfo = {
-    "empty": { text: "Boş", color: "#4caf50", textColor: "#fff" },
-    "bos": { text: "Boş", color: "#4caf50", textColor: "#fff" },
-    "occupied": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
-    "dolu": { text: "Dolu", color: "#dc3545", textColor: "#fff" },
-    "reserved": { text: "Rezerve", color: "#ffc107", textColor: "#212529" },
-    "reserved-future": { text: "Rezerve", color: "#4caf50", textColor: "#fff" }, // Uzak rezervasyon için yeşil
-    "reserved-special": { text: "Özel Rezerve", color: "#ffc107", textColor: "#212529" }, // Özel rezervasyon için sarı
+    "empty": { text: "Boş", color: "#22c55e", textColor: "#ffffff" },
+    "bos": { text: "Boş", color: "#22c55e", textColor: "#ffffff" },
+    "occupied": { text: "Dolu", color: "#ef4444", textColor: "#ffffff" },
+    "dolu": { text: "Dolu", color: "#ef4444", textColor: "#ffffff" },
+    "reserved": { text: "Rezerve", color: "#fbbf24", textColor: "#111827" },
+    "reserved-future": { text: "Rezerve", color: "#22c55e", textColor: "#ffffff" },
+    "reserved-special": { text: "Özel Rezerve", color: "#f59e0b", textColor: "#111827" },
   };
 
   const getStatus = (tableId) => {
@@ -825,107 +825,33 @@ const Dashboard = () => {
                 <div
                   key={table.id || crypto.randomUUID()}
                   style={{
-                    background: `
-                      linear-gradient(135deg, #c19a6b 0%, #b08968 20%, #a67c52 40%, #8b6f47 60%, #6f4e37 80%, #5b3d2e 100%),
-                      radial-gradient(ellipse 100% 80% at 30% 25%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 30%, rgba(0,0,0,0.05) 60%),
-                      radial-gradient(ellipse 80% 60% at 75% 75%, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.06) 50%),
-                      linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.03) 100%)
-                    `,
-                    color: '#f8f4f0',
+                    backgroundColor: status.color,
+                    color: status.textColor,
                     height: "150px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
-                    borderRadius: "20px",
-                    cursor: (status.text === 'Dolu' || status.text === 'Rezerve' || tableReservations.length > 0 || (showReservationMode && status.text === 'Boş')) ? 'pointer' : 'default',
+                    borderRadius: "16px",
+                    cursor: 'pointer',
                     userSelect: "none",
-                    transition: "transform 0.4s ease, box-shadow 0.4s ease",
-                    boxShadow: "inset 0 3px 0 rgba(255,255,255,0.25), inset 0 -3px 0 rgba(0,0,0,0.2), 0 15px 35px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
                     position: 'relative',
-                    border: '2px solid rgba(139, 69, 19, 0.25)',
-                    overflow: 'visible',
-                    textShadow: '0 1px 3px rgba(255,255,255,0.8)'
+                    border: '2px solid rgba(0,0,0,0.08)'
                   }}
                   onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: tableReservations[0] })}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.boxShadow = 'inset 0 3px 0 rgba(255,255,255,0.3), inset 0 -3px 0 rgba(0,0,0,0.25), 0 20px 40px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.transform = 'scale(1.04)';
+                    e.currentTarget.style.boxShadow = '0 16px 28px rgba(0,0,0,0.18)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = 'inset 0 3px 0 rgba(255,255,255,0.25), inset 0 -3px 0 rgba(0,0,0,0.2), 0 15px 35px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
                   }}
                   title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
                 >
-                  <div style={{ 
-                    position:'absolute', 
-                    top:0, 
-                    left:0, 
-                    right:0, 
-                    height:10, 
-                    background:'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.12) 100%)', 
-                    borderTopLeftRadius:20, 
-                    borderTopRightRadius:20,
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)'
-                  }} />
-                  <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '10px',
-                    width: '22px',
-                    height: '22px',
-                    borderRadius: '50%',
-                    backgroundColor: status.color,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                    border: '2px solid rgba(255,255,255,0.65)'
-                  }} />
-                  {/* Zarif masa ayakları */}
-                  {/* Zarif yuvarlak masa ayakları */}
-                  <div style={{ 
-                    position:'absolute', 
-                    top:-14, 
-                    left:20, 
-                    width:14, 
-                    height:18, 
-                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
-                    borderRadius:'50%',
-                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(139, 69, 19, 0.4)'
-                  }} />
-                  <div style={{ 
-                    position:'absolute', 
-                    top:-14, 
-                    right:20, 
-                    width:14, 
-                    height:18, 
-                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
-                    borderRadius:'50%',
-                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(139, 69, 19, 0.4)'
-                  }} />
-                  <div style={{ 
-                    position:'absolute', 
-                    bottom:-14, 
-                    left:20, 
-                    width:14, 
-                    height:18, 
-                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
-                    borderRadius:'50%',
-                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(139, 69, 19, 0.4)'
-                  }} />
-                  <div style={{ 
-                    position:'absolute', 
-                    bottom:-14, 
-                    right:20, 
-                    width:14, 
-                    height:18, 
-                    background:'radial-gradient(ellipse 60% 80% at 50% 20%, #d4a574 0%, #b08968 30%, #8b6f47 60%, #6f4e37 100%)',
-                    borderRadius:'50%',
-                    boxShadow:'0 6px 12px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.3)',
-                    border: '2px solid rgba(139, 69, 19, 0.4)'
-                  }} />
+                  {/* Ahşap süsler kaldırıldı, sade renkli kart */}
                   {/* Rezervasyon modunda + işareti */}
                   {showReservationMode && status.text === 'Boş' && (
                     <div style={{
@@ -992,35 +918,32 @@ const Dashboard = () => {
                   {/* Masa kapasitesi */}
                   <div style={{
                     fontSize: "0.9rem",
-                    color: "#2c1810",
+                    color: status.textColor,
                     marginBottom: 4,
-                    fontWeight: 700,
-                    textShadow: '0 1px 2px rgba(255,255,255,0.9)'
+                    fontWeight: 700
                   }}>
                     {table.capacity} Kişilik
                   </div>
                   <div style={{ 
                     fontSize: 35, 
                     fontWeight: 900, 
-                    letterSpacing: 1, 
-                    textShadow:'0 2px 8px rgba(255,255,255,0.9), 0 1px 3px rgba(0,0,0,0.3)',
-                    color: '#2c1810'
+                    letterSpacing: 1,
+                    color: status.textColor
                   }}>
                     {table.displayNumber}
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize: 14, marginTop: 8, fontWeight: 600 }}>
                     <span style={{
-                      background: 'rgba(255,255,255,0.85)',
-                      color: '#2c1810',
+                      background: 'rgba(255,255,255,0.9)',
+                      color: '#111',
                       borderRadius: 12,
                       padding: '3px 12px',
-                      backdropFilter: 'blur(2px)',
-                      border: '1px solid rgba(139, 69, 19, 0.2)',
+                      border: '1px solid rgba(255,255,255,0.6)',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}>{status.text}</span>
                     {Object.keys(order).length > 0 && (
                       <span style={{
-                        background: 'rgba(139, 69, 19, 0.9)',
+                        background: 'rgba(0,0,0,0.45)',
                         color: '#fff',
                         borderRadius: 12,
                         padding: '2px 8px',
