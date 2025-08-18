@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, tableStatuses, loadTablesAndSalons, loadTableStatuses, createTable, deleteTable: deleteTableFromCtx, deleteTableForce } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, tableStatuses, activeTableIds, loadTablesAndSalons, loadTableStatuses, createTable, deleteTable: deleteTableFromCtx, deleteTableForce } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -79,6 +79,10 @@ const Dashboard = () => {
   const [newSalonDescription, setNewSalonDescription] = useState('');
   const [newSalonTableCount, setNewSalonTableCount] = useState(0);
   const [newSalonTableStartNumber, setNewSalonTableStartNumber] = useState(0);
+  
+  // Occupancy data state
+  const [occupancyData, setOccupancyData] = useState(null);
+  const [loadingOccupancy, setLoadingOccupancy] = useState(false);
 
   // Restoran ismini backend'den al
   useEffect(() => {
@@ -108,6 +112,40 @@ const Dashboard = () => {
 
     window.addEventListener('restaurantNameChanged', handleRestaurantNameChange);
     return () => window.removeEventListener('restaurantNameChanged', handleRestaurantNameChange);
+  }, []);
+
+  // Occupancy API'sini çağır
+  const fetchOccupancyData = async () => {
+    try {
+      setLoadingOccupancy(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/salons/occupancy', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setOccupancyData(data);
+      } else {
+        console.error('Failed to fetch occupancy data:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching occupancy data:', error);
+    } finally {
+      setLoadingOccupancy(false);
+    }
+  };
+
+  // Occupancy verilerini yükle
+  useEffect(() => {
+    fetchOccupancyData();
+    // Her 30 saniyede bir güncelle
+    const interval = setInterval(fetchOccupancyData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // No external table-statuses dependency; occupancy computed locally
@@ -398,9 +436,19 @@ const Dashboard = () => {
     return list;
   }, [tables, selectedSalonId]);
   const totalTables = backendTablesForStats.length;
-  const emptyTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'available').length;
-  const occupiedTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'occupied').length;
-  const reservedTables = backendTablesForStats.filter(t => String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'reserved').length;
+  
+  // Hibrit yaklaşım: Order items'ı olan VEYA backend'de occupied olan masalar
+  const occupiedTables = backendTablesForStats.filter(t => 
+    t.activeOrderItemsCount > 0 || String(t?.statusName ?? '').toLowerCase() === 'occupied'
+  ).length;
+  
+  // Rezerveli masalar sarı (reserved)
+  const reservedTables = backendTablesForStats.filter(t => 
+    String(t?.status?.name ?? t?.statusName ?? '').toLowerCase() === 'reserved'
+  ).length;
+  
+  // Geri kalan masalar yeşil (available/empty)
+  const emptyTables = totalTables - occupiedTables - reservedTables;
 
   // Kat yoğunluğu (kullanılan/kapasite)
   const totalCapacityInSalon = useMemo(() => {
@@ -434,7 +482,21 @@ const Dashboard = () => {
     "reserved-special": { text: "Özel Rezerve", color: "#f59e0b", textColor: "#111827" },
   };
 
-  const getStatus = (tableId) => {
+    const getStatus = (tableId) => {
+    // Backend'den gelen masa verisini bul
+    const backendTable = (tables || []).find(t => Number(t?.id) === Number(tableId));
+    
+    // Hibrit yaklaşım: Önce order items'a bak, sonra backend status'üne bak
+    if (backendTable && backendTable.activeOrderItemsCount > 0) {
+      return statusInfo["occupied"]; // Kırmızı - aktif order var ve items var
+    }
+    
+    // Eğer order items yok ama backend'de masa OCCUPIED ise, backend status'ünü kullan
+    if (backendTable && backendTable.statusName && backendTable.statusName.toLowerCase() === 'occupied') {
+      return statusInfo["occupied"]; // Kırmızı - backend'de manuel olarak occupied yapılmış
+    }
+
+    // Diğer durumlar için eski sistem
     const status = tableStatus[tableId] || "empty";
 
     if (status === 'reserved') {
@@ -770,13 +832,42 @@ const Dashboard = () => {
               padding: '15px 25px',
               borderRadius: '10px',
               textAlign: 'center',
-              minWidth: '140px'
+              minWidth: '120px'
             }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Kat Yoğunluğu</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 4 }}>
-                {usedCapacityInSalon}/{totalCapacityInSalon}
+              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                {(() => {
+                  if (loadingOccupancy) return '...';
+                  if (!occupancyData || !occupancyData.salons) return '0%';
+                  
+                  const currentSalon = occupancyData.salons.find(s => String(s.id) === String(selectedSalonId));
+                  if (!currentSalon) return '0%';
+                  
+                  return `${Math.round(currentSalon.occupancyRate)}%`;
+                })()}
               </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: 4 }}>Kat Doluluk Oranı</div>
             </div>
+                         <div style={{
+               background: '#ff9800',
+               color: 'white',
+               padding: '15px 25px',
+               borderRadius: '10px',
+               textAlign: 'center',
+               minWidth: '120px'
+             }}>
+               <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                 {(() => {
+                   if (loadingOccupancy) return '...';
+                   if (!occupancyData || !occupancyData.salons) return '0';
+                   
+                   const currentSalon = occupancyData.salons.find(s => String(s.id) === String(selectedSalonId));
+                   if (!currentSalon) return '0';
+                   
+                   return currentSalon.capacity;
+                 })()}
+               </div>
+               <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: 4 }}>Kapasite</div>
+             </div>
             <div style={{
               background: '#4caf50',
               color: 'white',
@@ -824,7 +915,27 @@ const Dashboard = () => {
               <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{totalTables}</div>
               <div style={{ fontSize: '14px' }}>Toplam Masa</div>
             </div>
+            <div style={{
+              background: '#9c27b0',
+              color: 'white',
+              padding: '15px 25px',
+              borderRadius: '10px',
+              textAlign: 'center',
+              minWidth: '120px'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                {(() => {
+                  if (loadingOccupancy) return '...';
+                  if (!occupancyData || !occupancyData.totalRestaurantOccupancy) return '0%';
+                  
+                  return `${Math.round(occupancyData.totalRestaurantOccupancy)}%`;
+                })()}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: 4 }}>Genel Doluluk</div>
+            </div>
           </div>
+
+
 
           {/* Kat Başlığı */}
           <h2 style={{ fontSize: "2rem", color: isDarkMode ? "#e0e0e0" : "#343a40", marginBottom: "1.5rem" }}>
@@ -901,7 +1012,7 @@ const Dashboard = () => {
                     position: 'relative',
                     border: '2px solid rgba(0,0,0,0.08)'
                   }}
-                  onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: Object.keys(order).length, reservation: tableReservations[0] })}
+                  onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: table.activeOrderItemsCount || 0, reservation: tableReservations[0] })}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'scale(1.04)';
                     e.currentTarget.style.boxShadow = '0 16px 28px rgba(0,0,0,0.18)';
@@ -1003,7 +1114,8 @@ const Dashboard = () => {
                       border: '1px solid rgba(255,255,255,0.6)',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}>{status.text}</span>
-                    {Object.keys(order).length > 0 && (
+                    {/* Backend'den gelen aktif order items sayısını kullan */}
+                    {table.activeOrderItemsCount > 0 && (
                       <span style={{
                         background: 'rgba(0,0,0,0.45)',
                         color: '#fff',
@@ -1014,7 +1126,7 @@ const Dashboard = () => {
                         justifyContent: 'center',
                         fontSize: 12
                       }}>
-                        {Object.keys(order).length}
+                        {table.activeOrderItemsCount}
                       </span>
                     )}
                   </div>
@@ -1152,7 +1264,7 @@ const Dashboard = () => {
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.background = 'rgba(255,255,255,0.2)';
-                    e.target.style.color = selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
+                    e.target.style.color = selectedSalonId === salon.id ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
                   }}
                   title={`${salon.name} Katını Sil`}
                 >
@@ -1195,7 +1307,7 @@ const Dashboard = () => {
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.background = 'rgba(255,255,255,0.2)';
-                    e.target.style.color = selectedFloor === floor ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
+                    e.target.style.color = selectedSalonId === salon.id ? 'white' : (isDarkMode ? '#e0e0e0' : '#495057');
                   }}
                   title={`${salon.name} İsmini Düzenle`}
                 >

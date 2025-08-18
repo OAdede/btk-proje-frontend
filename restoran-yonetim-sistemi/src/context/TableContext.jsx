@@ -35,6 +35,7 @@ export function TableProvider({ children }) {
     const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
     const [salons, setSalons] = useState([]);
     const [tableStatuses, setTableStatuses] = useState([]);
+    const [activeTableIds, setActiveTableIds] = useState([]);
     const [timestamps, setTimestamps] = useState({});
     const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
 
@@ -139,8 +140,14 @@ export function TableProvider({ children }) {
                 try {
                     return await apiCall('/stocks');
                 } catch (error) {
-                    if (error.message && error.message.includes('Unauthorized')) {
-                        // Garson ve diğer yetkisiz roller için sessizce boş array döndür
+                    console.warn("Stocks API hatası yakalandı:", error.message || error);
+                    // 401 Unauthorized kontrolü - birden fazla format kontrol et
+                    const errorMsg = String(error.message || '').toLowerCase();
+                    if (errorMsg.includes('unauthorized') || 
+                        errorMsg.includes('401') || 
+                        errorMsg.includes('403') || 
+                        errorMsg.includes('forbidden')) {
+                        console.log("Stocks API yetkisiz erişim - boş array döndürülüyor");
                         return [];
                     }
                     throw error; // Diğer hataları yukarı fırlat
@@ -165,6 +172,8 @@ export function TableProvider({ children }) {
                 }
             };
 
+            console.log("API çağrıları başlatılıyor, kullanıcı rolü:", roleInfo);
+            
             const tasks = [
                 apiCall('/products'),                // 0
                 safeStocksCall(),                   // 1 - tüm roller için dene
@@ -172,9 +181,11 @@ export function TableProvider({ children }) {
                 apiCall('/dining-tables'),           // 3
                 safeOrdersCall(),                   // 4 - güvenli orders çağrısı
                 apiCall('/salons'),                  // 5
+                apiCall('/orders/active-table-ids'), // 6 - aktif table ID'leri
             ];
 
             const results = await Promise.allSettled(tasks);
+            console.log("API çağrıları tamamlandı, sonuçlar:", results.map((r, i) => ({ index: i, status: r.status, error: r.reason?.message })));
 
             const safe = (idx, fallback) => {
                 if (results[idx]?.status === 'fulfilled') {
@@ -193,6 +204,7 @@ export function TableProvider({ children }) {
             const diningTablesData = safe(3, []);
             const ordersData = safe(4, []);
             const salonsData = safe(5, []);
+            const activeTableIdsData = safe(6, []);
 
             if (!productsData || productsData.length === 0) {
                 console.warn("API'den ürün verisi gelmedi veya liste boş.");
@@ -200,6 +212,7 @@ export function TableProvider({ children }) {
 
             setTables(diningTablesData || []);
             setSalons(salonsData || []);
+            setActiveTableIds(activeTableIdsData || []);
 
             const newTableStatus = (diningTablesData || []).reduce((acc, table) => {
                 acc[table.tableNumber] = table.statusName.toLowerCase();
@@ -823,7 +836,21 @@ export function TableProvider({ children }) {
                 : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
 
             // 1) Ödeme kaydı oluştur (yetki yoksa atla)
+            let paymentSuccessful = false;
             try {
+                // Debug: Token ve rol bilgilerini kontrol et
+                const token = localStorage.getItem('token') || '';
+                console.log('DEBUG - Token:', token.substring(0, 50) + '...');
+                console.log('DEBUG - Role Info:', roleInfo);
+                console.log('DEBUG - User ID:', numericUserId);
+                
+                console.log('Payment API çağrısı yapılıyor:', {
+                    orderId: orderToPay.id,
+                    cashierId: numericUserId,
+                    amount: amount,
+                    method: 'CASH'
+                });
+                
                 await apiCall('/payments', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
@@ -834,7 +861,12 @@ export function TableProvider({ children }) {
                         method: 'CASH'
                     })
                 });
+                
+                paymentSuccessful = true;
+                console.log('Payment API başarılı - order otomatik olarak completed=true yapılmalı');
+                
             } catch (e) {
+                console.error('Payment API hatası:', e);
                 if (String(e?.message || '').toLowerCase().includes('unauthorized')) {
                     console.warn('Payments API unauthorized for this role. Skipping payment record and proceeding to close order.');
                 } else {
@@ -842,8 +874,8 @@ export function TableProvider({ children }) {
                 }
             }
 
-            // 2) Siparişi kapat (sil)
-            await apiCall(`/orders/${orderToPay.id}`, { method: 'DELETE' });
+            // 2) Sipariş artık backend'de otomatik olarak tamamlanmış (is_completed=true) olarak işaretleniyor
+            // DELETE işlemi kaldırıldı - order veritabanında kalacak ama completed=true olacak
 
             // 3) Masayı boşalt ve yerel durumu temizle
             await updateTableStatus(tableId, 'empty');
@@ -1608,6 +1640,7 @@ export function TableProvider({ children }) {
                 tables,
                 salons,
                 tableStatuses,
+                activeTableIds,
                 reservations,
                 orderHistory,
                 isLoading,

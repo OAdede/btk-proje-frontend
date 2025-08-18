@@ -199,7 +199,17 @@ export const salonService = {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Backend'den gelen hata mesajını al
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.text();
+                    if (errorData) {
+                        errorMessage = errorData;
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing error response:', parseError);
+                }
+                throw new Error(errorMessage);
             }
 
             console.log('Salon deleted successfully');
