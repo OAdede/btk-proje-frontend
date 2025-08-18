@@ -1,10 +1,9 @@
 // Reservation API Service - Backend communication layer
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
-
-// Import secure HTTP client and token manager
 import httpClient from '../utils/httpClient.js';
 import tokenManager from '../utils/tokenManager.js';
 import secureStorage from '../utils/secureStorage.js';
+const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 // SECURITY: Helper to get current user ID from secure storage
 const getCurrentUserId = () => {
@@ -50,9 +49,7 @@ export const reservationService = {
   // Create new reservation
   async createReservation(reservationData) {
     try {
-      console.log('🔍 reservationService.createReservation - GELEN VERİ:', reservationData);
-      console.log('🔍 Gelen veri tipi:', typeof reservationData);
-      console.log('🔍 Gelen veri keys:', Object.keys(reservationData));
+  if (DEBUG) console.log('reservationService.createReservation called');
 
       const requestBody = {
         tableId: toBigInt(reservationData.tableId),                       // bigint
@@ -64,7 +61,7 @@ export const reservationService = {
         createdBy: toBigInt(reservationData.createdBy ?? getCurrentUserId(), 1) // bigint
       };
 
-      console.log('🔍 Oluşturulan requestBody:', requestBody);
+  if (DEBUG) console.log('requestBody built for reservation');
 
       // Son bir zorunlu alan kontrolü (null/undefined yakala)
       const required = ['tableId', 'customerName', 'customerPhone', 'reservationTime', 'createdBy'];
@@ -75,18 +72,19 @@ export const reservationService = {
         }
       }
 
-      console.log('✅ Tüm zorunlu alanlar mevcut, backend\'e gönderiliyor...');
+  if (DEBUG) console.log('All required fields present, sending to backend');
 
       // Use httpClient for automatic auth handling and better error management
       const result = await httpClient.requestJson('/reservations', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
 
-      console.log('✅ Rezervasyon başarıyla oluşturuldu:', result);
+  if (DEBUG) console.log('Reservation created successfully');
       return result;
     } catch (error) {
-      console.error('❌ Rezervasyon oluşturma hatası:', error);
+  if (DEBUG) console.error('Reservation create error:', error);
       throw error;
     }
   },
@@ -111,7 +109,7 @@ export const reservationService = {
     try {
       return await httpClient.requestJson(`/reservations/table/${tableId}`);
     } catch (error) {
-      console.error('Error fetching reservations by table:', error);
+      if (DEBUG) console.error('Error fetching reservations by table:', error);
       throw error;
     }
   },
@@ -119,21 +117,9 @@ export const reservationService = {
   // Get reservations by salon
   async getReservationsBySalon(salonId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/salon/${salonId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      return await httpClient.requestJson(`/reservations/salon/${salonId}`);
     } catch (error) {
-      console.error('Error fetching reservations by salon:', error);
+      if (DEBUG) console.error('Error fetching reservations by salon:', error);
       throw error;
     }
   },
@@ -141,21 +127,9 @@ export const reservationService = {
   // Get today's reservations
   async getTodayReservations() {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/today`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      return await httpClient.requestJson(`/reservations/today`);
     } catch (error) {
-      console.error('Error fetching today\'s reservations:', error);
+      if (DEBUG) console.error("Error fetching today's reservations:", error);
       throw error;
     }
   },
@@ -163,21 +137,9 @@ export const reservationService = {
   // Get reservations by status
   async getReservationsByStatus(statusId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/status/${statusId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      return await httpClient.requestJson(`/reservations/status/${statusId}`);
     } catch (error) {
-      console.error('Error fetching reservations by status:', error);
+      if (DEBUG) console.error('Error fetching reservations by status:', error);
       throw error;
     }
   },
@@ -195,25 +157,15 @@ export const reservationService = {
         createdBy: toBigInt(reservationData.createdBy ?? getCurrentUserId(), 1) // bigint
       };
 
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
+      const result = await httpClient.requestJson(`/reservations/${reservationId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('Reservation updated successfully:', result);
+      if (DEBUG) console.log('Reservation updated successfully');
       return result;
     } catch (error) {
-      console.error('Error updating reservation:', error);
+      if (DEBUG) console.error('Error updating reservation:', error);
       throw error;
     }
   },
@@ -221,13 +173,13 @@ export const reservationService = {
   // Cancel reservation
   async cancelReservation(reservationId) {
     try {
-      const result = await httpClient.requestJson(`/reservations/${reservationId}/cancel`, {
+  const result = await httpClient.requestJson(`/reservations/${reservationId}/cancel`, {
         method: 'PUT'
       });
-      console.log('Reservation cancelled successfully:', result);
+  if (DEBUG) console.log('Reservation cancelled successfully');
       return result;
     } catch (error) {
-      console.error('Error cancelling reservation:', error);
+  if (DEBUG) console.error('Error cancelling reservation:', error);
       throw error;
     }
   },
@@ -235,13 +187,13 @@ export const reservationService = {
   // Complete reservation
   async completeReservation(reservationId) {
     try {
-      const result = await httpClient.requestJson(`/reservations/${reservationId}/complete`, {
+  const result = await httpClient.requestJson(`/reservations/${reservationId}/complete`, {
         method: 'PUT'
       });
-      console.log('Reservation completed successfully:', result);
+  if (DEBUG) console.log('Reservation completed successfully');
       return result;
     } catch (error) {
-      console.error('Error completing reservation:', error);
+  if (DEBUG) console.error('Error completing reservation:', error);
       throw error;
     }
   },
@@ -249,22 +201,13 @@ export const reservationService = {
   // Mark reservation as no-show
   async markAsNoShow(reservationId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/no-show`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        }
+      const result = await httpClient.requestJson(`/reservations/${reservationId}/no-show`, {
+        method: 'PUT'
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Reservation marked as no-show successfully:', result);
+      if (DEBUG) console.log('Reservation marked as no-show successfully');
       return result;
     } catch (error) {
-      console.error('Error marking reservation as no-show:', error);
+      if (DEBUG) console.error('Error marking reservation as no-show:', error);
       throw error;
     }
   },
@@ -272,21 +215,11 @@ export const reservationService = {
   // Delete reservation
   async deleteReservation(reservationId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      console.log('Reservation deleted successfully');
+      await httpClient.request(`/reservations/${reservationId}`, { method: 'DELETE' });
+      if (DEBUG) console.log('Reservation deleted successfully');
       return true;
     } catch (error) {
-      console.error('Error deleting reservation:', error);
+      if (DEBUG) console.error('Error deleting reservation:', error);
       throw error;
     }
   },
@@ -294,21 +227,10 @@ export const reservationService = {
   // Get reservations by date range
   async getReservationsByDateRange(startDate, endDate) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/date-range?startDate=${startDate}&endDate=${endDate}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      const params = new URLSearchParams({ startDate, endDate });
+      return await httpClient.requestJson(`/reservations/date-range?${params}`);
     } catch (error) {
-      console.error('Error fetching reservations by date range:', error);
+      if (DEBUG) console.error('Error fetching reservations by date range:', error);
       throw error;
     }
   }

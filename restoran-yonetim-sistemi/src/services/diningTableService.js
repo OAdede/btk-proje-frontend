@@ -3,14 +3,15 @@
 
 // Import secure HTTP client and token manager
 import httpClient from '../utils/httpClient.js';
-import tokenManager from '../utils/tokenManager.js';
+// tokenManager not needed here; httpClient handles auth
+const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const diningTableService = {
     // Get all dining tables
     async getAllTables() {
         try {
             const result = await httpClient.requestJson('dining-tables');
-            console.log('Tables fetched successfully:', result);
+            if (DEBUG) console.log('Tables fetched successfully');
             return result;
         } catch (error) {
             console.error('Error fetching tables:', error);
@@ -22,7 +23,7 @@ export const diningTableService = {
     async getTablesBySalon(salonId) {
         try {
             const result = await httpClient.requestJson(`dining-tables/salon/${salonId}`);
-            console.log('Tables by salon fetched successfully:', result);
+            if (DEBUG) console.log('Tables by salon fetched successfully');
             return result;
         } catch (error) {
             console.error('Error fetching tables by salon:', error);
@@ -34,7 +35,7 @@ export const diningTableService = {
     async getAvailableTables() {
         try {
             const result = await httpClient.requestJson('dining-tables/available');
-            console.log('Available tables fetched successfully:', result);
+            if (DEBUG) console.log('Available tables fetched successfully');
             return result;
         } catch (error) {
             console.error('Error fetching available tables:', error);
@@ -59,7 +60,7 @@ export const diningTableService = {
             const result = await httpClient.request(`dining-tables/${tableId}/status/${backendStatus}`, {
                 method: 'PATCH'
             });
-            console.log('Table status updated successfully:', result);
+            if (DEBUG) console.log('Table status updated successfully');
             return result;
         } catch (error) {
             console.error('Error updating table status:', error);
@@ -73,7 +74,7 @@ export const diningTableService = {
             const result = await httpClient.request(`dining-tables/${tableId}/capacity/${capacity}`, {
                 method: 'PATCH'
             });
-            console.log('Table capacity updated successfully:', result);
+            if (DEBUG) console.log('Table capacity updated successfully');
             return result;
         } catch (error) {
             console.error('Error updating table capacity:', error);
@@ -85,7 +86,7 @@ export const diningTableService = {
     async getTableById(tableId) {
         try {
             const result = await httpClient.requestJson(`dining-tables/${tableId}`);
-            console.log('Table fetched successfully:', result);
+            if (DEBUG) console.log('Table fetched successfully');
             return result;
         } catch (error) {
             console.error('Error fetching table:', error);
@@ -98,9 +99,10 @@ export const diningTableService = {
         try {
             const result = await httpClient.requestJson('dining-tables', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(tableData)
             });
-            console.log('Table created successfully:', result);
+            if (DEBUG) console.log('Table created successfully');
             return result;
         } catch (error) {
             console.error('Error creating table:', error);
@@ -113,9 +115,10 @@ export const diningTableService = {
         try {
             const result = await httpClient.requestJson(`dining-tables/${tableId}`, {
                 method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(tableData)
             });
-            console.log('Table updated successfully:', result);
+            if (DEBUG) console.log('Table updated successfully');
             return result;
         } catch (error) {
             console.error('Error updating table:', error);
@@ -129,7 +132,7 @@ export const diningTableService = {
             await httpClient.request(`dining-tables/${tableId}`, {
                 method: 'DELETE'
             });
-            console.log('Table deleted successfully');
+            if (DEBUG) console.log('Table deleted successfully');
             return true;
         } catch (error) {
             console.error('Error deleting table:', error);

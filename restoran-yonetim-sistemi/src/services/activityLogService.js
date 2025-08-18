@@ -1,68 +1,39 @@
 // Activity Log API Service - Backend communication layer
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
-
-// Import secure token manager
-import tokenManager from '../utils/tokenManager.js';
-
-function buildAuthHeaders() {
-    // SECURITY: Use secure token manager instead of direct localStorage access
-    const token = tokenManager.getToken();
-    const headers = { 'Accept': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return headers;
-}
-
-async function parseJsonOrEmpty(response) {
-    try {
-        return await response.json();
-    } catch {
-        return [];
-    }
-}
-
-async function handleResponse(response, fallback = []) {
-    if (!response.ok) {
-        let errorMessage = `İstek başarısız: ${response.status}`;
-        try {
-            const text = await response.text();
-            try {
-                const data = JSON.parse(text);
-                errorMessage = data.message || data.error || errorMessage;
-            } catch {
-                errorMessage = text || errorMessage;
-            }
-        } catch { }
-        throw new Error(errorMessage);
-    }
-    return await parseJsonOrEmpty(response) ?? fallback;
-}
+import httpClient from '../utils/httpClient.js';
+const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const activityLogService = {
     async getAll() {
-        const res = await fetch(`${API_BASE_URL}/activity-logs`, {
-            method: 'GET',
-            headers: buildAuthHeaders()
-        });
-        return await handleResponse(res, []);
+        try {
+            const data = await httpClient.requestJson('/activity-logs');
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            if (DEBUG) console.error('activityLogService.getAll error:', e);
+            return [];
+        }
     },
 
     async getRecent() {
-        const res = await fetch(`${API_BASE_URL}/activity-logs/recent`, {
-            method: 'GET',
-            headers: buildAuthHeaders()
-        });
-        return await handleResponse(res, []);
+        try {
+            const data = await httpClient.requestJson('/activity-logs/recent');
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            if (DEBUG) console.error('activityLogService.getRecent error:', e);
+            return [];
+        }
     },
 
     async getByUser(userId) {
         if (userId === undefined || userId === null || String(userId).trim() === '') {
             throw new Error('Geçersiz kullanıcı ID');
         }
-        const res = await fetch(`${API_BASE_URL}/activity-logs/user/${encodeURIComponent(userId)}`, {
-            method: 'GET',
-            headers: buildAuthHeaders()
-        });
-        return await handleResponse(res, []);
+        try {
+            const data = await httpClient.requestJson(`/activity-logs/user/${encodeURIComponent(userId)}`);
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            if (DEBUG) console.error('activityLogService.getByUser error:', e);
+            return [];
+        }
     },
 
     async getByEntity(entityType, entityId) {
@@ -71,42 +42,42 @@ export const activityLogService = {
         }
         const type = String(entityType).toUpperCase().trim();
         const id = String(entityId).trim();
-        const res = await fetch(`${API_BASE_URL}/activity-logs/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}`, {
-            method: 'GET',
-            headers: buildAuthHeaders()
-        });
-        return await handleResponse(res, []);
+        try {
+            const data = await httpClient.requestJson(`/activity-logs/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}`);
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            if (DEBUG) console.error('activityLogService.getByEntity error:', e);
+            return [];
+        }
     },
 
     async getByDateRange(startDate, endDate) {
         if (!startDate || !endDate) {
             throw new Error('Başlangıç ve bitiş tarihleri zorunludur');
         }
-        const headers = buildAuthHeaders();
-        const buildUrl = (s, e) => `${API_BASE_URL}/activity-logs/date-range?${new URLSearchParams({ startDate: s, endDate: e }).toString()}`;
-
-        // 1) Try plain YYYY-MM-DD (input type="date" format)
-        let res = await fetch(buildUrl(startDate, endDate), { method: 'GET', headers });
-        if (res.ok) return await handleResponse(res, []);
-
-        // 2) If backend expects full datetime bounds, try inclusive day range
-        if (res.status === 400) {
-            const s1 = `${startDate}T00:00:00`;
-            const e1 = `${endDate}T23:59:59`;
-            res = await fetch(buildUrl(s1, e1), { method: 'GET', headers });
-            if (res.ok) return await handleResponse(res, []);
+        const buildParams = (s, e) => new URLSearchParams({ startDate: s, endDate: e }).toString();
+        
+        // 1) Try plain YYYY-MM-DD
+        try {
+            return await httpClient.requestJson(`/activity-logs/date-range?${buildParams(startDate, endDate)}`);
+        } catch (firstErr) {
+            // 2) Try full datetime bounds
+            try {
+                const s1 = `${startDate}T00:00:00`;
+                const e1 = `${endDate}T23:59:59`;
+                return await httpClient.requestJson(`/activity-logs/date-range?${buildParams(s1, e1)}`);
+            } catch (secondErr) {
+                // 3) Some backends expect space instead of 'T'
+                try {
+                    const s2 = `${startDate} 00:00:00`;
+                    const e2 = `${endDate} 23:59:59`;
+                    return await httpClient.requestJson(`/activity-logs/date-range?${buildParams(s2, e2)}`);
+                } catch (thirdErr) {
+                    if (DEBUG) console.error('activityLogService.getByDateRange error:', thirdErr);
+                    return [];
+                }
+            }
         }
-
-        // 3) Some backends expect space instead of 'T'
-        if (res.status === 400) {
-            const s2 = `${startDate} 00:00:00`;
-            const e2 = `${endDate} 23:59:59`;
-            res = await fetch(buildUrl(s2, e2), { method: 'GET', headers });
-            if (res.ok) return await handleResponse(res, []);
-        }
-
-        // If still failing, surface the original error details
-        return await handleResponse(res, []);
     },
 
     async getByActionType(actionType) {
@@ -114,11 +85,13 @@ export const activityLogService = {
             throw new Error('Aksiyon tipi zorunludur');
         }
         const action = String(actionType).toUpperCase().replace(/\s+/g, '_');
-        const res = await fetch(`${API_BASE_URL}/activity-logs/action/${encodeURIComponent(action)}`, {
-            method: 'GET',
-            headers: buildAuthHeaders()
-        });
-        return await handleResponse(res, []);
+        try {
+            const data = await httpClient.requestJson(`/activity-logs/action/${encodeURIComponent(action)}`);
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            if (DEBUG) console.error('activityLogService.getByActionType error:', e);
+            return [];
+        }
     }
 };
 

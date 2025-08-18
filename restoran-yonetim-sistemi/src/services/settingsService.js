@@ -1,29 +1,23 @@
 // Settings API Service - Backend communication layer
 // Prefer environment variable; fallback to Vite dev proxy path
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
-
-// Import secure HTTP client and token manager
 import httpClient from '../utils/httpClient.js';
-import tokenManager from '../utils/tokenManager.js';
+const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const settingsService = {
     // Update restaurant settings
     async updateRestaurantSettings(settings) {
         try {
-            console.log('Making API call to update settings');
-            console.log('Request body:', settings);
+            if (DEBUG) console.log('Making API call to update settings');
 
             const responseData = await httpClient.requestJson('/settings', {
                 method: 'PUT',
                 body: JSON.stringify(settings)
             });
 
-            console.log('Settings updated successfully:', responseData);
+            if (DEBUG) console.log('Settings updated successfully');
             return responseData;
-
-                throw new Error(errorMessage);
         } catch (error) {
-            console.error('Settings service error:', error);
+            if (DEBUG) console.error('Settings service error:', error);
             throw new Error(error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
         }
     },

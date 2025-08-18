@@ -1,10 +1,6 @@
 // Personnel API Service - Backend communication layer
-// Prefer environment variable; fallback to Vite dev proxy path
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
-
-// Import secure HTTP client and token manager
+// Prefer centralized HTTP client with auth
 import httpClient from '../utils/httpClient.js';
-import tokenManager from '../utils/tokenManager.js';
 
 // Role mapping for backend (0=admin, 1=waiter, 2=cashier)
 const DEBUG_SERVICES = (import.meta?.env?.VITE_DEBUG_SERVICES === 'true');
@@ -78,6 +74,7 @@ export const personnelService = {
             // Use httpClient for automatic auth and error handling
             const responseData = await httpClient.requestJson('/auth/register', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestData)
             });
             
@@ -117,36 +114,6 @@ export const personnelService = {
             const responseData = await httpClient.requestJson('/users/active');
             if (DEBUG_SERVICES) console.log('Active users loaded successfully:', responseData.length);
             return responseData;
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/users/active`, {
-                method: 'GET',
-                headers: headers
-            });
-
-            if (!response.ok) {
-                let errorMessage = 'Aktif kullanıcılar yüklenirken bir hata oluştu';
-                try {
-                    const errorText = await response.text();
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch {}
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const responseData = await response.json();
-                return Array.isArray(responseData) ? responseData : [];
-            } catch {
-                return [];
-            }
         } catch (error) {
             throw new Error(error.message || 'Aktif kullanıcılar yüklenirken bir hata oluştu.');
         }
@@ -155,41 +122,9 @@ export const personnelService = {
     // Get only inactive users
     async getInactiveUsers() {
         try {
-            const token = tokenManager.getToken();
-
-            const headers = {
-                'Accept': 'application/json',
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/users/inactive`, {
-                method: 'GET',
-                headers: headers
-            });
-
-            if (!response.ok) {
-                let errorMessage = 'Pasif kullanıcılar yüklenirken bir hata oluştu';
-                try {
-                    const errorText = await response.text();
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch {}
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const responseData = await response.json();
-                return Array.isArray(responseData) ? responseData : [];
-            } catch {
-                return [];
-            }
+            const responseData = await httpClient.requestJson('/users/inactive');
+            if (DEBUG_SERVICES) console.log('Inactive users loaded successfully:', responseData.length);
+            return responseData;
         } catch (error) {
             throw new Error(error.message || 'Pasif kullanıcılar yüklenirken bir hata oluştu.');
         }
@@ -198,19 +133,9 @@ export const personnelService = {
     // Toggle user's active status
     async setUserActiveStatus(userId, active) {
         try {
-            const token = tokenManager.getToken();
-            const headers = {
-                'Accept': 'application/json',
-            };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/active?active=${encodeURIComponent(Boolean(active))}`, {
-                method: 'PATCH',
-                headers: headers
+            const response = await httpClient.request(`/users/${encodeURIComponent(userId)}/active?active=${encodeURIComponent(Boolean(active))}`, {
+                method: 'PATCH'
             });
-
             if (!response.ok) {
                 let errorMessage = 'Kullanıcı durumu güncellenirken bir hata oluştu';
                 try {
@@ -224,7 +149,6 @@ export const personnelService = {
                 } catch {}
                 throw new Error(errorMessage);
             }
-
             try {
                 const responseData = await response.json();
                 return responseData;

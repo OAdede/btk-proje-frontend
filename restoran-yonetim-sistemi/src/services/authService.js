@@ -1,11 +1,9 @@
 // Authentication API Service - Backend communication layer
-// Prefer environment variable; fallback to Vite dev proxy path
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
-
-// Import new token management utilities
 import tokenManager from '../utils/tokenManager.js';
 import httpClient from '../utils/httpClient.js';
 import secureStorage from '../utils/secureStorage.js';
+const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const authService = {
     // Login user
@@ -22,22 +20,20 @@ export const authService = {
 
             if (!response.ok) {
                 let errorMessage = 'Giriş yapılırken bir hata oluştu';
-                // Response gövdesini bir kez oku ve sonra JSON parse etmeyi dene
                 try {
                     const errorText = await response.text();
-                    console.log('Server error text:', errorText);
+                    if (DEBUG) console.log('Server error text length:', errorText?.length || 0);
                     try {
                         const errorData = JSON.parse(errorText);
                         errorMessage = errorData.message || errorData.error || errorMessage;
-                        console.log('Server error details (parsed JSON):', errorData);
+                        if (DEBUG) console.log('Server error details (parsed JSON)');
                     } catch {
                         errorMessage = (errorText && errorText.trim().length > 0) ? errorText : `${errorMessage} (HTTP ${response.status})`;
                     }
-                } catch (readErr) {
-                    console.log('Could not read error response body:', readErr);
+                } catch {
                     errorMessage = `${errorMessage} (HTTP ${response.status})`;
                 }
-                console.log('Response status:', response.status);
+                if (DEBUG) console.log('Login response status:', response.status);
                 throw new Error(errorMessage);
             }
 
@@ -56,8 +52,7 @@ export const authService = {
     // Request password reset
     async requestPasswordReset(email) {
         try {
-            // Frontend URL'sini backend'e gönder (environment variable veya window.location.origin)
-            const frontendUrl = process.env.FRONTEND_URL || window.location.origin;
+        const frontendUrl = import.meta?.env?.VITE_FRONTEND_URL || window.location.origin;
 
             const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
                 method: 'POST',
@@ -77,8 +72,7 @@ export const authService = {
                 // Önce response'u text olarak okumaya çalış
                 try {
                     const errorText = await response.text();
-                    console.log('Server error response:', errorText);
-
+                    if (DEBUG) console.log('Forgot-password error text length:', errorText?.length || 0);
                     // Eğer JSON formatında ise parse etmeye çalış
                     try {
                         const errorData = JSON.parse(errorText);
@@ -87,8 +81,7 @@ export const authService = {
                         // JSON parse edilemezse text'i direkt kullan
                         errorMessage = errorText || errorMessage;
                     }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
+                } catch {
                 }
 
                 throw new Error(errorMessage);
@@ -100,7 +93,7 @@ export const authService = {
                 return responseData;
             } catch (jsonError) {
                 // Eğer response boş ise veya JSON değilse boş obje döndür
-                console.log('Response is not JSON, returning empty object');
+                if (DEBUG) console.log('Response is not JSON, returning empty object');
                 return {};
             }
         } catch (error) {
@@ -129,8 +122,7 @@ export const authService = {
                 // Önce response'u text olarak okumaya çalış
                 try {
                     const errorText = await response.text();
-                    console.log('Server error response:', errorText);
-
+                    if (DEBUG) console.log('Reset-password error text length:', errorText?.length || 0);
                     // Eğer JSON formatında ise parse etmeye çalış
                     try {
                         const errorData = JSON.parse(errorText);
@@ -139,8 +131,7 @@ export const authService = {
                         // JSON parse edilemezse text'i direkt kullan
                         errorMessage = errorText || errorMessage;
                     }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
+                } catch {
                 }
 
                 throw new Error(errorMessage);
@@ -152,7 +143,7 @@ export const authService = {
                 return responseData;
             } catch (jsonError) {
                 // Eğer response boş ise veya JSON değilse boş obje döndür
-                console.log('Response is not JSON, returning empty object');
+                if (DEBUG) console.log('Response is not JSON, returning empty object');
                 return {};
             }
         } catch (error) {
@@ -171,7 +162,7 @@ export const authService = {
             delete window.axios?.defaults?.headers?.common?.Authorization;
         }
         
-        console.log('[AuthService] Complete secure logout performed');
+    if (DEBUG) console.log('[AuthService] Complete secure logout performed');
     },
 
     // Check if user is authenticated
@@ -219,14 +210,14 @@ export const authService = {
             const response = await httpClient.get('/auth/validate');
             return response.ok;
         } catch (error) {
-            console.error('Token validation error:', error);
+            if (DEBUG) console.error('Token validation error:', error);
             return false;
         }
     },
 
     // Check user count for bootstrap process
     async getUserCount() {
-        console.log('getUserCount called');
+    if (DEBUG) console.log('getUserCount called');
         try {
             const response = await fetch(`${API_BASE_URL}/auth/user-count`, {
                 method: 'GET',
@@ -236,13 +227,13 @@ export const authService = {
                 }
             });
 
-            console.log('getUserCount response status:', response.status);
+            if (DEBUG) console.log('getUserCount response status:', response.status);
 
             if (!response.ok) {
                 let errorMessage = 'Kullanıcı sayısı kontrolü başarısız oldu';
                 try {
                     const errorText = await response.text();
-                    console.log('Server error response:', errorText);
+                    if (DEBUG) console.log('User-count error text length:', errorText?.length || 0);
                     try {
                         const errorData = JSON.parse(errorText);
                         errorMessage = errorData.message || errorData.error || errorMessage;
@@ -256,10 +247,10 @@ export const authService = {
             }
 
             const responseData = await response.json();
-            console.log('getUserCount response data:', responseData);
+            if (DEBUG) console.log('getUserCount response data loaded');
             return responseData;
         } catch (error) {
-            console.error('getUserCount error:', error);
+            if (DEBUG) console.error('getUserCount error:', error);
             throw new Error(error.message || 'Kullanıcı sayısı kontrolü başarısız oldu.');
         }
     },
@@ -268,7 +259,7 @@ export const authService = {
     async bootstrapAdmin(email, name = 'Admin') {
         try {
             // Get frontend URL for the reset link
-            const frontendUrl = process.env.FRONTEND_URL || window.location.origin;
+            const frontendUrl = import.meta?.env?.VITE_FRONTEND_URL || window.location.origin;
 
             const response = await fetch(`${API_BASE_URL}/auth/bootstrap-admin`, {
                 method: 'POST',
@@ -287,15 +278,14 @@ export const authService = {
                 let errorMessage = 'Bootstrap admin oluşturma başarısız oldu';
                 try {
                     const errorText = await response.text();
-                    console.log('Server error response:', errorText);
+                    if (DEBUG) console.log('Bootstrap-admin error text length:', errorText?.length || 0);
                     try {
                         const errorData = JSON.parse(errorText);
                         errorMessage = errorData.message || errorData.error || errorMessage;
                     } catch (jsonError) {
                         errorMessage = errorText || errorMessage;
                     }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
+                } catch {
                 }
                 throw new Error(errorMessage);
             }
@@ -304,7 +294,7 @@ export const authService = {
                 const responseData = await response.json();
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty object');
+                if (DEBUG) console.log('Response is not JSON, returning empty object');
                 return {};
             }
         } catch (error) {
@@ -330,7 +320,7 @@ export const authService = {
                 let errorMessage = 'Şifre değiştirme işlemi başarısız oldu';
                 try {
                     const errorText = await response.text();
-                    console.log('Change password error response:', errorText);
+                    if (DEBUG) console.log('Change password error text length:', errorText?.length || 0);
                     try {
                         const errorData = JSON.parse(errorText);
                         errorMessage = errorData.message || errorData.error || errorMessage;
@@ -346,24 +336,20 @@ export const authService = {
             // Handle successful response - could be JSON or text
             try {
                 const responseText = await response.text();
-                console.log('Password change response:', responseText);
                 
                 // Try to parse as JSON first
                 try {
                     const responseData = JSON.parse(responseText);
-                    console.log('Password changed successfully (JSON response)');
                     return responseData;
                 } catch (jsonError) {
                     // If it's not JSON, return the text as a success message
-                    console.log('Password changed successfully (text response)');
                     return { message: responseText || 'Şifre başarıyla değiştirildi' };
                 }
             } catch (readError) {
-                console.log('Could not read success response, but password was changed');
                 return { message: 'Şifre başarıyla değiştirildi' };
             }
         } catch (error) {
-            console.error('Change password error:', error);
+            if (DEBUG) console.error('Change password error:', error);
             throw new Error(error.message || 'Şifre değiştirme işlemi başarısız oldu');
         }
     },
@@ -412,7 +398,7 @@ export const authService = {
                 }
             }
         } catch (error) {
-            console.error('Role verification error:', error);
+            if (DEBUG) console.error('Role verification error:', error);
             return { authorized: false, message: 'Yetkilendirme kontrol edilemedi' };
         }
     }

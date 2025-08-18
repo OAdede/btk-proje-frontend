@@ -1,9 +1,6 @@
 // User API Service - Fetch user profile information
-const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || '/api';
-
-// Import new secure utilities
 import httpClient from '../utils/httpClient.js';
-import tokenManager from '../utils/tokenManager.js';
+const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const userService = {
   // Fetch user by ID
@@ -13,7 +10,6 @@ export const userService = {
     }
 
     try {
-      // Use httpClient for automatic auth and error handling
       const data = await httpClient.requestJson(`/users/${encodeURIComponent(userId)}`);
       return data;
     } catch (error) {
@@ -38,20 +34,13 @@ export const userService = {
     };
 
     try {
-      const token = tokenManager.getToken();
-      const headers = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
       const blob = await dataUrlToBlob(dataUrl);
       const form = new FormData();
       form.append('file', blob, 'profile.jpg');
 
       // Most backends expect multipart at POST or PATCH. We default to POST.
-      const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/photo`, {
+      const response = await httpClient.request(`/users/${encodeURIComponent(userId)}/photo`, {
         method: 'POST',
-        headers,
         body: form,
       });
 
@@ -71,9 +60,9 @@ export const userService = {
 
       try {
         const data = await response.json();
-        return data; // Backend dönerse yeni user objesi veya bilgi
+        return data;
       } catch {
-        return null; // Response body yoksa
+        return null;
       }
     } catch (error) {
       throw new Error(error.message || 'Profil fotoğrafı güncellenemedi.');
@@ -90,18 +79,9 @@ export const userService = {
     }
 
     try {
-      const token = tokenManager.getToken();
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/phone`, {
+      const response = await httpClient.request(`/users/${encodeURIComponent(userId)}/phone`, {
         method: 'PATCH',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber }),
       });
 
@@ -140,18 +120,9 @@ export const userService = {
     }
 
     try {
-      const token = tokenManager.getToken();
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}/email`, {
+      const response = await httpClient.request(`${encodeURI(`/users/${encodeURIComponent(userId)}/email`)}`, {
         method: 'PATCH',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
