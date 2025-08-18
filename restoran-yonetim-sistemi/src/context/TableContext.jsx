@@ -434,6 +434,77 @@ export function TableProvider({ children }) {
         }
     };
 
+    // Zorla masa sil (rezervasyon ve siparişleri otomatik temizler)
+    const deleteTableForce = async (tableId) => {
+        try {
+            const table = tables.find(t => t.id === tableId);
+            if (!table) {
+                console.warn(`Table with id ${tableId} not found`);
+                throw new Error('Masa bulunamadı');
+            }
+
+            const backendTableKey = String(table.id);
+
+            // 1) Rezervasyonları topla ve sil
+            try {
+                const reservationsOfTable = await apiCall(`/reservations/table/${table.id}`, { method: 'GET' });
+                if (Array.isArray(reservationsOfTable)) {
+                    for (const res of reservationsOfTable) {
+                        try {
+                            await apiCall(`/reservations/${res.id}`, { method: 'DELETE' });
+                        } catch (e) {
+                            console.warn('Rezervasyon silinemedi (force):', res.id, e);
+                        }
+                    }
+                }
+                // Yerel rezervasyon deposunu da temizlemeyi dene (fallback)
+                const localReservations = Object.values(reservations || {}).filter(r => {
+                    return String(r.tableId) === String(table.id) || String(r.tableId) === String(table.tableNumber);
+                });
+                for (const r of localReservations) {
+                    try {
+                        const rid = r.backendId || r.id;
+                        if (rid != null) {
+                            await apiCall(`/reservations/${rid}`, { method: 'DELETE' });
+                        }
+                    } catch (e) {
+                        console.warn('Yerel rezervasyon silinemedi (force):', r, e);
+                    }
+                }
+            } catch (e) {
+                console.warn('Rezervasyonlar getirilemedi (force):', e);
+            }
+
+            // 2) Aktif sipariş varsa sil
+            try {
+                const activeOrder = orders[backendTableKey];
+                if (activeOrder && activeOrder.id) {
+                    await apiCall(`/orders/${activeOrder.id}`, { method: 'DELETE' });
+                    setOrders(prev => { const next = { ...prev }; delete next[backendTableKey]; return next; });
+                }
+            } catch (e) {
+                console.warn('Aktif sipariş silinemedi (force), devam ediliyor:', e);
+            }
+
+            // 3) Masayı boş olarak işaretle (backend) ve yereli güncelle
+            try {
+                await apiCall(`/dining-tables/${table.id}/status/AVAILABLE`, { method: 'PATCH' });
+                setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'empty' }));
+            } catch (e) {
+                console.warn('Masa durumu AVAILABLE yapılırken hata (force):', e);
+            }
+
+            // 4) Masayı sil
+            await apiCall(`/dining-tables/${tableId}`, { method: 'DELETE' });
+
+            // 5) Güncel verileri yükle
+            await loadTablesAndSalons();
+        } catch (error) {
+            console.error(`Error force deleting table ${tableId}:`, error);
+            throw error;
+        }
+    };
+
     // Masa oluşturma fonksiyonu
     const createTable = async ({ tableNumber, capacity, salonId }) => {
         try {
@@ -1101,6 +1172,7 @@ export function TableProvider({ children }) {
                 updateTableStatus,
                 updateTable,
                 deleteTable,
+                deleteTableForce,
                 createTable,
                 saveFinalOrder,
                 cancelOrder,

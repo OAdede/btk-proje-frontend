@@ -55,6 +55,8 @@ export const salonService = {
         try {
             const name = String(salonData?.name || '').trim();
             if (!name) throw new Error('Salon adı zorunludur');
+            const providedCapacity = Number.parseInt(salonData?.capacity, 10);
+            const capacity = Number.isFinite(providedCapacity) && providedCapacity > 0 ? providedCapacity : 100;
 
             const doRequest = async (payload) => {
                 console.log('Sending payload to backend:', payload);
@@ -73,7 +75,7 @@ export const salonService = {
             // Try with name and capacity first (backend requires capacity)
             let response = await doRequest({ 
                 name, 
-                capacity: 100 // Default salon kapasitesi
+                capacity
             });
 
             if (!response.ok) {
@@ -108,11 +110,26 @@ export const salonService = {
                 const needsCode = status === 400 && (combined.includes('code') || combined.includes('prefix'));
                 if (needsCode) {
                     const autoCode = (name.charAt(0) || 'S').toUpperCase().replace(/[^A-ZÇĞİÖŞÜ]/g, 'S').slice(0, 1);
-                    console.log('Backend requires code, retrying with:', { name, code: autoCode, capacity: 100 });
-                    response = await doRequest({ name, code: autoCode, capacity: 100 });
+                    console.log('Backend requires code, retrying with:', { name, code: autoCode, capacity });
+                    response = await doRequest({ name, code: autoCode, capacity });
                 }
 
                 if (!response.ok) {
+                    // 500 gibi durumlarda bazı backend'ler yine de kaydı oluşturmuş olabilir.
+                    // Bu durumda bir kez mevcut salonları çekip isme göre oluşturulmuş mı bak.
+                    if (response.status >= 500) {
+                        try {
+                            const all = await this.getAllSalons();
+                            const existing = (all || []).find(s => String(s.name).toLowerCase() === name.toLowerCase());
+                            if (existing) {
+                                console.warn('Backend 500 döndü ama salon oluşturulmuş görünüyor, başarı olarak kabul ediliyor.', existing);
+                                return existing;
+                            }
+                        } catch (probeErr) {
+                            console.warn('Salon oluşturma hatası sonrası doğrulama çağrısı başarısız:', probeErr);
+                        }
+                    }
+
                     // Build readable error
                     let errText = `HTTP error! status: ${response.status}`;
                     try {

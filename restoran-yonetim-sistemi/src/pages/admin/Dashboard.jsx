@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 const Dashboard = () => {
-  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons, createTable, deleteTable: deleteTableFromCtx } = useContext(TableContext);
+  const { tableStatus, orders, reservations, addReservation, removeReservation, updateTableStatus, tables, salons, loadTablesAndSalons, createTable, deleteTable: deleteTableFromCtx, deleteTableForce } = useContext(TableContext);
   const { isDarkMode } = useContext(ThemeContext);
   const [showReservationMode, setShowReservationMode] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -74,6 +74,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [showAddSalonModal, setShowAddSalonModal] = useState(false);
   const [newSalonName, setNewSalonName] = useState('');
+  const [newSalonCapacity, setNewSalonCapacity] = useState(100);
+  const [newSalonTableCount, setNewSalonTableCount] = useState(0);
 
   // Restoran ismini backend'den al
   useEffect(() => {
@@ -117,8 +119,8 @@ const Dashboard = () => {
 
   // Kat adını döndüren fonksiyon
   const getFloorName = (floorNumber) => {
-    // Yönetim başlığında backend salon adını göster
-    const salon = (derivedSalons || []).find(s => String(s.id) === String(selectedSalonId));
+    // Silme/onay gibi durumlarda hedef kat (salon) id'sine göre adı bul
+    const salon = (derivedSalons || []).find(s => String(s.id) === String(floorNumber));
     return salon?.name || (floorNumber === 0 ? "Zemin" : `Kat ${floorNumber}`);
   };
 
@@ -522,15 +524,24 @@ const Dashboard = () => {
         console.log('Silinecek masalar:', salonTables.map(t => t.id));
         for (const table of salonTables) {
           try {
-            await diningTableService.deleteTable(table.id);
+            // Önce normal silmeyi dene
+            await deleteTableFromCtx(table.id);
             console.log('Masa silindi:', table.id);
           } catch (error) {
-            if (String(error.message || '').includes('404')) {
+            const msg = String(error.message || '');
+            if (msg.includes('404')) {
               console.warn(`Masa ${table.tableNumber || table.id} zaten silinmiş.`);
               continue;
             }
-            console.error('Masa silme hatası:', error);
-            throw new Error(`Masa ${table.tableNumber || table.id} silinemedi: ${error.message}`);
+            console.warn('Masa silme hatası, force silinmek üzere tekrar denenecek:', error);
+            // Force delete dene
+            try {
+              await deleteTableForce(table.id);
+              console.log('Masa force ile silindi:', table.id);
+            } catch (e2) {
+              console.error('Masa force silme de başarısız oldu:', e2);
+              throw new Error(`Masa ${table.tableNumber || table.id} silinemedi: ${e2.message}`);
+            }
           }
         }
         // 2) Şimdi salonu sil
@@ -538,12 +549,9 @@ const Dashboard = () => {
         await salonService.deleteSalon(floorToDelete);
         // 3) Verileri tazele
         await loadTablesAndSalons();
-        // 4) Modal'ı kapat
+        // 4) Modal'ı kapat (başarı bildirimi gösterme)
         setShowDeleteFloorModal(false);
         setFloorToDelete(null);
-        // 5) Başarı mesajı göster
-        setSuccessData({ message: 'Kat ve tüm masaları başarıyla silindi' });
-        setShowSuccess(true);
         console.log('Kat silme işlemi tamamlandı.');
       } catch (error) {
         console.error('Kat silme hatası:', error);
@@ -1266,6 +1274,16 @@ const Dashboard = () => {
                 <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Adı</label>
                 <input value={newSalonName} onChange={(e)=>setNewSalonName(e.target.value)} placeholder="Örn: ANA SALON" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
               </div>
+              <div style={{ textAlign: 'left', marginBottom: '14px', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Kapasitesi</label>
+                  <input type="number" min={1} value={newSalonCapacity} onChange={(e)=>setNewSalonCapacity(parseInt(e.target.value || '0', 10))} placeholder="Örn: 120" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Masa Sayısı</label>
+                  <input type="number" min={0} value={newSalonTableCount} onChange={(e)=>setNewSalonTableCount(parseInt(e.target.value || '0', 10))} placeholder="Örn: 10" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
+                </div>
+              </div>
               
               <div style={{ display:'flex', gap:15, justifyContent:'center' }}>
                 <button onClick={async ()=>{
@@ -1275,14 +1293,29 @@ const Dashboard = () => {
                   const duplicate = (derivedSalons||[]).some(s => String(s.name||'').toLowerCase() === name.toLowerCase());
                   if (duplicate) { alert('Bu isimde bir salon zaten var'); return; }
                   try {
-                    await salonService.createSalon({ name });
+                    const validCapacity = Number.isFinite(newSalonCapacity) && newSalonCapacity > 0 ? newSalonCapacity : 100;
+                    const createdSalon = await salonService.createSalon({ name, capacity: validCapacity });
+                    // Eğer masa sayısı > 0 ise, 1..N arası masa oluştur
+                    const count = Number.isFinite(newSalonTableCount) && newSalonTableCount > 0 ? newSalonTableCount : 0;
+                    if (count > 0 && createdSalon?.id) {
+                      for (let i = 1; i <= count; i++) {
+                        try {
+                          await createTable({ tableNumber: i, capacity: 4, salonId: createdSalon.id });
+                        } catch(err) {
+                          console.error('Masa oluşturulamadı:', i, err);
+                        }
+                      }
+                    }
                     await loadTablesAndSalons?.();
-                    setShowAddSalonModal(false); setNewSalonName('');
+                    setShowAddSalonModal(false);
+                    setNewSalonName('');
+                    setNewSalonCapacity(100);
+                    setNewSalonTableCount(0);
                   } catch(err){
                     alert(`Salon eklenirken hata: ${err.message}`);
                   }
                 }} style={{ background:'#4CAF50', color:'#fff', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>Ekle</button>
-                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
+                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonCapacity(100); setNewSalonTableCount(0); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
               </div>
             </div>
           </div>
