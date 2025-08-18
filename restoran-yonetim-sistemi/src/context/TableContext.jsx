@@ -1447,10 +1447,21 @@ export function TableProvider({ children }) {
 
     const addReservation = async (tableId, reservationData) => {
         try {
+            // Backend'e gönderilecek veriyi hazırla
+            const backendData = {
+                ...reservationData,
+                tableId: tableId,
+                // Eksik alanları varsayılan değerlerle doldur
+                statusId: reservationData.statusId || 1, // PENDING
+                createdBy: reservationData.createdBy || 1
+            };
+            
+            console.log('Backend\'e gönderilen rezervasyon verisi:', backendData);
+            
             const backendReservation = await apiCall('/reservations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...reservationData, tableId })
+                body: JSON.stringify(backendData)
             });
 
             const reservationId = backendReservation.id || crypto.randomUUID();
