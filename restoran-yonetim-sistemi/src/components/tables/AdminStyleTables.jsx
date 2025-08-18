@@ -123,27 +123,7 @@ export default function AdminStyleTables({ roleOverride }) {
         }
     }, [loading, tables, loadTablesAndSalons]);
 
-    // Calculate occupancy using current table status as a proxy
-    const getTableOccupancy = (tableId) => {
-        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
-        if (!backendTable) return null;
-        const capacity = backendTable?.capacity || 4;
-        const statusName = String(
-            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
-        ).toLowerCase();
-        // If reserved, try to use reservation headcount
-        if (statusName === 'reserved') {
-            const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(tableId));
-            const people = Number(res?.kisiSayisi);
-            if (Number.isFinite(people) && people > 0) {
-                const rate = Math.min((people / capacity) * 100, 100);
-                return { rate, people, capacity };
-            }
-            return { rate: 60, people: null, capacity };
-        }
-        if (statusName === 'occupied') return { rate: 100, people: null, capacity };
-        return { rate: 0, people: null, capacity };
-    };
+    // (Per-table occupancy badge removed; only floor badge remains)
 
     const statusInfo = {
         empty: { text: 'Boş', color: '#4caf50', textColor: '#fff' },
@@ -226,8 +206,48 @@ export default function AdminStyleTables({ roleOverride }) {
         return () => clearInterval(t);
     }, []);
 
+    // Floor (kat) occupancy computed from current salon selection
+    const renderFloorOccupancyBadge = () => {
+        if (!selectedSalonId) return null;
+        const inSalon = (tables || []).filter(t => String(t?.salon?.id ?? t?.salonId) === String(selectedSalonId));
+        const totalCapacity = inSalon.reduce((s, t) => s + (Number(t?.capacity) || 4), 0);
+        if (totalCapacity <= 0) return null;
+        let used = 0;
+        inSalon.forEach(t => {
+            const statusName = String(t?.status?.name ?? t?.statusName ?? t?.status_name ?? '').toLowerCase();
+            const cap = Number(t?.capacity) || 4;
+            if (statusName === 'occupied') {
+                used += cap;
+            } else if (statusName === 'reserved') {
+                const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(t?.tableNumber ?? t?.id));
+                const ppl = Number(res?.kisiSayisi ?? res?.personCount);
+                used += Number.isFinite(ppl) && ppl > 0 ? Math.min(ppl, cap) : Math.ceil(cap / 2);
+            }
+        });
+        const label = `${used}/${totalCapacity}`;
+        return (
+            <div
+                style={{
+                    position: 'fixed',
+                    top: '56px',
+                    right: '16px',
+                    background: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.7)',
+                    color: '#fff',
+                    padding: '8px 12px',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    zIndex: 9999,
+                }}
+            >
+                Kat Yoğunluğu: {label}
+            </div>
+        );
+    };
+
     return (
         <>
+            {renderFloorOccupancyBadge()}
             {/* Sadece admin için stok uyarısını göster */}
             {effectiveRole === 'admin' && <StockWarning />}
             
@@ -278,37 +298,7 @@ export default function AdminStyleTables({ roleOverride }) {
                                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                                 title={`Masa ${table.displayNumber}`}
                             >
-                                {/* Occupancy Indicator */}
-                                {occupancy && (
-                                    <div
-                                        style={{
-                                            position: 'absolute',
-                                            top: '8px',
-                                            right: '8px',
-                                            background: 'rgba(0, 0, 0, 0.7)',
-                                            color: 'white',
-                                            padding: '2px 6px',
-                                            borderRadius: '10px',
-                                            fontSize: '10px',
-                                            fontWeight: 'bold',
-                                            zIndex: 10,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '2px'
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                width: '8px',
-                                                height: '8px',
-                                                borderRadius: '50%',
-                                                backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
-                                                               occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
-                                            }}
-                                        />
-                                        {Math.round(occupancy.rate)}%
-                                    </div>
-                                )}
+                                {/* Per-table occupancy badge removed */}
                                 <div
                                     style={{
                                         fontSize: '0.8rem',

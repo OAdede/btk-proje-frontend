@@ -658,6 +658,42 @@ const Dashboard = () => {
 
   return (
     <>
+      {/* Kat Yoğunluğu Badge */}
+      {selectedSalonId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '56px',
+            right: '16px',
+            background: isDarkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            padding: '8px 12px',
+            borderRadius: '12px',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            zIndex: 9999,
+          }}
+        >
+          Kat Yoğunluğu: {(() => {
+            const inSalon = (tables || []).filter(t => String(t?.salon?.id ?? t?.salonId) === String(selectedSalonId));
+            const totalCapacity = inSalon.reduce((s, t) => s + (Number(t?.capacity) || 4), 0);
+            if (totalCapacity <= 0) return '0/0';
+            let used = 0;
+            inSalon.forEach(t => {
+              const statusName = String(t?.status?.name ?? t?.statusName ?? t?.status_name ?? '').toLowerCase();
+              const cap = Number(t?.capacity) || 4;
+              if (statusName === 'occupied') {
+                used += cap;
+              } else if (statusName === 'reserved') {
+                const res = Object.values(reservations || {}).find(r => String(r.tableId) === String(t?.tableNumber ?? t?.id));
+                const ppl = Number(res?.kisiSayisi ?? res?.personCount);
+                used += Number.isFinite(ppl) && ppl > 0 ? Math.min(ppl, cap) : Math.ceil(cap / 2);
+              }
+            });
+            return `${used}/${totalCapacity}`;
+          })()}
+        </div>
+      )}
       <SuccessNotification
         visible={showSuccess}
         onClose={() => setShowSuccess(false)}
@@ -845,7 +881,7 @@ const Dashboard = () => {
               const status = getStatus(table.id);
               const order = orders[table.id] || {};
               const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
-              const occupancy = getTableOccupancy(table.id);
+              // occupancy badge removed
 
               return (
                 <div
@@ -877,37 +913,7 @@ const Dashboard = () => {
                   }}
                   title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
                 >
-                  {/* Occupancy Indicator */}
-                  {occupancy && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(0, 0, 0, 0.7)',
-                        color: 'white',
-                        padding: '2px 6px',
-                        borderRadius: '10px',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        zIndex: 10,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '2px'
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
-                                         occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
-                        }}
-                      />
-                      {Math.round(occupancy.rate)}%
-                    </div>
-                  )}
+                  {/* per-table occupancy removed */}
                   {/* Ahşap süsler kaldırıldı, sade renkli kart */}
                   {/* Rezervasyon modunda + işareti */}
                   {showReservationMode && status.text === 'Boş' && (

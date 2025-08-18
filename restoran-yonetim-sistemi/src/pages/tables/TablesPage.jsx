@@ -82,49 +82,16 @@ const TablesPage = () => {
                     {currentTables.map((table) => {
                         // Statü okunması basitleştirildi
                         const status = tableStatus[table.id] || "bos";
-                        const occupancy = getTableOccupancy(table.id);
                         return (
                             <div
                                 key={table.id || crypto.randomUUID()}
                                 className="table-card"
                                 style={{
                                     background: statusColors[status],
-                                    color: statusTextColor[status],
-                                    position: 'relative'
+                                    color: statusTextColor[status]
                                 }}
                                 onClick={() => handleTableClick(table.id)}
                             >
-                                {/* Occupancy Indicator */}
-                                {occupancy && (
-                                    <div
-                                        style={{
-                                            position: 'absolute',
-                                            top: '8px',
-                                            right: '8px',
-                                            background: 'rgba(0, 0, 0, 0.7)',
-                                            color: 'white',
-                                            padding: '2px 6px',
-                                            borderRadius: '10px',
-                                            fontSize: '10px',
-                                            fontWeight: 'bold',
-                                            zIndex: 10,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '2px'
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                width: '8px',
-                                                height: '8px',
-                                                borderRadius: '50%',
-                                                backgroundColor: occupancy.rate >= 80 ? '#ff4444' : 
-                                                               occupancy.rate >= 60 ? '#ffaa00' : '#44ff44'
-                                            }}
-                                        />
-                                        {Math.round(occupancy.rate)}%
-                                    </div>
-                                )}
                                 <div className="table-number">{table.name}</div>
                                 <div className="table-status">{getStatusText(status)}</div>
                             </div>
