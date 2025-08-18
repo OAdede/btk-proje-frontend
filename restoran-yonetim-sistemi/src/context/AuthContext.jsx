@@ -6,6 +6,8 @@ import secureStorage from '../utils/secureStorage';
 
 export const AuthContext = createContext();
 
+const DEBUG_AUTH = import.meta?.env?.VITE_DEBUG_AUTH === 'true';
+
 const roleMapping = {
     0: 'admin',
     1: 'garson',
@@ -26,7 +28,7 @@ const getRoleIdFromName = (name) => {
 const setUserData = (userData) => {
     // SECURITY: Store user data with encryption for PII
     secureStorage.setItem('user', userData);
-    console.log('[AuthContext] User data stored securely');
+    if (DEBUG_AUTH) console.log('[AuthContext] User data stored securely');
 };
 
 const getUserData = () => {
@@ -42,7 +44,7 @@ const getUserData = () => {
                 // Migrate to secure storage
                 setUserData(userData);
                 localStorage.removeItem('user');
-                console.log('[AuthContext] Migrated user data to secure storage');
+                if (DEBUG_AUTH) console.log('[AuthContext] Migrated user data to secure storage');
             } catch (error) {
                 console.error('[AuthContext] Error parsing legacy user data:', error);
             }
@@ -61,7 +63,7 @@ const clearUserData = () => {
     localStorage.removeItem('user'); // Legacy cleanup
     localStorage.removeItem('profileImage');
     localStorage.removeItem('phoneNumber');
-    console.log('[AuthContext] All user data cleared securely');
+    if (DEBUG_AUTH) console.log('[AuthContext] All user data cleared securely');
 };
 
 export const AuthProvider = ({ children }) => {
@@ -71,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         // Set up token expiration callback
         tokenManager.onTokenExpiredCallback(() => {
-            console.warn('[AuthContext] Token expired, logging out user');
+            if (DEBUG_AUTH) console.warn('[AuthContext] Token expired, logging out user');
             setUser(null);
         });
 
@@ -140,18 +142,18 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         setLoading(true);
         try {
-            console.log('[AuthContext] 🚀 Starting login process...');
+            if (DEBUG_AUTH) console.log('[AuthContext] Starting login process');
             const data = await authService.login(email, password);
-            console.log('[AuthContext] 📥 Backend response received:', { success: data.success, hasToken: !!data.token });
+            if (DEBUG_AUTH) console.log('[AuthContext] Backend response received:', { success: data.success, hasToken: !!data.token });
 
             if (data.success) {
                 // Use tokenManager to store token securely
-                console.log('[AuthContext] 💾 Storing token securely...');
+                if (DEBUG_AUTH) console.log('[AuthContext] Storing token securely...');
                 const tokenStored = tokenManager.setToken(data.token);
                 if (!tokenStored) {
                     throw new Error('Token geçersiz veya süresi dolmuş');
                 }
-                console.log('[AuthContext] ✅ Token stored successfully');
+                if (DEBUG_AUTH) console.log('[AuthContext] Token stored successfully');
                 
                 authService.setAuthHeader(data.token);
 
@@ -169,18 +171,11 @@ export const AuthProvider = ({ children }) => {
                 };
 
                 // SECURITY: Store user data securely
-                console.log('[AuthContext] 👤 Setting user data...');
+                if (DEBUG_AUTH) console.log('[AuthContext] Setting user data...');
                 setUserData(userData);
                 setUser(userData);
                 setLoading(false);
-                console.log('[AuthContext] 🎉 Login completed successfully');
-                
-                // DEBUG: Immediately test token retrieval after login
-                setTimeout(() => {
-                    console.log('[AuthContext] 🧪 Testing immediate token retrieval...');
-                    const testToken = tokenManager.getToken();
-                    console.log('[AuthContext] 🧪 Test result:', testToken ? 'TOKEN FOUND ✅' : 'TOKEN NOT FOUND ❌');
-                }, 100);
+                if (DEBUG_AUTH) console.log('[AuthContext] Login completed successfully');
                 
                 return roleId;
             } else {

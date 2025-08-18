@@ -1,26 +1,36 @@
 import React, { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { getRoleInfoFromToken } from "../utils/jwt.js";
 import tokenManager from "../utils/tokenManager.js";
+import httpClient from "../utils/httpClient.js";
+import secureStorage from "../utils/secureStorage.js";
 
 export const TableContext = createContext();
 
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || "/api";
+// API base handled by httpClient
 
-const readFromLocalStorage = (key, initialValue) => {
+// Storage helpers (migrate from localStorage to secureStorage with TTL)
+const DEFAULT_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours for GENERAL caches
+const readFromStorage = (key, initialValue) => {
     try {
-        const item = window.localStorage.getItem(key);
-        return item ? JSON.parse(item) : initialValue;
+        const raw = secureStorage.getItem(key);
+        if (raw === null || raw === undefined) return initialValue;
+        // Try JSON.parse for structured values, otherwise return raw
+        try {
+            return typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch {
+            return raw;
+        }
     } catch (error) {
-        console.error(`Error reading from localStorage for key "${key}"`, error);
+        console.error(`Error reading from storage for key "${key}"`, error);
         return initialValue;
     }
 };
 
-const saveToLocalStorage = (key, value) => {
+const saveToStorage = (key, value, ttlMs = DEFAULT_TTL_MS) => {
     try {
-        window.localStorage.setItem(key, JSON.stringify(value));
+        secureStorage.setItem(key, value, { expiry: Date.now() + ttlMs });
     } catch (error) {
-        console.error(`Error saving to localStorage for key "${key}"`, error);
+        console.error(`Error saving to storage for key "${key}"`, error);
     }
 };
 
@@ -29,14 +39,14 @@ export function TableProvider({ children }) {
     const [productsById, setProductsById] = useState({});
     const [ingredients, setIngredients] = useState({});
     const [tables, setTables] = useState([]);
-    const [tableStatus, setTableStatus] = useState(() => readFromLocalStorage('tableStatus', {}));
-    const [orders, setOrders] = useState(() => readFromLocalStorage('orders', {}));
-    const [completedOrders, setCompletedOrders] = useState(() => readFromLocalStorage('completedOrders', {}));
+    const [tableStatus, setTableStatus] = useState(() => readFromStorage('tableStatus', {}));
+    const [orders, setOrders] = useState(() => readFromStorage('orders', {}));
+    const [completedOrders, setCompletedOrders] = useState(() => readFromStorage('completedOrders', {}));
 
-    const [reservations, setReservations] = useState(() => readFromLocalStorage('reservations', {}));
+    const [reservations, setReservations] = useState(() => readFromStorage('reservations', {}));
     const [salons, setSalons] = useState([]);
     const [timestamps, setTimestamps] = useState({});
-    const [orderHistory, setOrderHistory] = useState(() => readFromLocalStorage('orderHistory', []));
+    const [orderHistory, setOrderHistory] = useState(() => readFromStorage('orderHistory', []));
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -45,14 +55,10 @@ export function TableProvider({ children }) {
     const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
             if (DEBUG_TABLES) console.log(`API çağrısı: ${endpoint}`);
-            const token = tokenManager.getToken();
             const mergedOptions = { ...options };
-            const defaultHeaders = {
-                'Accept': 'application/json'
-            };
-            if (token) defaultHeaders['Authorization'] = `Bearer ${token}`;
-            mergedOptions.headers = { ...defaultHeaders, ...(options.headers || {}) };
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, mergedOptions);
+            // Keep Accept header if provided; httpClient injects auth headers
+            mergedOptions.headers = { 'Accept': 'application/json', ...(options.headers || {}) };
+            const response = await httpClient.request(endpoint, mergedOptions);
 
             if (!response.ok) {
                 // 401 ise (ör. stocks için admin olmayan roller) gürültüyü azalt
@@ -77,7 +83,7 @@ export function TableProvider({ children }) {
             return data;
 
         } catch (err) {
-        if (DEBUG_TABLES) console.error(`API çağrısı başarısız: ${endpoint}`, err?.message || err);
+            if (DEBUG_TABLES) console.error(`API çağrısı başarısız: ${endpoint}`, err?.message || err);
             throw err;
         }
     }, [DEBUG_TABLES]);
@@ -254,11 +260,11 @@ export function TableProvider({ children }) {
     }, [loadTablesAndSalons, fetchData]);
 
     useEffect(() => {
-        saveToLocalStorage('tableStatus', tableStatus);
-        saveToLocalStorage('orders', orders);
-        saveToLocalStorage('completedOrders', completedOrders);
-        saveToLocalStorage('reservations', reservations);
-        saveToLocalStorage('orderHistory', orderHistory);
+    saveToStorage('tableStatus', tableStatus);
+    saveToStorage('orders', orders);
+    saveToStorage('completedOrders', completedOrders);
+    saveToStorage('reservations', reservations);
+    saveToStorage('orderHistory', orderHistory);
     }, [tableStatus, orders, completedOrders, reservations, orderHistory]);
 
     const findProductById = (productId) => {
@@ -330,7 +336,7 @@ export function TableProvider({ children }) {
                 throw new Error('Masa bulunamadı');
             }
 
-            console.log('Updating table with ID (PATCH mode):', tableId, 'Update data:', updateData, 'Current table:', table);
+            if (DEBUG_TABLES) console.log('Updating table (PATCH mode):', tableId);
 
             // Yardımcı: isim/numaradan sayısal masa numarası çıkar
             const extractTableNumber = (value, fallback) => {
@@ -358,20 +364,20 @@ export function TableProvider({ children }) {
 
             // Değişiklik yoksa erken çık
             if (!willChangeNumber && !willChangeCapacity) {
-                console.log('No changes detected for table', tableId);
+                if (DEBUG_TABLES) console.log('No changes detected for table', tableId);
                 return;
             }
 
             // Sırasıyla patch et (bağımsızlar)
             if (willChangeNumber) {
-                console.log('PATCH table-number ->', nextNumber);
+                if (DEBUG_TABLES) console.log('PATCH table-number ->', nextNumber);
                 await apiCall(`/dining-tables/${tableId}/table-number/${nextNumber}`, {
                     method: 'PATCH'
                 });
             }
 
             if (willChangeCapacity) {
-                console.log('PATCH capacity ->', nextCapacity);
+                if (DEBUG_TABLES) console.log('PATCH capacity ->', nextCapacity);
                 await apiCall(`/dining-tables/${tableId}/capacity/${nextCapacity}`, {
                     method: 'PATCH'
                 });
@@ -379,7 +385,7 @@ export function TableProvider({ children }) {
 
             // Güncel verileri yükle
             await loadTablesAndSalons();
-            console.log(`Table ${tableId} updated successfully via PATCH.`);
+            if (DEBUG_TABLES) console.log(`Table ${tableId} updated successfully via PATCH.`);
         } catch (error) {
             console.error(`Error updating table ${tableId} (PATCH):`, error);
             throw error;
@@ -428,7 +434,7 @@ export function TableProvider({ children }) {
             // Backend'den güncel veriyi al
             await loadTablesAndSalons();
 
-            console.log(`Table ${tableId} deleted successfully`);
+            if (DEBUG_TABLES) console.log(`Table ${tableId} deleted successfully`);
         } catch (error) {
             console.error(`Error deleting table ${tableId}:`, error);
             throw error;

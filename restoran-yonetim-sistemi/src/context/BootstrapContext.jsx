@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import tokenManager from '../utils/tokenManager';
+import secureStorage from '../utils/secureStorage';
 
 const BootstrapContext = createContext();
 
@@ -97,9 +98,14 @@ export const BootstrapProvider = ({ children }) => {
             // Set flag before clearing storage to indicate bootstrap was completed
             sessionStorage.setItem('bootstrapCompleted', 'true');
             
-            // Clear all storage (except the flag we just set)
-            localStorage.clear();
-            // Note: We don't clear sessionStorage here because we need the flag
+            // Clear secure storage and known app keys instead of blind clear
+            try { secureStorage.clear(); } catch {}
+            const APP_KEYS = [
+                'tableStatus','orders','completedOrders','reservations','orderHistory',
+                'displayName','displayRole','profileImage','phoneNumber','email','settings','preferences'
+            ];
+            APP_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+            // Note: Don't clear sessionStorage entirely because we need the flag
             
             // Clear cookies
             document.cookie.split(";").forEach(function(c) { 

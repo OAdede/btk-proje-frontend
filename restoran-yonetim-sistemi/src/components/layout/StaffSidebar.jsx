@@ -105,17 +105,18 @@ const StaffSidebar = () => {
                     return displayRole || user?.role || 'Kullanıcı';
                 })();
                 setDisplayRole(roleLabel);
-                localStorage.setItem('displayRole', roleLabel);
+                // Store displayRole securely
+                secureStorage.setItem('displayRole', roleLabel);
 
                 // Fotoğraf
                 if (data.photoBase64) {
                     const img = `data:image/jpeg;base64,${data.photoBase64}`;
                     setProfileImage(img);
-                    localStorage.setItem('profileImage', img);
+                    secureStorage.setItem('profileImage', img);
                 } else if (data.hasPhoto && data.id) {
                     const imgUrl = `/api/users/${data.id}/photo`;
                     setProfileImage(imgUrl);
-                    localStorage.setItem('profileImage', imgUrl);
+                    secureStorage.setItem('profileImage', imgUrl);
                 } else {
                     console.log('[Profile] No photo found on profile payload');
                 }
@@ -123,11 +124,11 @@ const StaffSidebar = () => {
                 // İletişim
                 if (data.phoneNumber) {
                     setPhoneNumber(data.phoneNumber);
-                    localStorage.setItem('phoneNumber', data.phoneNumber);
+                    secureStorage.setItem('phoneNumber', data.phoneNumber);
                 }
                 if (data.email) {
                     setEmail(data.email);
-                    localStorage.setItem('email', data.email);
+                    secureStorage.setItem('email', data.email);
                 }
             } catch (err) {
                 console.warn('Profil bilgisi alınamadı:', err.message);
@@ -295,7 +296,7 @@ const StaffSidebar = () => {
             await userService.uploadUserPhoto(targetId, tempProfileImage);
             // Başarılı ise UI güncelle
             setProfileImage(tempProfileImage);
-            localStorage.setItem('profileImage', tempProfileImage);
+            secureStorage.setItem('profileImage', tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
             alert('Profil fotoğrafı başarıyla güncellendi!');
@@ -358,7 +359,7 @@ const StaffSidebar = () => {
                 await userService.updateUserPhone(targetId, tempPhone);
 
                 setPhoneNumber(tempPhone);
-                localStorage.setItem('phoneNumber', tempPhone);
+                secureStorage.setItem('phoneNumber', tempPhone);
                 setShowPhoneVerification(false);
                 setTempPhone('');
                 setPhoneVerificationCode('');
@@ -420,7 +421,7 @@ const StaffSidebar = () => {
                 await userService.updateUserEmail(targetId, tempEmail);
 
                 setEmail(tempEmail);
-                localStorage.setItem('email', tempEmail);
+                secureStorage.setItem('email', tempEmail);
                 setShowEmailVerification(false);
                 setTempEmail('');
                 setEmailVerificationCode('');

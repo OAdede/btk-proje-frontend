@@ -24,6 +24,8 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+  // Disallow stray console logs; allow warn/error and explicitly gated debug
+  'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
 ])
