@@ -72,9 +72,11 @@ export const salonService = {
                 return response;
             };
 
-            // Try with name and capacity first (backend requires capacity)
+            // Try with name, description and capacity first (backend requires capacity)
+            const description = String(salonData?.description || '').trim();
             let response = await doRequest({ 
                 name, 
+                description,
                 capacity
             });
 
@@ -110,8 +112,8 @@ export const salonService = {
                 const needsCode = status === 400 && (combined.includes('code') || combined.includes('prefix'));
                 if (needsCode) {
                     const autoCode = (name.charAt(0) || 'S').toUpperCase().replace(/[^A-ZÇĞİÖŞÜ]/g, 'S').slice(0, 1);
-                    console.log('Backend requires code, retrying with:', { name, code: autoCode, capacity });
-                    response = await doRequest({ name, code: autoCode, capacity });
+                    console.log('Backend requires code, retrying with:', { name, description, code: autoCode, capacity });
+                    response = await doRequest({ name, description, code: autoCode, capacity });
                 }
 
                 if (!response.ok) {

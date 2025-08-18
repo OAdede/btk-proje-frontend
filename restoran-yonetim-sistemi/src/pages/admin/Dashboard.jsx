@@ -73,7 +73,10 @@ const Dashboard = () => {
   const [selectedTableForManagement, setSelectedTableForManagement] = useState(null);
   const navigate = useNavigate();
   const [showAddSalonModal, setShowAddSalonModal] = useState(false);
+  const [showEditSalonModal, setShowEditSalonModal] = useState(false);
+  const [editingSalon, setEditingSalon] = useState(null);
   const [newSalonName, setNewSalonName] = useState('');
+  const [newSalonDescription, setNewSalonDescription] = useState('');
   const [newSalonCapacity, setNewSalonCapacity] = useState(100);
   const [newSalonTableCount, setNewSalonTableCount] = useState(0);
   const [newSalonTableStartNumber, setNewSalonTableStartNumber] = useState(0);
@@ -1103,7 +1106,11 @@ const Dashboard = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleFloorNameEdit(salon.id);
+                    setEditingSalon(salon);
+                    setNewSalonName(salon.name || '');
+                    setNewSalonDescription(salon.description || '');
+                    setNewSalonCapacity(salon.capacity || 100);
+                    setShowEditSalonModal(true);
                   }}
                   style={{
                     position: 'absolute',
@@ -1198,6 +1205,10 @@ const Dashboard = () => {
                 <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Adı</label>
                 <input value={newSalonName} onChange={(e)=>setNewSalonName(e.target.value)} placeholder="Örn: ANA SALON" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
               </div>
+              <div style={{ textAlign: 'left', marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Açıklaması</label>
+                <textarea value={newSalonDescription} onChange={(e)=>setNewSalonDescription(e.target.value)} placeholder="Örn: Ana yemek salonu" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16, minHeight:'60px', resize:'vertical' }} />
+              </div>
               <div style={{ textAlign: 'left', marginBottom: '14px', display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12 }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Kapasitesi</label>
@@ -1222,7 +1233,8 @@ const Dashboard = () => {
                   if (duplicate) { alert('Bu isimde bir salon zaten var'); return; }
                   try {
                     const validCapacity = Number.isFinite(newSalonCapacity) && newSalonCapacity > 0 ? newSalonCapacity : 100;
-                    const createdSalon = await salonService.createSalon({ name, capacity: validCapacity });
+                    const description = (newSalonDescription||'').trim();
+                    const createdSalon = await salonService.createSalon({ name, description, capacity: validCapacity });
                     // Eğer masa sayısı > 0 ise, 1..N arası masa oluştur
                     const count = Number.isFinite(newSalonTableCount) && newSalonTableCount > 0 ? newSalonTableCount : 0;
                     const base = Number.isFinite(newSalonTableStartNumber) ? newSalonTableStartNumber : 0;
@@ -1238,6 +1250,7 @@ const Dashboard = () => {
                     await loadTablesAndSalons?.();
                     setShowAddSalonModal(false);
                     setNewSalonName('');
+                    setNewSalonDescription('');
                     setNewSalonCapacity(100);
                     setNewSalonTableCount(0);
                     setNewSalonTableStartNumber(0);
@@ -1245,7 +1258,57 @@ const Dashboard = () => {
                     alert(`Salon eklenirken hata: ${err.message}`);
                   }
                 }} style={{ background:'#4CAF50', color:'#fff', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>Ekle</button>
-                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonCapacity(100); setNewSalonTableCount(0); setNewSalonTableStartNumber(0); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
+                <button onClick={()=>{ setShowAddSalonModal(false); setNewSalonName(''); setNewSalonDescription(''); setNewSalonCapacity(100); setNewSalonTableCount(0); setNewSalonTableStartNumber(0); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Salon Düzenleme Modal */}
+        {showEditSalonModal && editingSalon && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <div style={{
+              backgroundColor: isDarkMode ? '#513653' : '#ffffff', padding: '2rem', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', maxWidth: '420px', width: '90%', textAlign: 'center', border: `2px solid ${isDarkMode ? '#473653' : '#e0e0e0'}`
+            }}>
+              <h3 style={{ color: isDarkMode ? '#ffffff' : '#333333', marginBottom: '16px' }}>🏢 Salon Düzenle</h3>
+              <div style={{ textAlign: 'left', marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Adı</label>
+                <input value={newSalonName} onChange={(e)=>setNewSalonName(e.target.value)} placeholder="Örn: ANA SALON" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
+              </div>
+              <div style={{ textAlign: 'left', marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Açıklaması</label>
+                <textarea value={newSalonDescription} onChange={(e)=>setNewSalonDescription(e.target.value)} placeholder="Örn: Ana yemek salonu" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16, minHeight:'60px', resize:'vertical' }} />
+              </div>
+              <div style={{ textAlign: 'left', marginBottom: '14px' }}>
+                <label style={{ display: 'block', marginBottom: 6, color: isDarkMode ? '#fff' : '#333', fontWeight: 600 }}>Salon Kapasitesi</label>
+                <input type="number" min={1} value={newSalonCapacity} onChange={(e)=>setNewSalonCapacity(parseInt(e.target.value || '0', 10))} placeholder="Örn: 120" style={{ width:'100%', padding:10, borderRadius:8, border:`2px solid ${isDarkMode?'#473653':'#e0e0e0'}`, background:isDarkMode?'#473653':'#fff', color:isDarkMode?'#fff':'#333', fontSize:16 }} />
+              </div>
+              
+              <div style={{ display:'flex', gap:15, justifyContent:'center' }}>
+                <button onClick={async ()=>{
+                  const name = (newSalonName||'').trim();
+                  if (!name) { alert('Salon adı zorunlu'); return; }
+                  if (name.length < 3) { alert('Salon adı en az 3 karakter olmalı'); return; }
+                  const duplicate = (derivedSalons||[]).some(s => s.id !== editingSalon.id && String(s.name||'').toLowerCase() === name.toLowerCase());
+                  if (duplicate) { alert('Bu isimde bir salon zaten var'); return; }
+                  try {
+                    const validCapacity = Number.isFinite(newSalonCapacity) && newSalonCapacity > 0 ? newSalonCapacity : 100;
+                    const description = (newSalonDescription||'').trim();
+                    await salonService.updateSalon(editingSalon.id, { name, description, capacity: validCapacity });
+                    await loadTablesAndSalons?.();
+                    setShowEditSalonModal(false);
+                    setEditingSalon(null);
+                    setNewSalonName('');
+                    setNewSalonDescription('');
+                    setNewSalonCapacity(100);
+                  } catch(err){
+                    alert(`Salon güncellenirken hata: ${err.message}`);
+                  }
+                }} style={{ background:'#4CAF50', color:'#fff', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>Güncelle</button>
+                <button onClick={()=>{ setShowEditSalonModal(false); setEditingSalon(null); setNewSalonName(''); setNewSalonDescription(''); setNewSalonCapacity(100); }} style={{ background:isDarkMode?'#473653':'#f5f5f5', color:isDarkMode?'#fff':'#333', border:'none', padding:'12px 24px', borderRadius:8, cursor:'pointer', fontWeight:'bold' }}>İptal</button>
               </div>
             </div>
           </div>
