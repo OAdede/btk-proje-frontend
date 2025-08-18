@@ -1,8 +1,12 @@
 // Activity Log API Service - Backend communication layer
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
+// Import secure token manager
+import tokenManager from '../utils/tokenManager.js';
+
 function buildAuthHeaders() {
-    const token = localStorage.getItem('token');
+    // SECURITY: Use secure token manager instead of direct localStorage access
+    const token = tokenManager.getToken();
     const headers = { 'Accept': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;

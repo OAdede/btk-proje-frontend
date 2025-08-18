@@ -8,6 +8,7 @@ import "./AdminLayout.css";
 import { userService } from "../../services/userService";
 import { personnelService } from "../../services/personnelService";
 import { authService } from "../../services/authService";
+import secureStorage from "../../utils/secureStorage";
 
 const AdminSidebar = () => {
     const { logout, user, updatePhone } = useContext(AuthContext);
@@ -90,7 +91,7 @@ const AdminSidebar = () => {
                 // İsim
                 const name = data.name || user?.name || displayName || 'Kullanıcı';
                 setDisplayName(name);
-                localStorage.setItem('displayName', name);
+                secureStorage.setItem('displayName', name);
 
                 // Rol
                 const roleLabel = (() => {
@@ -102,17 +103,17 @@ const AdminSidebar = () => {
                     return displayRole || user?.role || 'Kullanıcı';
                 })();
                 setDisplayRole(roleLabel);
-                localStorage.setItem('displayRole', roleLabel);
+                secureStorage.setItem('displayRole', roleLabel);
 
                 // Fotoğraf
                 if (data.photoBase64) {
                     const img = `data:image/jpeg;base64,${data.photoBase64}`;
                     setProfileImage(img);
-                    localStorage.setItem('profileImage', img);
+                    secureStorage.setItem('profileImage', img);
                 } else if (data.hasPhoto && data.id) {
                     const imgUrl = `/api/users/${data.id}/photo`;
                     setProfileImage(imgUrl);
-                    localStorage.setItem('profileImage', imgUrl);
+                    secureStorage.setItem('profileImage', imgUrl);
                 } else {
                     console.log('[Profile] No photo found on profile payload');
                 }
@@ -120,11 +121,11 @@ const AdminSidebar = () => {
                 // İletişim
                 if (data.phoneNumber) {
                     setPhoneNumber(data.phoneNumber);
-                    localStorage.setItem('phoneNumber', data.phoneNumber);
+                    secureStorage.setItem('phoneNumber', data.phoneNumber);
                 }
                 if (data.email) {
                     setEmail(data.email);
-                    localStorage.setItem('email', data.email);
+                    secureStorage.setItem('email', data.email);
                 }
             } catch (err) {
                 console.warn('Profil bilgisi alınamadı:', err.message);
@@ -369,7 +370,7 @@ const AdminSidebar = () => {
             await userService.uploadUserPhoto(targetId, tempProfileImage);
             // Başarılı ise UI güncelle
             setProfileImage(tempProfileImage);
-            localStorage.setItem('profileImage', tempProfileImage);
+            secureStorage.setItem('profileImage', tempProfileImage);
             setTempProfileImage(null);
             setShowProfileImageConfirm(false);
             alert('Profil fotoğrafı başarıyla güncellendi!');
@@ -432,7 +433,7 @@ const AdminSidebar = () => {
                 await userService.updateUserPhone(targetId, tempPhone);
 
                 setPhoneNumber(tempPhone);
-                localStorage.setItem('phoneNumber', tempPhone);
+                secureStorage.setItem('phoneNumber', tempPhone);
                 if (typeof updatePhone === 'function') {
                     updatePhone(tempPhone);
                 }
@@ -464,7 +465,7 @@ const AdminSidebar = () => {
         const expectedCode = '123456'; // Sabit kod
         if (emailVerificationCode === expectedCode) {
             setEmail(tempEmail);
-            localStorage.setItem('email', tempEmail);
+            secureStorage.setItem('email', tempEmail);
             setShowEmailVerification(false);
             setTempEmail('');
             setEmailVerificationCode('');

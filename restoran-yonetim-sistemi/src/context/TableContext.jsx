@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { getRoleInfoFromToken } from "../utils/jwt.js";
+import tokenManager from "../utils/tokenManager.js";
 
 export const TableContext = createContext();
 
@@ -43,7 +44,7 @@ export function TableProvider({ children }) {
     const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
             console.log(`API çağrısı yapılıyor: ${endpoint}`);
-            const token = localStorage.getItem('token');
+            const token = tokenManager.getToken();
             const mergedOptions = { ...options };
             const defaultHeaders = {
                 'Accept': 'application/json'
@@ -86,7 +87,7 @@ export function TableProvider({ children }) {
         console.log("Veriler sunucudan alınıyor...");
 
         try {
-            const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+            const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
             const roleInfo = token ? getRoleInfoFromToken(token) : {};
             const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
 
@@ -240,7 +241,7 @@ export function TableProvider({ children }) {
         if (initializedRef.current) return;
         initializedRef.current = true;
 
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
         if (!token) {
             // Login sayfasında gereksiz çağrıları atla
             setIsLoading(false);
@@ -487,7 +488,7 @@ export function TableProvider({ children }) {
         });
 
         // Backend OrderRequestDTO: { userId: int, tableId: int, items: [{productId, quantity}] }
-        const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+        const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
         const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
             ? parseInt(roleInfo.userId, 10)
             : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
@@ -516,7 +517,7 @@ export function TableProvider({ children }) {
 
             // Sadece admin rolleri stok hareketi oluşturabilir
             {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
                 const roleInfo = token ? getRoleInfoFromToken(token) : {};
                 const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
                 if (isAdmin) {
@@ -559,7 +560,7 @@ export function TableProvider({ children }) {
 
             // Sadece admin rolleri stok iade hareketi oluşturabilir
             {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
                 const roleInfo = token ? getRoleInfoFromToken(token) : {};
                 const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
                 if (isAdmin) {
@@ -604,7 +605,7 @@ export function TableProvider({ children }) {
             })();
 
             // Kasiyer ID'sini JWT'den sayıya çevir
-            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
                 ? parseInt(roleInfo.userId, 10)
                 : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
@@ -613,7 +614,7 @@ export function TableProvider({ children }) {
             try {
                 await apiCall('/payments', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenManager.getToken() || ''}` },
                     body: JSON.stringify({
                         orderId: orderToPay.id,
                         cashierId: numericUserId,
@@ -655,7 +656,7 @@ export function TableProvider({ children }) {
                 delete updatedItems[itemToDecrease.id];
             }
 
-            const roleInfo2 = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const roleInfo2 = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId2 = typeof roleInfo2?.userId === 'string' && /^\d+$/.test(roleInfo2.userId)
                 ? parseInt(roleInfo2.userId, 10)
                 : (typeof roleInfo2?.userId === 'number' ? roleInfo2.userId : 1);
@@ -689,7 +690,7 @@ export function TableProvider({ children }) {
             const updatedItems = { ...currentOrder.items };
             updatedItems[itemToIncrease.id].count += 1;
 
-            const roleInfo3 = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const roleInfo3 = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId3 = typeof roleInfo3?.userId === 'string' && /^\d+$/.test(roleInfo3.userId)
                 ? parseInt(roleInfo3.userId, 10)
                 : (typeof roleInfo3?.userId === 'number' ? roleInfo3.userId : 1);
@@ -723,7 +724,7 @@ export function TableProvider({ children }) {
             const updatedItems = { ...currentOrder.items };
             delete updatedItems[itemToRemove.id];
 
-            const roleInfo4 = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const roleInfo4 = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId4 = typeof roleInfo4?.userId === 'string' && /^\d+$/.test(roleInfo4.userId)
                 ? parseInt(roleInfo4.userId, 10)
                 : (typeof roleInfo4?.userId === 'number' ? roleInfo4.userId : 1);

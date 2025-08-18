@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import tokenManager from '../utils/tokenManager';
 
 const BootstrapContext = createContext();
 
@@ -66,7 +67,7 @@ export const BootstrapProvider = ({ children }) => {
 
     useEffect(() => {
         // Only check bootstrap status if user is not authenticated
-        const token = localStorage.getItem('token');
+        const token = tokenManager.getToken();
         if (!token) {
             checkBootstrapStatus();
         } else {
@@ -84,7 +85,7 @@ export const BootstrapProvider = ({ children }) => {
         setNeedsBootstrap,
         // Debug method to force refresh bootstrap status
         forceRefreshBootstrap: () => {
-            const token = localStorage.getItem('token');
+            const token = tokenManager.getToken();
             if (!token) {
                 checkBootstrapStatus();
             } else {

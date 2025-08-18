@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import WarningModal from '../../components/common/WarningModal';
 import { settingsService } from '../../services/settingsService';
+import secureStorage from '../../utils/secureStorage';
 
 const RestaurantSettings = () => {
     const { isDarkMode, colors } = useTheme();
@@ -28,7 +29,7 @@ const RestaurantSettings = () => {
                 
                 if (settings.restaurantName) {
                     setRestaurantName(settings.restaurantName);
-                    localStorage.setItem('restaurantName', settings.restaurantName);
+                    secureStorage.setItem('restaurantName', settings.restaurantName);
                     // Update TopNav via custom event
                     window.dispatchEvent(new CustomEvent('restaurantNameChanged', {
                         detail: { name: settings.restaurantName }
@@ -37,25 +38,25 @@ const RestaurantSettings = () => {
                 
                 if (settings.openTime) {
                     setOpeningTime(settings.openTime);
-                    localStorage.setItem('openingTime', settings.openTime);
+                    secureStorage.setItem('openingTime', settings.openTime);
                 }
                 
                 if (settings.closeTime) {
                     setClosingTime(settings.closeTime);
-                    localStorage.setItem('closingTime', settings.closeTime);
+                    secureStorage.setItem('closingTime', settings.closeTime);
                 }
 
                 if (settings.lastReservationCutoffMinutes) {
                     setLastReservationCutoffMinutes(settings.lastReservationCutoffMinutes);
-                    localStorage.setItem('lastReservationCutoffMinutes', settings.lastReservationCutoffMinutes);
+                    secureStorage.setItem('lastReservationCutoffMinutes', settings.lastReservationCutoffMinutes);
                 }
             } catch (error) {
                 console.error('Error loading settings:', error);
                 // Fallback to localStorage if API fails
-                const cachedName = localStorage.getItem('restaurantName');
-                const cachedOpening = localStorage.getItem('openingTime');
-                const cachedClosing = localStorage.getItem('closingTime');
-                const cachedCutoff = localStorage.getItem('lastReservationCutoffMinutes');
+                const cachedName = secureStorage.getItem('restaurantName');
+                const cachedOpening = secureStorage.getItem('openingTime');
+                const cachedClosing = secureStorage.getItem('closingTime');
+                const cachedCutoff = secureStorage.getItem('lastReservationCutoffMinutes');
                 
                 if (cachedName) setRestaurantName(cachedName);
                 if (cachedOpening) setOpeningTime(cachedOpening);
@@ -90,7 +91,7 @@ const RestaurantSettings = () => {
     const handleOpeningTimeChange = async (newTime) => {
         if (validateTime(newTime, closingTime)) {
             setOpeningTime(newTime);
-            localStorage.setItem('openingTime', newTime);
+            secureStorage.setItem('openingTime', newTime);
             
             // Save to backend
             await saveTimeSettings({ openTime: newTime });
@@ -104,7 +105,7 @@ const RestaurantSettings = () => {
     const handleClosingTimeChange = async (newTime) => {
         if (validateTime(openingTime, newTime)) {
             setClosingTime(newTime);
-            localStorage.setItem('closingTime', newTime);
+            secureStorage.setItem('closingTime', newTime);
             
             // Save to backend
             await saveTimeSettings({ closeTime: newTime });
@@ -118,7 +119,7 @@ const RestaurantSettings = () => {
     const handleCutoffChange = async (newCutoffMinutes) => {
         if (newCutoffMinutes >= 0 && newCutoffMinutes <= 1440) { // Max 24 hours
             setLastReservationCutoffMinutes(newCutoffMinutes);
-            localStorage.setItem('lastReservationCutoffMinutes', newCutoffMinutes);
+            secureStorage.setItem('lastReservationCutoffMinutes', newCutoffMinutes);
             
             // Save to backend
             await saveTimeSettings({ lastReservationCutoffMinutes: newCutoffMinutes });
@@ -167,7 +168,7 @@ const RestaurantSettings = () => {
 
             // Update local state and localStorage on success
             setRestaurantName(tempRestaurantName.trim());
-            localStorage.setItem('restaurantName', tempRestaurantName.trim());
+            secureStorage.setItem('restaurantName', tempRestaurantName.trim());
             
             // Update TopNav via custom event
             window.dispatchEvent(new CustomEvent('restaurantNameChanged', {

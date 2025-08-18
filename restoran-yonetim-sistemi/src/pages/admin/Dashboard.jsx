@@ -11,6 +11,7 @@ import { settingsService } from '../../services/settingsService';
 import { diningTableService } from '../../services/diningTableService';
 import { salonService } from '../../services/salonService';
 import { useNavigate } from 'react-router-dom';
+import secureStorage from '../../utils/secureStorage';
 
 
 
@@ -60,7 +61,7 @@ const Dashboard = () => {
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
   const [modalKey, setModalKey] = useState(0);
-  const [restaurantName, setRestaurantName] = useState(localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi');
+  const [restaurantName, setRestaurantName] = useState(secureStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi');
   const [showEditReservationModal, setShowEditReservationModal] = useState(false);
   const [editingReservation, setEditingReservation] = useState(null);
   const [editReservationFormData, setEditReservationFormData] = useState({});
@@ -82,12 +83,12 @@ const Dashboard = () => {
         const settings = await settingsService.getRestaurantSettings();
         if (settings.restaurantName) {
           setRestaurantName(settings.restaurantName);
-          localStorage.setItem('restaurantName', settings.restaurantName);
+          secureStorage.setItem('restaurantName', settings.restaurantName);
         }
       } catch (error) {
         console.error('Error loading restaurant name:', error);
-        // Fallback to localStorage if API fails
-        const cachedName = localStorage.getItem('restaurantName');
+        // Fallback to secureStorage if API fails
+        const cachedName = secureStorage.getItem('restaurantName');
         if (cachedName) setRestaurantName(cachedName);
       }
     };
@@ -154,10 +155,10 @@ const Dashboard = () => {
 
   // Masa kapasitelerini yöneten state
   const [tableCapacities, setTableCapacities] = useState(() => {
-    // localStorage'dan mevcut kapasiteleri al
-    const savedCapacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+    // secureStorage'dan mevcut kapasiteleri al
+    const savedCapacities = JSON.parse(secureStorage.getItem('tableCapacities') || '{}');
 
-    // Eğer localStorage'da kapasite yoksa, mevcut masalar için rastgele atama yap
+    // Eğer secureStorage'da kapasite yoksa, mevcut masalar için rastgele atama yap
     if (Object.keys(savedCapacities).length === 0) {
       const capacities = {};
       for (let floor = 0; floor <= 2; floor++) {
@@ -166,8 +167,8 @@ const Dashboard = () => {
           capacities[tableId] = Math.floor(Math.random() * 4) + 2; // 2-6 kişilik arası rastgele
         }
       }
-      // localStorage'a kaydet
-      localStorage.setItem('tableCapacities', JSON.stringify(capacities));
+      // secureStorage'a kaydet
+      secureStorage.setItem('tableCapacities', JSON.stringify(capacities));
       return capacities;
     }
 
@@ -187,9 +188,9 @@ const Dashboard = () => {
     }));
   }, [tables, selectedSalonId, derivedSalons]);
 
-  // Masa kapasitelerini localStorage'a kaydet
+  // Masa kapasitelerini secureStorage'a kaydet
   useEffect(() => {
-    localStorage.setItem('tableCapacities', JSON.stringify(tableCapacities));
+    secureStorage.setItem('tableCapacities', JSON.stringify(tableCapacities));
   }, [tableCapacities]);
   
 

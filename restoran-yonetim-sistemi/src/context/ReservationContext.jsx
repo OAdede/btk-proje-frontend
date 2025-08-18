@@ -44,8 +44,8 @@ export const ReservationProvider = ({ children }) => {
             setLoading(true);
             setError(null);
             
-            // userId'yi localStorage'dan al
-            const userId = parseInt(localStorage.getItem('userId')) || 1;
+            // userId'yi güvenli servis üzerinden al
+            const userId = reservationService.getCurrentUserId();
             
             console.log('addReservation çağrıldı:', { tableId, formData, userId });
             

@@ -37,10 +37,15 @@ function Login() {
       const roleId = await login(email, password);
 
       if (roleId !== null && roleId !== undefined) {
+        // Convert roleId to role name for server verification
+        const roleNames = { 0: 'admin', 1: 'garson', 2: 'kasiyer' };
+        const roleName = roleNames[roleId];
+        
         // Verify role server-side before navigation
-        const verification = await authService.verifyRole();
+        const verification = await authService.verifyRole(roleName);
         
         if (verification.authorized && verification.redirectPath) {
+          // Use backend-provided redirect path
           navigate(verification.redirectPath);
         } else if (verification.authorized) {
           // Fallback to client-side routing if server doesn't provide path
@@ -54,7 +59,8 @@ function Login() {
             navigate('/');
           }
         } else {
-          setError('Yetkiniz yok veya oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
+          // Show specific error message from backend if available
+          setError(verification.message || 'Yetkiniz yok veya oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
         }
       }
     } catch (err) {

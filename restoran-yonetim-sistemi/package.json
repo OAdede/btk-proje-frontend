@@ -18,6 +18,7 @@
     "axios": "^1.11.0",
     "bootstrap": "^5.3.7",
     "chart.js": "^4.5.0",
+    "crypto-js": "^4.2.0",
     "lucide-react": "^0.536.0",
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",

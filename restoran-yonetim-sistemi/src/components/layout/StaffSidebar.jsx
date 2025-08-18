@@ -8,6 +8,7 @@ import "./StaffLayout.css";
 import { authService } from "../../services/authService";
 import { userService } from "../../services/userService";
 import { personnelService } from "../../services/personnelService";
+import secureStorage from "../../utils/secureStorage";
 
 const StaffSidebar = () => {
     const { logout, user } = useContext(AuthContext);
@@ -92,7 +93,7 @@ const StaffSidebar = () => {
                 // İsim
                 const name = data.name || user?.name || displayName || 'Kullanıcı';
                 setDisplayName(name);
-                localStorage.setItem('displayName', name);
+                secureStorage.setItem('displayName', name);
 
                 // Rol
                 const roleLabel = (() => {

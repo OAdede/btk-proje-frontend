@@ -1,29 +1,37 @@
 /**
- * Centralized Token Management Utility
+ * Centralized Token Management Utility - SECURITY ENHANCED
  * 
- * This utility provides secure token management with automatic expiration checking,
- * centralized storage, and preparation for future security enhancements.
- * 
- * Benefits:
- * - Single source of truth for token operations
+ * This utility provides secure token management following industry standards:
+ * - Memory-only storage for tokens (prevents XSS access)
+ * - Encrypted storage for sensitive data
+ * - Preparation for HttpOnly cookie migration
  * - Automatic expiration validation
- * - Easy to add refresh token logic later
- * - Consistent error handling
- * - Preparation for secure storage migration
+ * - Defense against common web vulnerabilities
+ * 
+ * Security Standards Implemented:
+ * - OWASP Token Storage Guidelines
+ * - Zero Trust client-side storage model
+ * - Defense in depth strategy
  */
 
-import { isTokenExpired } from './jwt.js';
+import { isTokenExpired, decodeJwtPayload } from './jwt.js';
+import secureStorage from './secureStorage.js';
 
 // Configuration for token management
 const TOKEN_CONFIG = {
     // Storage keys
     TOKEN_KEY: 'token',
     USER_KEY: 'user',
-    REFRESH_TOKEN_KEY: 'refreshToken', // For future use
+    REFRESH_TOKEN_KEY: 'refreshToken',
     
     // Security settings
     AUTO_LOGOUT_ON_EXPIRED: true,
-    LOG_TOKEN_OPERATIONS: import.meta.env.DEV, // Only log in development
+    LOG_TOKEN_OPERATIONS: import.meta.env.DEV,
+    
+    // Migration flags
+    USE_SECURE_STORAGE: true,          // Enable secure storage
+    PREFER_MEMORY_FOR_TOKENS: true,    // Keep tokens in memory only
+    PREPARE_HTTPONLY_MIGRATION: false  // Future: prepare for HttpOnly cookies
 };
 
 /**
@@ -37,14 +45,35 @@ class TokenManager {
 
     /**
      * Get the current token with automatic expiration checking
+     * SECURITY: Uses secure memory storage to prevent XSS token theft
      * @returns {string|null} Valid token or null if expired/missing
      */
     getToken() {
         try {
-            const token = localStorage.getItem(TOKEN_CONFIG.TOKEN_KEY);
+            // Priority: Memory storage (most secure) -> Secure storage -> Legacy localStorage
+            let token = null;
+            
+            if (TOKEN_CONFIG.USE_SECURE_STORAGE) {
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) console.log('[TokenManager] Retrieving token from secure storage');
+                token = secureStorage.getItem(TOKEN_CONFIG.TOKEN_KEY);
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) console.log('[TokenManager] SecureStorage returned:', token ? `${token.substring(0, 30)}...` : 'null');
+            }
+            
+            // Fallback to legacy localStorage for backwards compatibility
+            if (!token) {
+                token = localStorage.getItem(TOKEN_CONFIG.TOKEN_KEY);
+                if (token && TOKEN_CONFIG.USE_SECURE_STORAGE) {
+                    // Migrate to secure storage
+                    this.setToken(token);
+                    localStorage.removeItem(TOKEN_CONFIG.TOKEN_KEY);
+                    console.log('[TokenManager] Migrated token to secure storage');
+                }
+            }
             
             if (!token) {
-                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                // Only log "No token found" if we're not in a login/startup context
+                // Reduce console noise during normal app initialization
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS && window.location?.pathname !== '/login') {
                     console.log('[TokenManager] No token found');
                 }
                 return null;
@@ -75,7 +104,8 @@ class TokenManager {
     }
 
     /**
-     * Set a new token with validation
+     * Set a new token with validation and secure storage
+     * SECURITY: Stores in memory-only storage to prevent XSS access
      * @param {string} token - JWT token to store
      * @returns {boolean} Success status
      */
@@ -92,10 +122,21 @@ class TokenManager {
                 return false;
             }
 
-            localStorage.setItem(TOKEN_CONFIG.TOKEN_KEY, token);
-            
-            if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
-                console.log('[TokenManager] Token stored successfully');
+            if (TOKEN_CONFIG.USE_SECURE_STORAGE) {
+                // Store in secure storage with expiration
+                secureStorage.setItem(TOKEN_CONFIG.TOKEN_KEY, token, {
+                    expiry: this.getTokenExpiry(token)
+                });
+                
+                // Remove from localStorage if it exists (cleanup legacy storage)
+                localStorage.removeItem(TOKEN_CONFIG.TOKEN_KEY);
+                
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.log('[TokenManager] ✅ Token stored successfully in secure storage');
+                }
+            } else {
+                // Legacy localStorage storage
+                localStorage.setItem(TOKEN_CONFIG.TOKEN_KEY, token);
             }
             
             return true;
@@ -166,7 +207,7 @@ class TokenManager {
      */
     async refreshToken() {
         try {
-            const refreshToken = localStorage.getItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY);
+            const refreshToken = secureStorage.getItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY) || localStorage.getItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY);
             
             if (!refreshToken) {
                 if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
@@ -189,7 +230,8 @@ class TokenManager {
                     console.warn('[TokenManager] Refresh token failed:', response.status);
                 }
                 // Clear invalid refresh token
-                localStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY);
+                try { secureStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
+                try { localStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
                 return false;
             }
 
@@ -201,7 +243,10 @@ class TokenManager {
                 
                 // Store new refresh token if provided
                 if (data.refreshToken) {
-                    localStorage.setItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY, data.refreshToken);
+                    const payload = decodeJwtPayload(data.refreshToken);
+                    const expiry = payload?.exp ? payload.exp * 1000 : (Date.now() + 30 * 24 * 60 * 60 * 1000);
+                    secureStorage.setItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY, data.refreshToken, { expiry });
+                    try { localStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
                 }
                 
                 if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
@@ -215,7 +260,8 @@ class TokenManager {
         } catch (error) {
             console.error('[TokenManager] Token refresh error:', error);
             // Clear potentially invalid refresh token
-            localStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY);
+            try { secureStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
+            try { localStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
             return false;
         }
     }
@@ -233,9 +279,9 @@ class TokenManager {
         }
 
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const payload = decodeJwtPayload(token);
             const now = Math.floor(Date.now() / 1000);
-            const timeUntilExpiry = payload.exp - now;
+            const timeUntilExpiry = (payload?.exp ?? 0) - now;
             const thresholdSeconds = thresholdMinutes * 60;
 
             // If token expires within threshold, attempt refresh
@@ -278,6 +324,43 @@ class TokenManager {
     }
 
     /**
+     * Extract expiry timestamp from JWT token
+     * @param {string} token - JWT token
+     * @returns {number} Expiry timestamp in milliseconds
+     */
+    getTokenExpiry(token) {
+        try {
+            const payload = decodeJwtPayload(token);
+            return payload.exp * 1000; // Convert to milliseconds
+        } catch (error) {
+            console.error('[TokenManager] Error extracting token expiry:', error);
+            return Date.now() + (24 * 60 * 60 * 1000); // Default 24h
+        }
+    }
+
+    /**
+     * Clear token from all storage locations
+     * SECURITY: Ensures complete cleanup across all storage types
+     */
+    clearToken() {
+        try {
+            if (TOKEN_CONFIG.USE_SECURE_STORAGE) {
+                try { secureStorage.removeItem(TOKEN_CONFIG.TOKEN_KEY); } catch {}
+                try { secureStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
+            }
+            // Also clear from localStorage (legacy cleanup)
+            try { localStorage.removeItem(TOKEN_CONFIG.TOKEN_KEY); } catch {}
+            try { localStorage.removeItem(TOKEN_CONFIG.REFRESH_TOKEN_KEY); } catch {}
+            
+            if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                console.log('[TokenManager] Token and refresh token cleared');
+            }
+        } catch (error) {
+            console.error('[TokenManager] Error clearing token:', error);
+        }
+    }
+
+    /**
      * Set callback for authentication errors
      * @param {function} callback - Function to call on auth errors
      */
@@ -290,19 +373,20 @@ class TokenManager {
      * @returns {object} Safe token information
      */
     getTokenInfo() {
-        const token = localStorage.getItem(TOKEN_CONFIG.TOKEN_KEY);
+        const token = this.getToken(); // Use secure getToken method
         if (!token) return { exists: false };
 
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const payload = decodeJwtPayload(token);
             const now = Math.floor(Date.now() / 1000);
             
             return {
                 exists: true,
                 expired: isTokenExpired(token),
-                expiresAt: payload.exp,
-                expiresIn: payload.exp - now,
-                issuer: payload.iss,
+                expiresAt: payload?.exp,
+                expiresIn: (payload?.exp ?? 0) - now,
+                issuer: payload?.iss,
+                storageType: TOKEN_CONFIG.USE_SECURE_STORAGE ? 'secure-memory' : 'localStorage',
                 // Don't expose sensitive data
                 preview: `${token.substring(0, 10)}...${token.substring(token.length - 10)}`
             };

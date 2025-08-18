@@ -6,6 +6,7 @@ import './TopNav.css';
 import { settingsService } from '../../services/settingsService';
 import { userService } from '../../services/userService';
 import { personnelService } from '../../services/personnelService';
+import secureStorage from '../../utils/secureStorage';
 
 const TopNav = () => {
     const { user, logout } = useContext(AuthContext);
@@ -80,7 +81,7 @@ const TopNav = () => {
                 // İsim
                 const name = data.name || user?.name || displayName || 'Kullanıcı';
                 setDisplayName(name);
-                localStorage.setItem('displayName', name);
+                secureStorage.setItem('displayName', name);
 
                 // Rol
                 const roleLabel = (() => {
@@ -92,17 +93,17 @@ const TopNav = () => {
                     return displayRole || user?.role || 'Kullanıcı';
                 })();
                 setDisplayRole(roleLabel);
-                localStorage.setItem('displayRole', roleLabel);
+                secureStorage.setItem('displayRole', roleLabel);
 
                 // Fotoğraf
                 if (data.photoBase64) {
                     const img = `data:image/jpeg;base64,${data.photoBase64}`;
                     setProfileImage(img);
-                    localStorage.setItem('profileImage', img);
+                    secureStorage.setItem('profileImage', img);
                 } else if (data.hasPhoto && data.id) {
                     const imgUrl = `/api/users/${data.id}/photo`;
                     setProfileImage(imgUrl);
-                    localStorage.setItem('profileImage', imgUrl);
+                    secureStorage.setItem('profileImage', imgUrl);
                 } else {
                     console.log('[TopNav Profile] No photo found on profile payload');
                 }
@@ -128,12 +129,12 @@ const TopNav = () => {
                 const settings = await settingsService.getRestaurantSettings();
                 if (settings.restaurantName) {
                     setRestaurantName(settings.restaurantName);
-                    localStorage.setItem('restaurantName', settings.restaurantName);
+                    secureStorage.setItem('restaurantName', settings.restaurantName);
                 }
             } catch (error) {
                 console.error('Error loading restaurant name:', error);
                 // Fallback to localStorage if API fails
-                const cachedName = localStorage.getItem('restaurantName');
+                const cachedName = secureStorage.getItem('restaurantName');
                 if (cachedName) setRestaurantName(cachedName);
             }
         };
@@ -144,7 +145,7 @@ const TopNav = () => {
     // localStorage değişikliklerini ve custom event'leri dinle
     useEffect(() => {
         const handleStorageChange = () => {
-            const name = localStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
+            const name = secureStorage.getItem('restaurantName') || 'Restoran Yönetim Sistemi';
             setRestaurantName(name);
         };
 

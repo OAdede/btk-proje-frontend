@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { ThemeContext } from "../../context/ThemeContext";
+import secureStorage from "../../utils/secureStorage";
 
 export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate, existingReservations = [], shouldClearForm = true }) {
   const { isDarkMode } = useContext(ThemeContext);
@@ -25,7 +26,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
   // Masa kapasitesini al
   const getTableCapacity = (tableNumber) => {
     if (!tableNumber) return 4;
-    const capacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+    const capacities = JSON.parse(secureStorage.getItem('tableCapacities') || '{}');
     return capacities[tableNumber] || 4;
   };
 

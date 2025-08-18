@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TableContext } from '../../context/TableContext';
 import { AuthContext } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
+import secureStorage from '../../utils/secureStorage';
 
 // A unified admin-style tables grid for all roles
 // - For admin: this component can be reused later with custom handlers
@@ -46,10 +47,10 @@ export default function AdminStyleTables({ roleOverride }) {
         return s?.name || getAdminFloorLabelBySalonId(sid);
     };
 
-    // Capacities from localStorage
+    // Capacities from secureStorage
     const [tableCapacities, setTableCapacities] = useState(() => {
         try {
-            const saved = localStorage.getItem('tableCapacities');
+            const saved = secureStorage.getItem('tableCapacities');
             return saved ? JSON.parse(saved) : {};
         } catch {
             return {};

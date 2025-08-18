@@ -5,6 +5,7 @@ const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 // Import new token management utilities
 import tokenManager from '../utils/tokenManager.js';
 import httpClient from '../utils/httpClient.js';
+import secureStorage from '../utils/secureStorage.js';
 
 export const authService = {
     // Login user
@@ -161,12 +162,16 @@ export const authService = {
 
     // Logout user
     logout() {
-        // Use tokenManager for centralized cleanup
+        // SECURITY: Use centralized secure cleanup
         tokenManager.clearToken();
+        secureStorage.clear();
+        
         // Clear any authorization headers
         if (typeof window !== 'undefined') {
             delete window.axios?.defaults?.headers?.common?.Authorization;
         }
+        
+        console.log('[AuthService] Complete secure logout performed');
     },
 
     // Check if user is authenticated
@@ -175,18 +180,29 @@ export const authService = {
         return tokenManager.isAuthenticated();
     },
 
-    // Get current user from localStorage
+    // Get current user from secure storage
     getCurrentUser() {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            try {
-                return JSON.parse(userStr);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                return null;
+        // SECURITY: Use secure storage with fallback migration
+        let userData = secureStorage.getItem('user');
+        
+        // Migration fallback from legacy localStorage
+        if (!userData) {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    userData = JSON.parse(userStr);
+                    // Migrate to secure storage
+                    secureStorage.setItem('user', userData);
+                    localStorage.removeItem('user');
+                    console.log('[AuthService] Migrated user data to secure storage');
+                } catch (error) {
+                    console.error('[AuthService] Error parsing legacy user data:', error);
+                    return null;
+                }
             }
         }
-        return null;
+        
+        return userData;
     },
 
     // Set authorization header for axios
@@ -353,34 +369,48 @@ export const authService = {
     },
 
     // Verify user role server-side
-    async verifyRole(requiredRole = null) {
+    async verifyRole(roleName = null) {
         try {
             const token = tokenManager.getToken();
             if (!token) {
                 return { authorized: false, message: 'Token bulunamadı' };
             }
 
-            const response = await fetch(`${API_BASE_URL}/auth/verify-role`, {
-                method: 'POST',
+            const url = `${API_BASE_URL}/auth/verify-role?roleName=${encodeURIComponent(roleName)}`;
+            const response = await fetch(url, {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ requiredRole })
+                }
             });
 
-            if (!response.ok) {
-                return { authorized: false, message: 'Yetkilendirme başarısız' };
+            // Handle different HTTP status codes from backend
+            if (response.ok) {
+                const data = await response.json();
+                return {
+                    authorized: data.authorized || false,
+                    roleId: data.roleId,
+                    roleName: data.roleName,
+                    redirectPath: data.redirectPath,
+                    message: data.message,
+                    expiresAt: data.expiresAt
+                };
+            } else {
+                // For 401, 400, 500 status codes, still try to parse response
+                try {
+                    const errorData = await response.json();
+                    return {
+                        authorized: false,
+                        message: errorData.message || 'Yetkilendirme başarısız',
+                        roleName: errorData.roleName
+                    };
+                } catch (parseError) {
+                    return { 
+                        authorized: false, 
+                        message: `Yetkilendirme başarısız (${response.status})` 
+                    };
+                }
             }
-
-            const data = await response.json();
-            return {
-                authorized: data.authorized || false,
-                roleId: data.roleId,
-                role: data.role,
-                redirectPath: data.redirectPath,
-                message: data.message
-            };
         } catch (error) {
             console.error('Role verification error:', error);
             return { authorized: false, message: 'Yetkilendirme kontrol edilemedi' };

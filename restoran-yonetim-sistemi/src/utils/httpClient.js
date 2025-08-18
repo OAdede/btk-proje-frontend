@@ -124,16 +124,58 @@ class HttpClient {
             ...options,
         });
 
+        // If body is FormData or Blob, do not set Content-Type (browser will handle boundary)
+        if (requestOptions.body && (requestOptions.body instanceof FormData || requestOptions.body instanceof Blob)) {
+            if (requestOptions.headers && 'Content-Type' in requestOptions.headers) {
+                try { delete requestOptions.headers['Content-Type']; } catch {}
+            }
+        }
+
         if (API_CONFIG.logRequests) {
+            // Redact sensitive headers
+            const redactedHeaders = { ...(requestOptions.headers || {}) };
+            if (redactedHeaders.Authorization) {
+                redactedHeaders.Authorization = 'Bearer ********';
+            }
             console.log(`[HttpClient] ${requestOptions.method} ${url}`, {
-                headers: requestOptions.headers,
-                body: requestOptions.body
+                headers: redactedHeaders,
+                hasBody: Boolean(requestOptions.body)
             });
         }
 
         try {
+            // Implement timeout and basic retry with exponential backoff
+            const attemptRequest = async (attempt = 0) => {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+                try {
+                    const response = await fetch(url, { ...requestOptions, signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    // Retry on transient 5xx errors
+                    if (response.status >= 500 && response.status < 600 && attempt < API_CONFIG.retryAttempts) {
+                        const delay = 300 * Math.pow(2, attempt);
+                        if (API_CONFIG.logRequests) console.warn(`[HttpClient] ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1})`);
+                        await new Promise(r => setTimeout(r, delay));
+                        return attemptRequest(attempt + 1);
+                    }
+                    return response;
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    // Retry on abort (timeout) or network errors
+                    const isAbort = err?.name === 'AbortError';
+                    const isNetwork = !('status' in (err || {}));
+                    if ((isAbort || isNetwork) && attempt < API_CONFIG.retryAttempts) {
+                        const delay = 300 * Math.pow(2, attempt);
+                        if (API_CONFIG.logRequests) console.warn(`[HttpClient] ${isAbort ? 'timeout' : 'network error'}, retrying in ${delay}ms (attempt ${attempt + 1})`);
+                        await new Promise(r => setTimeout(r, delay));
+                        return attemptRequest(attempt + 1);
+                    }
+                    throw err;
+                }
+            };
+
             // Make the request
-            const response = await fetch(url, requestOptions);
+            const response = await attemptRequest(0);
             
             // Apply response interceptors
             const interceptedResponse = await this.applyResponseInterceptors(response, requestOptions);
@@ -144,7 +186,9 @@ class HttpClient {
 
             return interceptedResponse;
         } catch (error) {
-            console.error(`[HttpClient] Request failed: ${requestOptions.method} ${url}`, error);
+            if (API_CONFIG.logRequests) {
+                console.error(`[HttpClient] Request failed: ${requestOptions.method} ${url}`, error?.message || error);
+            }
             throw error;
         }
     }

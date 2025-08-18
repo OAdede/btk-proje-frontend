@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import secureStorage from '../utils/secureStorage';
 
 export const ThemeContext = createContext();
 
@@ -12,8 +13,8 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Local storage'dan tema tercihini al
-    const savedTheme = localStorage.getItem('theme');
+    // Secure storage'dan tema tercihini al
+    const savedTheme = secureStorage.getItem('theme');
     if (savedTheme) {
       return savedTheme === 'dark';
     }
@@ -26,8 +27,8 @@ export const ThemeProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Tema değişikliğini local storage'a kaydet
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    // Tema değişikliğini secure storage'a kaydet
+    secureStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
 
     // Body'ye tema sınıfını ekle
     document.body.className = isDarkMode ? 'dark-theme' : 'light-theme';

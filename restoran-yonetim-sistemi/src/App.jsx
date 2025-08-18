@@ -6,6 +6,8 @@ import { AuthContext } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { useBootstrap } from './context/BootstrapContext.jsx';
 import { getRoleInfoFromToken, isTokenExpired } from './utils/jwt.js';
+import tokenManager from './utils/tokenManager.js'; // Add secure token manager
+import './utils/storageMigration.js'; // Auto-migrate legacy data on app start
 
 
 // Layouts
@@ -53,7 +55,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <div>Yükleniyor...</div>;
   }
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  // SECURITY: Use secure token manager instead of direct localStorage access
+  const token = tokenManager.getToken(); // This validates expiration automatically
   const roleInfo = token ? getRoleInfoFromToken(token) : {};
   const effectiveRole = roleInfo.role ?? user?.role;
 
@@ -61,11 +64,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (isTokenExpired(token)) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    return <Navigate to="/login" replace />;
-  }
+  // Token expiration is already checked by tokenManager.getToken()
+  // No need for additional isTokenExpired check
 
   if (requiredRole && !effectiveRole) {
     return <Navigate to="/login" replace />;
@@ -117,7 +117,7 @@ function App() {
       overrideBootstrap,
       actualNeedsBootstrap,
       bootstrapLoading,
-      hasToken: !!localStorage.getItem('token'),
+      hasToken: !!tokenManager.getToken(),
       bootstrapCompleted: sessionStorage.getItem('bootstrapCompleted')
     });
   }
@@ -139,7 +139,7 @@ function App() {
           <strong>Debug Mode</strong><br/>
           needsBootstrap: {String(needsBootstrap)}<br/>
           Override: {String(overrideBootstrap)}<br/>
-          hasToken: {String(!!localStorage.getItem('token'))}<br/>
+          hasToken: {String(!!tokenManager.getToken())}<br/>
           bootstrapCompleted: {sessionStorage.getItem('bootstrapCompleted') || 'null'}<br/>
           <button onClick={() => window.location.href = '/?bootstrap=false'}>Force Login</button><br/>
           <button onClick={() => {sessionStorage.removeItem('bootstrapCompleted'); window.location.reload()}}>Clear Flag</button>
@@ -241,7 +241,8 @@ function App() {
               element={
                 <ProtectedRoute>
                   {(() => {
-                    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+                    // SECURITY: Use secure token manager
+                    const token = tokenManager.getToken();
                     if (!token) return <Navigate to="/login" replace />;
                     const info = getRoleInfoFromToken(token);
                     const role = info.role ?? user?.role;

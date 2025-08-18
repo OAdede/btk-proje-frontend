@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import ReservationModal from '../../components/reservations/ReservationModal';
 import WarningModal from '../../components/common/WarningModal';
+import secureStorage from '../../utils/secureStorage';
 
 
 const ReservationsPage = () => {
@@ -62,7 +63,7 @@ const ReservationsPage = () => {
 
     // Masa kapasitesini al (localStorage'dan)
     const getTableCapacity = (tableNumber) => {
-        const capacities = JSON.parse(localStorage.getItem('tableCapacities') || '{}');
+        const capacities = JSON.parse(secureStorage.getItem('tableCapacities') || '{}');
         return capacities[tableNumber] || 4; // Varsayılan 4 kişilik
     };
 
@@ -855,7 +856,7 @@ const ReservationsPage = () => {
                         }}>
                             <button
                                 onClick={() => {
-                                    localStorage.removeItem('reservations');
+                                    secureStorage.removeItem('reservations');
                                     setShowDeleteAllModal(false);
                                     window.location.reload();
                                 }}

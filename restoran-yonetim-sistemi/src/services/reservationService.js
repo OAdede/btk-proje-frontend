@@ -4,6 +4,22 @@ const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 // Import secure HTTP client and token manager
 import httpClient from '../utils/httpClient.js';
 import tokenManager from '../utils/tokenManager.js';
+import secureStorage from '../utils/secureStorage.js';
+
+// SECURITY: Helper to get current user ID from secure storage
+const getCurrentUserId = () => {
+  const userData = secureStorage.getItem('user');
+  if (userData) {
+    return userData.userId;
+  }
+  // Fallback: try to get from legacy localStorage (migration support)
+  const legacyUserId = localStorage.getItem('userId');
+  if (legacyUserId) {
+    localStorage.removeItem('userId'); // Clean up legacy storage
+    return legacyUserId;
+  }
+  return null;
+};
 
 const toInt = (v, defVal = null) => {
   const n = Number.parseInt(v, 10);
@@ -45,7 +61,7 @@ export const reservationService = {
         reservationTime: buildLocalDateTime(reservationData.tarih, reservationData.saat), // timestamp with timezone
         specialRequest: reservationData.not ?? '',                     // character varying
         statusId: toInt(reservationData.statusId, 1),                 // integer
-        createdBy: toBigInt(reservationData.createdBy ?? localStorage.getItem('userId'), 1) // bigint
+        createdBy: toBigInt(reservationData.createdBy ?? getCurrentUserId(), 1) // bigint
       };
 
       console.log('🔍 Oluşturulan requestBody:', requestBody);
@@ -176,7 +192,7 @@ export const reservationService = {
         reservationTime: reservationData.reservationTime || `${reservationData.tarih}T${reservationData.saat}:00`, // timestamp with timezone
         specialRequest: reservationData.specialRequest || reservationData.not || '', // character varying
         statusId: toInt(reservationData.statusId, 1), // integer
-        createdBy: toBigInt(reservationData.createdBy ?? localStorage.getItem('userId'), 1) // bigint
+        createdBy: toBigInt(reservationData.createdBy ?? getCurrentUserId(), 1) // bigint
       };
 
       const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {

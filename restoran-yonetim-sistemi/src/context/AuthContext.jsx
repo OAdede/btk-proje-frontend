@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { getRoleInfoFromToken } from '../utils/jwt';
 import tokenManager from '../utils/tokenManager';
+import secureStorage from '../utils/secureStorage';
 
 export const AuthContext = createContext();
 
@@ -19,6 +20,48 @@ const getRoleIdFromName = (name) => {
     if (normalized === 'garson') return 1;
     if (normalized === 'kasiyer') return 2;
     return undefined;
+};
+
+// Helper functions for secure user data storage
+const setUserData = (userData) => {
+    // SECURITY: Store user data with encryption for PII
+    secureStorage.setItem('user', userData);
+    console.log('[AuthContext] User data stored securely');
+};
+
+const getUserData = () => {
+    // SECURITY: Retrieve user data from secure storage with fallback
+    let userData = secureStorage.getItem('user');
+    
+    // Migration: Check legacy localStorage
+    if (!userData) {
+        const legacyUserStr = localStorage.getItem('user');
+        if (legacyUserStr) {
+            try {
+                userData = JSON.parse(legacyUserStr);
+                // Migrate to secure storage
+                setUserData(userData);
+                localStorage.removeItem('user');
+                console.log('[AuthContext] Migrated user data to secure storage');
+            } catch (error) {
+                console.error('[AuthContext] Error parsing legacy user data:', error);
+            }
+        }
+    }
+    
+    return userData;
+};
+
+const clearUserData = () => {
+    // SECURITY: Clear user data from all storage locations
+    secureStorage.removeItem('user');
+    secureStorage.removeItem('profileImage');
+    secureStorage.removeItem('phone');
+    secureStorage.removeItem('phoneNumber');
+    localStorage.removeItem('user'); // Legacy cleanup
+    localStorage.removeItem('profileImage');
+    localStorage.removeItem('phoneNumber');
+    console.log('[AuthContext] All user data cleared securely');
 };
 
 export const AuthProvider = ({ children }) => {
@@ -52,11 +95,11 @@ export const AuthProvider = ({ children }) => {
                     email: roleInfo.email ?? savedUser?.email ?? '',
                     name: roleInfo.name ?? savedUser?.name ?? '',
                     surname: roleInfo.surname ?? savedUser?.surname ?? '',
-                    profileImage: savedUser?.profileImage ?? localStorage.getItem('profileImage') ?? null,
-                    phone: savedUser?.phone ?? localStorage.getItem('phoneNumber') ?? '',
+                    profileImage: savedUser?.profileImage ?? secureStorage.getItem('profileImage') ?? null,
+                    phone: savedUser?.phone ?? secureStorage.getItem('phoneNumber') ?? '',
                 };
-                // LocalStorage'daki user manipüle edilmiş olsa bile düzelt
-                localStorage.setItem('user', JSON.stringify(hydratedUser));
+                // SECURITY: Store user data securely with encryption
+                setUserData(hydratedUser);
                 setUser(hydratedUser);
                 setLoading(false);
                 return;
@@ -97,14 +140,18 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         setLoading(true);
         try {
+            console.log('[AuthContext] 🚀 Starting login process...');
             const data = await authService.login(email, password);
+            console.log('[AuthContext] 📥 Backend response received:', { success: data.success, hasToken: !!data.token });
 
             if (data.success) {
                 // Use tokenManager to store token securely
+                console.log('[AuthContext] 💾 Storing token securely...');
                 const tokenStored = tokenManager.setToken(data.token);
                 if (!tokenStored) {
                     throw new Error('Token geçersiz veya süresi dolmuş');
                 }
+                console.log('[AuthContext] ✅ Token stored successfully');
                 
                 authService.setAuthHeader(data.token);
 
@@ -117,13 +164,24 @@ export const AuthProvider = ({ children }) => {
                     email: roleInfo.email ?? email,
                     name: roleInfo.name ?? (data.name || 'Kullanıcı'),
                     surname: roleInfo.surname ?? (data.surname || ''),
-                    profileImage: data.profileImage || localStorage.getItem('profileImage') || null,
-                    phone: data.phone || localStorage.getItem('phoneNumber') || '',
+                    profileImage: data.profileImage || secureStorage.getItem('profileImage') || null,
+                    phone: data.phone || secureStorage.getItem('phoneNumber') || '',
                 };
 
-                localStorage.setItem('user', JSON.stringify(userData));
+                // SECURITY: Store user data securely
+                console.log('[AuthContext] 👤 Setting user data...');
+                setUserData(userData);
                 setUser(userData);
                 setLoading(false);
+                console.log('[AuthContext] 🎉 Login completed successfully');
+                
+                // DEBUG: Immediately test token retrieval after login
+                setTimeout(() => {
+                    console.log('[AuthContext] 🧪 Testing immediate token retrieval...');
+                    const testToken = tokenManager.getToken();
+                    console.log('[AuthContext] 🧪 Test result:', testToken ? 'TOKEN FOUND ✅' : 'TOKEN NOT FOUND ❌');
+                }, 100);
+                
                 return roleId;
             } else {
                 setLoading(false);
@@ -167,8 +225,8 @@ export const AuthProvider = ({ children }) => {
                         navigate(homePath);
                     }
                 } else {
-                    // Production modunda localStorage'a da yaz
-                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    // Production modunda secure storage'a da yaz
+                    setUserData(updatedUser);
                 }
 
                 return updatedUser;
@@ -182,9 +240,9 @@ export const AuthProvider = ({ children }) => {
         setUser(currentUser => {
             if (!currentUser) return null;
             const updatedUser = { ...currentUser, profileImage: imageUrl };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            // Profil fotoğrafını localStorage'a da kaydet
-            localStorage.setItem('profileImage', imageUrl);
+            // SECURITY: Store user data and profile image securely
+            setUserData(updatedUser);
+            secureStorage.setItem('profileImage', imageUrl);
             return updatedUser;
         });
     };
@@ -193,7 +251,8 @@ export const AuthProvider = ({ children }) => {
         setUser(currentUser => {
             if (!currentUser) return null;
             const updatedUser = { ...currentUser, phone: newPhone };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            // SECURITY: Store user data securely
+            setUserData(updatedUser);
             return updatedUser;
         });
     };
@@ -202,7 +261,8 @@ export const AuthProvider = ({ children }) => {
         setUser(currentUser => {
             if (!currentUser) return null;
             const updatedUser = { ...currentUser, email: newEmail };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            // SECURITY: Store user data securely
+            setUserData(updatedUser);
             return updatedUser;
         });
     };
