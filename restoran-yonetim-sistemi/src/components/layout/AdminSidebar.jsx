@@ -153,7 +153,7 @@ const AdminSidebar = () => {
     const [showProfileImageConfirm, setShowProfileImageConfirm] = useState(false);
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [cameraStream, setCameraStream] = useState(null);
-    
+
     // Change Password Modal States
     const [showChangePassword, setShowChangePassword] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');

@@ -28,19 +28,12 @@ export default function OrderPage() {
 
     // UI'de gelen tableId masa numarası olabilir; backend id ile de deneyelim
     const confirmedOrders = (() => {
-        // Doğrudan anahtar
         if (orders?.[tableId]?.items) return orders[tableId].items;
-        // Backend id'yi tahmin et: orders anahtarları backend id; tables içinden eşleştirmek için TableContext'te map yoksa doğrudan fallback
-        const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
-        return possible?.items || {};
+        return {};
     })();
 
     useEffect(() => {
-        const existingItems = (() => {
-            if (orders?.[tableId]?.items) return orders[tableId].items;
-            const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
-            return possible?.items || {};
-        })();
+        const existingItems = orders?.[tableId]?.items || {};
         // Her bir ürün için 'note' alanı olduğundan emin ol
         const normalized = Object.keys(existingItems).reduce((acc, key) => {
             const item = existingItems[key];

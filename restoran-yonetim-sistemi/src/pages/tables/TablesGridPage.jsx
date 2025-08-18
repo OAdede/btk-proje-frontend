@@ -1,10 +1,12 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function TablesGridPage() {
     const navigate = useNavigate();
     const { tableStatus, updateTableStatus, reservations } = useContext(TableContext);
+    const { user } = useContext(AuthContext);
     const [selectedFloor, setSelectedFloor] = useState(1);
 
     const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
@@ -21,7 +23,7 @@ export default function TablesGridPage() {
 
     const getStatus = (tableId) => {
         const status = tableStatus[tableId] || "empty";
-        
+
         if (status === 'reserved') {
             const reservation = Object.values(reservations).find(res => res.tableId === tableId);
             if (reservation) {
@@ -58,7 +60,7 @@ export default function TablesGridPage() {
                 return statusInfo["empty"];
             }
         }
-        
+
         return statusInfo[status] || statusInfo["empty"];
     };
 
@@ -66,10 +68,11 @@ export default function TablesGridPage() {
 
     const handleTableClick = (tableId) => {
         const status = tableStatus[tableId] || "empty";
+        const role = (user?.role) || 'staff';
         if (status === "occupied") {
-            navigate(`/staff/summary/${tableId}`);
+            navigate(`/${role}/summary/${tableId}`);
         } else {
-            navigate(`/staff/order/${tableId}`);
+            navigate(`/${role}/order/${tableId}`);
         }
     }
 

@@ -85,36 +85,36 @@ export function TableProvider({ children }) {
         if (!product.recipe || product.recipe.length === 0) {
             return 0; // No recipe means no stock
         }
-        
+
         let maxPossibleUnits = Infinity;
-        
+
         for (const recipeItem of product.recipe) {
             const ingredient = ingredients[recipeItem.ingredientId];
             if (!ingredient) {
                 console.warn(`Missing ingredient data for product ${product.name} (ID: ${product.id}), ingredient ID: ${recipeItem.ingredientId}`);
                 return 0; // Missing ingredient data
             }
-            
+
             if (typeof ingredient.stockQuantity !== 'number' || isNaN(ingredient.stockQuantity)) {
                 console.warn(`Invalid stock quantity for ingredient ${ingredient.name} (ID: ${ingredient.id}): ${ingredient.stockQuantity}`);
                 return 0; // Invalid stock quantity
             }
-            
+
             if (typeof recipeItem.quantity !== 'number' || isNaN(recipeItem.quantity) || recipeItem.quantity <= 0) {
                 console.warn(`Invalid recipe quantity for product ${product.name} (ID: ${product.id}), ingredient ${ingredient.name}: ${recipeItem.quantity}`);
                 return 0; // Invalid recipe quantity
             }
-            
+
             // Calculate how many units can be made with this ingredient
             const unitsPossible = Math.floor(ingredient.stockQuantity / recipeItem.quantity);
             maxPossibleUnits = Math.min(maxPossibleUnits, unitsPossible);
         }
-        
+
         const finalStock = maxPossibleUnits === Infinity ? 0 : maxPossibleUnits;
         if (finalStock === 0 && product.recipe.length > 0) {
             console.log(`Product ${product.name} (ID: ${product.id}) has 0 stock due to insufficient ingredients`);
         }
-        
+
         return finalStock;
     };
 
@@ -160,15 +160,16 @@ export function TableProvider({ children }) {
             }, {});
             setTableStatus(newTableStatus);
 
-            const newIngredients = (stocksData || []).reduce((acc, item) => {
+            // Öncelik: stoklar uçundan doldur
+            let newIngredients = (stocksData || []).reduce((acc, item) => {
                 // Ensure stockQuantity is a valid number
                 const stockQuantity = Number(item.stockQuantity);
                 const minStock = Number(item.minStock) || 0;
-                
+
                 if (isNaN(stockQuantity)) {
                     console.warn(`Invalid stock quantity for ingredient ${item.name} (ID: ${item.id}): ${item.stockQuantity}, setting to 0`);
                 }
-                
+
                 acc[item.id] = {
                     id: item.id,
                     name: item.name,
@@ -178,6 +179,29 @@ export function TableProvider({ children }) {
                 };
                 return acc;
             }, {});
+
+            // Fallback: admin olmayan roller /stocks alamazsa, /product-ingredients içindeki ingredient alanından stokları toparla
+            if (Object.keys(newIngredients).length === 0 && Array.isArray(productIngredientsData) && productIngredientsData.length > 0) {
+                newIngredients = (productIngredientsData || []).reduce((acc, item) => {
+                    try {
+                        const ing = item.ingredient || {};
+                        const id = ing.id != null ? ing.id : item?.ingredientId;
+                        if (id == null) return acc;
+                        const stockQuantity = Number(ing.stockQuantity);
+                        acc[id] = {
+                            id: id,
+                            name: ing.name || (item?.ingredient?.name) || `Ingredient-${id}`,
+                            unit: ing.unit || '',
+                            stockQuantity: isNaN(stockQuantity) ? 0 : stockQuantity,
+                            minStock: Number(ing.minStock) || 0,
+                        };
+                    } catch { }
+                    return acc;
+                }, {});
+                if (Object.keys(newIngredients).length === 0) {
+                    console.warn('Stocks API yetkisiz ve product-ingredients içinde ingredient stoğu bulunamadı; stoklar 0 görünebilir.');
+                }
+            }
             console.log("İçerik verisi güncellendi:", newIngredients);
             setIngredients(newIngredients);
 
@@ -210,7 +234,7 @@ export function TableProvider({ children }) {
                     if (isNaN(quantity) || quantity <= 0) {
                         console.warn(`Invalid recipe quantity for product ${productsByIdTemp[productId].name} (ID: ${productId}), ingredient ${item.ingredient.name}: ${item.quantityPerUnit}, setting to 1`);
                     }
-                    
+
                     productsByIdTemp[productId].recipe.push({
                         ingredientId: item.ingredient.id,
                         quantity: isNaN(quantity) || quantity <= 0 ? 1 : quantity,
@@ -221,16 +245,32 @@ export function TableProvider({ children }) {
                 }
             });
 
-            // Calculate stock for each product based on available ingredients
+            // Calculate stock for each product based on available ingredients (frontend hesaplama)
             Object.values(productsByIdTemp).forEach(product => {
                 product.stock = calculateProductStock(product, newIngredients);
             });
 
-            console.log("Stok hesaplamaları tamamlandı. Örnek ürünler:", 
-                Object.values(productsByIdTemp).slice(0, 3).map(p => ({ 
-                    name: p.name, 
-                    stock: p.stock, 
-                    recipeLength: p.recipe?.length || 0 
+            // Opsiyonel: Backend hazırsa /products/available-quantities ile stok adedini doğrula/override et
+            try {
+                const avail = await apiCall('/products/available-quantities');
+                if (Array.isArray(avail)) {
+                    for (const row of avail) {
+                        const pid = row.productId ?? row.id ?? row.productID;
+                        const qty = Number(row.availableQuantity ?? row.available ?? row.quantity);
+                        if (pid != null && !Number.isNaN(qty) && productsByIdTemp[pid]) {
+                            productsByIdTemp[pid].stock = qty;
+                        }
+                    }
+                }
+            } catch (e) {
+                // bu uç yoksa veya yetkisizse sessiz geç
+            }
+
+            console.log("Stok hesaplamaları tamamlandı. Örnek ürünler:",
+                Object.values(productsByIdTemp).slice(0, 3).map(p => ({
+                    name: p.name,
+                    stock: p.stock,
+                    recipeLength: p.recipe?.length || 0
                 }))
             );
 
@@ -247,9 +287,18 @@ export function TableProvider({ children }) {
             setProductsById(productsByIdTemp);
 
             // Siparişleri backend masa ID'si ile indeksle (çakışmayı önler)
+            // Siparişleri masa NUMARASINA göre indeksle (UI route parametresiyle uyumlu)
+            const tableIdToNumber = (diningTablesData || []).reduce((map, t) => {
+                if (t && t.id != null) {
+                    map[String(t.id)] = t.tableNumber ?? t.number ?? t.id;
+                }
+                return map;
+            }, {});
             const ordersByTable = (ordersData || []).reduce((acc, order) => {
-                const keyBackendId = String(order.tableId);
-                acc[keyBackendId] = {
+                const backendIdStr = String(order.tableId);
+                const tableNumber = tableIdToNumber[backendIdStr] ?? backendIdStr;
+                const keyTableNumber = String(tableNumber);
+                acc[keyTableNumber] = {
                     id: order.orderId ?? order.id,
                     ...order,
                     items: (order.items || []).reduce((itemAcc, item) => {
@@ -634,14 +683,24 @@ export function TableProvider({ children }) {
             ? parseInt(roleInfo.userId, 10)
             : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
 
+        // UI'deki tableId masa numarası olabilir; backend gerçek masa ID'si ister
+        const toBackendTableId = (() => {
+            const numeric = Number(tableId);
+            const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+            if (byNumber?.id != null) return Number(byNumber.id);
+            const byId = (tables || []).find(t => Number(t?.id) === numeric);
+            if (byId?.id != null) return Number(byId.id);
+            return parseInt(tableId);
+        })();
+
         const orderData = {
-            tableId: parseInt(tableId),
+            tableId: toBackendTableId,
             userId: numericUserId,
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
         try {
-            const currentOrder = orders[tableId];
+            const currentOrder = orders[String(tableId)];
             if (currentOrder && currentOrder.id) {
                 await apiCall(`/orders/${currentOrder.id}`, {
                     method: 'PUT',
@@ -649,7 +708,8 @@ export function TableProvider({ children }) {
                     body: JSON.stringify(orderData),
                 });
             } else {
-                await apiCall('/orders', {
+                // Yeni siparişlerde stok düşümü için backend iş mantığını tetikle
+                await apiCall('/orders/make-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData),
@@ -657,31 +717,8 @@ export function TableProvider({ children }) {
             }
 
             // Sadece admin rolleri stok hareketi oluşturabilir
-            {
-                const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-                const roleInfo = token ? getRoleInfoFromToken(token) : {};
-                const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
-                if (isAdmin) {
-                    for (const [id, item] of Object.entries(finalItems)) {
-                        const recipe = findProductRecipe(id);
-                        for (const ingredient of recipe) {
-                            const movement = {
-                                id: 0,
-                                stockId: ingredient.ingredientId,
-                                change: -(ingredient.quantity * item.count),
-                                reason: "ORDER",
-                                note: "Sipariş",
-                                timestamp: new Date().toISOString()
-                            };
-                            await apiCall('/stock-movements', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(movement)
-                            });
-                        }
-                    }
-                }
-            }
+            // Not: Yeni siparişlerde '/orders/make-order' stok düşümünü kendisi yapar.
+            // Güncelleme durumlarında backend stok düşmüyor; burada manuel hareket eklemeyi tercih etmiyoruz.
 
             await fetchData();
             updateTableStatus(tableId, "occupied");
@@ -801,8 +838,16 @@ export function TableProvider({ children }) {
             const numericUserId2 = typeof roleInfo2?.userId === 'string' && /^\d+$/.test(roleInfo2.userId)
                 ? parseInt(roleInfo2.userId, 10)
                 : (typeof roleInfo2?.userId === 'number' ? roleInfo2.userId : 1);
+            const backendTableId2 = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
             const orderData = {
-                tableId: parseInt(tableId),
+                tableId: backendTableId2,
                 userId: numericUserId2,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -835,8 +880,16 @@ export function TableProvider({ children }) {
             const numericUserId3 = typeof roleInfo3?.userId === 'string' && /^\d+$/.test(roleInfo3.userId)
                 ? parseInt(roleInfo3.userId, 10)
                 : (typeof roleInfo3?.userId === 'number' ? roleInfo3.userId : 1);
+            const backendTableId3 = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
             const orderData = {
-                tableId: parseInt(tableId),
+                tableId: backendTableId3,
                 userId: numericUserId3,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -869,8 +922,16 @@ export function TableProvider({ children }) {
             const numericUserId4 = typeof roleInfo4?.userId === 'string' && /^\d+$/.test(roleInfo4.userId)
                 ? parseInt(roleInfo4.userId, 10)
                 : (typeof roleInfo4?.userId === 'number' ? roleInfo4.userId : 1);
+            const backendTableId4 = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
             const orderData = {
-                tableId: parseInt(tableId),
+                tableId: backendTableId4,
                 userId: numericUserId4,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
