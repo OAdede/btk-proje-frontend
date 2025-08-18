@@ -954,8 +954,8 @@ export function TableProvider({ children }) {
 
             const roleInfo4 = getRoleInfoFromToken(localStorage.getItem('token') || '');
             const numericUserId4 = typeof roleInfo4?.userId === 'string' && /^\d+$/.test(roleInfo4.userId)
-                ? parseInt(roleInfo4.userId, 10)
-                : (typeof roleInfo4?.userId === 'number' ? roleInfo4.userId : 1);
+                ? parseInt(roleInfo4?.userId, 10)
+                : (typeof roleInfo4?.userId === 'number' ? roleInfo4?.userId : 1);
             const backendTableId4 = (() => {
                 const numeric = Number(tableId);
                 const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
@@ -988,6 +988,116 @@ export function TableProvider({ children }) {
         } catch (error) {
             console.error('Onaylanmış ürün kaldırılırken hata:', error);
             setError(`Sipariş ürünü kaldırılırken bir hata oluştu: ${error.message}`);
+        }
+    };
+
+    // Add new item to existing order
+    const addOrderItem = async (tableId, productId, quantity = 1, note = '') => {
+        try {
+            const currentOrder = orders[tableId];
+            if (!currentOrder || !currentOrder.id) {
+                console.warn('No existing order found for table:', tableId);
+                return;
+            }
+
+            const product = findProductById(productId);
+            if (!product) {
+                throw new Error('Product not found');
+            }
+
+            // Update local state immediately for better UX
+            const updatedItems = { ...currentOrder.items };
+            if (updatedItems[productId]) {
+                updatedItems[productId].count += quantity;
+            } else {
+                updatedItems[productId] = {
+                    id: productId,
+                    name: product.name,
+                    price: product.price,
+                    count: quantity,
+                    note: note
+                };
+            }
+
+            // Update local state first
+            setOrders(prev => ({
+                ...prev,
+                [tableId]: {
+                    ...prev[tableId],
+                    items: updatedItems
+                }
+            }));
+
+            // Get backend table ID
+            const backendTableId = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
+
+            // Get user ID from token
+            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+
+            // Update backend immediately
+            const orderData = {
+                tableId: backendTableId,
+                userId: numericUserId,
+                items: Object.values(updatedItems).map(item => ({
+                    productId: item.id,
+                    quantity: item.count,
+                })),
+            };
+
+            await apiCall(`/orders/${currentOrder.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+            });
+
+            // Don't call fetchData() here - it overwrites local state
+            // Instead, just refresh the specific order data
+            try {
+                const updatedOrderData = await apiCall(`/orders/${currentOrder.id}`);
+                if (updatedOrderData) {
+                    // Update only this specific order in local state
+                    const orderItems = (updatedOrderData.items || []).reduce((itemAcc, item) => {
+                        itemAcc[item.productId] = {
+                            id: item.productId,
+                            name: item.productName,
+                            price: item.unitPrice,
+                            count: item.quantity,
+                            note: item.note || ''
+                        };
+                        return itemAcc;
+                    }, {});
+
+                    setOrders(prev => ({
+                        ...prev,
+                        [tableId]: {
+                            ...prev[tableId],
+                            ...updatedOrderData,
+                            items: orderItems
+                        }
+                    }));
+                }
+            } catch (refreshError) {
+                console.warn('Could not refresh order data, using local state:', refreshError);
+            }
+            
+            console.log(`Item ${product.name} added to order for table ${tableId}`);
+
+        } catch (error) {
+            console.error('Error adding order item:', error);
+            setError(`Sipariş ürünü eklenirken bir hata oluştu: ${error.message}`);
+            
+            // Revert local state on error
+            await fetchData();
         }
     };
 
@@ -1533,7 +1643,8 @@ export function TableProvider({ children }) {
                 calculateFinancialImpact,
                 removeConfirmedOrderItem,
                 decreaseConfirmedOrderItem,
-                increaseConfirmedOrderItem
+                increaseConfirmedOrderItem,
+                addOrderItem
             }}
         >
             {children}
