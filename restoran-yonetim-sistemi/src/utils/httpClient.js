@@ -65,9 +65,13 @@ class HttpClient {
      * @returns {object} Modified options
      */
     applyRequestInterceptors(options) {
-        let modifiedOptions = { ...options };
+        let modifiedOptions = { 
+            ...options,
+            // SECURITY: Always include credentials for HttpOnly cookie authentication
+            credentials: options.credentials || 'include'
+        };
         
-        // Apply authentication headers automatically
+        // Apply authentication headers automatically (for backward compatibility)
         const authHeaders = tokenManager.getHeaders(modifiedOptions.headers);
         modifiedOptions.headers = authHeaders;
 

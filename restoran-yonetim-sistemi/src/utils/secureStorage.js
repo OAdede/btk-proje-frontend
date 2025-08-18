@@ -17,8 +17,20 @@ import CryptoJS from 'crypto-js';
 
 // Security configuration
 const SECURITY_CONFIG = {
-    // Encryption settings
-    ENCRYPTION_KEY: import.meta.env.VITE_CLIENT_ENCRYPTION_KEY || 'default-dev-key-change-in-production',
+    // Encryption settings - NEVER use hardcoded fallback keys in production
+    ENCRYPTION_KEY: (() => {
+        const envKey = import.meta.env.VITE_CLIENT_ENCRYPTION_KEY;
+        if (!envKey) {
+            if (import.meta.env.PROD) {
+                throw new Error('VITE_CLIENT_ENCRYPTION_KEY environment variable is required in production');
+            }
+            // Only allow auto-generated key in development
+            const devKey = `dev-key-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+            console.warn('[SecureStorage] Using auto-generated encryption key for development. Set VITE_CLIENT_ENCRYPTION_KEY for production.');
+            return devKey;
+        }
+        return envKey;
+    })(),
     ALGORITHM: 'AES',
     
     // Storage classification

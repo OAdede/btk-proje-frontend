@@ -16,6 +16,7 @@
 
 import { isTokenExpired, decodeJwtPayload } from './jwt.js';
 import secureStorage from './secureStorage.js';
+import httpOnlyAuth from './httpOnlyAuth.js';
 
 // Configuration for token management
 const TOKEN_CONFIG = {
@@ -32,7 +33,7 @@ const TOKEN_CONFIG = {
     // Migration flags
     USE_SECURE_STORAGE: true,          // Enable secure storage
     PREFER_MEMORY_FOR_TOKENS: true,    // Keep tokens in memory only
-    PREPARE_HTTPONLY_MIGRATION: false  // Future: prepare for HttpOnly cookies
+    USE_HTTPONLY_COOKIES: true         // Use HttpOnly cookies for authentication (SECURE!)
 };
 
 /**
@@ -46,12 +47,21 @@ class TokenManager {
 
     /**
      * Get the current token with automatic expiration checking
-     * SECURITY: Uses secure memory storage to prevent XSS token theft
+     * SECURITY: Uses HttpOnly cookies when enabled, fallback to secure storage
      * @returns {string|null} Valid token or null if expired/missing
      */
     getToken() {
+        // If HttpOnly cookies are enabled, we don't have direct token access
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                console.log('[TokenManager] HttpOnly mode: Token not accessible to JavaScript (SECURE)');
+            }
+            // Return null - authentication happens via cookies automatically
+            return null;
+        }
+
         try {
-            // Priority: Memory storage (most secure) -> Secure storage -> Legacy localStorage
+            // Legacy mode: client-side token storage
             let token = null;
             
             if (TOKEN_CONFIG.USE_SECURE_STORAGE) {
@@ -148,10 +158,16 @@ class TokenManager {
     }
 
     /**
-     * Check if user is authenticated (has valid token)
+     * Check if user is authenticated
      * @returns {boolean} Authentication status
      */
     isAuthenticated() {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            // With HttpOnly cookies, we delegate to the HttpOnly auth manager
+            return httpOnlyAuth.getAuthenticationStatus().isAuthenticated;
+        }
+        
+        // Legacy mode: check token
         return this.getToken() !== null;
     }
 
@@ -160,6 +176,15 @@ class TokenManager {
      * @returns {object|null} Headers object or null if no valid token
      */
     getAuthHeader() {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            // With HttpOnly cookies, no Authorization header needed (cookies sent automatically)
+            if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                console.log('[TokenManager] HttpOnly mode: Using cookies, no Authorization header needed');
+            }
+            return null;
+        }
+        
+        // Legacy mode: use Bearer token
         const token = this.getToken();
         return token ? { 'Authorization': `Bearer ${token}` } : null;
     }

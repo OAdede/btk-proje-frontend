@@ -6,97 +6,46 @@ import secureStorage from '../utils/secureStorage.js';
 const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const authService = {
-    // Login user
+    // Login user - Using secure httpClient with JSON parsing
     async login(email, password) {
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            // Use httpClient.requestJson for automatic JSON parsing and error handling
+            const response = await httpClient.requestJson('/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
                 body: JSON.stringify({ email, password })
             });
 
-            if (!response.ok) {
-                let errorMessage = 'Giriş yapılırken bir hata oluştu';
-                try {
-                    const errorText = await response.text();
-                    if (DEBUG) console.log('Server error text length:', errorText?.length || 0);
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                        if (DEBUG) console.log('Server error details (parsed JSON)');
-                    } catch {
-                        errorMessage = (errorText && errorText.trim().length > 0) ? errorText : `${errorMessage} (HTTP ${response.status})`;
-                    }
-                } catch {
-                    errorMessage = `${errorMessage} (HTTP ${response.status})`;
-                }
-                if (DEBUG) console.log('Login response status:', response.status);
-                throw new Error(errorMessage);
-            }
-
-            // Başarılı yanıtta gövdeyi bir kere oku, JSON parse etmeyi dene
-            const text = await response.text();
-            try {
-                return JSON.parse(text);
-            } catch {
-                return text ? { message: text } : {};
-            }
+            if (DEBUG) console.log('[AuthService] Login response received');
+            return response;
         } catch (error) {
-            throw new Error(error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+            if (DEBUG) console.error('[AuthService] Login failed:', error.message);
+            
+            // Handle specific connection errors
+            if (error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
+                throw new Error('Backend sunucusuna bağlanılamıyor. Lütfen sunucunun çalıştığından emin olun.');
+            }
+            
+            throw new Error(error.message || 'Giriş yapılırken bir hata oluştu');
         }
     },
 
-    // Request password reset
+    // Request password reset - Using secure httpClient with JSON parsing
     async requestPasswordReset(email) {
         try {
-        const frontendUrl = import.meta?.env?.VITE_FRONTEND_URL || window.location.origin;
+            const frontendUrl = import.meta?.env?.VITE_FRONTEND_URL || window.location.origin;
 
-            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+            const response = await httpClient.requestJson('/auth/forgot-password', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
                 body: JSON.stringify({
                     email,
                     frontendUrl: frontendUrl // Frontend URL'sini backend'e gönder
                 })
             });
 
-            if (!response.ok) {
-                let errorMessage = 'Şifre sıfırlama isteği başarısız oldu';
-
-                // Önce response'u text olarak okumaya çalış
-                try {
-                    const errorText = await response.text();
-                    if (DEBUG) console.log('Forgot-password error text length:', errorText?.length || 0);
-                    // Eğer JSON formatında ise parse etmeye çalış
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (jsonError) {
-                        // JSON parse edilemezse text'i direkt kullan
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch {
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            // Başarılı response için JSON parse etmeye çalış
-            try {
-                const responseData = await response.json();
-                return responseData;
-            } catch (jsonError) {
-                // Eğer response boş ise veya JSON değilse boş obje döndür
-                if (DEBUG) console.log('Response is not JSON, returning empty object');
-                return {};
-            }
+            if (DEBUG) console.log('[AuthService] Password reset request sent');
+            return response || {};
         } catch (error) {
+            if (DEBUG) console.error('[AuthService] Password reset failed:', error.message);
             throw new Error(error.message || 'Şifre sıfırlama isteği başarısız oldu.');
         }
     },
