@@ -98,14 +98,53 @@ export default function FastOrderPage() {
               const cartCount = cart[product.id]?.count || 0;
               const displayStock = product.stock - cartCount;
 
+              // Stok durumuna göre stil ve mesaj belirle
+              let stockStatus = '';
+              let stockMessage = '';
+              let stockColor = '';
+              
+              if (displayStock <= 0) {
+                  stockStatus = 'out-of-stock';
+                  stockMessage = 'Tükendi';
+                  stockColor = '#dc3545';
+              } else if (displayStock <= 3) {
+                  stockStatus = 'low-stock';
+                  stockMessage = `Son ${displayStock} adet`;
+                  stockColor = '#ffc107';
+              } else {
+                  stockMessage = `${displayStock} adet`;
+                  stockColor = '#28a745';
+              }
+
               return (
-                <div key={product.id} className={`product-card ${displayStock <= 0 ? "out-of-stock" : ""}`}>
-                  <h3 className="product-name">{product.name}</h3>
-                  <p className="product-details">{product.price}₺ | Stok: {displayStock}</p>
+                <div key={product.id} className={`product-card ${stockStatus}`}>
+                  <div className="product-info">
+                    <h3 className="product-name">{product.name}</h3>
+                    <p className="product-details">{product.price}₺</p>
+                    <p className="stock-info" style={{ 
+                        color: stockColor, 
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        margin: '4px 0'
+                    }}>
+                        📦 {stockMessage}
+                    </p>
+                    {product.description && (
+                        <p className="product-description">{product.description}</p>
+                    )}
+                  </div>
                   <div className="quantity-controls">
-                    <button onClick={() => handleQuantityChange(product, -1)} className="quantity-button">-</button>
+                    <button 
+                        onClick={() => handleQuantityChange(product, -1)} 
+                        className="quantity-button"
+                        disabled={cartCount <= 0}
+                    >-</button>
                     <span className="quantity-display">{cartCount}</span>
-                    <button onClick={() => handleQuantityChange(product, 1)} className="quantity-button">+</button>
+                    <button 
+                        onClick={() => handleQuantityChange(product, 1)} 
+                        className="quantity-button"
+                        disabled={displayStock <= 0}
+                    >+</button>
                   </div>
                   {cartCount > 0 && (
                     <button onClick={() => handleEditNote(product.id)} className="note-button">

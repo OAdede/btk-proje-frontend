@@ -5,8 +5,8 @@
   --primary-bg: #473653;
   --secondary-bg: #32263A;
   --text-color: #ffffff;
-  --text-secondary: #e0e0e0;
-  --text-muted: #b0b0b0;
+  --text-secondary: #ffffff;
+  --text-muted: #e0e0e0;
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
@@ -28,8 +28,8 @@ body.dark-theme {
   --primary-bg: #473653;
   --secondary-bg: #32263A;
   --text-color: #ffffff;
-  --text-secondary: #e0e0e0;
-  --text-muted: #b0b0b0;
+  --text-secondary: #ffffff;
+  --text-muted: #e0e0e0;
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
@@ -69,7 +69,7 @@ body.light-theme {
 
 body {
   background-color: var(--secondary-bg);
-  color: var(--text-color);
+  color: var(--text-color, #ffffff);
   font-family: 'Poppins', sans-serif;
 }
 
@@ -87,7 +87,7 @@ body {
 
 .stok-update-title {
   text-align: center;
-  color: var(--primary);
+  color: var(--text-color, #ffffff);
   margin-bottom: 2rem;
   font-size: 2rem;
 }
@@ -437,7 +437,11 @@ body {
 }
 
 .modal-recipe-section strong {
-  color: var(--primary);
+  color: var(--text-color, #ffffff);
+}
+
+.modal-recipe-section {
+  color: var(--text-color, #ffffff);
 }
 
 .modal-recipe-item {
@@ -445,7 +449,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  background-color: #f0f0f0;
+  background-color: var(--card-bg, #513653);
+  color: var(--text-color, #ffffff);
   padding: 0.5rem;
   border-radius: 6px;
 }
@@ -512,7 +517,7 @@ body {
 
 .no-products-message {
   text-align: center;
-  color: #666;
+  color: var(--text-color, #ffffff);
   margin-top: 2rem;
 }
 
@@ -617,4 +622,230 @@ body {
   .add-ingredient-inputs {
     grid-template-columns: 1fr;
   }
+
+  /* Mobile responsive for ingredient cards */
+  .ingredient-list-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .ingredient-list-item .item-status-and-actions {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ingredient-list-item .item-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+/* Unit Select Styles */
+.unit-select {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #53364D);
+    background-color: var(--modal-input-bg, #513653);
+    color: var(--text-color, #ffffff);
+    font-size: 14px;
+    cursor: pointer;
+    min-width: 140px;
+    font-family: inherit;
+}
+
+.unit-select:focus {
+    outline: none;
+    border-color: var(--primary, #edd2ff);
+    box-shadow: 0 0 0 2px rgba(237, 210, 255, 0.2);
+}
+
+.unit-select option {
+    background-color: var(--modal-input-bg, #513653);
+    color: var(--text-color, #ffffff);
+    padding: 8px;
+}
+
+/* Ingredient List - Card Layout like Products */
+.ingredient-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.ingredient-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    background: var(--card-bg, #513653);
+    border: 1px solid var(--border-color, #53364D);
+    border-radius: var(--border-radius, 8px);
+    box-shadow: var(--shadow, rgba(50, 38, 58, 0.3) 0px 4px 12px);
+    transition: all 0.3s ease;
+}
+
+.ingredient-list-item:hover {
+    background: var(--hover-bg, #53364D);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(50, 38, 58, 0.4);
+}
+
+.ingredient-list-item .item-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ingredient-list-item .item-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color, #ffffff);
+    margin: 0;
+}
+
+.ingredient-list-item .item-stock-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ingredient-list-item .item-stock,
+.ingredient-list-item .item-min-stock {
+    font-size: 14px;
+    color: var(--text-secondary, #ffffff);
+    margin: 0;
+}
+
+.ingredient-list-item .item-stock strong,
+.ingredient-list-item .item-min-stock strong {
+    color: var(--text-color, #ffffff);
+    font-weight: 500;
+}
+
+.ingredient-list-item .item-status-and-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.ingredient-list-item .item-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #ffffff;
+    min-width: 70px;
+    text-align: center;
+}
+
+.ingredient-list-item .item-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Product Description and Recipe Text Colors */
+.item-description {
+    color: var(--text-secondary, #ffffff);
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 8px 0;
+}
+
+.item-recipe {
+    color: var(--text-secondary, #ffffff);
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 8px 0;
+}
+
+.item-recipe strong {
+    color: var(--text-color, #ffffff);
+    font-weight: 600;
+}
+
+.item-recipe ul {
+    margin: 8px 0 0 16px;
+    padding: 0;
+}
+
+.item-recipe li {
+    color: var(--text-secondary, #ffffff);
+    margin: 4px 0;
+}
+
+.item-price {
+    color: var(--text-color, #ffffff);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 4px 0;
+}
+
+/* Recipe List Styles */
+.recipe-list {
+    margin: 8px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.recipe-list li {
+    color: var(--text-secondary, #ffffff);
+    margin: 4px 0;
+    padding: 4px 8px;
+    background-color: var(--hover-bg, #53364D);
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* Modal Recipe Form Styles */
+.recipe-add-form {
+    color: var(--text-color, #ffffff);
+    margin-top: 16px;
+}
+
+.recipe-add-form strong {
+    color: var(--text-color, #ffffff);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.recipe-form-inputs {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.recipe-form-inputs select,
+.recipe-form-inputs input {
+    background-color: var(--modal-input-bg, #513653);
+    color: var(--text-color, #ffffff);
+    border: 1px solid var(--border-color, #53364D);
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+/* Modal Item Name */
+.modal-item-name {
+    color: var(--text-color, #ffffff);
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+/* Recipe Ingredient Styling */
+.ingredient-name {
+    color: var(--text, #ffffff);
+    font-weight: 500;
+}
+
+.ingredient-quantity {
+    color: var(--text-secondary, #ffffff);
+    font-weight: 400;
 }

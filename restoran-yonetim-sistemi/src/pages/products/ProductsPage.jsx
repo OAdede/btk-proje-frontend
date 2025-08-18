@@ -85,11 +85,17 @@ const ProductsPage = () => {
                                         <strong>Reçete:</strong>
                                         {product.recipe && product.recipe.length > 0 ? (
                                             <ul>
-                                                {product.recipe.map((item, i) => (
-                                                    <li key={i}>
-                                                        {ingredients[item.ingredientId]?.name}: {item.quantity} {ingredients[item.ingredientId]?.unit}
-                                                    </li>
-                                                ))}
+                                                {product.recipe.map((item, i) => {
+                                                    // Debug: Önce item.name'i kontrol et, yoksa ingredients'dan al
+                                                    const ingredientName = item.name || ingredients[item.ingredientId]?.name || 'Bilinmeyen malzeme';
+                                                    const ingredientUnit = ingredients[item.ingredientId]?.unit || '';
+                                                    
+                                                    return (
+                                                        <li key={i}>
+                                                            {ingredientName}: {item.quantity} {ingredientUnit}
+                                                        </li>
+                                                    );
+                                                })}
                                             </ul>
                                         ) : (
                                             <span>Reçete bulunamadı.</span>
