@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { reservationService } from '../../services/reservationService';
 import { authService } from '../../services/authService';
+import tokenManager from '../../utils/tokenManager';
 
 export default function BackendTest() {
     const [testResult, setTestResult] = useState('');
     const [loading, setLoading] = useState(false);
-    const [email, setEmail] = useState('zeynepbalci4321@gmail.com');
-    const [password, setPassword] = useState('Zr@1234567');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const handleLogin = async () => {
@@ -182,7 +183,8 @@ export default function BackendTest() {
                     <div>
                         <h3 style={{ margin: 0, color: '#4CAF50' }}>✅ Authenticated</h3>
                         <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#666' }}>
-                            Token: {localStorage.getItem('token')?.substring(0, 20)}...
+                            {/* SECURITY FIX: Use safe token info instead of exposing token */}
+                            Status: {tokenManager.getTokenInfo().expired ? 'Expired' : 'Valid'}
                         </p>
                     </div>
                     <button 

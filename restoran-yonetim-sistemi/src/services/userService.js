@@ -1,6 +1,10 @@
 // User API Service - Fetch user profile information
 const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || '/api';
 
+// Import new secure utilities
+import httpClient from '../utils/httpClient.js';
+import tokenManager from '../utils/tokenManager.js';
+
 export const userService = {
   // Fetch user by ID
   async getUserById(userId) {
@@ -9,39 +13,9 @@ export const userService = {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const headers = {
-        'Accept': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Kullanıcı bilgileri alınamadı';
-        try {
-          const errorText = await response.text();
-          try {
-            const errorData = JSON.parse(errorText);
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          } catch {
-            errorMessage = errorText || errorMessage;
-          }
-        } catch {}
-        throw new Error(errorMessage);
-      }
-
-      try {
-        const data = await response.json();
-        return data;
-      } catch {
-        return null;
-      }
+      // Use httpClient for automatic auth and error handling
+      const data = await httpClient.requestJson(`/users/${encodeURIComponent(userId)}`);
+      return data;
     } catch (error) {
       throw new Error(error.message || 'Kullanıcı bilgileri alınamadı.');
     }
@@ -64,7 +38,7 @@ export const userService = {
     };
 
     try {
-      const token = localStorage.getItem('token');
+      const token = tokenManager.getToken();
       const headers = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -116,7 +90,7 @@ export const userService = {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = tokenManager.getToken();
       const headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -166,7 +140,7 @@ export const userService = {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = tokenManager.getToken();
       const headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

@@ -2,6 +2,10 @@
 // Prefer environment variable; fallback to Vite dev proxy path
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
+// Import secure HTTP client and token manager
+import httpClient from '../utils/httpClient.js';
+import tokenManager from '../utils/tokenManager.js';
+
 // Role mapping for backend (0=admin, 1=waiter, 2=cashier)
 const roleMapping = {
   'garson': 'waiter',
@@ -70,43 +74,14 @@ export const personnelService = {
                 tempPasswordLength: tempPassword.length
             });
 
-            const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            // Use httpClient for automatic auth and error handling
+            const responseData = await httpClient.requestJson('/auth/register', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
                 body: JSON.stringify(requestData)
             });
-
-            if (!response.ok) {
-                let errorMessage = 'Personel eklenirken bir hata oluştu';
-
-                try {
-                    const errorText = await response.text();
-                    console.log('Server error response:', errorText);
-
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const responseData = await response.json();
-                console.log('Registration response:', responseData);
-                return responseData;
-            } catch (jsonError) {
-                console.log('Response is not JSON, returning empty object');
-                return {};
-            }
+            
+            console.log('Registration response:', responseData);
+            return responseData;
         } catch (error) {
             throw new Error(error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
         }
@@ -115,61 +90,21 @@ export const personnelService = {
     // Get all users
     async getAllUsers() {
         try {
-            const token = localStorage.getItem('token');
+            const responseData = await httpClient.requestJson('/users');
+            console.log('Users loaded successfully:', responseData.length, 'users');
 
-            const headers = {
-                'Accept': 'application/json',
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+            if (responseData.length > 0) {
+                console.log('Sample user data:', {
+                    id: responseData[0].id,
+                    name: responseData[0].name,
+                    hasPhoto: responseData[0].hasPhoto,
+                    photoBase64: responseData[0].photoBase64 ? 'exists' : 'null',
+                    isActive: responseData[0].isActive,
+                    roles: responseData[0].roles
+                });
             }
 
-            const response = await fetch(`${API_BASE_URL}/users`, {
-                method: 'GET',
-                headers: headers
-            });
-
-            if (!response.ok) {
-                let errorMessage = 'Kullanıcılar yüklenirken bir hata oluştu';
-
-                try {
-                    const errorText = await response.text();
-                    console.log('Server error response:', errorText);
-
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const responseData = await response.json();
-                console.log('Users loaded successfully:', responseData.length, 'users');
-
-                if (responseData.length > 0) {
-                    console.log('Sample user data:', {
-                        id: responseData[0].id,
-                        name: responseData[0].name,
-                        hasPhoto: responseData[0].hasPhoto,
-                        photoBase64: responseData[0].photoBase64 ? 'exists' : 'null',
-                        isActive: responseData[0].isActive,
-                        roles: responseData[0].roles
-                    });
-                }
-
-                return responseData;
-            } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
-                return [];
-            }
+            return responseData;
         } catch (error) {
             throw new Error(error.message || 'Kullanıcılar yüklenirken bir hata oluştu.');
         }
@@ -178,11 +113,9 @@ export const personnelService = {
     // Get only active users
     async getActiveUsers() {
         try {
-            const token = localStorage.getItem('token');
-
-            const headers = {
-                'Accept': 'application/json',
-            };
+            const responseData = await httpClient.requestJson('/users/active');
+            console.log('Active users loaded successfully:', responseData.length, 'users');
+            return responseData;
 
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
@@ -221,7 +154,7 @@ export const personnelService = {
     // Get only inactive users
     async getInactiveUsers() {
         try {
-            const token = localStorage.getItem('token');
+            const token = tokenManager.getToken();
 
             const headers = {
                 'Accept': 'application/json',
@@ -264,7 +197,7 @@ export const personnelService = {
     // Toggle user's active status
     async setUserActiveStatus(userId, active) {
         try {
-            const token = localStorage.getItem('token');
+            const token = tokenManager.getToken();
             const headers = {
                 'Accept': 'application/json',
             };

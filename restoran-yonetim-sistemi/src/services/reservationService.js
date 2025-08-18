@@ -1,6 +1,10 @@
 // Reservation API Service - Backend communication layer
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
+// Import secure HTTP client and token manager
+import httpClient from '../utils/httpClient.js';
+import tokenManager from '../utils/tokenManager.js';
+
 const toInt = (v, defVal = null) => {
   const n = Number.parseInt(v, 10);
   return Number.isFinite(n) ? n : defVal;
@@ -57,22 +61,12 @@ export const reservationService = {
 
       console.log('✅ Tüm zorunlu alanlar mevcut, backend\'e gönderiliyor...');
 
-      const response = await fetch(`${API_BASE_URL}/reservations`, {
+      // Use httpClient for automatic auth handling and better error management
+      const result = await httpClient.requestJson('/reservations', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        },
         body: JSON.stringify(requestBody)
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Backend error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-
-      const result = await response.json();
       console.log('✅ Rezervasyon başarıyla oluşturuldu:', result);
       return result;
     } catch (error) {
@@ -83,12 +77,7 @@ export const reservationService = {
 
   // Get all reservations
   async getAllReservations() {
-    const response = await fetch(`${API_BASE_URL}/reservations`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response.json();
+    return await httpClient.requestJson('/reservations');
   },
 
   // Get all reservations (alias for getAllReservations)
@@ -98,30 +87,13 @@ export const reservationService = {
 
   // Get reservation by ID
   async getReservationById(id) {
-    const response = await fetch(`${API_BASE_URL}/reservations/${id}`, {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
-    });
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return response.json();
+    return await httpClient.requestJson(`/reservations/${id}`);
   },
 
   // Get reservations by table
   async getReservationsByTable(tableId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/table/${tableId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
+      return await httpClient.requestJson(`/reservations/table/${tableId}`);
     } catch (error) {
       console.error('Error fetching reservations by table:', error);
       throw error;
@@ -134,7 +106,7 @@ export const reservationService = {
       const response = await fetch(`${API_BASE_URL}/reservations/salon/${salonId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         }
       });
 
@@ -156,7 +128,7 @@ export const reservationService = {
       const response = await fetch(`${API_BASE_URL}/reservations/today`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         }
       });
 
@@ -178,7 +150,7 @@ export const reservationService = {
       const response = await fetch(`${API_BASE_URL}/reservations/status/${statusId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         }
       });
 
@@ -211,7 +183,7 @@ export const reservationService = {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         },
         body: JSON.stringify(requestBody)
       });
@@ -233,18 +205,9 @@ export const reservationService = {
   // Cancel reservation
   async cancelReservation(reservationId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/cancel`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
-        }
+      const result = await httpClient.requestJson(`/reservations/${reservationId}/cancel`, {
+        method: 'PUT'
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
       console.log('Reservation cancelled successfully:', result);
       return result;
     } catch (error) {
@@ -256,18 +219,9 @@ export const reservationService = {
   // Complete reservation
   async completeReservation(reservationId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/complete`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
-        }
+      const result = await httpClient.requestJson(`/reservations/${reservationId}/complete`, {
+        method: 'PUT'
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
       console.log('Reservation completed successfully:', result);
       return result;
     } catch (error) {
@@ -282,7 +236,7 @@ export const reservationService = {
       const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}/no-show`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         }
       });
 
@@ -305,7 +259,7 @@ export const reservationService = {
       const response = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         }
       });
 
@@ -327,7 +281,7 @@ export const reservationService = {
       const response = await fetch(`${API_BASE_URL}/reservations/date-range?startDate=${startDate}&endDate=${endDate}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT token
+          'Authorization': `Bearer ${tokenManager.getToken()}` // JWT token
         }
       });
 

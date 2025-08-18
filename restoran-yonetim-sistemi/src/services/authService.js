@@ -2,6 +2,10 @@
 // Prefer environment variable; fallback to Vite dev proxy path
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
+// Import new token management utilities
+import tokenManager from '../utils/tokenManager.js';
+import httpClient from '../utils/httpClient.js';
+
 export const authService = {
     // Login user
     async login(email, password) {
@@ -157,14 +161,8 @@ export const authService = {
 
     // Logout user
     logout() {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        // Clear cached profile/info to avoid leaking between accounts
-        localStorage.removeItem('profileImage');
-        localStorage.removeItem('phoneNumber');
-        localStorage.removeItem('email');
-        localStorage.removeItem('displayName');
-        localStorage.removeItem('displayRole');
+        // Use tokenManager for centralized cleanup
+        tokenManager.clearToken();
         // Clear any authorization headers
         if (typeof window !== 'undefined') {
             delete window.axios?.defaults?.headers?.common?.Authorization;
@@ -173,8 +171,8 @@ export const authService = {
 
     // Check if user is authenticated
     isAuthenticated() {
-        const token = localStorage.getItem('token');
-        return !!token;
+        // Use the new tokenManager for proper validation
+        return tokenManager.isAuthenticated();
     },
 
     // Get current user from localStorage
@@ -201,19 +199,8 @@ export const authService = {
     // Validate token (optional - can be used to check if token is still valid)
     async validateToken() {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                return false;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/auth/validate`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-
+            // Use httpClient for automatic token handling
+            const response = await httpClient.get('/auth/validate');
             return response.ok;
         } catch (error) {
             console.error('Token validation error:', error);
@@ -312,22 +299,15 @@ export const authService = {
     // Change password for logged-in user
     async changePassword(currentPassword, newPassword) {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
+            // Check authentication using tokenManager
+            if (!tokenManager.isAuthenticated()) {
                 throw new Error('Oturum açmanız gerekiyor');
             }
 
-            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword
-                })
+            // Use httpClient for automatic auth header handling
+            const response = await httpClient.post('/auth/change-password', {
+                currentPassword,
+                newPassword
             });
 
             if (!response.ok) {
@@ -369,6 +349,41 @@ export const authService = {
         } catch (error) {
             console.error('Change password error:', error);
             throw new Error(error.message || 'Şifre değiştirme işlemi başarısız oldu');
+        }
+    },
+
+    // Verify user role server-side
+    async verifyRole(requiredRole = null) {
+        try {
+            const token = tokenManager.getToken();
+            if (!token) {
+                return { authorized: false, message: 'Token bulunamadı' };
+            }
+
+            const response = await fetch(`${API_BASE_URL}/auth/verify-role`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ requiredRole })
+            });
+
+            if (!response.ok) {
+                return { authorized: false, message: 'Yetkilendirme başarısız' };
+            }
+
+            const data = await response.json();
+            return {
+                authorized: data.authorized || false,
+                roleId: data.roleId,
+                role: data.role,
+                redirectPath: data.redirectPath,
+                message: data.message
+            };
+        } catch (error) {
+            console.error('Role verification error:', error);
+            return { authorized: false, message: 'Yetkilendirme kontrol edilemedi' };
         }
     }
 };

@@ -1,23 +1,15 @@
 // Salon API Service - Backend communication layer
 const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
+// Import secure HTTP client and token manager
+import httpClient from '../utils/httpClient.js';
+import tokenManager from '../utils/tokenManager.js';
+
 export const salonService = {
     // Get all salons
     async getAllSalons() {
         try {
-            const response = await fetch(`${API_BASE_URL}/salons`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await httpClient.requestJson('/salons');
             console.log('Salons fetched successfully:', result);
             return result;
         } catch (error) {
@@ -29,19 +21,7 @@ export const salonService = {
     // Get salon by ID
     async getSalonById(salonId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await httpClient.requestJson(`/salons/${salonId}`);
             console.log('Salon fetched successfully:', result);
             return result;
         } catch (error) {
@@ -61,7 +41,7 @@ export const salonService = {
                 const response = await fetch(`${API_BASE_URL}/salons`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${tokenManager.getToken()}`,
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
@@ -152,7 +132,7 @@ export const salonService = {
             const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${tokenManager.getToken()}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(salonData)
@@ -177,7 +157,7 @@ export const salonService = {
             const response = await fetch(`${API_BASE_URL}/salons/${salonId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${tokenManager.getToken()}`,
                     'Content-Type': 'application/json'
                 }
             });

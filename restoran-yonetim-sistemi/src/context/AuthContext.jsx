@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { getRoleInfoFromToken } from '../utils/jwt';
+import tokenManager from '../utils/tokenManager';
 
 export const AuthContext = createContext();
 
@@ -25,8 +26,14 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Set up token expiration callback
+        tokenManager.onTokenExpiredCallback(() => {
+            console.warn('[AuthContext] Token expired, logging out user');
+            setUser(null);
+        });
+
         // Sayfa yüklendiğinde token'dan güvenilir kullanıcı/rol bilgilerini çıkar
-        const token = localStorage.getItem('token');
+        const token = tokenManager.getToken(); // This now validates expiration automatically
         const savedUser = authService.getCurrentUser();
 
         if (token) {
@@ -65,7 +72,27 @@ export const AuthProvider = ({ children }) => {
         // Token yoksa veya çözümlenemiyorsa kullanıcıyı temizle
         setUser(null);
         setLoading(false);
-    }, []);
+    }, []); // Remove user dependency to prevent infinite loop
+
+    // Separate useEffect for auto-refresh that only runs when component mounts
+    useEffect(() => {
+        // Set up automatic token refresh checking (every 5 minutes)
+        const refreshInterval = setInterval(async () => {
+            const currentToken = tokenManager.getToken();
+            if (currentToken) { // Only check if there's a token
+                const isValid = await tokenManager.checkAndRefreshToken(5); // Refresh if expires within 5 minutes
+                if (!isValid) {
+                    console.warn('[AuthContext] Token refresh failed, logging out user');
+                    setUser(null);
+                }
+            }
+        }, 5 * 60 * 1000); // Check every 5 minutes
+
+        // Cleanup function to clear interval
+        return () => {
+            clearInterval(refreshInterval);
+        };
+    }, []); // Only run once on mount
 
     const login = async (email, password) => {
         setLoading(true);
@@ -73,8 +100,12 @@ export const AuthProvider = ({ children }) => {
             const data = await authService.login(email, password);
 
             if (data.success) {
-                // Token'ı kaydet ve rol bilgisini token'dan al
-                localStorage.setItem('token', data.token);
+                // Use tokenManager to store token securely
+                const tokenStored = tokenManager.setToken(data.token);
+                if (!tokenStored) {
+                    throw new Error('Token geçersiz veya süresi dolmuş');
+                }
+                
                 authService.setAuthHeader(data.token);
 
                 const roleInfo = getRoleInfoFromToken(data.token);

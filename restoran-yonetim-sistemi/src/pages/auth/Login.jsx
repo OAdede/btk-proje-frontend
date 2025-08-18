@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -36,15 +37,24 @@ function Login() {
       const roleId = await login(email, password);
 
       if (roleId !== null && roleId !== undefined) {
-        if (roleId === 0) {
-          navigate('/admin/dashboard');
-        } else if (roleId === 1) {
-          navigate('/garson/home');
-        } else if (roleId === 2) {
-          navigate('/kasiyer/home');
+        // Verify role server-side before navigation
+        const verification = await authService.verifyRole();
+        
+        if (verification.authorized && verification.redirectPath) {
+          navigate(verification.redirectPath);
+        } else if (verification.authorized) {
+          // Fallback to client-side routing if server doesn't provide path
+          if (roleId === 0) {
+            navigate('/admin/dashboard');
+          } else if (roleId === 1) {
+            navigate('/garson/home');
+          } else if (roleId === 2) {
+            navigate('/kasiyer/home');
+          } else {
+            navigate('/');
+          }
         } else {
-          // Varsayılan bir rota veya hata yönetimi
-          navigate('/');
+          setError('Yetkiniz yok veya oturum süresi dolmuş. Lütfen tekrar giriş yapın.');
         }
       }
     } catch (err) {
