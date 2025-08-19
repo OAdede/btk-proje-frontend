@@ -506,6 +506,7 @@ const Dashboard = () => {
         const now = new Date();
         const oneHour = 60 * 60 * 1000;
         const fiftyNineMinutes = 59 * 60 * 1000;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
 
         // Rezervasyon geçmiş mi kontrol et
         if (reservationTime < now) {
@@ -517,22 +518,30 @@ const Dashboard = () => {
 
         // Özel rezervasyon kontrolü
         if (reservation.specialReservation) {
-          if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
+          const delta = reservationTime.getTime() - now.getTime();
+          if (reservationTime > now && delta <= fiftyNineMinutes) {
             return statusInfo["reserved-special"]; // 59 dakika içinde sarı
-          } else if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-            return statusInfo["reserved-future"]; // 1 saatten uzak yeşil
+          }
+          if (reservationTime > now && delta <= twentyFourHours) {
+            return statusInfo["reserved"]; // 24 saat içinde sarı
+          }
+          if (reservationTime > now && delta > twentyFourHours) {
+            return statusInfo["reserved-future"]; // 24 saatten uzak yeşil
           }
         } else {
-          // Normal rezervasyon kontrolü
-          if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-            return statusInfo["reserved-future"];
+          // Normal rezervasyon kontrolü: 24 saat içinde sarı, aksi halde yeşil
+          const delta = reservationTime.getTime() - now.getTime();
+          if (reservationTime > now && delta <= twentyFourHours) {
+            return statusInfo["reserved"]; // 24 saat içinde sarı
+          }
+          if (reservationTime > now && delta > twentyFourHours) {
+            return statusInfo["reserved-future"]; // 24 saatten uzak yeşil
           }
         }
       } else {
-        // Rezervasyon bulunamadı ama masa hala reserved olarak işaretli
-        console.log(`No reservation found for table ${tableId}, marking as empty`);
-        updateTableStatus(tableId, 'empty');
-        return statusInfo["empty"];
+        // Rezervasyon kaydı bulunamadıysa bile backend 'reserved' olabilir; boş yapma
+        console.log(`No reservation details found for table ${tableId}, keeping as reserved`);
+        return statusInfo["reserved"];
       }
     }
 

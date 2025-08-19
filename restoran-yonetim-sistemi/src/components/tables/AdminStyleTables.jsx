@@ -187,7 +187,36 @@ export default function AdminStyleTables({ roleOverride }) {
             // Backend durumunu frontend durumuna çevir
             if (backendStatus === 'available') return statusInfo['empty'];
             if (backendStatus === 'occupied') return statusInfo['occupied'];
-            if (backendStatus === 'reserved') return statusInfo['reserved'];
+            if (backendStatus === 'reserved') {
+                // 24 saat kuralını uygula
+                const res = Object.values(reservations || {}).find(r => {
+                    const rid = String(r.tableId);
+                    const candidates = [String(tableId), String(backendTable?.tableNumber ?? ''), String(backendTable?.id ?? '')];
+                    return candidates.includes(rid);
+                });
+                if (res && res.tarih && res.saat) {
+                    const reservationTime = new Date(`${res.tarih}T${res.saat}`);
+                    const now = new Date();
+                    const fiftyNineMinutes = 59 * 60 * 1000;
+                    const twentyFourHours = 24 * 60 * 60 * 1000;
+                    const delta = reservationTime.getTime() - now.getTime();
+                    if (reservationTime > now && delta <= fiftyNineMinutes && res.specialReservation) {
+                        return statusInfo['reserved-special'];
+                    }
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo['reserved'];
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
+                        return statusInfo['reserved-future'];
+                    }
+                    if (reservationTime < now) {
+                        // Rezervasyon geçmişse yeşile dön
+                        updateTableStatus(tableId, 'empty');
+                        return statusInfo['empty'];
+                    }
+                }
+                return statusInfo['reserved'];
+            }
         }
 
         // Fallback: localStorage'dan durum al
@@ -199,21 +228,29 @@ export default function AdminStyleTables({ roleOverride }) {
                 const now = new Date();
                 const oneHour = 60 * 60 * 1000;
                 const fiftyNineMinutes = 59 * 60 * 1000;
+                const twentyFourHours = 24 * 60 * 60 * 1000;
 
                 if (reservationTime < now) {
                     updateTableStatus(tableId, 'empty');
                     return statusInfo['empty'];
                 }
 
+                const delta = reservationTime.getTime() - now.getTime();
                 if (reservation.specialReservation) {
-                    if (reservationTime > now && reservationTime.getTime() - now.getTime() <= fiftyNineMinutes) {
+                    if (reservationTime > now && delta <= fiftyNineMinutes) {
                         return statusInfo['reserved-special'];
                     }
-                    if (reservationTime > now && reservationTime.getTime() - now.getTime() > oneHour) {
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo['reserved'];
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
                         return statusInfo['reserved-future'];
                     }
                 } else {
-                    if (reservationTime > now && reservationTime.getTime() - now.getTime() > oneHour) {
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo['reserved'];
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
                         return statusInfo['reserved-future'];
                     }
                 }

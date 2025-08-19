@@ -32,6 +32,7 @@ export default function TablesGridPage() {
                 const now = new Date();
                 const oneHour = 60 * 60 * 1000;
                 const fiftyNineMinutes = 59 * 60 * 1000;
+                const twentyFourHours = 24 * 60 * 60 * 1000;
 
                 // Rezervasyon geçmiş mi kontrol et
                 if (reservationTime < now) {
@@ -42,16 +43,24 @@ export default function TablesGridPage() {
                 }
 
                 // Özel rezervasyon kontrolü
+                const delta = reservationTime.getTime() - now.getTime();
                 if (reservation.specialReservation) {
-                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
+                    if (reservationTime > now && delta <= fiftyNineMinutes) {
                         return statusInfo["reserved-special"]; // 59 dakika içinde sarı
-                    } else if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-                        return statusInfo["reserved-future"]; // 1 saatten uzak yeşil
+                    }
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo["reserved"]; // 24 saat içinde sarı
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
+                        return statusInfo["reserved-future"]; // 24 saatten uzak yeşil
                     }
                 } else {
                     // Normal rezervasyon kontrolü
-                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-                        return statusInfo["reserved-future"];
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo["reserved"]; // 24 saat içinde sarı
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
+                        return statusInfo["reserved-future"]; // 24 saatten uzak yeşil
                     }
                 }
             } else {
