@@ -22,11 +22,31 @@ export default function TablesGridPage() {
         "reserved-special": { text: "Özel Rezerve", color: "#ffc107", textColor: "#212529" },
     };
 
-    const getStatus = (tableId) => {
-        const status = tableStatus[tableId] || "empty";
+    // gridId format: "<floor>-<index>" (e.g., "1-3"). Map to gerçek tableNumber: (floor-1)*8 + index
+    const gridIdToTableNumber = (gridId) => {
+        try {
+            const [floorStr, idxStr] = String(gridId).split("-");
+            const floor = parseInt(floorStr, 10);
+            const idx = parseInt(idxStr, 10);
+            if (!Number.isFinite(floor) || !Number.isFinite(idx)) return null;
+            return (floor - 1) * 8 + idx;
+        } catch {
+            return null;
+        }
+    };
+
+    const getStatus = (gridId) => {
+        const realTableNumber = gridIdToTableNumber(gridId);
+        const statusKey = realTableNumber != null ? realTableNumber : gridId;
+        const status = tableStatus[statusKey] || "empty";
 
         if (status === 'reserved') {
-            const reservation = Object.values(reservations).find(res => res.tableId === tableId);
+            const reservation = Object.values(reservations).find(res => {
+                // reservations'daki tableId backend ID; eşleşen table'ı bul ve tableNumber ile karşılaştır
+                const backendTable = tables?.find(t => String(t?.id) === String(res.tableId));
+                const tableNumber = backendTable?.tableNumber;
+                return String(tableNumber) === String(statusKey) || String(res.tableId) === String(statusKey);
+            });
             if (reservation) {
                 const reservationTime = new Date(`${reservation.tarih}T${reservation.saat}`);
                 const now = new Date();
@@ -65,8 +85,8 @@ export default function TablesGridPage() {
                 }
             } else {
                 // Rezervasyon bulunamadı ama masa hala reserved olarak işaretli
-                console.log(`No reservation found for table ${tableId}, marking as empty`);
-                updateTableStatus(tableId, 'empty');
+                console.log(`No reservation found for table ${statusKey}, marking as empty`);
+                if (statusKey != null) updateTableStatus(statusKey, 'empty');
                 return statusInfo["empty"];
             }
         }
@@ -75,8 +95,9 @@ export default function TablesGridPage() {
     };
 
     // Calculate occupancy using current table status as a proxy
-    const getTableOccupancy = (tableId) => {
-        const backendTable = tables?.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+    const getTableOccupancy = (gridId) => {
+        const realTableNumber = gridIdToTableNumber(gridId);
+        const backendTable = tables?.find(t => String(t?.tableNumber ?? t?.id) === String(realTableNumber));
         if (!backendTable) return null;
         const capacity = backendTable?.capacity || 4;
         const statusName = String(

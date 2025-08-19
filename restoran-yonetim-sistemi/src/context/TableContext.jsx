@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { getRoleInfoFromToken } from "../utils/jwt.js";
+import { reservationService } from "../services/reservationService";
 
 export const TableContext = createContext();
 
@@ -533,6 +534,20 @@ export function TableProvider({ children }) {
             return () => clearTimeout(timer);
         }
     }, [availabilityNotification]);
+
+    useEffect(() => {
+        const onRefreshTables = async () => {
+            try { await loadTablesAndSalons(); } catch {}
+        };
+        if (typeof window !== 'undefined') {
+            window.addEventListener('refresh-tables', onRefreshTables);
+        }
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('refresh-tables', onRefreshTables);
+            }
+        };
+    }, [loadTablesAndSalons]);
 
     const findProductById = (productId) => {
         const parsedProductId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
@@ -2002,45 +2017,34 @@ export function TableProvider({ children }) {
 
     const removeReservation = async (reservationId) => {
         try {
+            setIsLoading(true);
+            setError(null);
+            
             const reservation = reservations[reservationId];
-            if (reservation && reservation.backendId) {
-                await apiCall(`/reservations/${reservation.backendId}`, {
-                    method: 'DELETE'
-                });
-                
-                // Masa durumunu backend'den güncel haliyle al
-                if (reservation.tableId) {
-                    try {
-                        // Backend'ten masa bilgisini getir
-                        const allTables = await apiCall('/dining-tables');
-                        const targetTable = allTables.find(table => 
-                            table.id == reservation.tableId || table.tableNumber == reservation.tableId
-                        );
-                        
-                        if (targetTable) {
-                            const tableData = await apiCall(`/dining-tables/${targetTable.id}`);
-                            if (tableData && tableData.statusName) {
-                                const frontendStatus = tableData.statusName.toLowerCase() === 'available' ? 'empty' : 
-                                                     tableData.statusName.toLowerCase() === 'occupied' ? 'occupied' :
-                                                     tableData.statusName.toLowerCase() === 'reserved' ? 'reserved' : 'empty';
-                                setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: frontendStatus }));
-                                console.log(`Masa durumu güncellendi: ${reservation.tableId} -> ${frontendStatus}`);
-                            }
-                        }
-                    } catch (tableError) {
-                        console.warn('Masa durumu alınamadı, varsayılan empty yapılıyor:', tableError);
-                        setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: 'empty' }));
-                    }
-                }
-            }
+            const tableIdOfReservation = reservation?.tableId;
+
+            await reservationService.deleteReservation(reservationId);
+            
+            // Local state: dictionary'den kaldır
             setReservations(prev => {
-                const newReservations = { ...prev };
-                delete newReservations[reservationId];
-                return newReservations;
+                const next = { ...prev };
+                delete next[reservationId];
+                return next;
             });
+
+            // UI: Masa durumunu anında yeşile çek
+            if (tableIdOfReservation) {
+                setTableStatus(prev => ({ ...prev, [tableIdOfReservation]: 'empty' }));
+            }
+
+            // Backend'den güncel masaları çek (server truth)
+            await loadTablesAndSalons();
         } catch (error) {
-            console.error('Failed to delete reservation from backend:', error);
-            setError(`Rezervasyon silinirken hata oluştu: ${error.message}`);
+            console.error('Rezervasyon silme hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -2048,24 +2052,18 @@ export function TableProvider({ children }) {
         try {
             const reservation = reservations[reservationId];
             if (reservation && reservation.backendId) {
-                // Telefon numarasını temizle (0'ları ve boşlukları kaldır)
                 const cleanPhone = String(updatedData.telefon || '').replace(/[^0-9]/g, '');
-                const formattedPhone = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone; // Başındaki 0'ı kaldır
+                const formattedPhone = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone;
                 const safePersonCount = Number.parseInt(updatedData.kisiSayisi, 10);
-                
-                // Backend rezervasyonunu getir → gerçek DB tableId'yi kullan
+
+                // DB tableId
                 let dbTableId = null;
                 try {
                     const backendRes = await apiCall(`/reservations/${reservation.backendId}`, { method: 'GET' });
                     dbTableId = backendRes?.tableId ?? null;
-                } catch (e) {
-                    console.warn('Backend rezervasyon getirilemedi, yerel tableId kullanılacak:', e);
-                }
-                if (dbTableId == null) {
-                    dbTableId = Number.parseInt(reservation.tableId, 10);
-                }
-                
-                // Backend ReservationRequestDTO formatı
+                } catch {}
+                if (dbTableId == null) dbTableId = Number.parseInt(reservation.tableId, 10);
+
                 const backendData = {
                     tableId: dbTableId,
                     customerName: `${updatedData.ad} ${updatedData.soyad}`.trim(),
@@ -2075,45 +2073,21 @@ export function TableProvider({ children }) {
                     reservationTime: updatedData.saat,
                     personCount: Number.isFinite(safePersonCount) ? safePersonCount : 1,
                     specialRequests: updatedData.not || '',
-                    statusId: 1, // CONFIRMED
+                    statusId: 1,
                     createdBy: Number.parseInt(localStorage.getItem('userId'), 10) || 1
                 };
 
-                console.log('Sending reservation update to backend:', backendData);
-                console.log('Backend ID:', reservation.backendId);
-                console.log('DB Table ID:', dbTableId);
-                console.log('Raw updatedData:', updatedData);
+                // PUT
+                await apiCall(`/reservations/${reservation.backendId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(backendData)
+                });
 
-                // Backend validator AVAILABLE ister; geçici olarak AVAILABLE yap
-                let madeAvailable = false;
-                try {
-                    await apiCall(`/dining-tables/${dbTableId}/status/AVAILABLE`, { method: 'PATCH' });
-                    madeAvailable = true;
-                } catch (prepErr) {
-                    console.warn('Masa AVAILABLE yapılamadı (devam ediliyor):', prepErr);
-                }
+                // Masaları anında tazele (masa boşalmış gibi görünmesin)
+                await loadTablesAndSalons();
 
-                try {
-                    await apiCall(`/reservations/${reservation.backendId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(backendData)
-                    });
-                    console.log('Update successful');
-                } catch (apiError) {
-                    console.error('DETAYLI API HATASI:', apiError);
-                    console.error('Response details:', apiError.details || 'No details');
-                    throw apiError;
-                } finally {
-                    // Backend zaten CONFIRMED/PENDING için RESERVED yapacak; yine de UI güncel kalsın diye veriyi tazele
-                    try {
-                        await fetchData();
-                    } catch (refreshErr) {
-                        console.warn('fetchData sonrası hata (görmezden gelindi):', refreshErr);
-                    }
-                }
-                
-                // Frontend state'i güncelle (anında geri bildirim)
+                // Local state
                 setReservations(prev => ({
                     ...prev,
                     [reservationId]: {
