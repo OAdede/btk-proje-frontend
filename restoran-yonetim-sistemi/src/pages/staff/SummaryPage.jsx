@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useEffect } from "react";
+import React, { useContext, useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext";
@@ -14,40 +14,48 @@ export default function SummaryPage() {
 
     // State for order data
     const [orderData, setOrderData] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Get backend table ID from table number
-    const getBackendTableId = () => {
+    // Get backend table ID from table number - memoized to prevent recalculation
+    const getBackendTableId = useCallback(() => {
         const numeric = Number(tableId);
         const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
         if (byNumber?.id != null) return Number(byNumber.id);
         const byId = (tables || []).find(t => Number(t?.id) === numeric);
         if (byId?.id != null) return Number(byId.id);
         return numeric;
-    };
+    }, [tableId, tables]);
 
-    // Fetch order data from backend
+    // Check if we have local data immediately
+    const hasLocalData = useMemo(() => {
+        const localOrder = orders?.[tableId]?.items || {};
+        return Object.keys(localOrder).length > 0;
+    }, [orders, tableId]);
+
+    // Initialize with local data if available
     useEffect(() => {
+        if (hasLocalData && !orderData) {
+            const localOrder = orders[tableId].items;
+            setOrderData({
+                items: localOrder,
+                id: orders[tableId].id
+            });
+        }
+    }, [hasLocalData, orderData, orders, tableId]);
+
+    // Fetch order data from backend only when needed
+    useEffect(() => {
+        // Skip if we already have data or if we have local data
+        if (orderData || hasLocalData) {
+            return;
+        }
+
         const fetchOrderData = async () => {
             try {
                 setIsLoading(true);
                 setError(null);
 
-                // First try to get order from local state
-                const localOrder = orders?.[tableId]?.items || {};
-                
-                if (Object.keys(localOrder).length > 0) {
-                    // Use local order data if available
-                    setOrderData({
-                        items: localOrder,
-                        id: orders[tableId]?.id
-                    });
-                    setIsLoading(false);
-                    return;
-                }
-
-                // If no local data, try to fetch from backend
                 const backendTableId = getBackendTableId();
                 if (backendTableId && !isNaN(backendTableId)) {
                     try {
@@ -89,36 +97,24 @@ export default function SummaryPage() {
                         }
                     } catch (backendError) {
                         console.warn('Could not fetch from backend, using local state:', backendError);
-                        // Fallback to local state
-                        setOrderData({
-                            items: localOrder,
-                            id: orders[tableId]?.id
-                        });
+                        // Fallback to empty order
+                        setOrderData({ items: {}, id: null });
                     }
                 } else {
-                    console.log('Invalid backend table ID, using local state');
-                    // Fallback to local state
-                    setOrderData({
-                        items: localOrder,
-                        id: orders[tableId]?.id
-                    });
+                    console.log('Invalid backend table ID, using empty order');
+                    setOrderData({ items: {}, id: null });
                 }
             } catch (error) {
                 console.error('Error fetching order data:', error);
                 setError('Sipariş verileri alınırken hata oluştu');
-                // Fallback to local state
-                const localOrder = orders?.[tableId]?.items || {};
-                setOrderData({
-                    items: localOrder,
-                    id: orders[tableId]?.id
-                });
+                setOrderData({ items: {}, id: null });
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchOrderData();
-    }, [tableId, orders, tables]);
+    }, [getBackendTableId, hasLocalData, orderData]);
 
     const currentOrder = orderData?.items || {};
 
@@ -146,7 +142,8 @@ export default function SummaryPage() {
 
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
-    if (isLoading) {
+    // Show loading only when actually fetching from backend and no data exists
+    if (isLoading && !orderData && !hasLocalData) {
         return (
             <div style={{
                 padding: 30,
