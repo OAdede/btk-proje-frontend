@@ -1,15 +1,21 @@
 // Sipariş geçmişi verilerini çeker
-import axios from 'axios';
+const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 
 export async function fetchAllOrders() {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get('/api/orders', {
+    const response = await fetch(`${API_BASE_URL}/orders`, {
       headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
+        'Accept': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
     });
-    return response.data;
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Sipariş geçmişi alınırken hata:', error);
     if (error.response) {
