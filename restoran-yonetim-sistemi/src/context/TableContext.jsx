@@ -387,13 +387,20 @@ export function TableProvider({ children }) {
             setProducts(newProductsByCategory);
             setProductsById(productsByIdTemp);
 
-            // Siparişleri backend masa ID'si ile indeksle (çakışmayı önler)
+            // Siparişleri hem backend masa ID'si hem de masa numarası ile indeksle
             try {
-                const ordersByTable = (ordersData || []).reduce((acc, order) => {
-                    if (!order || !order.tableId) return acc; // Geçersiz order'ları atla
+                const ordersByTable = {};
+                
+                (ordersData || []).forEach(order => {
+                    if (!order || !order.tableId) return; // Geçersiz order'ları atla
                     
-                    const keyBackendId = String(order.tableId);
-                    acc[keyBackendId] = {
+                    // Tamamlanmış siparişleri masalarda gösterme (isCompleted=true olanlar)
+                    if (order.isCompleted === true) {
+                        console.log(`Tamamlanmış sipariş ${order.orderId || order.id} masada gösterilmeyecek`);
+                        return;
+                    }
+                    
+                    const orderData = {
                         id: order.orderId ?? order.id,
                         ...order,
                         items: (order.items || []).reduce((itemAcc, item) => {
@@ -409,8 +416,19 @@ export function TableProvider({ children }) {
                             return itemAcc;
                         }, {})
                     };
-                    return acc;
-                }, {});
+                    
+                    // Backend table ID ile indeksle
+                    const keyBackendId = String(order.tableId);
+                    ordersByTable[keyBackendId] = orderData;
+                    
+                    // Masa numarası ile de indeksle (eğer bulunabilirse)
+                    const table = (diningTablesData || []).find(t => t.id === order.tableId);
+                    if (table && table.tableNumber) {
+                        const keyTableNumber = String(table.tableNumber);
+                        ordersByTable[keyTableNumber] = orderData;
+                    }
+                });
+                
                 setOrders(ordersByTable);
 
                 const completedOrdersData = (ordersData || []).filter(order => 
@@ -1023,7 +1041,6 @@ export function TableProvider({ children }) {
 
         const orderData = {
             tableId: toBackendTableId,
-            userId: numericUserId,
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
@@ -1047,8 +1064,8 @@ export function TableProvider({ children }) {
                         });
                     } else {
                         console.log("Yeni sipariş oluşturuluyor...");
-                        // Yeni siparişlerde stok düşümü için backend iş mantığını tetikle
-                        await apiCall('/orders/make-order', {
+                        // upsertOrderSync endpoint'ini kullan (authentication'dan user'ı alır)
+                        await apiCall('/orders/upsert-sync', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(orderData),

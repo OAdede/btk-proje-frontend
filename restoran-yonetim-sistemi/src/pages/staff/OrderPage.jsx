@@ -22,6 +22,7 @@ export default function OrderPage() {
         orders,
         products,
         ingredients,
+        tables,
         processPayment,
         decreaseConfirmedOrderItem,
         increaseConfirmedOrderItem,
@@ -30,14 +31,35 @@ export default function OrderPage() {
         availabilityNotification
     } = useContext(TableContext);
 
+    // Masa ID'sinden orders verilerini almak için yardımcı fonksiyon
+    const getOrderForTable = (tableId) => {
+        // Önce backend table ID'sini bul
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        if (!backendTable) return null;
+        
+        // Backend table ID'si ile orders'dan sipariş ara
+        const backendTableId = String(backendTable.id);
+        const order = orders[backendTableId];
+        
+        // Tamamlanmış siparişleri döndürme
+        if (order && order.isCompleted === true) {
+            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            return null;
+        }
+        
+        return order || null;
+    };
+
     // UI'de gelen tableId masa numarası olabilir; backend id ile de deneyelim
     const confirmedOrders = (() => {
-        if (orders?.[tableId]?.items) return orders[tableId].items;
+        const order = getOrderForTable(tableId);
+        if (order?.items) return order.items;
         return {};
     })();
 
     useEffect(() => {
-        const existingItems = orders?.[tableId]?.items || {};
+        const order = getOrderForTable(tableId);
+        const existingItems = order?.items || {};
         // Her bir ürün için 'note' alanı olduğundan emin ol
         const normalized = Object.keys(existingItems).reduce((acc, key) => {
             const item = existingItems[key];
@@ -45,7 +67,7 @@ export default function OrderPage() {
             return acc;
         }, {});
         setCart(normalized);
-    }, [tableId, orders]);
+    }, [tableId, orders, tables]);
 
     // Sayfa yüklendiğinde stok durumunu güncelle
     useEffect(() => {

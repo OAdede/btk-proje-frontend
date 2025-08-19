@@ -27,22 +27,43 @@ export default function SummaryPage() {
         return numeric;
     }, [tableId, tables]);
 
+    // Masa ID'sinden orders verilerini almak için yardımcı fonksiyon
+    const getOrderForTable = useCallback((tableId) => {
+        // Önce backend table ID'sini bul
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        if (!backendTable) return null;
+        
+        // Backend table ID'si ile orders'dan sipariş ara
+        const backendTableId = String(backendTable.id);
+        const order = orders[backendTableId];
+        
+        // Tamamlanmış siparişleri döndürme
+        if (order && order.isCompleted === true) {
+            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            return null;
+        }
+        
+        return order || null;
+    }, [tables, orders]);
+
     // Check if we have local data immediately
     const hasLocalData = useMemo(() => {
-        const localOrder = orders?.[tableId]?.items || {};
+        const order = getOrderForTable(tableId);
+        const localOrder = order?.items || {};
         return Object.keys(localOrder).length > 0;
-    }, [orders, tableId]);
+    }, [getOrderForTable, tableId]);
 
     // Initialize with local data if available
     useEffect(() => {
         if (hasLocalData && !orderData) {
-            const localOrder = orders[tableId].items;
+            const order = getOrderForTable(tableId);
+            const localOrder = order?.items || {};
             setOrderData({
                 items: localOrder,
-                id: orders[tableId].id
+                id: order?.id
             });
         }
-    }, [hasLocalData, orderData, orders, tableId]);
+    }, [hasLocalData, orderData, getOrderForTable, tableId]);
 
     // Fetch order data from backend only when needed
     useEffect(() => {

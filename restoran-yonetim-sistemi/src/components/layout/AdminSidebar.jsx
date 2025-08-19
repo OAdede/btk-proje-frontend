@@ -723,7 +723,7 @@ const AdminSidebar = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{ fontSize: '1.2rem' }}>📅</span>
                             <span>Rezervasyonlar</span>
-                            {getTodayReservationsCount() > 0 && (
+                            {(getTodayReservationsCount() - getTodaySpecialReservationsCount() > 0 || getTodaySpecialReservationsCount() > 0) && (
                                 <div style={{
                                     display: 'flex',
                                     alignItems: 'center',

@@ -566,3 +566,71 @@
     font-size: 0.8rem;
     font-weight: 600;
 }
+
+/* Orders Page Styles */
+.orders-page-container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.orders-page-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+}
+
+.total-orders-info {
+    background: var(--card);
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.total-orders-info span {
+    font-weight: 700;
+    color: var(--success);
+}
+
+.orders-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.no-orders-message {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    background: var(--card);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.view-mode-button {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.view-mode-button:hover {
+    background: var(--hover);
+    border-color: var(--primary);
+}
+
+.view-mode-button.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
