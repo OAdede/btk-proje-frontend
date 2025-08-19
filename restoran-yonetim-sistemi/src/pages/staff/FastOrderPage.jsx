@@ -7,7 +7,7 @@ import "./OrderPage.css"; // Aynı stilleri kullanabiliriz
 
 export default function FastOrderPage() {
   const navigate = useNavigate();
-  const { products, processPayment, saveFinalOrder } = useContext(TableContext);
+  const { products, processPayment, saveFinalOrder, refreshProductAvailability, isRefreshingAvailability, availabilityNotification } = useContext(TableContext);
   const { user } = useContext(AuthContext);
 
   const [cart, setCart] = useState({});
@@ -17,6 +17,11 @@ export default function FastOrderPage() {
   const [selectedProductForNote, setSelectedProductForNote] = useState(null);
 
   const fakeTableId = "fast"; // Hızlı siparişler için sabit ID
+
+  // Sayfa yüklendiğinde stok durumunu güncelle
+  useEffect(() => {
+    refreshProductAvailability();
+  }, []);
 
   const handleQuantityChange = (product, delta) => {
     const currentItem = cart[product.id] || { ...product, count: 0, note: "" };
@@ -79,9 +84,46 @@ export default function FastOrderPage() {
         currentNote={(cart[selectedProductForNote]?.note || "")}
         quickNotes={quickNotes}
       />
+      
+      {/* Notification Display */}
+      {availabilityNotification && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          padding: '12px 20px',
+          backgroundColor: availabilityNotification.type === 'success' ? '#28a745' : '#dc3545',
+          color: 'white',
+          borderRadius: '4px',
+          zIndex: 1000,
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          fontSize: '14px'
+        }}>
+          {availabilityNotification.message}
+        </div>
+      )}
+      
       <div className="order-page-container">
         <div className="order-main-content">
-          <h2 className="order-page-title">Hızlı Sipariş</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 className="order-page-title">Hızlı Sipariş</h2>
+            <button 
+              onClick={refreshProductAvailability}
+              disabled={isRefreshingAvailability}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: isRefreshingAvailability ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isRefreshingAvailability ? 'not-allowed' : 'pointer',
+                fontSize: '14px'
+              }}
+              title="Stok durumunu güncelle"
+            >
+              {isRefreshingAvailability ? '⏳ Güncelleniyor...' : '🔄 Stok Güncelle'}
+            </button>
+          </div>
           <div className="category-buttons">
             {products && Object.keys(products).map((cat) => (
               <button
