@@ -5,6 +5,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
 import secureStorage from '../../utils/secureStorage';
 import StockWarning from '../common/StockWarning';
+import { salonService } from '../../services/salonService';
 
 // A unified admin-style tables grid for all roles
 // - For admin: this component can be reused later with custom handlers
@@ -132,21 +133,8 @@ export default function AdminStyleTables({ roleOverride }) {
     const fetchOccupancyData = async () => {
         try {
             setLoadingOccupancy(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/salons/occupancy', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                setOccupancyData(data);
-            } else {
-                console.error('Failed to fetch occupancy data:', response.status);
-            }
+            const data = await salonService.getSalonOccupancy();
+            setOccupancyData(data);
         } catch (error) {
             console.error('Error fetching occupancy data:', error);
         } finally {

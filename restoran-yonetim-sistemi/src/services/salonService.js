@@ -3,6 +3,18 @@ import httpClient from '../utils/httpClient.js';
 const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
 export const salonService = {
+    // Get salon occupancy (aggregated occupancy info)
+    async getSalonOccupancy() {
+        try {
+            const result = await httpClient.requestJson('/salons/occupancy');
+            if (DEBUG) console.log('Salon occupancy fetched successfully');
+            return result;
+        } catch (error) {
+            console.error('Error fetching salon occupancy:', error);
+            throw error;
+        }
+    },
+
     // Get all salons
     async getAllSalons() {
         try {

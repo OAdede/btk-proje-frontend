@@ -140,27 +140,11 @@ export const diningTableService = {
         }
     },
 
-    // Get table statuses with occupancy information
+    // Get table statuses with occupancy information (deprecated/unused)
     async getTableStatuses() {
-        try {
-            const response = await fetch(`${API_BASE_URL}/table-statuses`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('Table statuses fetched successfully:', result);
-            return result;
-        } catch (error) {
-            console.error('Error fetching table statuses:', error);
-            throw error;
-        }
+        // Prefer computing status from dining table entities or use a future endpoint via httpClient
+        const result = await httpClient.requestJson('table-statuses');
+        if (DEBUG) console.log('Table statuses fetched successfully');
+        return result;
     }
 };

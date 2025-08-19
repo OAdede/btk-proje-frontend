@@ -1,5 +1,4 @@
 // Authentication API Service - Backend communication layer
-const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 import tokenManager from '../utils/tokenManager.js';
 import httpClient from '../utils/httpClient.js';
 import secureStorage from '../utils/secureStorage.js';
@@ -53,48 +52,13 @@ export const authService = {
     // Reset password with token
     async resetPassword(token, newPassword) {
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+            // Use centralized httpClient for consistent headers/cookies and error parsing
+            const result = await httpClient.requestJson('/auth/reset-password', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    token,
-                    password: newPassword
-                })
+                body: JSON.stringify({ token, password: newPassword })
             });
-
-            if (!response.ok) {
-                let errorMessage = 'Şifre sıfırlama başarısız oldu';
-
-                // Önce response'u text olarak okumaya çalış
-                try {
-                    const errorText = await response.text();
-                    if (DEBUG) console.log('Reset-password error text length:', errorText?.length || 0);
-                    // Eğer JSON formatında ise parse etmeye çalış
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (jsonError) {
-                        // JSON parse edilemezse text'i direkt kullan
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch {
-                }
-
-                throw new Error(errorMessage);
-            }
-
-            // Başarılı response için JSON parse etmeye çalış
-            try {
-                const responseData = await response.json();
-                return responseData;
-            } catch (jsonError) {
-                // Eğer response boş ise veya JSON değilse boş obje döndür
-                if (DEBUG) console.log('Response is not JSON, returning empty object');
-                return {};
-            }
+            // If backend returns non-JSON, requestJson will return {} and log; that's acceptable
+            return result || {};
         } catch (error) {
             throw new Error(error.message || 'Şifre sıfırlama başarısız oldu.');
         }
@@ -168,36 +132,9 @@ export const authService = {
     async getUserCount() {
     if (DEBUG) console.log('getUserCount called');
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/user-count`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                }
-            });
-
-            if (DEBUG) console.log('getUserCount response status:', response.status);
-
-            if (!response.ok) {
-                let errorMessage = 'Kullanıcı sayısı kontrolü başarısız oldu';
-                try {
-                    const errorText = await response.text();
-                    if (DEBUG) console.log('User-count error text length:', errorText?.length || 0);
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (jsonError) {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch (textError) {
-                    console.log('Could not read response as text:', textError);
-                }
-                throw new Error(errorMessage);
-            }
-
-            const responseData = await response.json();
+            const data = await httpClient.requestJson('/auth/user-count', { method: 'GET' });
             if (DEBUG) console.log('getUserCount response data loaded');
-            return responseData;
+            return data;
         } catch (error) {
             if (DEBUG) console.error('getUserCount error:', error);
             throw new Error(error.message || 'Kullanıcı sayısı kontrolü başarısız oldu.');
@@ -209,43 +146,12 @@ export const authService = {
         try {
             // Get frontend URL for the reset link
             const frontendUrl = import.meta?.env?.VITE_FRONTEND_URL || window.location.origin;
-
-            const response = await fetch(`${API_BASE_URL}/auth/bootstrap-admin`, {
+            const data = await httpClient.requestJson('/auth/bootstrap-admin', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    name,
-                    frontendUrl: frontendUrl
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, frontendUrl })
             });
-
-            if (!response.ok) {
-                let errorMessage = 'Bootstrap admin oluşturma başarısız oldu';
-                try {
-                    const errorText = await response.text();
-                    if (DEBUG) console.log('Bootstrap-admin error text length:', errorText?.length || 0);
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorData.error || errorMessage;
-                    } catch (jsonError) {
-                        errorMessage = errorText || errorMessage;
-                    }
-                } catch {
-                }
-                throw new Error(errorMessage);
-            }
-
-            try {
-                const responseData = await response.json();
-                return responseData;
-            } catch (jsonError) {
-                if (DEBUG) console.log('Response is not JSON, returning empty object');
-                return {};
-            }
+            return data || {};
         } catch (error) {
             throw new Error(error.message || 'Bootstrap admin oluşturma başarısız oldu.');
         }
@@ -311,39 +217,56 @@ export const authService = {
                 return { authorized: false, message: 'Token bulunamadı' };
             }
 
-            const url = `${API_BASE_URL}/auth/verify-role?roleName=${encodeURIComponent(roleName)}`;
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            // Map frontend role names to backend expected values
+            const mapRoleForBackend = (name) => {
+                if (!name) return name;
+                const n = String(name).toLowerCase();
+                if (n === 'garson') return 'waiter';
+                if (n === 'kasiyer') return 'cashier';
+                if (n === 'administrator') return 'admin';
+                return n; // admin, waiter, cashier pass-through
+            };
+
+            const backendRoleName = mapRoleForBackend(roleName);
+            const response = await httpClient.request(`/auth/verify-role?roleName=${encodeURIComponent(backendRoleName)}`, {
+                method: 'GET'
             });
 
             // Handle different HTTP status codes from backend
             if (response.ok) {
-                const data = await response.json();
-                return {
-                    authorized: data.authorized || false,
-                    roleId: data.roleId,
-                    roleName: data.roleName,
-                    redirectPath: data.redirectPath,
-                    message: data.message,
-                    expiresAt: data.expiresAt
-                };
+                try {
+                    const data = await response.json();
+                    return {
+                        authorized: Boolean(data.authorized),
+                        roleId: data.roleId,
+                        roleName: data.roleName,
+                        redirectPath: data.redirectPath,
+                        message: data.message,
+                        expiresAt: data.expiresAt
+                    };
+                } catch {
+                    // Non-JSON success; treat as authorized
+                    return { authorized: true, roleName: backendRoleName };
+                }
             } else {
                 // For 401, 400, 500 status codes, still try to parse response
                 try {
-                    const errorData = await response.json();
-                    return {
-                        authorized: false,
-                        message: errorData.message || 'Yetkilendirme başarısız',
-                        roleName: errorData.roleName
-                    };
-                } catch (parseError) {
-                    return { 
-                        authorized: false, 
-                        message: `Yetkilendirme başarısız (${response.status})` 
-                    };
+                    const errorText = await response.text();
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        return {
+                            authorized: false,
+                            message: errorData.message || 'Yetkilendirme başarısız',
+                            roleName: errorData.roleName
+                        };
+                    } catch {
+                        return {
+                            authorized: false,
+                            message: errorText || `Yetkilendirme başarısız (${response.status})`
+                        };
+                    }
+                } catch {
+                    return { authorized: false, message: `Yetkilendirme başarısız (${response.status})` };
                 }
             }
         } catch (error) {

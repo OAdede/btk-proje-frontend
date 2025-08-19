@@ -43,6 +43,8 @@ class TokenManager {
     constructor() {
         this.onTokenExpired = null; // Callback for when token expires
         this.onAuthError = null;    // Callback for auth errors
+    // When true, in HttpOnly mode we will add Bearer header from storage even if httpOnlyAuth says authenticated
+    this.forceBearerFallback = false;
     }
 
     /**
@@ -187,12 +189,31 @@ class TokenManager {
      */
     getAuthHeader() {
         if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
-            // With HttpOnly cookies, no Authorization header needed (cookies sent automatically)
-            // But we return empty object for compatibility with existing code
-            if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
-                console.log('[TokenManager] HttpOnly mode: Using cookies, no Authorization header needed');
-            }
-            return {}; // Return empty object instead of null for compatibility
+            // With HttpOnly cookies, prefer cookies. If no active cookie session
+            // (common in local dev with Secure cookies), fall back to Bearer token if available.
+            try {
+                const { isAuthenticated } = httpOnlyAuth.getAuthenticationStatus();
+                // Only skip Authorization header when cookies are working and no forced fallback
+                if (isAuthenticated && !this.forceBearerFallback) {
+                    if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                        console.log('[TokenManager] HttpOnly mode: Using cookies, no Authorization header needed');
+                    }
+                    return {}; // Cookies will be sent via credentials: 'include'
+                }
+            } catch {}
+
+            // Fallback: try secure/local token for development scenarios
+            try {
+                const stored = secureStorage.getItem(TOKEN_CONFIG.TOKEN_KEY) || localStorage.getItem(TOKEN_CONFIG.TOKEN_KEY);
+                if (stored && !isTokenExpired(stored)) {
+                    if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                        console.warn('[TokenManager] HttpOnly cookie not present; falling back to Bearer token');
+                    }
+                    return { 'Authorization': `Bearer ${stored}` };
+                }
+            } catch {}
+
+            return {};
         }
         
         // Legacy mode: use Bearer token
@@ -347,6 +368,15 @@ class TokenManager {
             console.warn('[TokenManager] Handling token expiration');
         }
         
+        // In HttpOnly mode, mark cookie-based auth as invalid and trigger fallback on next requests
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            this.forceBearerFallback = true;
+            try {
+                // Notify HttpOnly auth manager so it can update its state
+                httpOnlyAuth.handleAuthError();
+            } catch {}
+        }
+
         this.clearToken();
         
         // Notify the app (AuthContext can listen to this)

@@ -38,7 +38,7 @@ export function TableProvider({ children }) {
     const [products, setProducts] = useState({});
     const [productsById, setProductsById] = useState({});
     const [ingredients, setIngredients] = useState({});
-    const [tables, setTables] = useState([]);
+        const [tables, setTables] = useState([]); // Initialize tables state
     const [tableStatus, setTableStatus] = useState(() => readFromStorage('tableStatus', {}));
     const [orders, setOrders] = useState(() => readFromStorage('orders', {}));
     const [completedOrders, setCompletedOrders] = useState(() => readFromStorage('completedOrders', {}));
@@ -53,6 +53,9 @@ export function TableProvider({ children }) {
     const [error, setError] = useState(null);
 
     const DEBUG_TABLES = (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
+    // Track endpoints we've already warned about and blocked after 401 to avoid repeated calls
+    const unauthorizedWarnedRef = useRef(new Set());
+    const unauthorizedEndpointsRef = useRef(new Set());
     const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
             if (DEBUG_TABLES) console.log(`API çağrısı: ${endpoint}`);
@@ -64,7 +67,16 @@ export function TableProvider({ children }) {
             if (!response.ok) {
                 // 401 ise (ör. stocks için admin olmayan roller) gürültüyü azalt
                 if (response.status === 401) {
-                    console.warn(`API çağrısı yetkisiz: ${endpoint} (401)`);
+                    // Mark endpoint as unauthorized to short-circuit later safe calls
+                    try { unauthorizedEndpointsRef.current.add(String(endpoint)); } catch {}
+                    // Warn only once per endpoint to avoid console spam
+                    const key = String(endpoint);
+                    if (!unauthorizedWarnedRef.current.has(key)) {
+                        unauthorizedWarnedRef.current.add(key);
+                        console.warn(`API çağrısı yetkisiz: ${endpoint} (401)`);
+                    } else if (DEBUG_TABLES) {
+                        console.debug(`API çağrısı yetkisiz (susturuldu): ${endpoint} (401)`);
+                    }
                     throw new Error('Unauthorized');
                 }
                 const errorData = await response.text().catch(() => '')
@@ -144,17 +156,22 @@ export function TableProvider({ children }) {
 
             // API çağrıları - stocks için tüm rollerde dene, 401 alırsan boş döndür
             const safeStocksCall = async () => {
+                // If previously unauthorized, skip hitting the server again
+                if (unauthorizedEndpointsRef.current.has('/stocks')) {
+                    if (DEBUG_TABLES) console.debug('Skipping /stocks call due to cached unauthorized');
+                    return [];
+                }
                 try {
                     return await apiCall('/stocks');
                 } catch (error) {
-                    console.warn("Stocks API hatası yakalandı:", error.message || error);
+                    if (DEBUG_TABLES) console.warn("Stocks API hatası yakalandı:", error.message || error);
                     // 401 Unauthorized kontrolü - birden fazla format kontrol et
                     const errorMsg = String(error.message || '').toLowerCase();
                     if (errorMsg.includes('unauthorized') || 
                         errorMsg.includes('401') || 
                         errorMsg.includes('403') || 
                         errorMsg.includes('forbidden')) {
-                        console.log("Stocks API yetkisiz erişim - boş array döndürülüyor");
+                        if (DEBUG_TABLES) console.log("Stocks API yetkisiz erişim - boş array döndürülüyor");
                         return [];
                     }
                     throw error; // Diğer hataları yukarı fırlat
@@ -166,16 +183,35 @@ export function TableProvider({ children }) {
                 try {
                     return await apiCall('/orders');
                 } catch (error) {
-                    console.warn("Orders endpoint hatası:", error.message || error);
+                    if (DEBUG_TABLES) console.warn("Orders endpoint hatası:", error.message || error);
                     if (error.message && (
                         error.message.includes('500') ||
                         error.message.includes('Internal Server Error') ||
                         error.message.includes('isCompleted')
                     )) {
-                        console.log("Orders endpoint'inde backend hatası, boş array döndürülüyor");
+                        if (DEBUG_TABLES) console.log("Orders endpoint'inde backend hatası, boş array döndürülüyor");
                         return [];
                     }
                     throw error; // Diğer hataları yukarı fırlat
+                }
+            };
+
+            // Reservations API çağrısı için güvenli wrapper (bazı rollerde yetkisiz olabilir)
+            const safeReservationsCall = async () => {
+                if (unauthorizedEndpointsRef.current.has('/reservations')) {
+                    if (DEBUG_TABLES) console.debug('Skipping /reservations call due to cached unauthorized');
+                    return [];
+                }
+                try {
+                    return await apiCall('/reservations');
+                } catch (error) {
+                    if (DEBUG_TABLES) console.warn("Reservations endpoint hatası:", error.message || error);
+                    const msg = String(error.message || '').toLowerCase();
+                    if (msg.includes('unauthorized') || msg.includes('401') || msg.includes('403') || msg.includes('forbidden')) {
+                        if (DEBUG_TABLES) console.log("Reservations endpoint yetkisiz - boş array döndürülüyor");
+                        return [];
+                    }
+                    return [];
                 }
             };
 
@@ -188,7 +224,7 @@ export function TableProvider({ children }) {
                 apiCall('/dining-tables'),           // 3
                 safeOrdersCall(),                   // 4 - güvenli orders çağrısı
                 apiCall('/salons'),                  // 5
-                apiCall('/reservations'),            // 6 - rezervasyonları getir
+                safeReservationsCall(),              // 6 - rezervasyonları getir (yetkisizse boş)
             ];
 
             const results = await Promise.allSettled(tasks);
@@ -868,9 +904,9 @@ export function TableProvider({ children }) {
             // 1) Ödeme kaydı oluştur (yetki yoksa atla)
             let paymentSuccessful = false;
             try {
-                // Debug: Token ve rol bilgilerini kontrol et
-                const token = localStorage.getItem('token') || '';
-                console.log('DEBUG - Token:', token.substring(0, 50) + '...');
+                // Debug: Token ve rol bilgilerini kontrol et (masked)
+                const token = tokenManager.getToken() || '';
+                console.log('DEBUG - Token:', (typeof token === 'string' && token.length > 0) ? (token.substring(0, 8) + '…masked') : '[cookie/HttpOnly]');
                 console.log('DEBUG - Role Info:', roleInfo);
                 console.log('DEBUG - User ID:', numericUserId);
                 
@@ -883,7 +919,7 @@ export function TableProvider({ children }) {
                 
                 await apiCall('/payments', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenManager.getToken() || ''}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         orderId: orderToPay.id,
                         cashierId: numericUserId,
@@ -1100,8 +1136,8 @@ export function TableProvider({ children }) {
                 return parseInt(tableId);
             })();
 
-            // Get user ID from token
-            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            // Get user ID from token (prefer tokenManager for HttpOnly/dev fallback)
+            const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
                 ? parseInt(roleInfo.userId, 10)
                 : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
@@ -1509,8 +1545,8 @@ export function TableProvider({ children }) {
 
     const addReservation = async (tableId, reservationData) => {
         try {
-            // Get user ID from token
-            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            // Get user ID from token (prefer tokenManager for HttpOnly/dev fallback)
+            const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
                 ? parseInt(roleInfo.userId, 10)
                 : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
@@ -1677,30 +1713,16 @@ export function TableProvider({ children }) {
 
     const loadTableStatuses = useCallback(async () => {
         try {
-            // Raw fetch to tolerate non-JSON responses gracefully
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_BASE_URL}/table-statuses`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                }
-            });
-            const text = await res.text();
-            let data;
-            try {
-                data = text ? JSON.parse(text) : [];
-            } catch (e) {
-                console.error('Failed to parse /table-statuses JSON. Returning empty list. Raw:', text);
-                data = [];
-            }
+            const data = await httpClient.requestJson('/table-statuses', { method: 'GET' });
             if (!Array.isArray(data)) {
                 console.warn('Unexpected /table-statuses format, coercing to array');
-                data = [];
+                setTableStatuses([]);
+            } else {
+                setTableStatuses(data);
             }
-            setTableStatuses(data);
         } catch (error) {
             console.error('Failed to load table statuses:', error);
+            setTableStatuses([]);
             setError(`Masa durumları yüklenirken hata oluştu: ${error.message}`);
         }
     }, []);

@@ -3,20 +3,29 @@ const API_BASE_URL = (import.meta?.env?.VITE_API_BASE_URL) || '/api';
 import httpClient from '../utils/httpClient.js';
 import tokenManager from '../utils/tokenManager.js';
 import secureStorage from '../utils/secureStorage.js';
+import { getRoleInfoFromToken } from '../utils/jwt.js';
 const DEBUG = import.meta?.env?.VITE_DEBUG_SERVICES === 'true';
 
-// SECURITY: Helper to get current user ID from secure storage
+// SECURITY: Resolve current user ID prioritizing JWT via tokenManager, then secureStorage, then legacy localStorage (cleanup)
 const getCurrentUserId = () => {
-  const userData = secureStorage.getItem('user');
-  if (userData) {
-    return userData.userId;
-  }
-  // Fallback: try to get from legacy localStorage (migration support)
-  const legacyUserId = localStorage.getItem('userId');
-  if (legacyUserId) {
-    localStorage.removeItem('userId'); // Clean up legacy storage
-    return legacyUserId;
-  }
+  try {
+    const token = tokenManager.getToken?.();
+    if (token) {
+      const info = getRoleInfoFromToken(token);
+      if (info && info.userId != null) return info.userId;
+    }
+  } catch {}
+  try {
+    const userData = secureStorage.getItem('user');
+    if (userData && userData.userId != null) return userData.userId;
+  } catch {}
+  try {
+    const legacyUserId = localStorage.getItem('userId');
+    if (legacyUserId != null) {
+      try { localStorage.removeItem('userId'); } catch {}
+      return legacyUserId;
+    }
+  } catch {}
   return null;
 };
 

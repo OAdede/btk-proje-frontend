@@ -1,23 +1,17 @@
-// Sipariş geçmişi verilerini çeker
-import axios from 'axios';
+// Sipariş geçmişi verilerini çeker (centralized httpClient)
+import httpClient from '../src/utils/httpClient.js';
 
 export async function fetchAllOrders() {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get('/api/orders', {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-    });
-    return response.data;
+    // Base URL and auth are handled by httpClient
+    const data = await httpClient.requestJson('/orders');
+    return data;
   } catch (error) {
     console.error('Sipariş geçmişi alınırken hata:', error);
-    if (error.response) {
-      throw new Error(`Sunucu hatası: ${error.response.status} - ${error.response.statusText}`);
-    } else if (error.request) {
-      throw new Error('Sunucuya ulaşılamıyor. Backend çalışıyor mu?');
-    } else {
-      throw new Error('İstek yapılandırma hatası: ' + error.message);
+    const msg = String(error?.message || 'Bilinmeyen hata');
+    if (/\b(401|403)\b|unauthorized|forbidden/i.test(msg)) {
+      throw new Error('Yetkisiz erişim: Sipariş geçmişi için izniniz yok.');
     }
+    throw new Error(msg);
   }
 }

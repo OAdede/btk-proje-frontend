@@ -119,21 +119,9 @@ const Dashboard = () => {
   const fetchOccupancyData = async () => {
     try {
       setLoadingOccupancy(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/salons/occupancy', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setOccupancyData(data);
-      } else {
-        console.error('Failed to fetch occupancy data:', response.status);
-      }
+      // Use centralized http client through salonService to ensure auth headers & 401 handling
+      const data = await salonService.getSalonOccupancy();
+      setOccupancyData(data);
     } catch (error) {
       console.error('Error fetching occupancy data:', error);
     } finally {
