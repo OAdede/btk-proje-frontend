@@ -6,11 +6,27 @@ import { useTheme } from "../../context/ThemeContext";
 export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
-    const { lastOrders, confirmOrder, clearTable, orders } = useContext(TableContext);
+    const { lastOrders, confirmOrder, clearTable, orders, tables } = useContext(TableContext);
     const { isDarkMode, colors } = useTheme();
 
+    // UI'de gelen tableId masa numarası olabilir; backend id ile eşleştir
+    const getOrdersByTableId = (targetTableId) => {
+        // Önce direkt table ID ile dene
+        if (orders?.[targetTableId]) return orders[targetTableId];
+        
+        // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
+        if (tables && tables.length > 0) {
+            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(targetTableId));
+            if (backendTable && orders?.[String(backendTable.id)]) {
+                return orders[String(backendTable.id)];
+            }
+        }
+        
+        return {};
+    };
+
     const newOrderItems = lastOrders[tableId] || {};
-    const confirmedOrderItems = orders[tableId] || {};
+    const confirmedOrderItems = getOrdersByTableId(tableId);
 
     const calculateTotal = (items) => {
         return Object.values(items).reduce((sum, item) => sum + item.price * item.count, 0);

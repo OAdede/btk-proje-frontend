@@ -8,10 +8,24 @@ export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { orders, saveFinalOrder } = useContext(TableContext);
+    const { orders, saveFinalOrder, tables } = useContext(TableContext);
     const { colors } = useTheme();
 
-    const currentOrder = orders?.[tableId]?.items || {};
+    // UI'de gelen tableId masa numarası olabilir; backend id ile eşleştir
+    const currentOrder = (() => {
+        // Önce direkt table ID ile dene
+        if (orders?.[tableId]?.items) return orders[tableId].items;
+        
+        // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
+        if (tables && tables.length > 0) {
+            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
+            if (backendTable && orders?.[String(backendTable.id)]?.items) {
+                return orders[String(backendTable.id)].items;
+            }
+        }
+        
+        return {};
+    })();
 
     const totalPrice = useMemo(() =>
         Object.values(currentOrder).reduce(

@@ -55,7 +55,7 @@ export function TableProvider({ children }) {
     const [isRefreshingAvailability, setIsRefreshingAvailability] = useState(false);
     const [availabilityNotification, setAvailabilityNotification] = useState(null);
 
-    const DEBUG_TABLES = (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
+    const DEBUG_TABLES = true; // Temporarily enable debugging (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
     // Track endpoints we've already warned about and blocked after 401 to avoid repeated calls
     const unauthorizedWarnedRef = useRef(new Set());
     const unauthorizedEndpointsRef = useRef(new Set());
@@ -490,6 +490,13 @@ export function TableProvider({ children }) {
                     return acc;
                 }, {});
                 setOrders(ordersByTable);
+                
+                if (DEBUG_TABLES) {
+                    console.log('=== ORDERS DEBUG ===');
+                    console.log('Raw ordersData from API:', ordersData);
+                    console.log('Processed ordersByTable:', ordersByTable);
+                    console.log('Available tables:', (tables || []).map(t => ({ id: t.id, tableNumber: t.tableNumber || t.number })));
+                }
 
                 const completedOrdersData = (ordersData || []).filter(order => 
                     order && order.status === "paid"
@@ -675,6 +682,38 @@ export function TableProvider({ children }) {
         }
         
         return true;
+    };
+
+    // Helper function to resolve table ID (UI table number to backend table ID)
+    const resolveTableOrder = (tableId) => {
+        if (DEBUG_TABLES) console.log(`Resolving table order for tableId: ${tableId}`);
+        
+        // Önce direkt table ID ile dene
+        if (orders?.[tableId]) {
+            if (DEBUG_TABLES) console.log(`Found order directly with tableId: ${tableId}`);
+            return orders[tableId];
+        }
+        
+        // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
+        if (tables && tables.length > 0) {
+            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
+            if (backendTable) {
+                if (DEBUG_TABLES) console.log(`Found backend table: ${backendTable.id} for table number: ${tableId}`);
+                if (orders?.[String(backendTable.id)]) {
+                    if (DEBUG_TABLES) console.log(`Found order with backend table ID: ${backendTable.id}`);
+                    return orders[String(backendTable.id)];
+                } else {
+                    if (DEBUG_TABLES) console.log(`No order found for backend table ID: ${backendTable.id}`);
+                }
+            } else {
+                if (DEBUG_TABLES) console.log(`No backend table found for table number: ${tableId}`);
+            }
+        } else {
+            if (DEBUG_TABLES) console.log('No tables available for mapping');
+        }
+        
+        if (DEBUG_TABLES) console.log(`No order found for tableId: ${tableId}`);
+        return null;
     };
 
     // Ürün müsaitlik miktarlarını güncelle
@@ -1211,7 +1250,7 @@ export function TableProvider({ children }) {
 
     const cancelOrder = async (tableId) => {
         try {
-            const orderToCancel = orders[tableId];
+            const orderToCancel = resolveTableOrder(tableId);
             if (!orderToCancel || !orderToCancel.id) return;
 
             await apiCall(`/orders/${orderToCancel.id}`, { method: 'DELETE' });
@@ -1297,7 +1336,7 @@ export function TableProvider({ children }) {
 
     const processPayment = async (tableId) => {
         try {
-            const orderToPay = orders[tableId];
+            const orderToPay = resolveTableOrder(tableId);
             if (!orderToPay || !orderToPay.id) return;
 
             // Tutarı hesapla (fallback: backend totalPrice yoksa local hesap)
@@ -1371,7 +1410,7 @@ export function TableProvider({ children }) {
 
     const decreaseConfirmedOrderItem = async (tableId, itemToDecrease) => {
         try {
-            const currentOrder = orders[tableId];
+            const currentOrder = resolveTableOrder(tableId);
             if (!currentOrder || !currentOrder.id) return;
 
             const updatedItems = { ...currentOrder.items };
@@ -1420,7 +1459,7 @@ export function TableProvider({ children }) {
 
     const increaseConfirmedOrderItem = async (tableId, itemToIncrease) => {
         try {
-            const currentOrder = orders[tableId];
+            const currentOrder = resolveTableOrder(tableId);
             if (!currentOrder || !currentOrder.id) return;
 
             const updatedItems = { ...currentOrder.items };
@@ -1516,7 +1555,7 @@ export function TableProvider({ children }) {
     // Add new item to existing order
     const addOrderItem = async (tableId, productId, quantity = 1, note = '') => {
         try {
-            const currentOrder = orders[tableId];
+            const currentOrder = resolveTableOrder(tableId);
             if (!currentOrder || !currentOrder.id) {
                 console.warn('No existing order found for table:', tableId);
                 return;
