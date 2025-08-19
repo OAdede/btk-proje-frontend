@@ -61,6 +61,21 @@ export function TableProvider({ children }) {
                     console.warn(`API çağrısı yetkisiz: ${endpoint} (401)`);
                     throw new Error('Unauthorized');
                 }
+                
+                // 500 Internal Server Error için özel işlem
+                if (response.status === 500) {
+                    const errorData = await response.text().catch(() => '')
+                        .then(t => { try { return JSON.parse(t); } catch { return { message: t || 'Sunucu hatası' }; } });
+                    console.error(`API çağrısı sunucu hatası: ${endpoint}`, errorData);
+                    
+                    // JPA transaction hatası kontrolü
+                    if (errorData.message && errorData.message.includes("JPA transaction")) {
+                        throw new Error(`Veritabanı işlemi hatası: ${errorData.message}`);
+                    }
+                    
+                    throw new Error(errorData.message || "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.");
+                }
+                
                 const errorData = await response.text().catch(() => '')
                     .then(t => { try { return JSON.parse(t); } catch { return { message: t || 'Sunucu hatası' }; } });
                 console.error(`API çağrısı hatası: ${endpoint}`, errorData);
@@ -509,15 +524,33 @@ export function TableProvider({ children }) {
 
     const findProductRecipe = (productId) => {
         const product = findProductById(productId);
-        return product?.recipe || [];
+        if (!product?.recipe) return [];
+        
+        // Sıfır miktar olan malzemeleri filtrele
+        return product.recipe.filter(ingredient => 
+            ingredient.quantity && ingredient.quantity > 0
+        );
     };
 
     const checkIngredientStock = (orderItems, isIncrease = false) => {
         const tempIngredients = { ...ingredients };
+        const invalidProducts = [];
+        
         for (const [id, item] of Object.entries(orderItems)) {
             const recipe = findProductRecipe(id);
-            if (!recipe.length) continue;
+            if (!recipe.length) {
+                console.log(`Ürün ${id} için tarif bulunamadı`);
+                continue;
+            }
+            
             for (const ingredient of recipe) {
+                // Sıfır miktar kontrolü ekle
+                if (!ingredient.quantity || ingredient.quantity <= 0) {
+                    console.warn(`Ürün ${id} için geçersiz malzeme miktarı: ${ingredient.quantity}`);
+                    invalidProducts.push({ productId: id, ingredientId: ingredient.ingredientId, quantity: ingredient.quantity });
+                    continue;
+                }
+                
                 const required = ingredient.quantity * item.count;
                 // Stok verisi erişilemiyorsa (ör. admin olmayan roller) stok kontrolünü atla
                 if (!tempIngredients[ingredient.ingredientId]) continue;
@@ -525,6 +558,12 @@ export function TableProvider({ children }) {
                 tempIngredients[ingredient.ingredientId].stockQuantity -= required;
             }
         }
+        
+        // Geçersiz ürünler varsa log
+        if (invalidProducts.length > 0) {
+            console.warn("Geçersiz malzeme miktarları olan ürünler:", invalidProducts);
+        }
+        
         return true;
     };
 
@@ -836,17 +875,63 @@ export function TableProvider({ children }) {
     // Not: fetchData ayrıca tüm verileri getirir; burada hızlı grid güncellemesi sağlanır
 
     const saveFinalOrder = async (tableId, finalItems) => {
+        // Loading state başlat
+        setError(null);
+        
         const isOrderEmpty = Object.keys(finalItems).length === 0;
         if (!isOrderEmpty && !checkIngredientStock(finalItems)) {
             alert("Maalesef stokta yeterli içerik yok!");
             return;
         }
 
-        const orderItemsForBackend = Object.entries(finalItems).map(([id, item]) => {
+        // Malzeme miktarlarını kontrol et ve sıfır olanları filtrele
+        const validItems = {};
+        for (const [id, item] of Object.entries(finalItems)) {
+            const recipe = findProductRecipe(id);
+            if (recipe.length > 0) {
+                // Tarifte sıfır miktar olan malzeme var mı kontrol et
+                const hasValidIngredients = recipe.every(ingredient => 
+                    ingredient.quantity && ingredient.quantity > 0
+                );
+                
+                if (hasValidIngredients) {
+                    validItems[id] = item;
+                } else {
+                    console.warn(`Ürün ${id} için geçersiz malzeme miktarları bulundu, siparişten çıkarıldı`);
+                }
+            } else {
+                // Tarifi olmayan ürünler için direkt ekle
+                validItems[id] = item;
+            }
+        }
+
+        // Geçerli ürün yoksa hata ver
+        if (Object.keys(validItems).length === 0) {
+            alert("Sipariş edilebilir geçerli ürün bulunamadı!");
+            return;
+        }
+
+        // Filtrelenen ürünler hakkında log
+        if (Object.keys(validItems).length !== Object.keys(finalItems).length) {
+            console.log("Filtrelenen ürünler:", {
+                original: Object.keys(finalItems),
+                filtered: Object.keys(validItems),
+                removed: Object.keys(finalItems).filter(id => !validItems[id])
+            });
+        }
+
+        // Sipariş verilerini doğrula
+        const orderItemsForBackend = Object.entries(validItems).map(([id, item]) => {
             const product = findProductById(id);
             if (!product) {
                 throw new Error(`Ürün ID'si bulunamadı: ${id}`);
             }
+            
+            // Ürün miktarını kontrol et
+            if (!item.count || item.count <= 0) {
+                throw new Error(`Ürün ${product.name} için geçersiz miktar: ${item.count}`);
+            }
+            
             return {
                 productId: product.id,
                 productName: product.name,
@@ -873,42 +958,144 @@ export function TableProvider({ children }) {
             return parseInt(tableId);
         })();
 
+        // Masa ID kontrolü
+        if (!toBackendTableId || isNaN(toBackendTableId)) {
+            setError("Geçersiz masa numarası. Lütfen sayfayı yenileyin ve tekrar deneyin.");
+            return;
+        }
+
+        // Veri bütünlüğü kontrolü
+        if (!numericUserId || numericUserId <= 0) {
+            setError("Kullanıcı kimlik bilgisi geçersiz. Lütfen tekrar giriş yapın.");
+            return;
+        }
+
+        if (!orderItemsForBackend || orderItemsForBackend.length === 0) {
+            setError("Sipariş edilebilir ürün bulunamadı. Lütfen siparişinizi kontrol edin.");
+            return;
+        }
+
+        // Her ürün için ek kontrol
+        for (const item of orderItemsForBackend) {
+            if (!item.productId || item.productId <= 0) {
+                setError(`Geçersiz ürün ID'si: ${item.productId}`);
+                return;
+            }
+            if (!item.quantity || item.quantity <= 0) {
+                setError(`Ürün ${item.productName} için geçersiz miktar: ${item.quantity}`);
+                return;
+            }
+        }
+
         const orderData = {
             tableId: toBackendTableId,
             userId: numericUserId,
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
+        // Sipariş verilerini logla
+        console.log("Backend'e gönderilecek sipariş verileri:", orderData);
+
         try {
+            console.log("Sipariş kaydediliyor...");
             const currentOrder = orders[String(tableId)];
-            if (currentOrder && currentOrder.id) {
-                await apiCall(`/orders/${currentOrder.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData),
-                });
-            } else {
-                // Yeni siparişlerde stok düşümü için backend iş mantığını tetikle
-                await apiCall('/orders/make-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData),
-                });
+            let retryCount = 0;
+            const maxRetries = 2;
+            
+            while (retryCount <= maxRetries) {
+                try {
+                    if (currentOrder && currentOrder.id) {
+                        console.log(`Mevcut sipariş güncelleniyor: ${currentOrder.id}`);
+                        await apiCall(`/orders/${currentOrder.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(orderData),
+                        });
+                    } else {
+                        console.log("Yeni sipariş oluşturuluyor...");
+                        // Yeni siparişlerde stok düşümü için backend iş mantığını tetikle
+                        await apiCall('/orders/make-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(orderData),
+                        });
+                    }
+                    console.log("Sipariş başarıyla kaydedildi!");
+                    break; // Başarılı olursa döngüden çık
+                } catch (retryError) {
+                    retryCount++;
+                    console.warn(`Sipariş kaydetme denemesi ${retryCount} başarısız:`, retryError.message);
+                    
+                    // JPA transaction hatası ise ve retry hakkı varsa tekrar dene
+                    if (retryError.message && retryError.message.includes("JPA transaction") && retryCount <= maxRetries) {
+                        console.warn(`JPA transaction hatası, ${retryCount}. deneme yapılıyor...`);
+                        // Kısa bir bekleme süresi (her denemede artan süre)
+                        const waitTime = 1000 * retryCount;
+                        console.log(`${waitTime}ms bekleniyor...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+                    
+                    // Diğer hatalar veya max retry aşıldıysa hatayı fırlat
+                    if (retryCount > maxRetries) {
+                        console.error(`Maksimum retry sayısı (${maxRetries}) aşıldı. Hata fırlatılıyor.`);
+                    }
+                    throw retryError;
+                }
             }
 
             // Sadece admin rolleri stok hareketi oluşturabilir
             // Not: Yeni siparişlerde '/orders/make-order' stok düşümünü kendisi yapar.
             // Güncelleme durumlarında backend stok düşmüyor; burada manuel hareket eklemeyi tercih etmiyoruz.
 
+            console.log("Veriler güncelleniyor...");
             await fetchData();
             updateTableStatus(tableId, "occupied");
             
             // Sipariş sonrası ürün müsaitlik miktarlarını güncelle
             await refreshProductAvailability();
+            
+            console.log("Sipariş işlemi tamamlandı!");
 
         } catch (error) {
             console.error("Sipariş kaydedilirken hata:", error);
-            setError(`Sipariş kaydedilirken hata oluştu: ${error.message}`);
+            
+            // Hata mesajını daha detaylı hale getir
+            let errorMessage = "Sipariş kaydedilirken hata oluştu";
+            let userGuidance = "";
+            
+            if (error.message && error.message.includes("Miktar değişimi sıfır olamaz")) {
+                errorMessage = "Bazı ürünlerin malzeme miktarları geçersiz. Lütfen ürün tariflerini kontrol edin.";
+                userGuidance = "Ürün tariflerinde sıfır miktar değeri olan malzemeler bulundu. Lütfen admin panelinden ürün tariflerini kontrol edin.";
+            } else if (error.message && error.message.includes("Validation failed")) {
+                errorMessage = "Sipariş verilerinde doğrulama hatası. Lütfen tekrar deneyin.";
+                userGuidance = "Sipariş verileri geçersiz. Lütfen sayfayı yenileyin ve tekrar deneyin.";
+            } else if (error.message && error.message.includes("Could not commit JPA transaction")) {
+                errorMessage = "Veritabanı işlemi tamamlanamadı. Bu genellikle geçici bir sistem hatasıdır.";
+                userGuidance = "Bu hata genellikle geçici bir sistem sorunudur. Lütfen birkaç dakika bekleyin ve tekrar deneyin. Sorun devam ederse sistem yöneticisi ile iletişime geçin.";
+            } else if (error.message && error.message.includes("JPA transaction")) {
+                errorMessage = "Veritabanı işlemi sırasında hata oluştu. Lütfen daha sonra tekrar deneyin.";
+                userGuidance = "Veritabanı işlemi sırasında teknik bir sorun oluştu. Lütfen daha sonra tekrar deneyin.";
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+            
+            // Detaylı hata loglaması
+            console.error("Hata detayları:", {
+                errorType: "JPA Transaction Error",
+                errorMessage: error.message,
+                userGuidance: userGuidance,
+                timestamp: new Date().toISOString(),
+                tableId: tableId,
+                orderItems: finalItems
+            });
+            
+            // Kullanıcıya hem hata mesajını hem de rehberliği göster
+            if (userGuidance) {
+                setError(`${errorMessage}\n\n${userGuidance}`);
+            } else {
+                setError(errorMessage);
+            }
         }
     };
 
@@ -928,6 +1115,12 @@ export function TableProvider({ children }) {
                     for (const item of Object.values(orderToCancel.items)) {
                         const recipe = findProductRecipe(item.id);
                         for (const ingredient of recipe) {
+                            // Sıfır miktar kontrolü ekle
+                            if (!ingredient.quantity || ingredient.quantity <= 0) {
+                                console.warn(`Ürün ${item.id} için geçersiz malzeme miktarı: ${ingredient.quantity}`);
+                                continue;
+                            }
+                            
                             const movement = {
                                 id: 0,
                                 stockId: ingredient.ingredientId,
@@ -952,7 +1145,43 @@ export function TableProvider({ children }) {
             await refreshProductAvailability();
         } catch (error) {
             console.error("Sipariş iptal edilirken hata:", error);
-            setError(`Sipariş iptal edilirken hata oluştu: ${error.message}`);
+            
+            // Hata mesajını daha detaylı hale getir
+            let errorMessage = "Sipariş iptal edilirken hata oluştu";
+            let userGuidance = "";
+            
+            if (error.message && error.message.includes("Miktar değişimi sıfır olamaz")) {
+                errorMessage = "Bazı ürünlerin malzeme miktarları geçersiz. Stok iade işlemi yapılamadı.";
+                userGuidance = "Ürün tariflerinde sıfır miktar değeri olan malzemeler bulundu. Stok iade işlemi yapılamadı.";
+            } else if (error.message && error.message.includes("Validation failed")) {
+                errorMessage = "Stok iade verilerinde doğrulama hatası. Lütfen tekrar deneyin.";
+                userGuidance = "Stok iade verileri geçersiz. Lütfen sayfayı yenileyin ve tekrar deneyin.";
+            } else if (error.message && error.message.includes("Could not commit JPA transaction")) {
+                errorMessage = "Veritabanı işlemi tamamlanamadı. Bu genellikle geçici bir sistem hatasıdır.";
+                userGuidance = "Bu hata genellikle geçici bir sistem sorunudur. Lütfen birkaç dakika bekleyin ve tekrar deneyin. Sorun devam ederse sistem yöneticisi ile iletişime geçin.";
+            } else if (error.message && error.message.includes("JPA transaction")) {
+                errorMessage = "Veritabanı işlemi sırasında hata oluştu. Lütfen daha sonra tekrar deneyin.";
+                userGuidance = "Veritabanı işlemi sırasında teknik bir sorun oluştu. Lütfen daha sonra tekrar deneyin.";
+            } else if (error.message) {
+                errorMessage += `: ${error.message}`;
+            }
+            
+            // Detaylı hata loglaması
+            console.error("Sipariş iptal hatası detayları:", {
+                errorType: "JPA Transaction Error",
+                errorMessage: error.message,
+                userGuidance: userGuidance,
+                timestamp: new Date().toISOString(),
+                tableId: tableId,
+                orderToCancel: orderToCancel
+            });
+            
+            // Kullanıcıya hem hata mesajını hem de rehberliği göster
+            if (userGuidance) {
+                setError(`${errorMessage}\n\n${userGuidance}`);
+            } else {
+                setError(errorMessage);
+            }
         }
     };
 
