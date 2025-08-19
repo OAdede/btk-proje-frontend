@@ -11,7 +11,7 @@ import secureStorage from '../../utils/secureStorage';
 
 const ReservationsPage = () => {
     const navigate = useNavigate();
-    const { reservations, addReservation, removeReservation, tableStatus } = useContext(TableContext);
+    const { reservations, addReservation, removeReservation, tableStatus, tables } = useContext(TableContext);
     const { isDarkMode, colors } = useTheme();
     const { user } = useContext(AuthContext);
     const [filter, setFilter] = useState('');
@@ -242,9 +242,21 @@ const ReservationsPage = () => {
     // Rezervasyonları masa numarası ve rezervasyon verileriyle birlikte düzenle
     const reservationsList = Object.entries(actualReservations).map(([reservationId, reservation]) => {
         if (reservation.tableId) {
+            // tableId DB id olabilir; gerçek masa numarasını context'teki tables üzerinden bul
+            let displayMasaNo = getTableNameFromId(String(reservation.tableId));
+            try {
+                // tables context varsa kullan
+                const tableEntries = (typeof tables !== 'undefined' && Array.isArray(tables)) ? tables : [];
+                const match = tableEntries.find(t => String(t.id) === String(reservation.tableId) || String(t.tableNumber) === String(reservation.tableId));
+                if (match && match.tableNumber != null) {
+                    displayMasaNo = String(match.tableNumber);
+                }
+            } catch (e) {
+                // ignore, fallback already set
+            }
             return {
                 id: reservationId || crypto.randomUUID(),
-                masaNo: getTableNameFromId(reservation.tableId),
+                masaNo: displayMasaNo,
                 ...reservation
             };
         }

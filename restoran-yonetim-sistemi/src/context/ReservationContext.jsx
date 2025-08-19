@@ -116,6 +116,17 @@ export const ReservationProvider = ({ children }) => {
             
             // State'i güncelle
             setReservations(prev => prev.filter(res => res.id !== reservationId));
+
+            // Backend'den masaları tazele (UI rengini anında güncellemek için)
+            try {
+                if (typeof window !== 'undefined') {
+                    // TableContext içindeki fetchData tetiklemesi yoksa, rezervasyon sağlayıcısında doğrudan masaları yükleme olmayabilir
+                    const event = new CustomEvent('refresh-tables');
+                    window.dispatchEvent(event);
+                }
+            } catch (e) {
+                console.warn('refresh-tables event dispatch failed (ignored):', e);
+            }
         } catch (error) {
             console.error('Rezervasyon silme hatası:', error);
             setError(error.message);

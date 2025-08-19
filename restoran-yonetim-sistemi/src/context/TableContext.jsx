@@ -3,6 +3,7 @@ import { getRoleInfoFromToken } from "../utils/jwt.js";
 import tokenManager from "../utils/tokenManager.js";
 import httpClient from "../utils/httpClient.js";
 import secureStorage from "../utils/secureStorage.js";
+import { reservationService } from "../services/reservationService";
 
 export const TableContext = createContext();
 
@@ -99,7 +100,24 @@ export function TableProvider({ children }) {
                 const errorData = await response.text().catch(() => '')
                     .then(t => { try { return JSON.parse(t); } catch { return { message: t || 'Sunucu hatası' }; } });
                 console.error(`API çağrısı hatası: ${endpoint}`, errorData);
-                throw new Error(errorData.message || "Beklenmedik bir hata oluştu.");
+                console.error(`Response status: ${response.status}`);
+                console.error(`Response statusText: ${response.statusText}`);
+                console.error(`Full error response:`, errorData);
+                
+                // Detaylı hata mesajı oluştur
+                let detailedMessage = `HTTP ${response.status}: `;
+                if (errorData.details) {
+                    detailedMessage += JSON.stringify(errorData.details);
+                } else if (errorData.message) {
+                    detailedMessage += errorData.message;
+                } else {
+                    detailedMessage += response.statusText || "Beklenmedik bir hata oluştu.";
+                }
+                
+                const error = new Error(detailedMessage);
+                error.details = errorData;
+                error.status = response.status;
+                throw error;
             }
 
             if (response.status === 204) {
@@ -594,6 +612,20 @@ export function TableProvider({ children }) {
             return () => clearTimeout(timer);
         }
     }, [availabilityNotification]);
+
+    useEffect(() => {
+        const onRefreshTables = async () => {
+            try { await loadTablesAndSalons(); } catch {}
+        };
+        if (typeof window !== 'undefined') {
+            window.addEventListener('refresh-tables', onRefreshTables);
+        }
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('refresh-tables', onRefreshTables);
+            }
+        };
+    }, [loadTablesAndSalons]);
 
     const findProductById = (productId) => {
         const parsedProductId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
@@ -1973,11 +2005,15 @@ export function TableProvider({ children }) {
                 return t;
             })();
 
+            // Telefon numarasını temizle
+            const cleanPhone = reservationData.telefon.replace(/[^0-9]/g, ''); // Sadece rakamlar
+            const formattedPhone = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone; // Başındaki 0'ı kaldır
+            
             // Transform frontend data to backend format
             const backendData = {
                 tableId: parseInt(tableId),
                 customerName: `${reservationData.ad} ${reservationData.soyad}`,
-                customerPhone: reservationData.telefon,
+                customerPhone: formattedPhone,
                 email: reservationData.email || null,
                 // Preferred keys for backend transformer (supports both TR and EN names)
                 tarih: normalizedDate,
@@ -2059,26 +2095,34 @@ export function TableProvider({ children }) {
 
     const removeReservation = async (reservationId) => {
         try {
+            setIsLoading(true);
+            setError(null);
+            
             const reservation = reservations[reservationId];
-            if (reservation && reservation.backendId) {
-                await apiCall(`/reservations/${reservation.backendId}`, {
-                    method: 'DELETE'
-                });
-            }
+            const tableIdOfReservation = reservation?.tableId;
+
+            await reservationService.deleteReservation(reservationId);
+            
+            // Local state: dictionary'den kaldır
             setReservations(prev => {
-                const newReservations = { ...prev };
-                const reservation = newReservations[reservationId];
-                if (reservation) {
-                    delete newReservations[reservationId];
-                    if (reservation.tableId) {
-                        setTableStatus(prevStatus => ({ ...prevStatus, [reservation.tableId]: 'empty' }));
-                    }
-                }
-                return newReservations;
+                const next = { ...prev };
+                delete next[reservationId];
+                return next;
             });
+
+            // UI: Masa durumunu anında yeşile çek
+            if (tableIdOfReservation) {
+                setTableStatus(prev => ({ ...prev, [tableIdOfReservation]: 'empty' }));
+            }
+
+            // Backend'den güncel masaları çek (server truth)
+            await loadTablesAndSalons();
         } catch (error) {
-            console.error('Failed to delete reservation from backend:', error);
-            setError(`Rezervasyon silinirken hata oluştu: ${error.message}`);
+            console.error('Rezervasyon silme hatası:', error);
+            setError(error.message);
+            throw error;
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -2086,23 +2130,55 @@ export function TableProvider({ children }) {
         try {
             const reservation = reservations[reservationId];
             if (reservation && reservation.backendId) {
+                const cleanPhone = String(updatedData.telefon || '').replace(/[^0-9]/g, '');
+                const formattedPhone = cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone;
+                const safePersonCount = Number.parseInt(updatedData.kisiSayisi, 10);
+
+                // DB tableId
+                let dbTableId = null;
+                try {
+                    const backendRes = await apiCall(`/reservations/${reservation.backendId}`, { method: 'GET' });
+                    dbTableId = backendRes?.tableId ?? null;
+                } catch {}
+                if (dbTableId == null) dbTableId = Number.parseInt(reservation.tableId, 10);
+
+                const backendData = {
+                    tableId: dbTableId,
+                    customerName: `${updatedData.ad} ${updatedData.soyad}`.trim(),
+                    customerPhone: formattedPhone,
+                    email: updatedData.email || '',
+                    reservationDate: updatedData.tarih,
+                    reservationTime: updatedData.saat,
+                    personCount: Number.isFinite(safePersonCount) ? safePersonCount : 1,
+                    specialRequests: updatedData.not || '',
+                    statusId: 1,
+                    createdBy: Number.parseInt(localStorage.getItem('userId'), 10) || 1
+                };
+
+                // PUT
                 await apiCall(`/reservations/${reservation.backendId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updatedData)
+                    body: JSON.stringify(backendData)
                 });
+
+                // Masaları anında tazele (masa boşalmış gibi görünmesin)
+                await loadTablesAndSalons();
+
+                // Local state
+                setReservations(prev => ({
+                    ...prev,
+                    [reservationId]: {
+                        ...prev[reservationId],
+                        ...updatedData,
+                        updatedAt: new Date().toISOString()
+                    }
+                }));
             }
-            setReservations(prev => ({
-                ...prev,
-                [reservationId]: {
-                    ...prev[reservationId],
-                    ...updatedData,
-                    updatedAt: new Date().toISOString()
-                }
-            }));
         } catch (error) {
             console.error('Failed to update reservation in backend:', error);
             setError(`Rezervasyon güncellenirken hata oluştu: ${error.message}`);
+            throw error;
         }
     };
 
