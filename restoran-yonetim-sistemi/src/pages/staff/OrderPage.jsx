@@ -33,13 +33,8 @@ export default function OrderPage() {
 
     // UI'de gelen tableId masa numarası olabilir; backend id ile eşleştir
     const confirmedOrders = (() => {
-        console.log(`[OrderPage] Looking for orders for tableId: ${tableId}`);
-        console.log(`[OrderPage] Available orders:`, Object.keys(orders || {}));
-        console.log(`[OrderPage] Available tables:`, (tables || []).map(t => ({ id: t.id, tableNumber: t.tableNumber || t.number })));
-        
         // Önce direkt table ID ile dene
         if (orders?.[tableId]?.items) {
-            console.log(`[OrderPage] Found order directly with tableId: ${tableId}`);
             return orders[tableId].items;
         }
         
@@ -47,16 +42,10 @@ export default function OrderPage() {
         if (tables && tables.length > 0) {
             const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
             if (backendTable && orders?.[String(backendTable.id)]?.items) {
-                console.log(`[OrderPage] Found order with backend table ID: ${backendTable.id} for table number: ${tableId}`);
                 return orders[String(backendTable.id)].items;
-            } else if (backendTable) {
-                console.log(`[OrderPage] Found backend table ${backendTable.id} but no order for it`);
-            } else {
-                console.log(`[OrderPage] No backend table found for table number: ${tableId}`);
             }
         }
         
-        console.log(`[OrderPage] No confirmed orders found for tableId: ${tableId}`);
         return {};
     })();
 

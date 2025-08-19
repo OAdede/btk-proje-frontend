@@ -55,7 +55,7 @@ export function TableProvider({ children }) {
     const [isRefreshingAvailability, setIsRefreshingAvailability] = useState(false);
     const [availabilityNotification, setAvailabilityNotification] = useState(null);
 
-    const DEBUG_TABLES = true; // Temporarily enable debugging (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
+    const DEBUG_TABLES = (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
     // Track endpoints we've already warned about and blocked after 401 to avoid repeated calls
     const unauthorizedWarnedRef = useRef(new Set());
     const unauthorizedEndpointsRef = useRef(new Set());
@@ -686,33 +686,19 @@ export function TableProvider({ children }) {
 
     // Helper function to resolve table ID (UI table number to backend table ID)
     const resolveTableOrder = (tableId) => {
-        if (DEBUG_TABLES) console.log(`Resolving table order for tableId: ${tableId}`);
-        
         // Önce direkt table ID ile dene
         if (orders?.[tableId]) {
-            if (DEBUG_TABLES) console.log(`Found order directly with tableId: ${tableId}`);
             return orders[tableId];
         }
         
         // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
         if (tables && tables.length > 0) {
             const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
-            if (backendTable) {
-                if (DEBUG_TABLES) console.log(`Found backend table: ${backendTable.id} for table number: ${tableId}`);
-                if (orders?.[String(backendTable.id)]) {
-                    if (DEBUG_TABLES) console.log(`Found order with backend table ID: ${backendTable.id}`);
-                    return orders[String(backendTable.id)];
-                } else {
-                    if (DEBUG_TABLES) console.log(`No order found for backend table ID: ${backendTable.id}`);
-                }
-            } else {
-                if (DEBUG_TABLES) console.log(`No backend table found for table number: ${tableId}`);
+            if (backendTable && orders?.[String(backendTable.id)]) {
+                return orders[String(backendTable.id)];
             }
-        } else {
-            if (DEBUG_TABLES) console.log('No tables available for mapping');
         }
         
-        if (DEBUG_TABLES) console.log(`No order found for tableId: ${tableId}`);
         return null;
     };
 
