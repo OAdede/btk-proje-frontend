@@ -261,28 +261,34 @@ const ReservationsPage = () => {
     };
 
     // Rezervasyonları masa numarası ve rezervasyon verileriyle birlikte düzenle
-    const reservationsList = Object.entries(actualReservations).map(([reservationId, reservation]) => {
-        if (reservation.tableId) {
-            // tableId DB id olabilir; gerçek masa numarasını context'teki tables üzerinden bul
-            let displayMasaNo = getTableNameFromId(String(reservation.tableId));
-            try {
-                // tables context varsa kullan
-                const tableEntries = (typeof tables !== 'undefined' && Array.isArray(tables)) ? tables : [];
-                const match = tableEntries.find(t => String(t.id) === String(reservation.tableId) || String(t.tableNumber) === String(reservation.tableId));
-                if (match && match.tableNumber != null) {
-                    displayMasaNo = String(match.tableNumber);
+    const reservationsList = Object.entries(actualReservations)
+        .filter(([reservationId, reservation]) => {
+            // COMPLETED (3) ve CANCELLED (2) rezervasyonları listede gösterme
+            const statusId = reservation.statusId || reservation.status;
+            return statusId !== 3 && statusId !== 2; // 3=COMPLETED, 2=CANCELLED
+        })
+        .map(([reservationId, reservation]) => {
+            if (reservation.tableId) {
+                // tableId DB id olabilir; gerçek masa numarasını context'teki tables üzerinden bul
+                let displayMasaNo = getTableNameFromId(String(reservation.tableId));
+                try {
+                    // tables context varsa kullan
+                    const tableEntries = (typeof tables !== 'undefined' && Array.isArray(tables)) ? tables : [];
+                    const match = tableEntries.find(t => String(t.id) === String(reservation.tableId) || String(t.tableNumber) === String(reservation.tableId));
+                    if (match && match.tableNumber != null) {
+                        displayMasaNo = String(match.tableNumber);
+                    }
+                } catch (e) {
+                    // ignore, fallback already set
                 }
-            } catch (e) {
-                // ignore, fallback already set
+                return {
+                    id: reservationId || crypto.randomUUID(),
+                    masaNo: displayMasaNo,
+                    ...reservation
+                };
             }
-            return {
-                id: reservationId || crypto.randomUUID(),
-                masaNo: displayMasaNo,
-                ...reservation
-            };
-        }
-        return reservation;
-    });
+            return reservation;
+        });
 
     // DEBUG: Rezervasyon listesini kontrol et
     console.log('reservationsList:', reservationsList);

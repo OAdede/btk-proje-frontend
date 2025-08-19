@@ -428,6 +428,8 @@ export function TableProvider({ children }) {
                         const frontendReservation = {
                             id: reservation.id,
                             tableId: reservation.tableId,
+                            statusId: reservation.statusId,
+                            statusName: reservation.statusName || reservation.statusNameInTurkish,
                             ad: reservation.customerName ? reservation.customerName.split(' ')[0] : '',
                             soyad: reservation.customerName ? reservation.customerName.split(' ').slice(1).join(' ') : '',
                             telefon: reservation.customerPhone,
@@ -1083,6 +1085,13 @@ export function TableProvider({ children }) {
             console.log("Veriler güncelleniyor...");
             await fetchData();
             updateTableStatus(tableId, "occupied");
+            
+            // Masa için aktif rezervasyonları tamamla
+            try {
+                await completeActiveReservationsForTable(tableId);
+            } catch (error) {
+                console.warn('Rezervasyon tamamlama sırasında hata (sipariş kaydedildi):', error);
+            }
             
             // Sipariş sonrası ürün müsaitlik miktarlarını güncelle
             await refreshProductAvailability();
@@ -2177,6 +2186,37 @@ export function TableProvider({ children }) {
         if (d.getFullYear() === currentYear) yearlyCount++;
     });
 
+    // Masa için aktif rezervasyonları tamamla (sipariş alındığında)
+    const completeActiveReservationsForTable = async (tableId) => {
+        try {
+            // Backend table ID'sini bul
+            const findBackendTableId = () => {
+                const numeric = Number(tableId);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return byId.id;
+                const byNumber = (tables || []).find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
+                if (byNumber?.id != null) return byNumber.id;
+                return tableId;
+            };
+            const backendTableId = findBackendTableId();
+
+            console.log(`Completing active reservations for table: ${tableId} (backend ID: ${backendTableId})`);
+
+            await apiCall(`/reservations/${backendTableId}/complete-active`, {
+                method: 'POST'
+            });
+
+            // Rezervasyon listesini yenile
+            await fetchData();
+
+            console.log(`Active reservations completed for table: ${tableId}`);
+
+        } catch (error) {
+            console.error('Failed to complete active reservations:', error);
+            throw error;
+        }
+    };
+
     return (
         <TableContext.Provider
             value={{
@@ -2221,6 +2261,7 @@ export function TableProvider({ children }) {
                 addReservation,
                 removeReservation,
                 updateReservation,
+                completeActiveReservationsForTable,
                 addOrderHistoryEntry,
                 getOrderContent,
                 calculateFinancialImpact,
