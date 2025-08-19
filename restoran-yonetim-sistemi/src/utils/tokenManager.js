@@ -30,10 +30,10 @@ const TOKEN_CONFIG = {
     // Only log token operations if explicitly enabled
     LOG_TOKEN_OPERATIONS: (import.meta?.env?.VITE_DEBUG_AUTH === 'true'),
     
-    // Migration flags
+    // Migration flags - Check environment for HttpOnly mode
     USE_SECURE_STORAGE: true,          // Enable secure storage
     PREFER_MEMORY_FOR_TOKENS: true,    // Keep tokens in memory only
-    USE_HTTPONLY_COOKIES: true         // Use HttpOnly cookies for authentication (SECURE!)
+    USE_HTTPONLY_COOKIES: (import.meta?.env?.VITE_USE_HTTPONLY_AUTH === 'true') // Dynamic HttpOnly mode
 };
 
 /**
@@ -51,13 +51,23 @@ class TokenManager {
      * @returns {string|null} Valid token or null if expired/missing
      */
     getToken() {
-        // If HttpOnly cookies are enabled, we don't have direct token access
+        // If HttpOnly cookies are enabled, we simulate having a token for compatibility
         if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
             if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
-                console.log('[TokenManager] HttpOnly mode: Token not accessible to JavaScript (SECURE)');
+                console.log('[TokenManager] HttpOnly mode: Checking authentication via cookies');
             }
-            // Return null - authentication happens via cookies automatically
-            return null;
+            
+            // Check if user is authenticated via HttpOnly auth
+            try {
+                const isAuth = httpOnlyAuth.getAuthenticationStatus().isAuthenticated;
+                // Return a placeholder token if authenticated, null otherwise
+                return isAuth ? 'httponly-authenticated' : null;
+            } catch (error) {
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.warn('[TokenManager] HttpOnly auth check failed:', error.message);
+                }
+                return null;
+            }
         }
 
         try {
@@ -90,8 +100,8 @@ class TokenManager {
                 return null;
             }
 
-            // Check if token is expired
-            if (isTokenExpired(token)) {
+            // Check if token is expired (only for real tokens, not placeholders)
+            if (token !== 'httponly-authenticated' && isTokenExpired(token)) {
                 if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
                     console.warn('[TokenManager] Token expired, removing from storage');
                 }
@@ -178,15 +188,19 @@ class TokenManager {
     getAuthHeader() {
         if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
             // With HttpOnly cookies, no Authorization header needed (cookies sent automatically)
+            // But we return empty object for compatibility with existing code
             if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
                 console.log('[TokenManager] HttpOnly mode: Using cookies, no Authorization header needed');
             }
-            return null;
+            return {}; // Return empty object instead of null for compatibility
         }
         
         // Legacy mode: use Bearer token
         const token = this.getToken();
-        return token ? { 'Authorization': `Bearer ${token}` } : null;
+        if (token && token !== 'httponly-authenticated') {
+            return { 'Authorization': `Bearer ${token}` };
+        }
+        return null;
     }
 
     /**
@@ -422,6 +436,130 @@ class TokenManager {
                 error: 'Invalid token format',
                 preview: `${token.substring(0, 10)}...`
             };
+        }
+    }
+
+    // ============= NEW UNIFIED AUTHORIZATION METHODS =============
+    // These methods work seamlessly in both HttpOnly and token modes
+
+    /**
+     * Check if user is authorized to access protected resources
+     * Works in both HttpOnly and token modes
+     * @returns {Promise<boolean>} Authorization status
+     */
+    async authorize() {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            try {
+                const authData = await httpOnlyAuth.validateSession();
+                return authData !== null;
+            } catch (error) {
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.warn('[TokenManager] HttpOnly authorization check failed:', error.message);
+                }
+                return false;
+            }
+        } else {
+            // Legacy mode: check token
+            return this.isAuthenticated();
+        }
+    }
+
+    /**
+     * Get user information from current authentication
+     * Works in both HttpOnly and token modes
+     * @returns {Promise<object|null>} User data or null
+     */
+    async getCurrentUser() {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            try {
+                return await httpOnlyAuth.getCurrentUser();
+            } catch (error) {
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.warn('[TokenManager] HttpOnly get user failed:', error.message);
+                }
+                return null;
+            }
+        } else {
+            // Legacy mode: get user from storage
+            try {
+                return secureStorage.getItem(TOKEN_CONFIG.USER_KEY) || 
+                       JSON.parse(localStorage.getItem(TOKEN_CONFIG.USER_KEY) || 'null');
+            } catch (error) {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Make an authorized request using the appropriate method
+     * Works in both HttpOnly and token modes
+     * @param {string} url - Request URL
+     * @param {object} options - Fetch options
+     * @returns {Promise<Response>} Fetch response
+     */
+    async authorizedFetch(url, options = {}) {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            // HttpOnly mode: use credentials
+            return await httpOnlyAuth.authenticatedFetch(url, options);
+        } else {
+            // Legacy mode: add Authorization header
+            const authHeaders = this.getHeaders(options.headers || {});
+            return await fetch(url, {
+                ...options,
+                headers: authHeaders
+            });
+        }
+    }
+
+    /**
+     * Unified login method - delegates to appropriate auth system
+     * @param {string} username - User identifier
+     * @param {string} password - User password
+     * @returns {Promise<object>} Login result
+     */
+    async login(username, password) {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            try {
+                return await httpOnlyAuth.login(username, password);
+            } catch (error) {
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.error('[TokenManager] HttpOnly login failed:', error.message);
+                }
+                throw error;
+            }
+        } else {
+            // Legacy mode: would need to call legacy auth service
+            // This would be implemented based on your existing auth service
+            throw new Error('Legacy login not implemented in unified interface');
+        }
+    }
+
+    /**
+     * Unified logout method - delegates to appropriate auth system
+     * @returns {Promise<void>}
+     */
+    async logout() {
+        if (TOKEN_CONFIG.USE_HTTPONLY_COOKIES) {
+            try {
+                await httpOnlyAuth.logout();
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.log('[TokenManager] HttpOnly logout completed');
+                }
+            } catch (error) {
+                if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                    console.error('[TokenManager] HttpOnly logout failed:', error.message);
+                }
+                throw error;
+            }
+        } else {
+            // Legacy mode: clear all tokens
+            this.clearToken();
+            this.clearRefreshToken();
+            this.clearUser();
+            
+            if (TOKEN_CONFIG.LOG_TOKEN_OPERATIONS) {
+                console.log('[TokenManager] Legacy logout completed');
+            }
         }
     }
 }
