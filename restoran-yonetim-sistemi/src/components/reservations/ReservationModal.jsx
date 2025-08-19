@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
 import { ThemeContext } from "../../context/ThemeContext";
-import { AuthContext } from "../../context/AuthContext";
 
 export default function ReservationModal({ visible, masaNo, onClose, onSubmit, defaultDate, existingReservations = [], shouldClearForm = true }) {
   const { isDarkMode } = useContext(ThemeContext);
-  const { user } = useContext(AuthContext);
   
   // Bugünün tarihini al
   const getTodayDate = () => {
@@ -21,8 +19,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     email: "",
     tarih: getTodayDate(),
     saat: "12:00",
-    personCount: "2", // kisiSayisi yerine personCount kullan
-    kisiSayisi: "2", // Geriye uyumluluk için
+    kisiSayisi: "2", // Keep consistent with backend expectation
     not: "",
   });
   // Masa kapasitesini al
@@ -49,71 +46,14 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     
     console.log('Form submit edildi:', formData);
     
-    // Gelişmiş validasyon
-    if (!formData.ad || !formData.ad.trim()) {
-      alert('Lütfen ad alanını doldurun!');
+    // Basit validasyon
+    if (!formData.ad || !formData.soyad || !formData.telefon || !formData.tarih || !formData.saat) {
+      alert('Lütfen tüm zorunlu alanları doldurun!');
       return;
     }
-    
-    if (!formData.soyad || !formData.soyad.trim()) {
-      alert('Lütfen soyad alanını doldurun!');
-      return;
-    }
-    
-    if (!formData.telefon || !formData.telefon.trim()) {
-      alert('Lütfen telefon alanını doldurun!');
-      return;
-    }
-    
-    // Telefon numarası formatı kontrolü
-    const phoneRegex = /^[0-9]{10,11}$/;
-    if (!phoneRegex.test(formData.telefon.replace(/\s/g, ''))) {
-      alert('Lütfen geçerli bir telefon numarası giriniz (10-11 rakam)');
-      return;
-    }
-    
-    if (!formData.tarih) {
-      alert('Lütfen tarih seçiniz!');
-      return;
-    }
-    
-    if (!formData.saat) {
-      alert('Lütfen saat seçiniz!');
-      return;
-    }
-    
-    // Geçmiş tarih kontrolü
-    const selectedDate = new Date(formData.tarih + 'T' + formData.saat);
-    const now = new Date();
-    if (selectedDate <= now) {
-      alert('Geçmiş tarih ve saatte rezervasyon yapılamaz!');
-      return;
-    }
-    
-    // Kullanıcı ID kontrolü
-    if (!user?.id) {
-      alert('Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapınız.');
-      return;
-    }
-    
-    // Backend'e gönderilecek veriyi hazırla
-    const submitData = {
-      customerName: `${formData.ad} ${formData.soyad}`.trim(),
-      customerPhone: formData.telefon,
-      reservationDate: formData.tarih,
-      reservationTime: formData.saat,
-      email: formData.email || null,
-      personCount: parseInt(formData.kisiSayisi) || 2,
-      specialRequests: formData.not || null,
-      tableId: masaNo,
-      createdBy: user?.id || 1,
-      statusId: 1 // PENDING status
-    };
-    
-    console.log('Backend\'e gönderilecek veri:', submitData);
     
     // onSubmit'i çağır
-    onSubmit(submitData);
+    onSubmit(formData);
     
     // Formu temizle
     if (shouldClearForm) {
@@ -124,7 +64,6 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
         email: "",
         tarih: getTodayDate(),
         saat: "12:00",
-        personCount: "2",
         kisiSayisi: "2",
         not: "",
       });

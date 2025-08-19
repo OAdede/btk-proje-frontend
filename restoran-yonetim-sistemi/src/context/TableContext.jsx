@@ -139,8 +139,14 @@ export function TableProvider({ children }) {
                 try {
                     return await apiCall('/stocks');
                 } catch (error) {
-                    if (error.message && error.message.includes('Unauthorized')) {
-                        // Garson ve diğer yetkisiz roller için sessizce boş array döndür
+                    console.warn("Stocks API hatası yakalandı:", error.message || error);
+                    // 401 Unauthorized kontrolü - birden fazla format kontrol et
+                    const errorMsg = String(error.message || '').toLowerCase();
+                    if (errorMsg.includes('unauthorized') || 
+                        errorMsg.includes('401') || 
+                        errorMsg.includes('403') || 
+                        errorMsg.includes('forbidden')) {
+                        console.log("Stocks API yetkisiz erişim - boş array döndürülüyor");
                         return [];
                     }
                     throw error; // Diğer hataları yukarı fırlat
@@ -165,6 +171,8 @@ export function TableProvider({ children }) {
                 }
             };
 
+            console.log("API çağrıları başlatılıyor, kullanıcı rolü:", roleInfo);
+            
             const tasks = [
                 apiCall('/products'),                // 0
                 safeStocksCall(),                   // 1 - tüm roller için dene
@@ -172,9 +180,11 @@ export function TableProvider({ children }) {
                 apiCall('/dining-tables'),           // 3
                 safeOrdersCall(),                   // 4 - güvenli orders çağrısı
                 apiCall('/salons'),                  // 5
+                apiCall('/reservations'),            // 6 - rezervasyonları getir
             ];
 
             const results = await Promise.allSettled(tasks);
+            console.log("API çağrıları tamamlandı, sonuçlar:", results.map((r, i) => ({ index: i, status: r.status, error: r.reason?.message })));
 
             const safe = (idx, fallback) => {
                 if (results[idx]?.status === 'fulfilled') {
@@ -193,6 +203,7 @@ export function TableProvider({ children }) {
             const diningTablesData = safe(3, []);
             const ordersData = safe(4, []);
             const salonsData = safe(5, []);
+            const reservationsData = safe(6, []);
 
             if (!productsData || productsData.length === 0) {
                 console.warn("API'den ürün verisi gelmedi veya liste boş.");
@@ -341,14 +352,36 @@ export function TableProvider({ children }) {
                 );
                 setCompletedOrders(completedOrdersData || {});
 
-                const reservationsById = (ordersData || [])
-                    .filter(order => order && order.status === "reserved")
-                    .reduce((acc, res) => {
-                        if (res && res.id) {
-                            acc[res.id] = res;
-                        }
-                        return acc;
-                    }, {});
+                // Process reservations from proper API endpoint
+                console.log('=== TABLECONTEXT RESERVATIONS DEBUG ===');
+                console.log('Raw reservationsData from API:', reservationsData);
+                
+                const reservationsById = (reservationsData || []).reduce((acc, reservation) => {
+                    if (reservation && reservation.id) {
+                        // Transform backend reservation to frontend format
+                        const frontendReservation = {
+                            id: reservation.id,
+                            tableId: reservation.tableId,
+                            ad: reservation.customerName ? reservation.customerName.split(' ')[0] : '',
+                            soyad: reservation.customerName ? reservation.customerName.split(' ').slice(1).join(' ') : '',
+                            telefon: reservation.customerPhone,
+                            email: reservation.email,
+                            tarih: reservation.reservationDate,
+                            saat: reservation.reservationTime,
+                            kisiSayisi: reservation.personCount,
+                            not: reservation.specialRequests,
+                            createdAt: reservation.createdAt,
+                            backendId: reservation.id,
+                        };
+                        console.log('Processing reservation:', reservation);
+                        console.log('Transformed to frontend format:', frontendReservation);
+                        acc[reservation.id] = frontendReservation;
+                    }
+                    return acc;
+                }, {});
+                
+                console.log('Final reservationsById object:', reservationsById);
+                console.log('Number of reservations processed:', Object.keys(reservationsById).length);
                 setReservations(reservationsById);
             } catch (orderProcessingError) {
                 console.error("Sipariş verileri işlenirken hata:", orderProcessingError);
@@ -823,7 +856,21 @@ export function TableProvider({ children }) {
                 : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
 
             // 1) Ödeme kaydı oluştur (yetki yoksa atla)
+            let paymentSuccessful = false;
             try {
+                // Debug: Token ve rol bilgilerini kontrol et
+                const token = localStorage.getItem('token') || '';
+                console.log('DEBUG - Token:', token.substring(0, 50) + '...');
+                console.log('DEBUG - Role Info:', roleInfo);
+                console.log('DEBUG - User ID:', numericUserId);
+                
+                console.log('Payment API çağrısı yapılıyor:', {
+                    orderId: orderToPay.id,
+                    cashierId: numericUserId,
+                    amount: amount,
+                    method: 'CASH'
+                });
+                
                 await apiCall('/payments', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
@@ -834,7 +881,12 @@ export function TableProvider({ children }) {
                         method: 'CASH'
                     })
                 });
+                
+                paymentSuccessful = true;
+                console.log('Payment API başarılı - order otomatik olarak completed=true yapılmalı');
+                
             } catch (e) {
+                console.error('Payment API hatası:', e);
                 if (String(e?.message || '').toLowerCase().includes('unauthorized')) {
                     console.warn('Payments API unauthorized for this role. Skipping payment record and proceeding to close order.');
                 } else {
@@ -842,8 +894,8 @@ export function TableProvider({ children }) {
                 }
             }
 
-            // 2) Siparişi kapat (sil)
-            await apiCall(`/orders/${orderToPay.id}`, { method: 'DELETE' });
+            // 2) Sipariş artık backend'de otomatik olarak tamamlanmış (is_completed=true) olarak işaretleniyor
+            // DELETE işlemi kaldırıldı - order veritabanında kalacak ama completed=true olacak
 
             // 3) Masayı boşalt ve yerel durumu temizle
             await updateTableStatus(tableId, 'empty');
@@ -1447,17 +1499,60 @@ export function TableProvider({ children }) {
 
     const addReservation = async (tableId, reservationData) => {
         try {
-            // Backend'e gönderilecek veriyi hazırla
+            // Get user ID from token
+            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+
+            // Normalize date (yyyy-MM-dd) and time (HH:mm) to satisfy backend LocalDate/LocalTime expectations
+            const normalizedDate = (() => {
+                const raw = String(reservationData?.tarih || '').trim();
+                if (!raw) return '';
+                const dateOnly = raw.includes('T') ? raw.split('T')[0] : raw;
+                const m = dateOnly.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (!m) return dateOnly;
+                const [, y, mo, d] = m;
+                return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            })();
+
+            const normalizedTime = (() => {
+                let t = String(reservationData?.saat || '').trim();
+                if (!t) return '';
+                // If accidentally a datetime like 2025-08-19T12:00 or 12:00:00Z, reduce to HH:mm
+                if (t.includes('T')) t = t.split('T')[1];
+                t = t.replace('Z', '');
+                if (t.includes('.')) t = t.split('.')[0];
+                const parts = t.split(':');
+                if (parts.length >= 2) {
+                    const hh = String(parts[0]).padStart(2, '0');
+                    const mm = String(parts[1]).padStart(2, '0');
+                    return `${hh}:${mm}`;
+                }
+                return t;
+            })();
+
+            // Transform frontend data to backend format
             const backendData = {
-                ...reservationData,
-                tableId: tableId,
-                // Eksik alanları varsayılan değerlerle doldur
-                statusId: reservationData.statusId || 1, // PENDING
-                createdBy: reservationData.createdBy || 1
+                tableId: parseInt(tableId),
+                customerName: `${reservationData.ad} ${reservationData.soyad}`,
+                customerPhone: reservationData.telefon,
+                email: reservationData.email || null,
+                // Preferred keys for backend transformer (supports both TR and EN names)
+                tarih: normalizedDate,
+                saat: normalizedTime,
+                reservationDate: normalizedDate,
+                reservationTime: normalizedTime,
+                personCount: parseInt(reservationData.kisiSayisi),
+                // Both keys for compatibility
+                not: reservationData.not || null,
+                specialRequests: reservationData.not || null,
+                statusId: 1, // Default to active reservation
+                createdBy: numericUserId
             };
-            
-            console.log('Backend\'e gönderilen rezervasyon verisi:', backendData);
-            
+
+            console.log('Sending reservation data to backend:', backendData);
+
             const backendReservation = await apiCall('/reservations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1468,7 +1563,14 @@ export function TableProvider({ children }) {
             const newReservation = {
                 id: reservationId,
                 tableId,
-                ...reservationData,
+                ad: reservationData.ad,
+                soyad: reservationData.soyad,
+                telefon: reservationData.telefon,
+                email: reservationData.email,
+                tarih: reservationData.tarih,
+                saat: reservationData.saat,
+                kisiSayisi: reservationData.kisiSayisi,
+                not: reservationData.not,
                 createdAt: backendReservation.createdAt || new Date().toISOString(),
                 backendId: backendReservation.id,
             };
@@ -1478,6 +1580,34 @@ export function TableProvider({ children }) {
                 [reservationId]: newReservation
             }));
             await updateTableStatus(tableId, "reserved");
+
+            // Refresh reservations data from backend to get the latest state
+            try {
+                const updatedReservations = await apiCall('/reservations');
+                const reservationsById = (updatedReservations || []).reduce((acc, reservation) => {
+                    if (reservation && reservation.id) {
+                        const frontendReservation = {
+                            id: reservation.id,
+                            tableId: reservation.tableId,
+                            ad: reservation.customerName ? reservation.customerName.split(' ')[0] : '',
+                            soyad: reservation.customerName ? reservation.customerName.split(' ').slice(1).join(' ') : '',
+                            telefon: reservation.customerPhone,
+                            email: reservation.email,
+                            tarih: reservation.reservationDate,
+                            saat: reservation.reservationTime,
+                            kisiSayisi: reservation.personCount,
+                            not: reservation.specialRequests,
+                            createdAt: reservation.createdAt,
+                            backendId: reservation.id,
+                        };
+                        acc[reservation.id] = frontendReservation;
+                    }
+                    return acc;
+                }, {});
+                setReservations(reservationsById);
+            } catch (refreshError) {
+                console.warn('Failed to refresh reservations after creation:', refreshError);
+            }
 
             return reservationId;
         } catch (error) {
