@@ -8,7 +8,7 @@ export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { orders, saveFinalOrder, tables } = useContext(TableContext);
+    const { orders, saveFinalOrder, tables, isLoading, error } = useContext(TableContext);
     const { colors } = useTheme();
 
     // UI'de gelen tableId masa numarası olabilir; backend id ile eşleştir
@@ -44,6 +44,58 @@ export default function SummaryPage() {
     };
 
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
+
+    if (isLoading) {
+        return (
+            <div style={{
+                padding: 30,
+                maxWidth: '600px',
+                margin: 'auto',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                backgroundColor: colors.cardBackground,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '10px',
+                color: colors.text,
+                boxShadow: `0 4px 12px ${colors.shadow}`,
+                textAlign: 'center'
+            }}>
+                <p>Yükleniyor...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{
+                padding: 30,
+                maxWidth: '600px',
+                margin: 'auto',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                backgroundColor: colors.cardBackground,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '10px',
+                color: colors.text,
+                boxShadow: `0 4px 12px ${colors.shadow}`,
+                textAlign: 'center'
+            }}>
+                <p style={{ color: '#dc3545' }}>{error}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    style={{
+                        padding: "10px 20px",
+                        borderRadius: "8px",
+                        border: "none",
+                        backgroundColor: colors.primary,
+                        color: "white",
+                        cursor: "pointer",
+                        marginTop: "20px"
+                    }}
+                >
+                    Tekrar Dene
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div style={{
