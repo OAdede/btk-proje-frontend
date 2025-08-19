@@ -2012,6 +2012,7 @@ export function TableProvider({ children }) {
         } catch (error) {
             console.error('Failed to create reservation in backend:', error);
             setError(`Rezervasyon oluşturulurken hata oluştu: ${error.message}`);
+            throw error; // Hatayı yukarı fırlat ki Dashboard'da yakalanabilsin
         }
     };
 

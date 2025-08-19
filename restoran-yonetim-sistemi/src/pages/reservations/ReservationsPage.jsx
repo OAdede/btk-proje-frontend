@@ -184,32 +184,54 @@ const ReservationsPage = () => {
 
 
 
-    const handleReservationSubmit = (formData) => {
-        const tableStatus = getTableStatus(selectedTable);
+    const handleReservationSubmit = async (formData) => {
+        try {
+            const tableStatus = getTableStatus(selectedTable);
 
-        // Masa kapasitesi kontrolü
-        const tableCapacity = getTableCapacity(selectedTable);
-        const personCount = parseInt(formData.kisiSayisi);
+            // Masa kapasitesi kontrolü
+            const tableCapacity = getTableCapacity(selectedTable);
+            const personCount = parseInt(formData.kisiSayisi);
 
-        if (personCount > tableCapacity) {
-            setWarningMessage(`Bu masa ${tableCapacity} kişilik. ${personCount} kişilik rezervasyon yapılamaz. Maksimum ${tableCapacity} kişi seçebilirsiniz.`);
-            setShowWarningModal(true);
-            return;
-        }
-
-        if (tableStatus.status === 'reserved') {
-            // Rezerve masaya yeni rezervasyon ekleme
-            if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
-                                        setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
+            if (personCount > tableCapacity) {
+                setWarningMessage(`Bu masa ${tableCapacity} kişilik. ${personCount} kişilik rezervasyon yapılamaz. Maksimum ${tableCapacity} kişi seçebilirsiniz.`);
                 setShowWarningModal(true);
                 return;
             }
-        }
 
-        addReservation(selectedTable, formData);
-        setShowReservationModal(false);
-        setSelectedTable(null);
-        setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
+            if (tableStatus.status === 'reserved') {
+                // Rezerve masaya yeni rezervasyon ekleme
+                if (!canMakeReservation(tableStatus.reservations, formData.saat)) {
+                    setWarningMessage('Bu masaya 3 saat arayla rezervasyon yapabilirsiniz. Mevcut rezervasyonlardan en az 3 saat sonra rezervasyon yapabilirsiniz.');
+                    setShowWarningModal(true);
+                    return;
+                }
+            }
+
+            await addReservation(selectedTable, formData);
+            setShowReservationModal(false);
+            setSelectedTable(null);
+            setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
+        } catch (error) {
+            console.error('Rezervasyon oluşturma hatası:', error);
+            
+            // Backend'ten gelen hata mesajlarını kullanıcıya göster
+            let errorMessage = 'Rezervasyon oluşturulurken bir hata oluştu.';
+            
+            if (error.message) {
+                if (error.message.includes('Geçmiş saatlerde rezervasyon yapılamaz')) {
+                    errorMessage = '⚠️ Geçmiş saatlerde rezervasyon yapılamaz! Lütfen gelecekteki bir saat seçin.';
+                } else if (error.message.includes('Geçmiş tarihlerde rezervasyon yapılamaz')) {
+                    errorMessage = '⚠️ Geçmiş tarihlerde rezervasyon yapılamaz! Lütfen bugün veya gelecekteki bir tarih seçin.';
+                } else if (error.message.includes('Rezervasyon saati')) {
+                    errorMessage = '⚠️ ' + error.message.replace(/.*message:\s*/, '');
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            setWarningMessage(errorMessage);
+            setShowWarningModal(true);
+        }
     };
 
 
