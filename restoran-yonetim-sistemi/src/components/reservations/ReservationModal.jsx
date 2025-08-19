@@ -52,6 +52,24 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
       return;
     }
     
+    // Geçmiş saat kontrolü
+    const selectedDate = new Date(formData.tarih);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (selectedDate.getTime() === today.getTime()) {
+      // Bugün için geçmiş saat kontrolü
+      const currentTime = new Date();
+      const [hours, minutes] = formData.saat.split(':').map(Number);
+      const selectedDateTime = new Date();
+      selectedDateTime.setHours(hours, minutes, 0, 0);
+      
+      if (selectedDateTime <= currentTime) {
+        alert('⚠️ Geçmiş saatlerde rezervasyon yapılamaz! Lütfen gelecekteki bir saat seçin.');
+        return;
+      }
+    }
+    
     // onSubmit'i çağır
     onSubmit(formData);
     
