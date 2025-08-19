@@ -40,6 +40,8 @@ export function TableProvider({ children }) {
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isRefreshingAvailability, setIsRefreshingAvailability] = useState(false);
+    const [availabilityNotification, setAvailabilityNotification] = useState(null);
 
     const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
@@ -181,6 +183,7 @@ export function TableProvider({ children }) {
                 safeOrdersCall(),                   // 4 - güvenli orders çağrısı
                 apiCall('/salons'),                  // 5
                 apiCall('/reservations'),            // 6 - rezervasyonları getir
+                apiCall('/products/available-quantities'), // 7 - ürün müsaitlik miktarları
             ];
 
             const results = await Promise.allSettled(tasks);
@@ -204,6 +207,7 @@ export function TableProvider({ children }) {
             const ordersData = safe(4, []);
             const salonsData = safe(5, []);
             const reservationsData = safe(6, []);
+            const availableQuantitiesData = safe(7, []);
 
             if (!productsData || productsData.length === 0) {
                 console.warn("API'den ürün verisi gelmedi veya liste boş.");
@@ -314,6 +318,35 @@ export function TableProvider({ children }) {
                 const product = productsByIdTemp[productId];
                 product.stock = calculateProductStock(product, finalIngredients);
             });
+
+            // API'den gelen gerçek müsaitlik miktarlarını ürünlere uygula
+            if (availableQuantitiesData && availableQuantitiesData.length > 0) {
+                console.log("API'den gelen müsaitlik miktarları:", availableQuantitiesData);
+                
+                // Her ürün için gerçek müsaitlik miktarını güncelle
+                availableQuantitiesData.forEach(availabilityItem => {
+                    const productId = availabilityItem.productId;
+                    const availableAmount = availabilityItem.amount;
+                    
+                    // ProductsById objesinde güncelle
+                    if (productsByIdTemp[productId]) {
+                        productsByIdTemp[productId].stock = availableAmount;
+                        console.log(`Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+                    }
+                    
+                    // Kategori bazlı products objesinde de güncelle
+                    Object.keys(newProductsByCategory).forEach(categoryName => {
+                        newProductsByCategory[categoryName].forEach(product => {
+                            if (product.id === productId) {
+                                product.stock = availableAmount;
+                                console.log(`Kategori ${categoryName} - Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+                            }
+                        });
+                    });
+                });
+            } else {
+                console.log("Müsaitlik miktarları API'den gelmedi, hesaplanan stok değerleri kullanılıyor");
+            }
 
             console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
             console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
@@ -447,6 +480,28 @@ export function TableProvider({ children }) {
         saveToLocalStorage('orderHistory', orderHistory);
     }, [tableStatus, orders, completedOrders, reservations, orderHistory]);
 
+    // Periyodik olarak ürün müsaitlik miktarlarını güncelle (her 2 dakikada bir)
+    useEffect(() => {
+        if (!isLoading) {
+            const interval = setInterval(() => {
+                refreshProductAvailability();
+            }, 2 * 60 * 1000); // 2 dakika
+
+            return () => clearInterval(interval);
+        }
+    }, [isLoading]);
+
+    // Bildirimleri otomatik olarak temizle
+    useEffect(() => {
+        if (availabilityNotification) {
+            const timer = setTimeout(() => {
+                setAvailabilityNotification(null);
+            }, 3000); // 3 saniye sonra temizle
+
+            return () => clearTimeout(timer);
+        }
+    }, [availabilityNotification]);
+
     const findProductById = (productId) => {
         const parsedProductId = typeof productId === 'string' ? parseInt(productId, 10) : productId;
         return productsById[parsedProductId] || null;
@@ -471,6 +526,64 @@ export function TableProvider({ children }) {
             }
         }
         return true;
+    };
+
+    // Ürün müsaitlik miktarlarını güncelle
+    const refreshProductAvailability = async () => {
+        try {
+            setIsRefreshingAvailability(true);
+            console.log("Ürün müsaitlik miktarları güncelleniyor...");
+            const availableQuantitiesData = await apiCall('/products/available-quantities');
+            
+            if (availableQuantitiesData && availableQuantitiesData.length > 0) {
+                console.log("Güncel müsaitlik miktarları alındı:", availableQuantitiesData);
+                
+                // ProductsById objesini güncelle
+                setProductsById(prevProductsById => {
+                    const updated = { ...prevProductsById };
+                    availableQuantitiesData.forEach(availabilityItem => {
+                        const productId = availabilityItem.productId;
+                        const availableAmount = availabilityItem.amount;
+                        
+                        if (updated[productId]) {
+                            updated[productId].stock = availableAmount;
+                        }
+                    });
+                    return updated;
+                });
+                
+                // Kategori bazlı products objesini güncelle
+                setProducts(prevProducts => {
+                    const updated = { ...prevProducts };
+                    Object.keys(updated).forEach(categoryName => {
+                        updated[categoryName] = updated[categoryName].map(product => {
+                            const availabilityItem = availableQuantitiesData.find(item => item.productId === product.id);
+                            if (availabilityItem) {
+                                return { ...product, stock: availabilityItem.amount };
+                            }
+                            return product;
+                        });
+                    });
+                    return updated;
+                });
+                
+                console.log("Ürün müsaitlik miktarları başarıyla güncellendi");
+                setAvailabilityNotification({
+                    type: 'success',
+                    message: 'Stok durumu başarıyla güncellendi!',
+                    timestamp: Date.now()
+                });
+            }
+        } catch (error) {
+            console.error("Ürün müsaitlik miktarları güncellenirken hata:", error);
+            setAvailabilityNotification({
+                type: 'error',
+                message: 'Stok durumu güncellenirken hata oluştu!',
+                timestamp: Date.now()
+            });
+        } finally {
+            setIsRefreshingAvailability(false);
+        }
     };
 
     const updateTableStatus = async (tableId, status) => {
@@ -789,6 +902,9 @@ export function TableProvider({ children }) {
 
             await fetchData();
             updateTableStatus(tableId, "occupied");
+            
+            // Sipariş sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
 
         } catch (error) {
             console.error("Sipariş kaydedilirken hata:", error);
@@ -831,6 +947,9 @@ export function TableProvider({ children }) {
             }
             await fetchData();
             updateTableStatus(tableId, "empty");
+            
+            // Sipariş iptali sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
         } catch (error) {
             console.error("Sipariş iptal edilirken hata:", error);
             setError(`Sipariş iptal edilirken hata oluştu: ${error.message}`);
@@ -902,6 +1021,9 @@ export function TableProvider({ children }) {
             setOrders(prev => { const next = { ...prev }; delete next[tableId]; return next; });
             setCompletedOrders(prev => ({ ...prev, [orderToPay.id]: orderToPay }));
             await fetchData();
+            
+            // Ödeme sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
         } catch (error) {
             console.error("Ödeme alınırken hata:", error);
             setError(`Ödeme alınırken hata oluştu: ${error.message}`);
@@ -947,6 +1069,9 @@ export function TableProvider({ children }) {
                 body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
             });
             await fetchData();
+            
+            // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
 
         } catch (error) {
             console.error('Onaylanmış ürün azaltılırken hata:', error);
@@ -989,6 +1114,9 @@ export function TableProvider({ children }) {
                 body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
             });
             await fetchData();
+            
+            // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
 
         } catch (error) {
             console.error('Onaylanmış ürün artırılırken hata:', error);
@@ -1036,6 +1164,9 @@ export function TableProvider({ children }) {
                 });
             }
             await fetchData();
+            
+            // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
 
         } catch (error) {
             console.error('Onaylanmış ürün kaldırılırken hata:', error);
@@ -1141,6 +1272,9 @@ export function TableProvider({ children }) {
             } catch (refreshError) {
                 console.warn('Could not refresh order data, using local state:', refreshError);
             }
+            
+            // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
+            await refreshProductAvailability();
             
             console.log(`Item ${product.name} added to order for table ${tableId}`);
 
@@ -1753,6 +1887,8 @@ export function TableProvider({ children }) {
                 orderHistory,
                 isLoading,
                 error,
+                isRefreshingAvailability,
+                availabilityNotification,
                 dailyOrderCount: dailyCount,
                 monthlyOrderCount: monthlyCount,
                 yearlyOrderCount: yearlyCount,
@@ -1785,7 +1921,8 @@ export function TableProvider({ children }) {
                 removeConfirmedOrderItem,
                 decreaseConfirmedOrderItem,
                 increaseConfirmedOrderItem,
-                addOrderItem
+                addOrderItem,
+                refreshProductAvailability
             }}
         >
             {children}
