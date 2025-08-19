@@ -82,3 +82,56 @@
 .stock-add-button:hover {
     opacity: 0.9;
 }
+
+.stock-add-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.stock-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.stock-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.stock-status.out-of-stock {
+    background-color: var(--danger, #ff4444);
+    color: white;
+}
+
+.stock-status.low-stock {
+    background-color: var(--warning, #ffaa00);
+    color: white;
+}
+
+.stock-status.normal-stock {
+    background-color: var(--success, #44ff44);
+    color: var(--background, #32263a);
+}
+
+.stock-delete-button {
+    padding: 8px 16px;
+    cursor: pointer;
+    background-color: var(--danger, #ff4444);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.stock-delete-button:hover {
+    opacity: 0.9;
+}
+
+.stock-delete-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

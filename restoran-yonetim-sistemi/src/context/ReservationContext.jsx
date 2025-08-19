@@ -57,9 +57,9 @@ export const ReservationProvider = ({ children }) => {
                 email: formData.email || '', // character varying (email alanı)
                 customerPhone: formData.telefon, // character varying
                 personCount: parseInt(formData.personCount) || 1, // integer (person_count alanı)
-                tarih: formData.tarih, // Tarih - backend'de buildLocalDateTime ile birleştirilecek
-                saat: formData.saat, // Saat - backend'de buildLocalDateTime ile birleştirilecek
-                not: formData.not || '', // special_requests - character varying
+                reservationDate: formData.tarih, // Tarih - backend'de LocalDate olarak işlenecek
+                reservationTime: formData.saat, // Saat - backend'de LocalTime olarak işlenecek
+                specialRequests: formData.not || '', // special_requests - character varying
                 statusId: 1, // integer - backend'de 1L olarak işlenecek
                 createdBy: userId // integer
             };

@@ -326,3 +326,91 @@
         justify-content: flex-end;
     }
 }
+
+/* Product Recipe Styles */
+.product-info {
+    flex-grow: 1;
+    text-align: left;
+}
+
+.product-description {
+    color: var(--text-secondary, #ffffff);
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+    line-height: 1.4;
+}
+
+.product-recipe {
+    color: var(--text-secondary, #ffffff);
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    background-color: var(--hover, rgba(255, 255, 255, 0.05));
+    border-radius: 8px;
+    border-left: 3px solid var(--primary, #6366f1);
+}
+
+.product-recipe strong {
+    color: var(--text, #ffffff);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.product-recipe ul {
+    margin: 0;
+    padding: 0 0 0 1rem;
+    list-style: none;
+}
+
+.product-recipe li {
+    color: var(--text-secondary, #ffffff);
+    margin: 0.25rem 0;
+    position: relative;
+}
+
+.product-recipe li:before {
+    content: "•";
+    color: var(--primary, #6366f1);
+    font-weight: bold;
+    position: absolute;
+    left: -0.75rem;
+}
+
+.ingredient-name {
+    color: var(--text, #ffffff);
+    font-weight: 500;
+}
+
+.ingredient-quantity {
+    color: var(--text-secondary, #ffffff);
+    font-weight: 400;
+}
+
+/* Stok durumu stilleri */
+.product-card.low-stock {
+    border: 2px solid #ffc107;
+    background-color: #fffbf0;
+}
+
+.product-card.out-of-stock {
+    opacity: 0.6;
+    border: 2px solid #dc3545;
+    background-color: #f8f8f8;
+}
+
+.product-card.out-of-stock .quantity-controls button:disabled,
+.product-card.low-stock .quantity-controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #ccc;
+}
+
+.stock-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}

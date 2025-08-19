@@ -11,11 +11,7 @@ export default function SummaryPage() {
     const { orders, saveFinalOrder } = useContext(TableContext);
     const { colors } = useTheme();
 
-    const currentOrder = (() => {
-        if (orders?.[tableId]?.items) return orders[tableId].items;
-        const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
-        return possible?.items || {};
-    })();
+    const currentOrder = orders?.[tableId]?.items || {};
 
     const totalPrice = useMemo(() =>
         Object.values(currentOrder).reduce(

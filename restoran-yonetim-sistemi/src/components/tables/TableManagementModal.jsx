@@ -49,6 +49,19 @@ const TableManagementModal = ({ show, onHide, table }) => {
     }
   };
 
+  const handleOccupy = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      await updateTableStatus(table.id, 'occupied');
+      onHide();
+    } catch (err) {
+      setError(err.message || 'Masayı doldururken bir hata oluştu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!tableName.trim()) {
       setError('Masa ismi boş olamaz');
@@ -207,6 +220,19 @@ const TableManagementModal = ({ show, onHide, table }) => {
                   title={isAvailable ? 'Masa zaten boş' : 'Masayı boşalt'}
                 >
                   ♻️ Masayı Boşalt
+                </Button>
+                <Button
+                  variant="outline-danger"
+                  onClick={handleOccupy}
+                  disabled={isLoading}
+                  className="me-2"
+                  style={{
+                    borderColor: '#dc3545',
+                    color: '#dc3545'
+                  }}
+                  title={'Masayı dolu yap'}
+                >
+                  🍽️ Masayı Doldur
                 </Button>
                 <Button
                   variant="outline-secondary"

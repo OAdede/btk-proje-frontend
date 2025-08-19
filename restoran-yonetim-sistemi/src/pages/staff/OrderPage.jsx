@@ -21,6 +21,7 @@ export default function OrderPage() {
         saveFinalOrder,
         orders,
         products,
+        ingredients,
         processPayment,
         decreaseConfirmedOrderItem,
         increaseConfirmedOrderItem
@@ -28,19 +29,12 @@ export default function OrderPage() {
 
     // UI'de gelen tableId masa numarası olabilir; backend id ile de deneyelim
     const confirmedOrders = (() => {
-        // Doğrudan anahtar
         if (orders?.[tableId]?.items) return orders[tableId].items;
-        // Backend id'yi tahmin et: orders anahtarları backend id; tables içinden eşleştirmek için TableContext'te map yoksa doğrudan fallback
-        const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
-        return possible?.items || {};
+        return {};
     })();
 
     useEffect(() => {
-        const existingItems = (() => {
-            if (orders?.[tableId]?.items) return orders[tableId].items;
-            const possible = Object.values(orders || {}).find(o => String(o?.tableId) === String(tableId));
-            return possible?.items || {};
-        })();
+        const existingItems = orders?.[tableId]?.items || {};
         // Her bir ürün için 'note' alanı olduğundan emin ol
         const normalized = Object.keys(existingItems).reduce((acc, key) => {
             const item = existingItems[key];
@@ -153,16 +147,53 @@ export default function OrderPage() {
                             const cartCount = cart[product.id]?.count || 0;
                             const displayStock = product.stock + initialOrderCount - cartCount;
 
+                            // Stok durumuna göre stil ve mesaj belirle
+                            let stockStatus = '';
+                            let stockMessage = '';
+                            let stockColor = '';
+                            
+                            if (displayStock <= 0) {
+                                stockStatus = 'out-of-stock';
+                                stockMessage = 'Tükendi';
+                                stockColor = '#dc3545';
+                            } else if (displayStock <= 3) {
+                                stockStatus = 'low-stock';
+                                stockMessage = `Son ${displayStock} adet`;
+                                stockColor = '#ffc107';
+                            } else {
+                                stockMessage = `${displayStock} adet`;
+                                stockColor = '#28a745';
+                            }
+
                             return (
-                                <div key={product.id || crypto.randomUUID()} className={`product-card ${displayStock <= 0 ? 'out-of-stock' : ''}`}>
-                                    <div>
+                                <div key={product.id || crypto.randomUUID()} className={`product-card ${stockStatus}`}>
+                                    <div className="product-info">
                                         <h3 className="product-name">{product.name}</h3>
-                                        <p className="product-details">{product.price}₺ | Stok: {displayStock}</p>
+                                        <p className="product-details">{product.price}₺</p>
+                                        <p className="stock-info" style={{ 
+                                            color: stockColor, 
+                                            fontWeight: 'bold',
+                                            fontSize: '0.9rem',
+                                            margin: '4px 0'
+                                        }}>
+                                            📦 {stockMessage}
+                                        </p>
+                                        {product.description && (
+                                            <p className="product-description">{product.description}</p>
+                                        )}
                                     </div>
                                     <div className="quantity-controls">
-                                        <button onClick={() => handleQuantityChange(product, -1)} className="quantity-button">-</button>
+                                        <button 
+                                            onClick={() => handleQuantityChange(product, -1)} 
+                                            className="quantity-button"
+                                            disabled={cartCount <= 0}
+                                        >-</button>
                                         <span className="quantity-display">{cartCount}</span>
-                                        <button onClick={() => handleQuantityChange(product, 1)} className="quantity-button">+</button>
+                                        <button 
+                                            onClick={() => handleQuantityChange(product, 1)} 
+                                            className="quantity-button"
+                                            disabled={displayStock <= 0}
+                                        >+</button>
                                     </div>
                                 </div>
                             );

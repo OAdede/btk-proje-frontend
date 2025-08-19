@@ -1,13 +1,16 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function TablesGridPage() {
     const navigate = useNavigate();
-    const { tableStatus, updateTableStatus, reservations } = useContext(TableContext);
+    const { tableStatus, updateTableStatus, reservations, tables } = useContext(TableContext);
+    const { user } = useContext(AuthContext);
     const [selectedFloor, setSelectedFloor] = useState(1);
 
-    const tables = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
+
+    const gridTableIds = Array.from({ length: 8 }, (_, i) => `${selectedFloor}-${i + 1}`);
 
     const statusInfo = {
         "empty": { text: "Boş", color: "#4caf50", textColor: "#fff" },
@@ -21,7 +24,7 @@ export default function TablesGridPage() {
 
     const getStatus = (tableId) => {
         const status = tableStatus[tableId] || "empty";
-        
+
         if (status === 'reserved') {
             const reservation = Object.values(reservations).find(res => res.tableId === tableId);
             if (reservation) {
@@ -29,6 +32,7 @@ export default function TablesGridPage() {
                 const now = new Date();
                 const oneHour = 60 * 60 * 1000;
                 const fiftyNineMinutes = 59 * 60 * 1000;
+                const twentyFourHours = 24 * 60 * 60 * 1000;
 
                 // Rezervasyon geçmiş mi kontrol et
                 if (reservationTime < now) {
@@ -39,16 +43,24 @@ export default function TablesGridPage() {
                 }
 
                 // Özel rezervasyon kontrolü
+                const delta = reservationTime.getTime() - now.getTime();
                 if (reservation.specialReservation) {
-                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) <= fiftyNineMinutes) {
+                    if (reservationTime > now && delta <= fiftyNineMinutes) {
                         return statusInfo["reserved-special"]; // 59 dakika içinde sarı
-                    } else if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-                        return statusInfo["reserved-future"]; // 1 saatten uzak yeşil
+                    }
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo["reserved"]; // 24 saat içinde sarı
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
+                        return statusInfo["reserved-future"]; // 24 saatten uzak yeşil
                     }
                 } else {
                     // Normal rezervasyon kontrolü
-                    if (reservationTime > now && (reservationTime.getTime() - now.getTime()) > oneHour) {
-                        return statusInfo["reserved-future"];
+                    if (reservationTime > now && delta <= twentyFourHours) {
+                        return statusInfo["reserved"]; // 24 saat içinde sarı
+                    }
+                    if (reservationTime > now && delta > twentyFourHours) {
+                        return statusInfo["reserved-future"]; // 24 saatten uzak yeşil
                     }
                 }
             } else {
@@ -58,18 +70,34 @@ export default function TablesGridPage() {
                 return statusInfo["empty"];
             }
         }
-        
+
         return statusInfo[status] || statusInfo["empty"];
+    };
+
+    // Calculate occupancy using current table status as a proxy
+    const getTableOccupancy = (tableId) => {
+        const backendTable = tables?.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+        if (!backendTable) return null;
+        const capacity = backendTable?.capacity || 4;
+        const statusName = String(
+            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+        ).toLowerCase();
+        let rate = 0;
+        if (statusName === 'occupied') rate = 100;
+        else if (statusName === 'reserved') rate = 60;
+        else rate = 0;
+        return { rate, people: null, capacity };
     };
 
 
 
     const handleTableClick = (tableId) => {
         const status = tableStatus[tableId] || "empty";
+        const role = (user?.role) || 'staff';
         if (status === "occupied") {
-            navigate(`/staff/summary/${tableId}`);
+            navigate(`/${role}/summary/${tableId}`);
         } else {
-            navigate(`/staff/order/${tableId}`);
+            navigate(`/${role}/order/${tableId}`);
         }
     }
 
@@ -84,7 +112,7 @@ export default function TablesGridPage() {
                     gridTemplateColumns: "repeat(4, 1fr)",
                     gap: "1.5rem"
                 }}>
-                    {tables.map((tableId) => {
+                    {gridTableIds.map((tableId) => {
                         const status = getStatus(tableId);
                         return (
                             <div
@@ -102,6 +130,7 @@ export default function TablesGridPage() {
                                     userSelect: "none",
                                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                    position: "relative",
                                 }}
                                 onClick={() => handleTableClick(tableId)}
                                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}

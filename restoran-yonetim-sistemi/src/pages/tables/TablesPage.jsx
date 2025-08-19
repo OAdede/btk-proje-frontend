@@ -6,8 +6,9 @@ import "./TablesPage.css";
 const TablesPage = () => {
     const navigate = useNavigate();
     // CONTEXT'TEN DOĞRU VERİLER ALINDI
-    const { tableStatus } = useContext(TableContext);
+    const { tableStatus, tables } = useContext(TableContext);
     const [activeFloor, setActiveFloor] = useState("kat1");
+
 
     const kat1Tables = Array.from({ length: 8 }, (_, i) => ({ id: `${i + 1}`, name: `${i + 1}` }));
     const kat2Tables = Array.from({ length: 8 }, (_, i) => ({ id: `${i + 9}`, name: `${i + 9}` }));
@@ -39,6 +40,21 @@ const TablesPage = () => {
             default: return "Boş";
         }
     }
+
+    // Calculate occupancy using current table status as a proxy
+    const getTableOccupancy = (tableId) => {
+        const backendTable = tables?.find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
+        if (!backendTable) return null;
+        const capacity = backendTable?.capacity || 4;
+        const statusName = String(
+            backendTable?.status?.name ?? backendTable?.statusName ?? backendTable?.status_name ?? ''
+        ).toLowerCase();
+        let rate = 0;
+        if (statusName === 'occupied') rate = 100;
+        else if (statusName === 'reserved') rate = 60;
+        else rate = 0;
+        return { rate, people: null, capacity };
+    };
 
     const currentTables = activeFloor === "kat1" ? kat1Tables : kat2Tables;
 

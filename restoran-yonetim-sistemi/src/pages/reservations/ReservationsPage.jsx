@@ -29,6 +29,12 @@ const ReservationsPage = () => {
 
     // Gerçek rezervasyon verilerini kullan
     const actualReservations = reservations;
+    
+    // DEBUG: Console'da rezervasyon bilgilerini göster
+    console.log('=== RESERVATIONS DEBUG ===');
+    console.log('reservations object:', reservations);
+    console.log('actualReservations:', actualReservations);
+    console.log('Number of reservations:', Object.keys(reservations || {}).length);
 
     // Bugünün tarihini al
     const getTodayDate = () => {
@@ -244,6 +250,10 @@ const ReservationsPage = () => {
         }
         return reservation;
     });
+
+    // DEBUG: Rezervasyon listesini kontrol et
+    console.log('reservationsList:', reservationsList);
+    console.log('reservationsList.length:', reservationsList.length);
 
 
 

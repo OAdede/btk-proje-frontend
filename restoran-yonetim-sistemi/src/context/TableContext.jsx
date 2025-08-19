@@ -45,6 +45,7 @@ export function TableProvider({ children }) {
 
     const [reservations, setReservations] = useState(() => readFromStorage('reservations', {}));
     const [salons, setSalons] = useState([]);
+    const [tableStatuses, setTableStatuses] = useState([]);
     const [timestamps, setTimestamps] = useState({});
     const [orderHistory, setOrderHistory] = useState(() => readFromStorage('orderHistory', []));
 
@@ -83,10 +84,53 @@ export function TableProvider({ children }) {
             return data;
 
         } catch (err) {
-            if (DEBUG_TABLES) console.error(`API çağrısı başarısız: ${endpoint}`, err?.message || err);
+            // Stocks endpoint'i için 401 hatasını sessizce geç
+            if (endpoint === '/stocks' && err.message === 'Unauthorized') {
+                throw err; // Hatayı yukarı fırlat ama loglama
+            } else {
+                if (DEBUG_TABLES) console.error(`API çağrısı başarısız: ${endpoint}`, err?.message || err);
+            }
             throw err;
         }
     }, [DEBUG_TABLES]);
+
+    // Stock calculation function to determine how many units of a product can be made from available ingredients
+    const calculateProductStock = (product, ingredients) => {
+        if (!product.recipe || product.recipe.length === 0) {
+            return 0; // No recipe means no stock
+        }
+
+        let maxPossibleUnits = Infinity;
+
+        for (const recipeItem of product.recipe) {
+            const ingredient = ingredients[recipeItem.ingredientId];
+            if (!ingredient) {
+                console.warn(`Missing ingredient data for product ${product.name} (ID: ${product.id}), ingredient ID: ${recipeItem.ingredientId}`);
+                return 0; // Missing ingredient data
+            }
+
+            if (typeof ingredient.stockQuantity !== 'number' || isNaN(ingredient.stockQuantity)) {
+                console.warn(`Invalid stock quantity for ingredient ${ingredient.name} (ID: ${ingredient.id}): ${ingredient.stockQuantity}`);
+                return 0; // Invalid stock quantity
+            }
+
+            if (typeof recipeItem.quantity !== 'number' || isNaN(recipeItem.quantity) || recipeItem.quantity <= 0) {
+                console.warn(`Invalid recipe quantity for product ${product.name} (ID: ${product.id}), ingredient ${ingredient.name}: ${recipeItem.quantity}`);
+                return 0; // Invalid recipe quantity
+            }
+
+            // Calculate how many units can be made with this ingredient
+            const unitsPossible = Math.floor(ingredient.stockQuantity / recipeItem.quantity);
+            maxPossibleUnits = Math.min(maxPossibleUnits, unitsPossible);
+        }
+
+        const finalStock = maxPossibleUnits === Infinity ? 0 : maxPossibleUnits;
+        if (finalStock === 0 && product.recipe.length > 0) {
+            console.log(`Product ${product.name} (ID: ${product.id}) has 0 stock due to insufficient ingredients`);
+        }
+
+        return finalStock;
+    };
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -98,24 +142,76 @@ export function TableProvider({ children }) {
             const roleInfo = token ? getRoleInfoFromToken(token) : {};
             const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
 
+            // API çağrıları - stocks için tüm rollerde dene, 401 alırsan boş döndür
+            const safeStocksCall = async () => {
+                try {
+                    return await apiCall('/stocks');
+                } catch (error) {
+                    console.warn("Stocks API hatası yakalandı:", error.message || error);
+                    // 401 Unauthorized kontrolü - birden fazla format kontrol et
+                    const errorMsg = String(error.message || '').toLowerCase();
+                    if (errorMsg.includes('unauthorized') || 
+                        errorMsg.includes('401') || 
+                        errorMsg.includes('403') || 
+                        errorMsg.includes('forbidden')) {
+                        console.log("Stocks API yetkisiz erişim - boş array döndürülüyor");
+                        return [];
+                    }
+                    throw error; // Diğer hataları yukarı fırlat
+                }
+            };
+
+            // Orders API çağrısı için güvenli wrapper
+            const safeOrdersCall = async () => {
+                try {
+                    return await apiCall('/orders');
+                } catch (error) {
+                    console.warn("Orders endpoint hatası:", error.message || error);
+                    if (error.message && (
+                        error.message.includes('500') ||
+                        error.message.includes('Internal Server Error') ||
+                        error.message.includes('isCompleted')
+                    )) {
+                        console.log("Orders endpoint'inde backend hatası, boş array döndürülüyor");
+                        return [];
+                    }
+                    throw error; // Diğer hataları yukarı fırlat
+                }
+            };
+
+            console.log("API çağrıları başlatılıyor, kullanıcı rolü:", roleInfo);
+            
             const tasks = [
                 apiCall('/products'),                // 0
-                apiCall('/stocks'),                  // 1 - tüm roller için okuma (backend GET yetkisi verildi)
+                safeStocksCall(),                   // 1 - tüm roller için dene
                 apiCall('/product-ingredients'),     // 2
                 apiCall('/dining-tables'),           // 3
-                apiCall('/orders'),                  // 4
+                safeOrdersCall(),                   // 4 - güvenli orders çağrısı
                 apiCall('/salons'),                  // 5
+                apiCall('/reservations'),            // 6 - rezervasyonları getir
             ];
 
             const results = await Promise.allSettled(tasks);
+            console.log("API çağrıları tamamlandı, sonuçlar:", results.map((r, i) => ({ index: i, status: r.status, error: r.reason?.message })));
 
-            const safe = (idx, fallback) => results[idx]?.status === 'fulfilled' ? results[idx].value : fallback;
+            const safe = (idx, fallback) => {
+                if (results[idx]?.status === 'fulfilled') {
+                    return results[idx].value;
+                } else if (results[idx]?.status === 'rejected') {
+                    const error = results[idx].reason;
+                    console.warn(`API çağrısı başarısız (index ${idx}):`, error.message || error);
+                    return fallback;
+                }
+                return fallback;
+            };
+            
             const productsData = safe(0, []);
             const stocksData = safe(1, []);
             const productIngredientsData = safe(2, []);
             const diningTablesData = safe(3, []);
             const ordersData = safe(4, []);
             const salonsData = safe(5, []);
+            const reservationsData = safe(6, []);
 
             if (!productsData || productsData.length === 0) {
                 console.warn("API'den ürün verisi gelmedi veya liste boş.");
@@ -131,16 +227,22 @@ export function TableProvider({ children }) {
             setTableStatus(newTableStatus);
 
             const newIngredients = (stocksData || []).reduce((acc, item) => {
-                acc[item.id] = {
-                    id: item.id,
-                    name: item.name,
-                    unit: item.unit,
-                    stockQuantity: item.stockQuantity,
-                    minStock: item.minStock || 0
-                };
+                if (item && item.id) {
+                    acc[item.id] = {
+                        id: item.id,
+                        name: item.name || 'Bilinmeyen Malzeme',
+                        unit: item.unit || '',
+                        stockQuantity: item.stockQuantity || 0,
+                        minStock: item.minQuantity || item.minStock || 0  // Backend'de minQuantity olarak geliyor
+                    };
+                }
                 return acc;
             }, {});
-            if (DEBUG_TABLES) console.log("İçerik verisi güncellendi");
+            if (DEBUG_TABLES) {
+                console.log("Stocks'tan ingredient verisi");
+                console.log("Kullanıcı rolü:", roleInfo);
+                console.log("Admin kontrolü:", isAdmin);
+            }
             setIngredients(newIngredients);
 
             const newProductsByCategory = {};
@@ -164,17 +266,64 @@ export function TableProvider({ children }) {
                 productsByIdTemp[item.id] = productWithRecipe;
             });
 
+            // Eğer stocks API'den ingredient verileri gelmemişse, product-ingredients'dan doldur
+            const ingredientsFromProductIngredients = {};
+            
             (productIngredientsData || []).forEach(item => {
                 const productId = item.product?.id;
+                
+                // Ingredient bilgilerini topla (stocks API'den gelmemişse)
+                if (item.ingredient && item.ingredient.id) {
+                    const ingredientId = item.ingredient.id;
+                    if (!newIngredients[ingredientId]) {
+                        ingredientsFromProductIngredients[ingredientId] = {
+                            id: ingredientId,
+                            name: item.ingredient.name || 'Bilinmeyen Malzeme',
+                            unit: item.ingredient.unit || '',
+                            stockQuantity: item.ingredient.stockQuantity || 0,
+                            minStock: item.ingredient.minQuantity || item.ingredient.minStock || 0  // Backend'de minQuantity
+                        };
+                    }
+                }
+                
                 if (productsByIdTemp[productId]) {
+                    // Ensure quantityPerUnit is a valid number
+                    const quantity = Number(item.quantityPerUnit);
+                    if (isNaN(quantity) || quantity <= 0) {
+                        console.warn(`Invalid recipe quantity for product ${productsByIdTemp[productId].name} (ID: ${productId}), ingredient ${item.ingredient.name}: ${item.quantityPerUnit}, setting to 1`);
+                    }
+
                     productsByIdTemp[productId].recipe.push({
                         ingredientId: item.ingredient.id,
-                        quantity: item.quantityPerUnit,
+                        quantity: isNaN(quantity) || quantity <= 0 ? 1 : quantity,
                         name: item.ingredient.name
                     });
                 } else {
                     console.warn(`Tarif için ürün bulunamadı. Muhtemelen API'den gelmeyen bir ürünün tarifi var. Ürün ID: ${productId}`);
                 }
+            });
+
+            // Ingredients state'ini güncelle - stocks ve product-ingredients verilerini birleştir
+            const finalIngredients = { ...newIngredients, ...ingredientsFromProductIngredients };
+            console.log("Product-ingredients'dan ek ingredient verileri:", ingredientsFromProductIngredients);
+            console.log("Final ingredients:", finalIngredients);
+            setIngredients(finalIngredients);
+
+            // Reçete verilerini products array'ine de kopyala ve stok hesapla
+            Object.keys(newProductsByCategory).forEach(categoryName => {
+                newProductsByCategory[categoryName].forEach(product => {
+                    if (productsByIdTemp[product.id] && productsByIdTemp[product.id].recipe) {
+                        product.recipe = productsByIdTemp[product.id].recipe;
+                    }
+                    // Her ürün için stok hesapla
+                    product.stock = calculateProductStock(product, finalIngredients);
+                });
+            });
+
+            // ProductsById objesine de stok bilgisini ekle
+            Object.keys(productsByIdTemp).forEach(productId => {
+                const product = productsByIdTemp[productId];
+                product.stock = calculateProductStock(product, finalIngredients);
             });
 
             if (DEBUG_TABLES) console.log("İşlenen ürün verileri hazır");
@@ -183,34 +332,74 @@ export function TableProvider({ children }) {
             setProductsById(productsByIdTemp);
 
             // Siparişleri backend masa ID'si ile indeksle (çakışmayı önler)
-            const ordersByTable = (ordersData || []).reduce((acc, order) => {
-                const keyBackendId = String(order.tableId);
-                acc[keyBackendId] = {
-                    id: order.orderId ?? order.id,
-                    ...order,
-                    items: (order.items || []).reduce((itemAcc, item) => {
-                        itemAcc[item.productId] = {
-                            id: item.productId,
-                            name: item.productName,
-                            price: item.unitPrice,
-                            count: item.quantity,
-                            note: item.note || ''
+            try {
+                const ordersByTable = (ordersData || []).reduce((acc, order) => {
+                    if (!order || !order.tableId) return acc; // Geçersiz order'ları atla
+                    
+                    const keyBackendId = String(order.tableId);
+                    acc[keyBackendId] = {
+                        id: order.orderId ?? order.id,
+                        ...order,
+                        items: (order.items || []).reduce((itemAcc, item) => {
+                            if (!item || !item.productId) return itemAcc; // Geçersiz item'ları atla
+                            
+                            itemAcc[item.productId] = {
+                                id: item.productId,
+                                name: item.productName || 'Bilinmeyen Ürün',
+                                price: item.unitPrice || 0,
+                                count: item.quantity || 0,
+                                note: item.note || ''
+                            };
+                            return itemAcc;
+                        }, {})
+                    };
+                    return acc;
+                }, {});
+                setOrders(ordersByTable);
+
+                const completedOrdersData = (ordersData || []).filter(order => 
+                    order && order.status === "paid"
+                );
+                setCompletedOrders(completedOrdersData || {});
+
+                // Process reservations from proper API endpoint
+                console.log('=== TABLECONTEXT RESERVATIONS DEBUG ===');
+                console.log('Raw reservationsData from API:', reservationsData);
+                
+                const reservationsById = (reservationsData || []).reduce((acc, reservation) => {
+                    if (reservation && reservation.id) {
+                        // Transform backend reservation to frontend format
+                        const frontendReservation = {
+                            id: reservation.id,
+                            tableId: reservation.tableId,
+                            ad: reservation.customerName ? reservation.customerName.split(' ')[0] : '',
+                            soyad: reservation.customerName ? reservation.customerName.split(' ').slice(1).join(' ') : '',
+                            telefon: reservation.customerPhone,
+                            email: reservation.email,
+                            tarih: reservation.reservationDate,
+                            saat: reservation.reservationTime,
+                            kisiSayisi: reservation.personCount,
+                            not: reservation.specialRequests,
+                            createdAt: reservation.createdAt,
+                            backendId: reservation.id,
                         };
-                        return itemAcc;
-                    }, {})
-                };
-                return acc;
-            }, {});
-            setOrders(ordersByTable);
-
-            const completedOrdersData = (ordersData || []).filter(order => order.status === "paid");
-            setCompletedOrders(completedOrdersData || {});
-
-            const reservationsById = (ordersData || []).filter(order => order.status === "reserved").reduce((acc, res) => {
-                acc[res.id] = res;
-                return acc;
-            }, {});
-            setReservations(reservationsById);
+                        console.log('Processing reservation:', reservation);
+                        console.log('Transformed to frontend format:', frontendReservation);
+                        acc[reservation.id] = frontendReservation;
+                    }
+                    return acc;
+                }, {});
+                
+                console.log('Final reservationsById object:', reservationsById);
+                console.log('Number of reservations processed:', Object.keys(reservationsById).length);
+                setReservations(reservationsById);
+            } catch (orderProcessingError) {
+                console.error("Sipariş verileri işlenirken hata:", orderProcessingError);
+                // Fallback: boş verilerle devam et
+                setOrders({});
+                setCompletedOrders({});
+                setReservations({});
+            }
 
             if (DEBUG_TABLES) console.log("Veriler başarıyla alındı ve işlendi.");
 
@@ -241,6 +430,7 @@ export function TableProvider({ children }) {
             console.error('loadTablesAndSalons hata:', err);
         }
     }, [apiCall]);
+
 
     const initializedRef = useRef(false);
     useEffect(() => {
@@ -441,6 +631,77 @@ export function TableProvider({ children }) {
         }
     };
 
+    // Zorla masa sil (rezervasyon ve siparişleri otomatik temizler)
+    const deleteTableForce = async (tableId) => {
+        try {
+            const table = tables.find(t => t.id === tableId);
+            if (!table) {
+                console.warn(`Table with id ${tableId} not found`);
+                throw new Error('Masa bulunamadı');
+            }
+
+            const backendTableKey = String(table.id);
+
+            // 1) Rezervasyonları topla ve sil
+            try {
+                const reservationsOfTable = await apiCall(`/reservations/table/${table.id}`, { method: 'GET' });
+                if (Array.isArray(reservationsOfTable)) {
+                    for (const res of reservationsOfTable) {
+                        try {
+                            await apiCall(`/reservations/${res.id}`, { method: 'DELETE' });
+                        } catch (e) {
+                            console.warn('Rezervasyon silinemedi (force):', res.id, e);
+                        }
+                    }
+                }
+                // Yerel rezervasyon deposunu da temizlemeyi dene (fallback)
+                const localReservations = Object.values(reservations || {}).filter(r => {
+                    return String(r.tableId) === String(table.id) || String(r.tableId) === String(table.tableNumber);
+                });
+                for (const r of localReservations) {
+                    try {
+                        const rid = r.backendId || r.id;
+                        if (rid != null) {
+                            await apiCall(`/reservations/${rid}`, { method: 'DELETE' });
+                        }
+                    } catch (e) {
+                        console.warn('Yerel rezervasyon silinemedi (force):', r, e);
+                    }
+                }
+            } catch (e) {
+                console.warn('Rezervasyonlar getirilemedi (force):', e);
+            }
+
+            // 2) Aktif sipariş varsa sil
+            try {
+                const activeOrder = orders[backendTableKey];
+                if (activeOrder && activeOrder.id) {
+                    await apiCall(`/orders/${activeOrder.id}`, { method: 'DELETE' });
+                    setOrders(prev => { const next = { ...prev }; delete next[backendTableKey]; return next; });
+                }
+            } catch (e) {
+                console.warn('Aktif sipariş silinemedi (force), devam ediliyor:', e);
+            }
+
+            // 3) Masayı boş olarak işaretle (backend) ve yereli güncelle
+            try {
+                await apiCall(`/dining-tables/${table.id}/status/AVAILABLE`, { method: 'PATCH' });
+                setTableStatus(prev => ({ ...prev, [table.tableNumber]: 'empty' }));
+            } catch (e) {
+                console.warn('Masa durumu AVAILABLE yapılırken hata (force):', e);
+            }
+
+            // 4) Masayı sil
+            await apiCall(`/dining-tables/${tableId}`, { method: 'DELETE' });
+
+            // 5) Güncel verileri yükle
+            await loadTablesAndSalons();
+        } catch (error) {
+            console.error(`Error force deleting table ${tableId}:`, error);
+            throw error;
+        }
+    };
+
     // Masa oluşturma fonksiyonu
     const createTable = async ({ tableNumber, capacity, salonId }) => {
         try {
@@ -499,14 +760,24 @@ export function TableProvider({ children }) {
             ? parseInt(roleInfo.userId, 10)
             : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
 
+        // UI'deki tableId masa numarası olabilir; backend gerçek masa ID'si ister
+        const toBackendTableId = (() => {
+            const numeric = Number(tableId);
+            const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+            if (byNumber?.id != null) return Number(byNumber.id);
+            const byId = (tables || []).find(t => Number(t?.id) === numeric);
+            if (byId?.id != null) return Number(byId.id);
+            return parseInt(tableId);
+        })();
+
         const orderData = {
-            tableId: parseInt(tableId),
+            tableId: toBackendTableId,
             userId: numericUserId,
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
         try {
-            const currentOrder = orders[tableId];
+            const currentOrder = orders[String(tableId)];
             if (currentOrder && currentOrder.id) {
                 await apiCall(`/orders/${currentOrder.id}`, {
                     method: 'PUT',
@@ -514,7 +785,8 @@ export function TableProvider({ children }) {
                     body: JSON.stringify(orderData),
                 });
             } else {
-                await apiCall('/orders', {
+                // Yeni siparişlerde stok düşümü için backend iş mantığını tetikle
+                await apiCall('/orders/make-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData),
@@ -522,31 +794,8 @@ export function TableProvider({ children }) {
             }
 
             // Sadece admin rolleri stok hareketi oluşturabilir
-            {
-                const token = typeof window !== 'undefined' ? tokenManager.getToken() : null;
-                const roleInfo = token ? getRoleInfoFromToken(token) : {};
-                const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
-                if (isAdmin) {
-                    for (const [id, item] of Object.entries(finalItems)) {
-                        const recipe = findProductRecipe(id);
-                        for (const ingredient of recipe) {
-                            const movement = {
-                                id: 0,
-                                stockId: ingredient.ingredientId,
-                                change: -(ingredient.quantity * item.count),
-                                reason: "ORDER",
-                                note: "Sipariş",
-                                timestamp: new Date().toISOString()
-                            };
-                            await apiCall('/stock-movements', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(movement)
-                            });
-                        }
-                    }
-                }
-            }
+            // Not: Yeni siparişlerde '/orders/make-order' stok düşümünü kendisi yapar.
+            // Güncelleme durumlarında backend stok düşmüyor; burada manuel hareket eklemeyi tercih etmiyoruz.
 
             await fetchData();
             updateTableStatus(tableId, "occupied");
@@ -577,7 +826,7 @@ export function TableProvider({ children }) {
                                 id: 0,
                                 stockId: ingredient.ingredientId,
                                 change: ingredient.quantity * item.count,
-                                reason: "CANCELLED_ORDER",
+                                reason: "RETURN",
                                 note: "Sipariş İptali",
                                 timestamp: new Date().toISOString()
                             };
@@ -617,7 +866,21 @@ export function TableProvider({ children }) {
                 : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
 
             // 1) Ödeme kaydı oluştur (yetki yoksa atla)
+            let paymentSuccessful = false;
             try {
+                // Debug: Token ve rol bilgilerini kontrol et
+                const token = localStorage.getItem('token') || '';
+                console.log('DEBUG - Token:', token.substring(0, 50) + '...');
+                console.log('DEBUG - Role Info:', roleInfo);
+                console.log('DEBUG - User ID:', numericUserId);
+                
+                console.log('Payment API çağrısı yapılıyor:', {
+                    orderId: orderToPay.id,
+                    cashierId: numericUserId,
+                    amount: amount,
+                    method: 'CASH'
+                });
+                
                 await apiCall('/payments', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokenManager.getToken() || ''}` },
@@ -628,7 +891,12 @@ export function TableProvider({ children }) {
                         method: 'CASH'
                     })
                 });
+                
+                paymentSuccessful = true;
+                console.log('Payment API başarılı - order otomatik olarak completed=true yapılmalı');
+                
             } catch (e) {
+                console.error('Payment API hatası:', e);
                 if (String(e?.message || '').toLowerCase().includes('unauthorized')) {
                     console.warn('Payments API unauthorized for this role. Skipping payment record and proceeding to close order.');
                 } else {
@@ -636,8 +904,8 @@ export function TableProvider({ children }) {
                 }
             }
 
-            // 2) Siparişi kapat (sil)
-            await apiCall(`/orders/${orderToPay.id}`, { method: 'DELETE' });
+            // 2) Sipariş artık backend'de otomatik olarak tamamlanmış (is_completed=true) olarak işaretleniyor
+            // DELETE işlemi kaldırıldı - order veritabanında kalacak ama completed=true olacak
 
             // 3) Masayı boşalt ve yerel durumu temizle
             await updateTableStatus(tableId, 'empty');
@@ -666,8 +934,16 @@ export function TableProvider({ children }) {
             const numericUserId2 = typeof roleInfo2?.userId === 'string' && /^\d+$/.test(roleInfo2.userId)
                 ? parseInt(roleInfo2.userId, 10)
                 : (typeof roleInfo2?.userId === 'number' ? roleInfo2.userId : 1);
+            const backendTableId2 = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
             const orderData = {
-                tableId: parseInt(tableId),
+                tableId: backendTableId2,
                 userId: numericUserId2,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -700,8 +976,16 @@ export function TableProvider({ children }) {
             const numericUserId3 = typeof roleInfo3?.userId === 'string' && /^\d+$/.test(roleInfo3.userId)
                 ? parseInt(roleInfo3.userId, 10)
                 : (typeof roleInfo3?.userId === 'number' ? roleInfo3.userId : 1);
+            const backendTableId3 = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
             const orderData = {
-                tableId: parseInt(tableId),
+                tableId: backendTableId3,
                 userId: numericUserId3,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -732,10 +1016,18 @@ export function TableProvider({ children }) {
 
             const roleInfo4 = getRoleInfoFromToken(tokenManager.getToken() || '');
             const numericUserId4 = typeof roleInfo4?.userId === 'string' && /^\d+$/.test(roleInfo4.userId)
-                ? parseInt(roleInfo4.userId, 10)
-                : (typeof roleInfo4?.userId === 'number' ? roleInfo4.userId : 1);
+                ? parseInt(roleInfo4?.userId, 10)
+                : (typeof roleInfo4?.userId === 'number' ? roleInfo4?.userId : 1);
+            const backendTableId4 = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
             const orderData = {
-                tableId: parseInt(tableId),
+                tableId: backendTableId4,
                 userId: numericUserId4,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
@@ -758,6 +1050,116 @@ export function TableProvider({ children }) {
         } catch (error) {
             console.error('Onaylanmış ürün kaldırılırken hata:', error);
             setError(`Sipariş ürünü kaldırılırken bir hata oluştu: ${error.message}`);
+        }
+    };
+
+    // Add new item to existing order
+    const addOrderItem = async (tableId, productId, quantity = 1, note = '') => {
+        try {
+            const currentOrder = orders[tableId];
+            if (!currentOrder || !currentOrder.id) {
+                console.warn('No existing order found for table:', tableId);
+                return;
+            }
+
+            const product = findProductById(productId);
+            if (!product) {
+                throw new Error('Product not found');
+            }
+
+            // Update local state immediately for better UX
+            const updatedItems = { ...currentOrder.items };
+            if (updatedItems[productId]) {
+                updatedItems[productId].count += quantity;
+            } else {
+                updatedItems[productId] = {
+                    id: productId,
+                    name: product.name,
+                    price: product.price,
+                    count: quantity,
+                    note: note
+                };
+            }
+
+            // Update local state first
+            setOrders(prev => ({
+                ...prev,
+                [tableId]: {
+                    ...prev[tableId],
+                    items: updatedItems
+                }
+            }));
+
+            // Get backend table ID
+            const backendTableId = (() => {
+                const numeric = Number(tableId);
+                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                if (byNumber?.id != null) return Number(byNumber.id);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return Number(byId.id);
+                return parseInt(tableId);
+            })();
+
+            // Get user ID from token
+            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+
+            // Update backend immediately
+            const orderData = {
+                tableId: backendTableId,
+                userId: numericUserId,
+                items: Object.values(updatedItems).map(item => ({
+                    productId: item.id,
+                    quantity: item.count,
+                })),
+            };
+
+            await apiCall(`/orders/${currentOrder.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+            });
+
+            // Don't call fetchData() here - it overwrites local state
+            // Instead, just refresh the specific order data
+            try {
+                const updatedOrderData = await apiCall(`/orders/${currentOrder.id}`);
+                if (updatedOrderData) {
+                    // Update only this specific order in local state
+                    const orderItems = (updatedOrderData.items || []).reduce((itemAcc, item) => {
+                        itemAcc[item.productId] = {
+                            id: item.productId,
+                            name: item.productName,
+                            price: item.unitPrice,
+                            count: item.quantity,
+                            note: item.note || ''
+                        };
+                        return itemAcc;
+                    }, {});
+
+                    setOrders(prev => ({
+                        ...prev,
+                        [tableId]: {
+                            ...prev[tableId],
+                            ...updatedOrderData,
+                            items: orderItems
+                        }
+                    }));
+                }
+            } catch (refreshError) {
+                console.warn('Could not refresh order data, using local state:', refreshError);
+            }
+            
+            console.log(`Item ${product.name} added to order for table ${tableId}`);
+
+        } catch (error) {
+            console.error('Error adding order item:', error);
+            setError(`Sipariş ürünü eklenirken bir hata oluştu: ${error.message}`);
+            
+            // Revert local state on error
+            await fetchData();
         }
     };
 
@@ -897,15 +1299,40 @@ export function TableProvider({ children }) {
         try {
             console.log("Yeni bir stok malzemesi ekleniyor:", ingredientData);
 
+            // Girdi doğrulama
+            if (!ingredientData.name || !ingredientData.name.trim()) {
+                throw new Error("İçerik adı boş olamaz.");
+            }
+            if (!ingredientData.unit || !ingredientData.unit.trim()) {
+                throw new Error("Birim boş olamaz.");
+            }
+            
+            const validUnits = ["KG", "ADET", "L"];
+            if (!validUnits.includes(ingredientData.unit.trim().toUpperCase())) {
+                throw new Error("Geçerli birim seçin: KG, ADET veya L");
+            }
+            
+            const stockQuantity = Number(ingredientData.stockQuantity);
+            const minStock = Number(ingredientData.minStock);
+            
+            if (isNaN(stockQuantity) || stockQuantity < 0) {
+                throw new Error("Başlangıç stoğu geçerli bir pozitif sayı olmalıdır.");
+            }
+            if (isNaN(minStock) || minStock < 0) {
+                throw new Error("Minimum stok geçerli bir pozitif sayı olmalıdır.");
+            }
+
+            const payload = {
+                name: ingredientData.name.trim(),
+                unit: ingredientData.unit.trim().toUpperCase(), // Birim her zaman büyük harfle
+                stockQuantity: parseFloat(stockQuantity), // Double type için parseFloat
+                minQuantity: parseFloat(minStock), // Double type için parseFloat
+            };
+
             const newIngredient = await apiCall('/stocks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: ingredientData.name,
-                    unit: ingredientData.unit,
-                    stockQuantity: Number(ingredientData.stockQuantity),
-                    minStock: Number(ingredientData.minStock) || 0,
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!newIngredient || !newIngredient.id) {
@@ -914,30 +1341,33 @@ export function TableProvider({ children }) {
 
             console.log("Stok malzemesi başarıyla eklendi, stok hareketi oluşturuluyor:", newIngredient);
 
-            // Yeni eklenen stok malzemesi için başlangıç stok hareketini kaydediyoruz
-            const movement = {
-                stockId: newIngredient.id,
-                change: newIngredient.stockQuantity,
-                reason: "MANUAL_ADJUSTMENT",
-                note: "Yeni içerik eklendi (Başlangıç Stoğu)",
-            };
+            // Sadece pozitif başlangıç stoğu varsa stok hareketi kaydet
+            if (stockQuantity > 0) {
+                const movement = {
+                    stockId: newIngredient.id,
+                    change: stockQuantity,
+                    reason: "ADJUSTMENT",
+                    note: "Yeni içerik eklendi (Başlangıç Stoğu)",
+                };
 
-            await apiCall('/stock-movements', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(movement)
-            });
+                await apiCall('/stock-movements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(movement)
+                });
+            }
 
             console.log("fetchData fonksiyonu çağrılıyor...");
             await fetchData();
             console.log("fetchData fonksiyonu tamamlandı.");
 
-            alert("İçerik başarıyla eklendi!");
+            return { success: true, message: "İçerik başarıyla eklendi!" };
 
         } catch (error) {
             console.error("İçerik eklenirken hata:", error);
-            setError(`İçerik eklenirken hata oluştu: ${error.message}`);
-            alert(`Hata: İçerik eklenirken bir sorun oluştu. Detaylar için konsolu kontrol edin.`);
+            const errorMessage = error.message || "Bilinmeyen bir hata oluştu";
+            setError(`İçerik eklenirken hata oluştu: ${errorMessage}`);
+            throw new Error(errorMessage);
         }
     };
 
@@ -952,8 +1382,8 @@ export function TableProvider({ children }) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    stockId: stockId,
-                    change: change,
+                    stockId: Number(stockId),
+                    change: parseFloat(change), // Double type için parseFloat
                     reason: reason,
                     note: note,
                 })
@@ -966,19 +1396,191 @@ export function TableProvider({ children }) {
         }
     };
 
+    const updateIngredientMinQuantity = async (stockId, minQuantity) => {
+        try {
+            console.log(`Minimum stok güncelleniyor - ID: ${stockId}, Min Quantity: ${minQuantity}`);
+            
+            // Girdi doğrulama
+            const minQty = Number(minQuantity);
+            if (isNaN(minQty) || minQty < 0) {
+                throw new Error("Minimum stok geçerli bir pozitif sayı olmalıdır.");
+            }
+
+            await apiCall(`/stocks/${stockId}/min-quantity?minQuantity=${parseFloat(minQty)}`, {
+                method: 'PATCH',  // API dokümantasyonuna göre PATCH method
+                headers: { 'Content-Type': 'application/json' }
+                // minQuantity query parameter olarak gönderiliyor
+            });
+
+            await fetchData();
+            return { success: true, message: "Minimum stok başarıyla güncellendi!" };
+
+        } catch (error) {
+            console.error('Minimum stok güncellenirken hata:', error);
+            setError(`Minimum stok güncellenirken bir hata oluştu: ${error.message}`);
+            throw error;
+        }
+    };
+
+    const deleteIngredient = async (ingredientId) => {
+        try {
+            console.log("Stok malzemesi siliniyor:", ingredientId);
+
+            // Önce bu malzemeyi kullanan ürünleri kontrol et
+            const productsUsingIngredient = Object.values(productsById).filter(product => 
+                product.recipe && product.recipe.some(item => item.ingredientId === Number(ingredientId))
+            );
+
+            if (productsUsingIngredient.length > 0) {
+                const productNames = productsUsingIngredient.map(p => p.name).join(', ');
+                throw new Error(`Bu malzeme şu ürünlerde kullanılıyor: ${productNames}. Önce bu ürünlerden malzemeyi kaldırın.`);
+            }
+
+            // Önce bu malzemeyle ilgili tüm stok hareketlerini sil
+            try {
+                console.log("Stok hareketleri siliniyor...");
+                
+                // Backend'de bulk delete endpoint'i çalışmıyor, direkt alternatif yöntem kullan
+                console.log("Bulk delete endpoint backend'de mevcut değil, alternatif yöntem kullanılıyor");
+                
+                // Tüm stok hareketlerini çek ve ilgili olanları tek tek sil
+                const allMovements = await apiCall('/stock-movements');
+                const movementsToDelete = allMovements.filter(movement => 
+                    movement.stockId === Number(ingredientId) || movement.stock?.id === Number(ingredientId)
+                );
+                
+                console.log(`${movementsToDelete.length} adet stok hareketi bulundu, tek tek siliniyor...`);
+                
+                for (const movement of movementsToDelete) {
+                    try {
+                        await apiCall(`/stock-movements/${movement.id}`, {
+                            method: 'DELETE'
+                        });
+                        console.log(`Stok hareketi ${movement.id} başarıyla silindi`);
+                    } catch (individualError) {
+                        console.warn(`Stok hareketi ${movement.id} silinirken hata:`, individualError.message || individualError);
+                    }
+                }
+                console.log("Stok hareketleri tek tek silme ile tamamlandı");
+                
+            } catch (movementError) {
+                console.warn("Stok hareketleri silinirken hata:", movementError.message || movementError);
+                console.log("Stok hareketi silme başarısız, yine de malzeme silme işlemine devam ediliyor...");
+            }
+
+            // Şimdi stok malzemesini sil
+            try {
+                await apiCall(`/stocks/${ingredientId}`, {
+                    method: 'DELETE'
+                });
+                console.log("Malzeme başarıyla silindi");
+                
+                await fetchData();
+                return { success: true, message: "Malzeme başarıyla silindi!" };
+                
+            } catch (deleteError) {
+                console.error("Malzeme silinirken hata:", deleteError);
+                
+                // Spesifik hata mesajları
+                if (deleteError.message && deleteError.message.includes('foreign key')) {
+                    throw new Error("Bu malzeme başka kayıtlarda kullanıldığı için silinemiyor. Önce bu malzemeyi kullanan tüm kayıtları temizleyin.");
+                } else if (deleteError.message && (deleteError.message.includes('403') || deleteError.message.includes('Forbidden'))) {
+                    throw new Error("Bu işlem için yetkiniz bulunmuyor. Lütfen sistem yöneticisi ile iletişime geçin.");
+                } else if (deleteError.message && deleteError.message.includes('404')) {
+                    throw new Error("Silinmeye çalışılan malzeme bulunamadı. Sayfa yenilenerek güncel veriler alınıyor...");
+                } else {
+                    throw new Error(`Malzeme silinirken beklenmedik bir hata oluştu: ${deleteError.message || deleteError}`);
+                }
+            }
+
+        } catch (error) {
+            console.error("Malzeme silinirken hata:", error);
+            let errorMessage = error.message || "Malzeme silinirken bir hata oluştu";
+            
+            // Foreign key constraint hatası için özel mesaj
+            if (errorMessage.includes('foreign key constraint') || errorMessage.includes('still referenced')) {
+                errorMessage = "Bu malzeme sistem kayıtlarında kullanıldığı için silinemiyor. Lütfen sistem yöneticisi ile iletişime geçin.";
+            }
+            
+            setError(`Malzeme silinirken hata oluştu: ${errorMessage}`);
+            throw new Error(errorMessage);
+        }
+    };
+
     const addReservation = async (tableId, reservationData) => {
         try {
+            // Get user ID from token
+            const roleInfo = getRoleInfoFromToken(localStorage.getItem('token') || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+
+            // Normalize date (yyyy-MM-dd) and time (HH:mm) to satisfy backend LocalDate/LocalTime expectations
+            const normalizedDate = (() => {
+                const raw = String(reservationData?.tarih || '').trim();
+                if (!raw) return '';
+                const dateOnly = raw.includes('T') ? raw.split('T')[0] : raw;
+                const m = dateOnly.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+                if (!m) return dateOnly;
+                const [, y, mo, d] = m;
+                return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            })();
+
+            const normalizedTime = (() => {
+                let t = String(reservationData?.saat || '').trim();
+                if (!t) return '';
+                // If accidentally a datetime like 2025-08-19T12:00 or 12:00:00Z, reduce to HH:mm
+                if (t.includes('T')) t = t.split('T')[1];
+                t = t.replace('Z', '');
+                if (t.includes('.')) t = t.split('.')[0];
+                const parts = t.split(':');
+                if (parts.length >= 2) {
+                    const hh = String(parts[0]).padStart(2, '0');
+                    const mm = String(parts[1]).padStart(2, '0');
+                    return `${hh}:${mm}`;
+                }
+                return t;
+            })();
+
+            // Transform frontend data to backend format
+            const backendData = {
+                tableId: parseInt(tableId),
+                customerName: `${reservationData.ad} ${reservationData.soyad}`,
+                customerPhone: reservationData.telefon,
+                email: reservationData.email || null,
+                // Preferred keys for backend transformer (supports both TR and EN names)
+                tarih: normalizedDate,
+                saat: normalizedTime,
+                reservationDate: normalizedDate,
+                reservationTime: normalizedTime,
+                personCount: parseInt(reservationData.kisiSayisi),
+                // Both keys for compatibility
+                not: reservationData.not || null,
+                specialRequests: reservationData.not || null,
+                statusId: 1, // Default to active reservation
+                createdBy: numericUserId
+            };
+
+            console.log('Sending reservation data to backend:', backendData);
+
             const backendReservation = await apiCall('/reservations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...reservationData, tableId })
+                body: JSON.stringify(backendData)
             });
 
             const reservationId = backendReservation.id || crypto.randomUUID();
             const newReservation = {
                 id: reservationId,
                 tableId,
-                ...reservationData,
+                ad: reservationData.ad,
+                soyad: reservationData.soyad,
+                telefon: reservationData.telefon,
+                email: reservationData.email,
+                tarih: reservationData.tarih,
+                saat: reservationData.saat,
+                kisiSayisi: reservationData.kisiSayisi,
+                not: reservationData.not,
                 createdAt: backendReservation.createdAt || new Date().toISOString(),
                 backendId: backendReservation.id,
             };
@@ -988,6 +1590,34 @@ export function TableProvider({ children }) {
                 [reservationId]: newReservation
             }));
             await updateTableStatus(tableId, "reserved");
+
+            // Refresh reservations data from backend to get the latest state
+            try {
+                const updatedReservations = await apiCall('/reservations');
+                const reservationsById = (updatedReservations || []).reduce((acc, reservation) => {
+                    if (reservation && reservation.id) {
+                        const frontendReservation = {
+                            id: reservation.id,
+                            tableId: reservation.tableId,
+                            ad: reservation.customerName ? reservation.customerName.split(' ')[0] : '',
+                            soyad: reservation.customerName ? reservation.customerName.split(' ').slice(1).join(' ') : '',
+                            telefon: reservation.customerPhone,
+                            email: reservation.email,
+                            tarih: reservation.reservationDate,
+                            saat: reservation.reservationTime,
+                            kisiSayisi: reservation.personCount,
+                            not: reservation.specialRequests,
+                            createdAt: reservation.createdAt,
+                            backendId: reservation.id,
+                        };
+                        acc[reservation.id] = frontendReservation;
+                    }
+                    return acc;
+                }, {});
+                setReservations(reservationsById);
+            } catch (refreshError) {
+                console.warn('Failed to refresh reservations after creation:', refreshError);
+            }
 
             return reservationId;
         } catch (error) {
@@ -1045,6 +1675,36 @@ export function TableProvider({ children }) {
         }
     };
 
+    const loadTableStatuses = useCallback(async () => {
+        try {
+            // Raw fetch to tolerate non-JSON responses gracefully
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_BASE_URL}/table-statuses`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+            const text = await res.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : [];
+            } catch (e) {
+                console.error('Failed to parse /table-statuses JSON. Returning empty list. Raw:', text);
+                data = [];
+            }
+            if (!Array.isArray(data)) {
+                console.warn('Unexpected /table-statuses format, coercing to array');
+                data = [];
+            }
+            setTableStatuses(data);
+        } catch (error) {
+            console.error('Failed to load table statuses:', error);
+            setError(`Masa durumları yüklenirken hata oluştu: ${error.message}`);
+        }
+    }, []);
+
     const addOrderHistoryEntry = (orderData, action, personnelName, personnelRole) => {
         const timestamp = new Date().toLocaleString('tr-TR');
         const newEntry = {
@@ -1098,6 +1758,7 @@ export function TableProvider({ children }) {
                 completedOrders,
                 tables,
                 salons,
+                tableStatuses,
                 reservations,
                 orderHistory,
                 isLoading,
@@ -1108,17 +1769,21 @@ export function TableProvider({ children }) {
                 updateTableStatus,
                 updateTable,
                 deleteTable,
+                deleteTableForce,
                 createTable,
                 saveFinalOrder,
                 cancelOrder,
                 processPayment,
                 loadTablesAndSalons,
+                loadTableStatuses,
                 addProduct,
                 deleteProduct,
                 updateProduct,
                 updateIngredientStock,
+                updateIngredientMinQuantity,
                 findProductById,
                 addIngredient,
+                deleteIngredient,
                 deleteProductIngredient,
                 addProductIngredient,
                 addReservation,
@@ -1129,7 +1794,8 @@ export function TableProvider({ children }) {
                 calculateFinancialImpact,
                 removeConfirmedOrderItem,
                 decreaseConfirmedOrderItem,
-                increaseConfirmedOrderItem
+                increaseConfirmedOrderItem,
+                addOrderItem
             }}
         >
             {children}

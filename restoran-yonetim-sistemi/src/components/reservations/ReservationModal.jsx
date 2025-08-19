@@ -20,7 +20,7 @@ export default function ReservationModal({ visible, masaNo, onClose, onSubmit, d
     email: "",
     tarih: getTodayDate(),
     saat: "12:00",
-    personCount: "2", // kisiSayisi yerine personCount kullan
+    kisiSayisi: "2", // Keep consistent with backend expectation
     not: "",
   });
   // Masa kapasitesini al

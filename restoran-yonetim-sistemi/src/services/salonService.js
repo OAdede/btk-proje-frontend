@@ -41,8 +41,12 @@ export const salonService = {
                 });
             };
 
-            // Try with name and capacity first (backend requires capacity)
-            let response = await doRequest({ name, capacity: 100 });
+            // Try with name and description first (backend requires capacity)
+            const description = String(salonData?.description || '').trim();
+            let response = await doRequest({ 
+                name, 
+                description
+            });
 
             if (!response.ok) {
                 // Log detailed error for debugging
@@ -71,11 +75,26 @@ export const salonService = {
                 const needsCode = status === 400 && (combined.includes('code') || combined.includes('prefix'));
                 if (needsCode) {
                     const autoCode = (name.charAt(0) || 'S').toUpperCase().replace(/[^A-ZÇĞİÖŞÜ]/g, 'S').slice(0, 1);
-                    if (DEBUG) console.log('Backend requires code, retrying');
-                    response = await doRequest({ name, code: autoCode, capacity: 100 });
+                    if (DEBUG) console.log('Backend requires code, retrying with:', { name, description, code: autoCode });
+                    response = await doRequest({ name, description, code: autoCode });
                 }
 
                 if (!response.ok) {
+                    // 500 gibi durumlarda bazı backend'ler yine de kaydı oluşturmuş olabilir.
+                    // Bu durumda bir kez mevcut salonları çekip isme göre oluşturulmuş mı bak.
+                    if (response.status >= 500) {
+                        try {
+                            const all = await this.getAllSalons();
+                            const existing = (all || []).find(s => String(s.name).toLowerCase() === name.toLowerCase());
+                            if (existing) {
+                                console.warn('Backend 500 döndü ama salon oluşturulmuş görünüyor, başarı olarak kabul ediliyor.', existing);
+                                return existing;
+                            }
+                        } catch (probeErr) {
+                            console.warn('Salon oluşturma hatası sonrası doğrulama çağrısı başarısız:', probeErr);
+                        }
+                    }
+
                     // Build readable error
                     let errText = `HTTP error! status: ${response.status}`;
                     try {
@@ -139,7 +158,17 @@ export const salonService = {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Backend'den gelen hata mesajını al
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.text();
+                    if (errorData) {
+                        errorMessage = errorData;
+                    }
+                } catch (parseError) {
+                    if (DEBUG) console.error('Error parsing error response:', parseError);
+                }
+                throw new Error(errorMessage);
             }
 
             if (DEBUG) console.log('Salon deleted successfully');
