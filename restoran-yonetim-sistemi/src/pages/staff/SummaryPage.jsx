@@ -4,13 +4,16 @@ import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function SummaryPage() {
+export default function Summary() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useContext(AuthContext);
     const { orders, saveFinalOrder, tables, isLoading: contextLoading, error: contextError } = useContext(TableContext);
     const { colors } = useTheme();
+
+    // Debug flag for summary operations
+    const DEBUG_SUMMARY = (import.meta?.env?.VITE_DEBUG_SUMMARY === 'true');
 
     // Get cart data from navigation state (from OrderPage)
     const cartDataFromNavigation = location.state?.cartData;
@@ -43,7 +46,7 @@ export default function SummaryPage() {
         
         // Tamamlanmış siparişleri döndürme
         if (order && order.isCompleted === true) {
-            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            if (DEBUG_SUMMARY) console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
             return null;
         }
         
@@ -65,7 +68,7 @@ export default function SummaryPage() {
         
         // Öncelik: Navigation state'den gelen cart verisi
         if (cartDataFromNavigation && skipBackendSync) {
-            console.log("Summary: Using cart data from navigation");
+            if (DEBUG_SUMMARY) console.log("Summary: Using cart data from navigation");
             setOrderData({
                 items: cartDataFromNavigation,
                 id: null, // Yeni sipariş, henüz backend'de yok
@@ -85,7 +88,7 @@ export default function SummaryPage() {
                 if (order && order.isCompleted !== true) {
                     const localOrder = order?.items || {};
                     if (Object.keys(localOrder).length > 0) {
-                        console.log("Summary: Using backend order data", localOrder);
+                        if (DEBUG_SUMMARY) console.log("Summary: Using backend order data", localOrder);
                         setOrderData({
                             items: localOrder,
                             id: order?.id,
@@ -98,7 +101,7 @@ export default function SummaryPage() {
         }
         
         // If no data found, set empty order
-        console.log("Summary: No order data available, setting empty");
+        if (DEBUG_SUMMARY) console.log("Summary: No order data available, setting empty");
         setOrderData({ items: {}, id: null, isFromCart: false });
         
     }, [cartDataFromNavigation, skipBackendSync, tableId, tables, orders, orderData]);
@@ -112,7 +115,7 @@ export default function SummaryPage() {
         ), [currentOrder]);
 
     const handleConfirm = async () => {
-        console.log("Summary: Confirming order");
+        if (DEBUG_SUMMARY) console.log("Summary: Confirming order");
         
         try {
             setIsLoading(true);
@@ -131,7 +134,7 @@ export default function SummaryPage() {
     };
 
     const handleGoBack = () => {
-        console.log("Summary: Navigating back");
+        if (DEBUG_SUMMARY) console.log("Summary: Navigating back");
         
         // Geri dönüşte cart verisini koruyarak geri git
         if (orderData?.isFromCart) {
@@ -330,7 +333,7 @@ export default function SummaryPage() {
                     <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between' }}>
                         <button
                             onClick={(e) => {
-                                console.log("Back button clicked");
+                                if (DEBUG_SUMMARY) console.log("Back button clicked");
                                 e.preventDefault();
                                 e.stopPropagation();
                                 handleGoBack();
@@ -363,7 +366,7 @@ export default function SummaryPage() {
                         </button>
                         <button
                             onClick={(e) => {
-                                console.log("Confirm button clicked");
+                                if (DEBUG_SUMMARY) console.log("Confirm button clicked");
                                 e.preventDefault();
                                 e.stopPropagation();
                                 handleConfirm();
