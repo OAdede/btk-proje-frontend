@@ -5,6 +5,13 @@ import httpClient from "../utils/httpClient.js";
 import secureStorage from "../utils/secureStorage.js";
 import { reservationService } from "../services/reservationService";
 
+// Debug flags for different categories
+const DEBUG_TABLES = (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
+const DEBUG_STOCK = (import.meta?.env?.VITE_DEBUG_STOCK === 'true');
+const DEBUG_RESERVATIONS = (import.meta?.env?.VITE_DEBUG_RESERVATIONS === 'true');
+const DEBUG_PRODUCT = (import.meta?.env?.VITE_DEBUG_PRODUCT === 'true');
+const DEBUG_ORDER = (import.meta?.env?.VITE_DEBUG_ORDER === 'true');
+
 export const TableContext = createContext();
 
 // API base handled by httpClient
@@ -173,7 +180,7 @@ export function TableProvider({ children }) {
 
         const finalStock = maxPossibleUnits === Infinity ? 0 : maxPossibleUnits;
         if (finalStock === 0 && product.recipe.length > 0) {
-            console.log(`Product ${product.name} (ID: ${product.id}) has 0 stock due to insufficient ingredients`);
+            if (DEBUG_STOCK) console.log(`Product ${product.name} (ID: ${product.id}) has 0 stock due to insufficient ingredients`);
         }
 
         return finalStock;
@@ -250,7 +257,7 @@ export function TableProvider({ children }) {
                 }
             };
 
-            console.log("API çağrıları başlatılıyor, kullanıcı rolü:", roleInfo);
+            if (DEBUG_TABLES) console.log("API çağrıları başlatılıyor, kullanıcı rolü:", roleInfo);
             
             const tasks = [
                 apiCall('/products'),                // 0
@@ -264,7 +271,7 @@ export function TableProvider({ children }) {
             ];
 
             const results = await Promise.allSettled(tasks);
-            console.log("API çağrıları tamamlandı, sonuçlar:", results.map((r, i) => ({ index: i, status: r.status, error: r.reason?.message })));
+            if (DEBUG_TABLES) console.log("API çağrıları tamamlandı, sonuçlar:", results.map((r, i) => ({ index: i, status: r.status, error: r.reason?.message })));
 
             const safe = (idx, fallback) => {
                 if (results[idx]?.status === 'fulfilled') {
@@ -378,8 +385,10 @@ export function TableProvider({ children }) {
 
             // Ingredients state'ini güncelle - stocks ve product-ingredients verilerini birleştir
             const finalIngredients = { ...newIngredients, ...ingredientsFromProductIngredients };
-            console.log("Product-ingredients'dan ek ingredient verileri:", ingredientsFromProductIngredients);
-            console.log("Final ingredients:", finalIngredients);
+            if (DEBUG_STOCK) {
+                console.log("Product-ingredients'dan ek ingredient verileri:", ingredientsFromProductIngredients);
+                console.log("Final ingredients:", finalIngredients);
+            }
             setIngredients(finalIngredients);
 
             // Reçete verilerini products array'ine de kopyala ve stok hesapla
@@ -401,7 +410,7 @@ export function TableProvider({ children }) {
 
             // API'den gelen gerçek müsaitlik miktarlarını ürünlere uygula
             if (availableQuantitiesData && availableQuantitiesData.length > 0) {
-                console.log("API'den gelen müsaitlik miktarları:", availableQuantitiesData);
+                if (DEBUG_STOCK) console.log("API'den gelen müsaitlik miktarları:", availableQuantitiesData);
                 
                 // Her ürün için gerçek müsaitlik miktarını güncelle
                 availableQuantitiesData.forEach(availabilityItem => {
@@ -411,7 +420,7 @@ export function TableProvider({ children }) {
                     // ProductsById objesinde güncelle
                     if (productsByIdTemp[productId]) {
                         productsByIdTemp[productId].stock = availableAmount;
-                        console.log(`Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+                        if (DEBUG_STOCK) console.log(`Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
                     }
                     
                     // Kategori bazlı products objesinde de güncelle
@@ -419,18 +428,18 @@ export function TableProvider({ children }) {
                         newProductsByCategory[categoryName].forEach(product => {
                             if (product.id === productId) {
                                 product.stock = availableAmount;
-                                console.log(`Kategori ${categoryName} - Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+                                if (DEBUG_STOCK) console.log(`Kategori ${categoryName} - Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
                             }
                         });
                     });
                 });
             } else {
-                console.log("Müsaitlik miktarları API'den gelmedi, hesaplanan stok değerleri kullanılıyor");
+                if (DEBUG_STOCK) console.log("Müsaitlik miktarları API'den gelmedi, hesaplanan stok değerleri kullanılıyor");
             }
 
             // API'den gelen gerçek müsaitlik miktarlarını ürünlere uygula
             if (availableQuantitiesData && availableQuantitiesData.length > 0) {
-                console.log("API'den gelen müsaitlik miktarları:", availableQuantitiesData);
+                if (DEBUG_STOCK) console.log("API'den gelen müsaitlik miktarları:", availableQuantitiesData);
                 
                 // Her ürün için gerçek müsaitlik miktarını güncelle
                 availableQuantitiesData.forEach(availabilityItem => {
@@ -440,7 +449,7 @@ export function TableProvider({ children }) {
                     // ProductsById objesinde güncelle
                     if (productsByIdTemp[productId]) {
                         productsByIdTemp[productId].stock = availableAmount;
-                        console.log(`Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+                        if (DEBUG_STOCK) console.log(`Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
                     }
                     
                     // Kategori bazlı products objesinde de güncelle
@@ -448,13 +457,13 @@ export function TableProvider({ children }) {
                         newProductsByCategory[categoryName].forEach(product => {
                             if (product.id === productId) {
                                 product.stock = availableAmount;
-                                console.log(`Kategori ${categoryName} - Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+                                if (DEBUG_STOCK) console.log(`Kategori ${categoryName} - Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
                             }
                         });
                     });
                 });
             } else {
-                console.log("Müsaitlik miktarları API'den gelmedi, hesaplanan stok değerleri kullanılıyor");
+                if (DEBUG_STOCK) console.log("Müsaitlik miktarları API'den gelmedi, hesaplanan stok değerleri kullanılıyor");
             }
 
             if (DEBUG_TABLES) {
@@ -474,7 +483,7 @@ export function TableProvider({ children }) {
                     
                     // Tamamlanmış siparişleri masalarda gösterme (isCompleted=true olanlar)
                     if (order.isCompleted === true) {
-                        console.log(`Tamamlanmış sipariş ${order.orderId || order.id} masada gösterilmeyecek`);
+                        if (DEBUG_TABLES) console.log(`Tamamlanmış sipariş ${order.orderId || order.id} masada gösterilmeyecek`);
                         return;
                     }
                     
@@ -522,8 +531,8 @@ export function TableProvider({ children }) {
                 setCompletedOrders(completedOrdersData || {});
 
                 // Process reservations from proper API endpoint
-                console.log('=== TABLECONTEXT RESERVATIONS DEBUG ===');
-                console.log('Raw reservationsData from API:', reservationsData);
+                if (DEBUG_RESERVATIONS) console.log('=== TABLECONTEXT RESERVATIONS DEBUG ===');
+                if (DEBUG_RESERVATIONS) console.log('Raw reservationsData from API:', reservationsData);
                 
                 const reservationsById = (reservationsData || []).reduce((acc, reservation) => {
                     if (reservation && reservation.id) {
@@ -544,15 +553,15 @@ export function TableProvider({ children }) {
                             createdAt: reservation.createdAt,
                             backendId: reservation.id,
                         };
-                        console.log('Processing reservation:', reservation);
-                        console.log('Transformed to frontend format:', frontendReservation);
+                        if (DEBUG_RESERVATIONS) console.log('Processing reservation:', reservation);
+                        if (DEBUG_RESERVATIONS) console.log('Transformed to frontend format:', frontendReservation);
                         acc[reservation.id] = frontendReservation;
                     }
                     return acc;
                 }, {});
                 
-                console.log('Final reservationsById object:', reservationsById);
-                console.log('Number of reservations processed:', Object.keys(reservationsById).length);
+                if (DEBUG_RESERVATIONS) console.log('Final reservationsById object:', reservationsById);
+                if (DEBUG_RESERVATIONS) console.log('Number of reservations processed:', Object.keys(reservationsById).length);
                 setReservations(reservationsById);
             } catch (orderProcessingError) {
                 console.error("Sipariş verileri işlenirken hata:", orderProcessingError);
@@ -676,7 +685,7 @@ export function TableProvider({ children }) {
         for (const [id, item] of Object.entries(orderItems)) {
             const recipe = findProductRecipe(id);
             if (!recipe.length) {
-                console.log(`Ürün ${id} için tarif bulunamadı`);
+                if (DEBUG_STOCK) console.log(`Ürün ${id} için tarif bulunamadı`);
                 continue;
             }
             
@@ -726,11 +735,11 @@ export function TableProvider({ children }) {
     const refreshProductAvailability = async () => {
         try {
             setIsRefreshingAvailability(true);
-            console.log("Ürün müsaitlik miktarları güncelleniyor...");
+            if (DEBUG_PRODUCT) console.log("Ürün müsaitlik miktarları güncelleniyor...");
             const availableQuantitiesData = await apiCall('/products/available-quantities');
             
             if (availableQuantitiesData && availableQuantitiesData.length > 0) {
-                console.log("Güncel müsaitlik miktarları alındı:", availableQuantitiesData);
+                if (DEBUG_PRODUCT) console.log("Güncel müsaitlik miktarları alındı:", availableQuantitiesData);
                 
                 // ProductsById objesini güncelle
                 setProductsById(prevProductsById => {
@@ -760,8 +769,8 @@ export function TableProvider({ children }) {
                     });
                     return updated;
                 });
-                
-                console.log("Ürün müsaitlik miktarları başarıyla güncellendi");
+
+                if (DEBUG_PRODUCT) console.log("Ürün müsaitlik miktarları başarıyla güncellendi");
                 setAvailabilityNotification({
                     type: 'success',
                     message: 'Stok durumu başarıyla güncellendi!',
@@ -1067,7 +1076,7 @@ export function TableProvider({ children }) {
         }
 
         // Filtrelenen ürünler hakkında log
-        if (Object.keys(validItems).length !== Object.keys(finalItems).length) {
+        if (DEBUG_PRODUCT && Object.keys(validItems).length !== Object.keys(finalItems).length) {
             console.log("Filtrelenen ürünler:", {
                 original: Object.keys(finalItems),
                 filtered: Object.keys(validItems),
@@ -1149,11 +1158,11 @@ export function TableProvider({ children }) {
         };
 
         // Sipariş verilerini logla
-        console.log("Backend'e gönderilecek sipariş verileri:", orderData);
-        console.log("User ID kontrolü:", { roleInfo, numericUserId, isValid: numericUserId && numericUserId > 0 });
+        if (DEBUG_ORDER) console.log("Backend'e gönderilecek sipariş verileri:", orderData);
+        if (DEBUG_ORDER) console.log("User ID kontrolü:", { roleInfo, numericUserId, isValid: numericUserId && numericUserId > 0 });
 
         try {
-            console.log("Sipariş kaydediliyor...");
+            if (DEBUG_ORDER) console.log("Sipariş kaydediliyor...");
             const currentOrder = orders[String(tableId)];
             let retryCount = 0;
             const maxRetries = 2;
@@ -1161,14 +1170,14 @@ export function TableProvider({ children }) {
             while (retryCount <= maxRetries) {
                 try {
                     if (currentOrder && currentOrder.id) {
-                        console.log(`Mevcut sipariş güncelleniyor: ${currentOrder.id}`);
+                        if (DEBUG_ORDER) console.log(`Mevcut sipariş güncelleniyor: ${currentOrder.id}`);
                         await apiCall(`/orders/${currentOrder.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(orderData),
                         });
                     } else {
-                        console.log("Yeni sipariş oluşturuluyor...");
+                        if (DEBUG_ORDER) console.log("Yeni sipariş oluşturuluyor...");
                         // upsertOrderSync endpoint'ini kullan (authentication'dan user'ı alır)
                         await apiCall('/orders/upsert-sync', {
                             method: 'POST',
@@ -1176,7 +1185,7 @@ export function TableProvider({ children }) {
                             body: JSON.stringify(orderData),
                         });
                     }
-                    console.log("Sipariş başarıyla kaydedildi!");
+                    if (DEBUG_ORDER) console.log("Sipariş başarıyla kaydedildi!");
                     break; // Başarılı olursa döngüden çık
                 } catch (retryError) {
                     retryCount++;
@@ -1204,7 +1213,7 @@ export function TableProvider({ children }) {
             // Not: Yeni siparişlerde '/orders/make-order' stok düşümünü kendisi yapar.
             // Güncelleme durumlarında backend stok düşmüyor; burada manuel hareket eklemeyi tercih etmiyoruz.
 
-            console.log("Sipariş başarıyla kaydedildi, yerel durumu güncelleniyor...");
+            if (DEBUG_ORDER) console.log("Sipariş başarıyla kaydedildi, yerel durumu güncelleniyor...");
             
             // Optimize: Tam fetchData yerine sadece gerekli verileri güncelle
             try {
@@ -1247,7 +1256,7 @@ export function TableProvider({ children }) {
                 });
                 
                 setOrders(ordersByTable);
-                console.log("Orders state başarıyla güncellendi");
+                if (DEBUG_ORDER) console.log("Orders state başarıyla güncellendi");
                 
             } catch (updateError) {
                 console.warn("Yerel durum güncellenirken hata (sipariş zaten kaydedildi):", updateError);
@@ -1265,7 +1274,7 @@ export function TableProvider({ children }) {
             // Sipariş sonrası ürün müsaitlik miktarlarını güncelle
             await refreshProductAvailability();
             
-            console.log("Sipariş işlemi tamamlandı!");
+            if (DEBUG_ORDER) console.log("Sipariş işlemi tamamlandı!");
 
         } catch (error) {
             console.error("Sipariş kaydedilirken hata:", error);
@@ -1418,16 +1427,20 @@ export function TableProvider({ children }) {
             try {
                 // Debug: Token ve rol bilgilerini kontrol et (masked)
                 const token = tokenManager.getToken() || '';
-                console.log('DEBUG - Token:', (typeof token === 'string' && token.length > 0) ? (token.substring(0, 8) + '…masked') : '[cookie/HttpOnly]');
-                console.log('DEBUG - Role Info:', roleInfo);
-                console.log('DEBUG - User ID:', numericUserId);
-                
-                console.log('Payment API çağrısı yapılıyor:', {
+                if (DEBUG_PAYMENT) {
+                    console.log('DEBUG - Token:', (typeof token === 'string' && token.length > 0) ? (token.substring(0, 8) + '…masked') : '[cookie/HttpOnly]');
+                    console.log('DEBUG - Role Info:', roleInfo);
+                    console.log('DEBUG - User ID:', numericUserId);
+                    
+                    console.log('Payment API çağrısı yapılıyor:', {
                     orderId: orderToPay.id,
                     cashierId: numericUserId,
                     amount: amount,
                     method: 'CASH'
                 });
+                }
+
+                
                 
                 await apiCall('/payments', {
                     method: 'POST',
@@ -1441,8 +1454,8 @@ export function TableProvider({ children }) {
                 });
                 
                 paymentSuccessful = true;
-                console.log('Payment API başarılı - order otomatik olarak completed=true yapılmalı');
-                
+                if (DEBUG_PAYMENT) console.log('Payment API başarılı - order otomatik olarak completed=true yapılmalı');
+
             } catch (e) {
                 console.error('Payment API hatası:', e);
                 if (String(e?.message || '').toLowerCase().includes('unauthorized')) {
@@ -1714,8 +1727,8 @@ export function TableProvider({ children }) {
             
             // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
             await refreshProductAvailability();
-            
-            console.log(`Item ${product.name} added to order for table ${tableId}`);
+
+            if (DEBUG_ORDER) console.log(`Item ${product.name} added to order for table ${tableId}`);
 
         } catch (error) {
             console.error('Error adding order item:', error);
@@ -1860,7 +1873,7 @@ export function TableProvider({ children }) {
 
     const addIngredient = async (ingredientData) => {
         try {
-            console.log("Yeni bir stok malzemesi ekleniyor:", ingredientData);
+            if (DEBUG_STOCK) console.log("Yeni bir stok malzemesi ekleniyor:", ingredientData);
 
             // Girdi doğrulama
             if (!ingredientData.name || !ingredientData.name.trim()) {
@@ -1902,7 +1915,7 @@ export function TableProvider({ children }) {
                 throw new Error("API'den geçerli bir stok malzemesi yanıtı alınamadı.");
             }
 
-            console.log("Stok malzemesi başarıyla eklendi, stok hareketi oluşturuluyor:", newIngredient);
+            if (DEBUG_STOCK) console.log("Stok malzemesi başarıyla eklendi, stok hareketi oluşturuluyor:", newIngredient);
 
             // Sadece pozitif başlangıç stoğu varsa stok hareketi kaydet
             if (stockQuantity > 0) {
@@ -1920,9 +1933,9 @@ export function TableProvider({ children }) {
                 });
             }
 
-            console.log("fetchData fonksiyonu çağrılıyor...");
+            if (DEBUG_STOCK) console.log("fetchData fonksiyonu çağrılıyor...");
             await fetchData();
-            console.log("fetchData fonksiyonu tamamlandı.");
+            if (DEBUG_STOCK) console.log("fetchData fonksiyonu tamamlandı.");
 
             return { success: true, message: "İçerik başarıyla eklendi!" };
 
@@ -1937,7 +1950,7 @@ export function TableProvider({ children }) {
     const updateIngredientStock = async (stockId, change, reason, note = "") => {
         try {
             if (change === 0) {
-                console.log("Stok miktarında değişiklik yok. İşlem atlanıyor.");
+                if (DEBUG_STOCK) console.log("Stok miktarında değişiklik yok. İşlem atlanıyor.");
                 return;
             }
 
@@ -1961,8 +1974,8 @@ export function TableProvider({ children }) {
 
     const updateIngredientMinQuantity = async (stockId, minQuantity) => {
         try {
-            console.log(`Minimum stok güncelleniyor - ID: ${stockId}, Min Quantity: ${minQuantity}`);
-            
+            if (DEBUG_STOCK) console.log(`Minimum stok güncelleniyor - ID: ${stockId}, Min Quantity: ${minQuantity}`);
+
             // Girdi doğrulama
             const minQty = Number(minQuantity);
             if (isNaN(minQty) || minQty < 0) {
@@ -1987,7 +2000,7 @@ export function TableProvider({ children }) {
 
     const deleteIngredient = async (ingredientId) => {
         try {
-            console.log("Stok malzemesi siliniyor:", ingredientId);
+            if (DEBUG_STOCK) console.log("Stok malzemesi siliniyor:", ingredientId);
 
             // Önce bu malzemeyi kullanan ürünleri kontrol et
             const productsUsingIngredient = Object.values(productsById).filter(product => 
@@ -2001,25 +2014,25 @@ export function TableProvider({ children }) {
 
             // Önce bu malzemeyle ilgili tüm stok hareketlerini sil
             try {
-                console.log("Stok hareketleri siliniyor...");
-                
-                // Backend'de bulk delete endpoint'i çalışmıyor, direkt alternatif yöntem kullan
-                console.log("Bulk delete endpoint backend'de mevcut değil, alternatif yöntem kullanılıyor");
-                
+                if (DEBUG_STOCK) {
+                    console.log("Stok hareketleri siliniyor...");
+                    console.log("Bulk delete endpoint backend'de mevcut değil, alternatif yöntem kullanılıyor");    
+                }
+
                 // Tüm stok hareketlerini çek ve ilgili olanları tek tek sil
                 const allMovements = await apiCall('/stock-movements');
                 const movementsToDelete = allMovements.filter(movement => 
                     movement.stockId === Number(ingredientId) || movement.stock?.id === Number(ingredientId)
                 );
-                
-                console.log(`${movementsToDelete.length} adet stok hareketi bulundu, tek tek siliniyor...`);
-                
+
+                if (DEBUG_STOCK) console.log(`${movementsToDelete.length} adet stok hareketi bulundu, tek tek siliniyor...`);
+
                 for (const movement of movementsToDelete) {
                     try {
                         await apiCall(`/stock-movements/${movement.id}`, {
                             method: 'DELETE'
                         });
-                        console.log(`Stok hareketi ${movement.id} başarıyla silindi`);
+                        if (DEBUG_STOCK) console.log(`Stok hareketi ${movement.id} başarıyla silindi`);
                     } catch (individualError) {
                         console.warn(`Stok hareketi ${movement.id} silinirken hata:`, individualError.message || individualError);
                     }
@@ -2128,7 +2141,7 @@ export function TableProvider({ children }) {
                 createdBy: numericUserId
             };
 
-            console.log('Sending reservation data to backend:', backendData);
+            if (DEBUG_RESERVATIONS) console.log('Sending reservation data to backend:', backendData);
 
             const backendReservation = await apiCall('/reservations', {
                 method: 'POST',
@@ -2355,7 +2368,7 @@ export function TableProvider({ children }) {
             };
             const backendTableId = findBackendTableId();
 
-            console.log(`Completing active reservations for table: ${tableId} (backend ID: ${backendTableId})`);
+            if (DEBUG_RESERVATIONS) console.log(`Completing active reservations for table: ${tableId} (backend ID: ${backendTableId})`);
 
             await apiCall(`/reservations/${backendTableId}/complete-active`, {
                 method: 'POST'
@@ -2364,7 +2377,7 @@ export function TableProvider({ children }) {
             // Rezervasyon listesini yenile
             await fetchData();
 
-            console.log(`Active reservations completed for table: ${tableId}`);
+            if (DEBUG_RESERVATIONS) console.log(`Active reservations completed for table: ${tableId}`);
 
         } catch (error) {
             console.error('Failed to complete active reservations:', error);

@@ -5,6 +5,8 @@ import { AuthContext } from "../../context/AuthContext.jsx";
 import NoteModal from "../../components/shared/NoteModal.jsx";
 import './OrderPage.css'; // Stil dosyasını import et
 
+const DEBUG_ORDER = (import.meta?.env?.VITE_DEBUG_ORDER === 'true');
+
 export default function OrderPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
@@ -44,7 +46,7 @@ export default function OrderPage() {
         
         // Tamamlanmış siparişleri döndürme
         if (order && order.isCompleted === true) {
-            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            if (DEBUG_ORDER) console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
             return null;
         }
         
@@ -62,7 +64,7 @@ export default function OrderPage() {
         // Önce Summary'den dönen cart verisini kontrol et
         const restoreCart = location.state?.restoreCart;
         if (restoreCart) {
-            console.log("OrderPage: Restoring cart from Summary", restoreCart);
+            if (DEBUG_ORDER) console.log("OrderPage: Restoring cart from Summary", restoreCart);
             setCart(restoreCart);
             // Navigation state'i temizle
             navigate(location.pathname, { replace: true });
@@ -78,7 +80,7 @@ export default function OrderPage() {
             acc[key] = { ...item, note: item.note || '' };
             return acc;
         }, {});
-        console.log("OrderPage: Loading cart from backend", normalized);
+        if (DEBUG_ORDER) console.log("OrderPage: Loading cart from backend", normalized);
         setCart(normalized);
     }, [tableId, orders, tables, location.state]);
 

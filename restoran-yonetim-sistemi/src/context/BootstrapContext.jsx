@@ -3,6 +3,9 @@ import { authService } from '../services/authService';
 import tokenManager from '../utils/tokenManager';
 import secureStorage from '../utils/secureStorage';
 
+// Debug flag for bootstrap operations
+const DEBUG_BOOTSTRAP = (import.meta?.env?.VITE_DEBUG_AUTH === 'true');
+
 const BootstrapContext = createContext();
 
 export const useBootstrap = () => {
@@ -34,7 +37,7 @@ export const BootstrapProvider = ({ children }) => {
             }
             
             const response = await authService.getUserCount();
-            console.log('User count response:', response);
+            if (DEBUG_BOOTSTRAP) console.log('User count response:', response);
             
             // Handle different response formats from backend
             let userCount = 0;
@@ -52,7 +55,7 @@ export const BootstrapProvider = ({ children }) => {
                 userCount = parseInt(response) || 0;
             }
             
-            console.log('Determined user count:', userCount);
+            if (DEBUG_BOOTSTRAP) console.log('Determined user count:', userCount);
             setNeedsBootstrap(userCount === 0);
             
         } catch (error) {

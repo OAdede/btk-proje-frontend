@@ -7,6 +7,9 @@
 
 import secureStorage from './secureStorage.js';
 
+// Debug flag for migration operations
+const DEBUG_MIGRATION = (import.meta?.env?.VITE_DEBUG_STORAGE === 'true');
+
 // Keys that contain PII and should be encrypted
 const PII_KEYS_TO_MIGRATE = [
     'displayName', 
@@ -43,7 +46,7 @@ export const migratePIIData = () => {
                 // Remove from plain localStorage
                 localStorage.removeItem(key);
                 migrated.push(key);
-                console.log(`[Migration] Encrypted PII data: ${key}`);
+                if (DEBUG_MIGRATION) console.log(`[Migration] Encrypted PII data: ${key}`);
             }
         } catch (error) {
             errors.push({ key, error: error.message });
@@ -72,7 +75,7 @@ export const migrateGeneralData = () => {
                 // Remove from plain localStorage
                 localStorage.removeItem(key);
                 migrated.push(key);
-                console.log(`[Migration] Secured general data: ${key}`);
+                if (DEBUG_MIGRATION) console.log(`[Migration] Secured general data: ${key}`);
             }
         } catch (error) {
             errors.push({ key, error: error.message });
@@ -87,7 +90,7 @@ export const migrateGeneralData = () => {
  * Complete migration of all legacy localStorage data
  */
 export const migrateAllData = () => {
-    console.log('[Migration] Starting complete localStorage security migration...');
+    if (DEBUG_MIGRATION) console.log('[Migration] Starting complete localStorage security migration...');
     
     const piiResult = migratePIIData();
     const generalResult = migrateGeneralData();
@@ -95,7 +98,7 @@ export const migrateAllData = () => {
     const totalMigrated = piiResult.migrated.length + generalResult.migrated.length;
     const totalErrors = piiResult.errors.length + generalResult.errors.length;
     
-    console.log(`[Migration] Complete! Migrated ${totalMigrated} items, ${totalErrors} errors`);
+    if (DEBUG_MIGRATION) console.log(`[Migration] Complete! Migrated ${totalMigrated} items, ${totalErrors} errors`);
     
     if (totalErrors > 0) {
         console.warn('[Migration] Errors occurred:', [...piiResult.errors, ...generalResult.errors]);
@@ -106,7 +109,7 @@ export const migrateAllData = () => {
     legacyAuthKeys.forEach(key => {
         if (localStorage.getItem(key)) {
             localStorage.removeItem(key);
-            console.log(`[Migration] Removed legacy auth data: ${key}`);
+            if (DEBUG_MIGRATION) console.log(`[Migration] Removed legacy auth data: ${key}`);
         }
     });
     
@@ -139,10 +142,10 @@ if (typeof window !== 'undefined') {
     setTimeout(() => {
         const status = getMigrationStatus();
         if (status.needsMigration) {
-            console.log('[Migration] Legacy data detected, running auto-migration...');
+            if (DEBUG_MIGRATION) console.log('[Migration] Legacy data detected, running auto-migration...');
             migrateAllData();
         } else {
-            console.log('[Migration] No legacy data found, migration not needed');
+            if (DEBUG_MIGRATION) console.log('[Migration] No legacy data found, migration not needed');
         }
     }, 100);
 }
