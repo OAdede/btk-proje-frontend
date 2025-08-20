@@ -122,14 +122,54 @@ const TopNav = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
-    // Restoran ismini backend'den al
+    // Restoran ismini backend'den al (async simulation with rotating names)
     useEffect(() => {
+        // Simulation restaurant names
+        const simulationNames = [
+            'Lezzet Durağı Restaurant',
+            'Anadolu Sofrası', 
+            'Deniz Yıldızı Restaurant',
+            'Köşe Başı Lokantası',
+            'Sultan Sarayı',
+            'Bosphorus Dining',
+            'Golden Fork Restaurant'
+        ];
+        let currentIndex = 0;
+        let simulationInterval;
+
         const loadRestaurantName = async () => {
             try {
-                const settings = await settingsService.getRestaurantSettings();
-                if (settings.restaurantName) {
-                    setRestaurantName(settings.restaurantName);
-                    secureStorage.setItem('restaurantName', settings.restaurantName);
+                // Check if simulation mode is enabled
+                const simulationMode = import.meta.env.VITE_RESTAURANT_NAME_SIMULATION === 'true';
+                
+                if (simulationMode) {
+                    console.log('Restaurant name simulation mode enabled');
+                    
+                    // Start simulation with rotating names every second
+                    simulationInterval = setInterval(async () => {
+                        // Simulate async API call delay
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        const simulatedName = simulationNames[currentIndex];
+                        console.log(`Simulating restaurant name change: ${simulatedName}`);
+                        
+                        setRestaurantName(simulatedName);
+                        secureStorage.setItem('restaurantName', simulatedName);
+                        
+                        // Dispatch custom event for other components
+                        window.dispatchEvent(new CustomEvent('restaurantNameChanged', {
+                            detail: { name: simulatedName }
+                        }));
+                        
+                        currentIndex = (currentIndex + 1) % simulationNames.length;
+                    }, 1000); // Change every second
+                } else {
+                    // Normal mode: fetch from backend
+                    const settings = await settingsService.getRestaurantSettings();
+                    if (settings.restaurantName) {
+                        setRestaurantName(settings.restaurantName);
+                        secureStorage.setItem('restaurantName', settings.restaurantName);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading restaurant name:', error);
@@ -140,6 +180,13 @@ const TopNav = () => {
         };
 
         loadRestaurantName();
+        
+        // Cleanup interval on unmount
+        return () => {
+            if (simulationInterval) {
+                clearInterval(simulationInterval);
+            }
+        };
     }, []);
 
     // localStorage değişikliklerini ve custom event'leri dinle

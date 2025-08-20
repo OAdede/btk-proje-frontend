@@ -65,7 +65,7 @@ export default function SummaryPage() {
         
         // Öncelik: Navigation state'den gelen cart verisi
         if (cartDataFromNavigation && skipBackendSync) {
-            console.log("Summary: Using cart data from navigation", cartDataFromNavigation);
+            console.log("Summary: Using cart data from navigation");
             setOrderData({
                 items: cartDataFromNavigation,
                 id: null, // Yeni sipariş, henüz backend'de yok
@@ -112,19 +112,15 @@ export default function SummaryPage() {
         ), [currentOrder]);
 
     const handleConfirm = async () => {
-        console.log("Summary: handleConfirm called");
-        console.log("currentOrder:", currentOrder);
-        console.log("user.role:", user.role);
+        console.log("Summary: Confirming order");
         
         try {
             setIsLoading(true);
             setError(null);
             
-            console.log("Summary: Confirming order with data:", currentOrder);
             await saveFinalOrder(tableId, currentOrder);
             
             alert('Sipariş başarıyla onaylandı!');
-            console.log("Summary: Navigating to home");
             navigate(`/${user.role}/home`);
         } catch (error) {
             console.error("Summary: Error confirming order:", error);
@@ -135,35 +131,33 @@ export default function SummaryPage() {
     };
 
     const handleGoBack = () => {
-        console.log("Summary: handleGoBack called");
-        console.log("orderData:", orderData);
-        console.log("currentOrder:", currentOrder);
+        console.log("Summary: Navigating back");
         
         // Geri dönüşte cart verisini koruyarak geri git
         if (orderData?.isFromCart) {
-            console.log("Summary: Navigating back with cart data");
             navigate(`/${user.role}/order/${tableId}`, { 
                 state: { 
                     restoreCart: currentOrder 
                 } 
             });
         } else {
-            console.log("Summary: Navigating back without cart data");
             navigate(`/${user.role}/order/${tableId}`);
         }
     };
 
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
-    // Debug logging - run only when essential data changes
+    // Debug logging - only in development and when needed
     useEffect(() => {
-        console.log("=== SUMMARY PAGE DEBUG ===");
-        console.log("Cart from navigation:", cartDataFromNavigation);
-        console.log("Skip backend sync:", skipBackendSync);
-        console.log("Current order data:", orderData);
-        console.log("User:", user);
-        console.log("User role:", user?.role);
-    }, [cartDataFromNavigation, skipBackendSync, orderData, user?.role]); // Removed problematic dependencies
+        const debugMode = import.meta.env.VITE_DEBUG_SUMMARY === 'true';
+        if (debugMode) {
+            console.log("=== SUMMARY PAGE DEBUG ===");
+            console.log("Cart from navigation:", cartDataFromNavigation);
+            console.log("Skip backend sync:", skipBackendSync);
+            console.log("Current order data:", orderData);
+            console.log("User role:", user?.role);
+        }
+    }, [cartDataFromNavigation, skipBackendSync, orderData, user?.role]);
 
     // Early return if user is not loaded
     if (!user || !user.role) {
