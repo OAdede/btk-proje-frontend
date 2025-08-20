@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { TableContext } from "../../context/TableContext.jsx";
 import { AuthContext } from "../../context/AuthContext.jsx";
 import NoteModal from "../../components/shared/NoteModal.jsx";
@@ -8,6 +8,7 @@ import './OrderPage.css'; // Stil dosyasını import et
 export default function OrderPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { user } = useContext(AuthContext);
 
     const [activeCategory, setActiveCategory] = useState("Ana Yemek");
@@ -58,6 +59,17 @@ export default function OrderPage() {
     })();
 
     useEffect(() => {
+        // Önce Summary'den dönen cart verisini kontrol et
+        const restoreCart = location.state?.restoreCart;
+        if (restoreCart) {
+            console.log("OrderPage: Restoring cart from Summary", restoreCart);
+            setCart(restoreCart);
+            // Navigation state'i temizle
+            navigate(location.pathname, { replace: true });
+            return;
+        }
+        
+        // Normal durum: Backend'den mevcut sipariş verilerini yükle
         const order = getOrderForTable(tableId);
         const existingItems = order?.items || {};
         // Her bir ürün için 'note' alanı olduğundan emin ol
@@ -66,8 +78,9 @@ export default function OrderPage() {
             acc[key] = { ...item, note: item.note || '' };
             return acc;
         }, {});
+        console.log("OrderPage: Loading cart from backend", normalized);
         setCart(normalized);
-    }, [tableId, orders, tables]);
+    }, [tableId, orders, tables, location.state]);
 
     // Sayfa yüklendiğinde stok durumunu güncelle
     useEffect(() => {
@@ -126,9 +139,14 @@ export default function OrderPage() {
     };
 
     const handleNext = () => {
-        // İleri butonuna basıldığında, cart'taki son durumu kaydet
-        saveFinalOrder(tableId, cart);
-        navigate(`/${user.role}/summary/${tableId}`);
+        // Sepettaki değişiklikleri doğrudan Summary sayfasına geç
+        // Backend'e kaydetme işlemini Summary'de onaylama anında yap
+        navigate(`/${user.role}/summary/${tableId}`, { 
+            state: { 
+                cartData: cart,
+                skipBackendSync: true // Backend senkronizasyonunu atla
+            } 
+        });
     };
 
     // **[FIX]** TOPLAM TUTAR HESAPLAMASI DÜZELTİLDİ

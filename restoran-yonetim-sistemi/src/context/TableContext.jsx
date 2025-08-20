@@ -1143,12 +1143,14 @@ export function TableProvider({ children }) {
         }
 
         const orderData = {
+            userId: numericUserId,
             tableId: toBackendTableId,
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
         // Sipariş verilerini logla
         console.log("Backend'e gönderilecek sipariş verileri:", orderData);
+        console.log("User ID kontrolü:", { roleInfo, numericUserId, isValid: numericUserId && numericUserId > 0 });
 
         try {
             console.log("Sipariş kaydediliyor...");
@@ -1202,9 +1204,56 @@ export function TableProvider({ children }) {
             // Not: Yeni siparişlerde '/orders/make-order' stok düşümünü kendisi yapar.
             // Güncelleme durumlarında backend stok düşmüyor; burada manuel hareket eklemeyi tercih etmiyoruz.
 
-            console.log("Veriler güncelleniyor...");
-            await fetchData();
-            updateTableStatus(tableId, "occupied");
+            console.log("Sipariş başarıyla kaydedildi, yerel durumu güncelleniyor...");
+            
+            // Optimize: Tam fetchData yerine sadece gerekli verileri güncelle
+            try {
+                // Masa durumunu güncelle
+                updateTableStatus(tableId, "occupied");
+                
+                // Sadece orders state'ini güncel backend verisinden güncelle
+                const updatedOrdersData = await apiCall('/orders');
+                const ordersByTable = {};
+                
+                (updatedOrdersData || []).forEach(order => {
+                    if (!order || !order.tableId) return;
+                    if (order.isCompleted === true) return;
+                    
+                    const orderData = {
+                        id: order.orderId ?? order.id,
+                        ...order,
+                        items: (order.items || []).reduce((itemAcc, item) => {
+                            if (!item || !item.productId) return itemAcc;
+                            
+                            itemAcc[item.productId] = {
+                                id: item.productId,
+                                name: item.productName || 'Bilinmeyen Ürün',
+                                price: item.unitPrice || 0,
+                                count: item.quantity || 0,
+                                note: item.note || ''
+                            };
+                            return itemAcc;
+                        }, {})
+                    };
+                    
+                    const keyBackendId = String(order.tableId);
+                    ordersByTable[keyBackendId] = orderData;
+                    
+                    const table = tables.find(t => t.id === order.tableId);
+                    if (table && table.tableNumber) {
+                        const keyTableNumber = String(table.tableNumber);
+                        ordersByTable[keyTableNumber] = orderData;
+                    }
+                });
+                
+                setOrders(ordersByTable);
+                console.log("Orders state başarıyla güncellendi");
+                
+            } catch (updateError) {
+                console.warn("Yerel durum güncellenirken hata (sipariş zaten kaydedildi):", updateError);
+                // Fallback: Full refresh if partial update fails
+                await fetchData();
+            }
             
             // Masa için aktif rezervasyonları tamamla
             try {
