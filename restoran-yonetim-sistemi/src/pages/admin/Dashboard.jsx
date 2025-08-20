@@ -1010,7 +1010,10 @@ const Dashboard = () => {
             {displayTables.map((table) => {
               const status = getStatus(table.id);
               const order = orders[table.id] || {};
-              const tableReservations = Object.values(reservations).filter(res => res.tableId === table.id);
+              const tableReservations = Object.values(reservations).filter(res => {
+                const statusId = res.statusId || res.status;
+                return res.tableId === table.id && statusId !== 3 && statusId !== 2; // 3=COMPLETED, 2=CANCELLED
+              });
               // occupancy badge removed
 
               return (
@@ -1807,8 +1810,11 @@ const Dashboard = () => {
                 <div>
                   <h3 style={{ color: '#ffffff', marginBottom: '15px' }}>Rezervasyon Detayları:</h3>
 
-                  {/* Mevcut rezervasyonları göster */}
-                  {Object.values(reservations).filter(res => res.tableId === selectedTableDetails.id).map((reservation, index) => (
+                  {/* Mevcut rezervasyonları göster - COMPLETED ve CANCELLED olanları hariç tut */}
+                  {Object.values(reservations).filter(res => {
+                    const statusId = res.statusId || res.status;
+                    return res.tableId === selectedTableDetails.id && statusId !== 3 && statusId !== 2; // 3=COMPLETED, 2=CANCELLED
+                  }).map((reservation, index) => (
                     <div key={index} style={{
                       background: 'rgba(255,255,255,0.1)',
                       padding: '15px',

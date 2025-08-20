@@ -22,45 +22,44 @@ export default function OrderPage() {
         orders,
         products,
         ingredients,
+        tables,
         processPayment,
         decreaseConfirmedOrderItem,
         increaseConfirmedOrderItem,
         refreshProductAvailability,
         isRefreshingAvailability,
-        availabilityNotification,
-        tables
+        availabilityNotification
     } = useContext(TableContext);
+
+    // Masa ID'sinden orders verilerini almak için yardımcı fonksiyon
+    const getOrderForTable = (tableId) => {
+        // Önce backend table ID'sini bul
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        if (!backendTable) return null;
+        
+        // Backend table ID'si ile orders'dan sipariş ara
+        const backendTableId = String(backendTable.id);
+        const order = orders[backendTableId];
+        
+        // Tamamlanmış siparişleri döndürme
+        if (order && order.isCompleted === true) {
+            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            return null;
+        }
+        
+        return order || null;
+    };
 
     // UI'de gelen tableId masa numarası olabilir; backend id ile eşleştir
     const confirmedOrders = (() => {
-        // Önce direkt table ID ile dene
-        if (orders?.[tableId]?.items) {
-            return orders[tableId].items;
-        }
-        
-        // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
-        if (tables && tables.length > 0) {
-            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
-            if (backendTable && orders?.[String(backendTable.id)]?.items) {
-                return orders[String(backendTable.id)].items;
-            }
-        }
-        
+        const order = getOrderForTable(tableId);
+        if (order?.items) return order.items;
         return {};
     })();
 
     useEffect(() => {
-        // Önce direkt table ID ile existingItems'ı al
-        let existingItems = orders?.[tableId]?.items || {};
-        
-        // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
-        if (Object.keys(existingItems).length === 0 && tables && tables.length > 0) {
-            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
-            if (backendTable && orders?.[String(backendTable.id)]?.items) {
-                existingItems = orders[String(backendTable.id)].items;
-            }
-        }
-        
+        const order = getOrderForTable(tableId);
+        const existingItems = order?.items || {};
         // Her bir ürün için 'note' alanı olduğundan emin ol
         const normalized = Object.keys(existingItems).reduce((acc, key) => {
             const item = existingItems[key];

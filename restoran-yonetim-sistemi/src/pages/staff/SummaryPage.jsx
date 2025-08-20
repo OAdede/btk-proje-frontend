@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TableContext } from "../../context/TableContext";
 import { AuthContext } from "../../context/AuthContext";
@@ -8,24 +8,66 @@ export default function SummaryPage() {
     const { tableId } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { orders, saveFinalOrder, tables, isLoading, error } = useContext(TableContext);
+    const { orders, saveFinalOrder, tables, isLoading: contextLoading, error: contextError } = useContext(TableContext);
     const { colors } = useTheme();
 
-    // UI'de gelen tableId masa numarası olabilir; backend id ile eşleştir
-    const currentOrder = (() => {
-        // Önce direkt table ID ile dene
-        if (orders?.[tableId]?.items) return orders[tableId].items;
+    // State for order data
+    const [orderData, setOrderData] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Get backend table ID from table number - memoized to prevent recalculation
+    const getBackendTableId = useCallback(() => {
+        const numeric = Number(tableId);
+        const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+        if (byNumber?.id != null) return Number(byNumber.id);
+        const byId = (tables || []).find(t => Number(t?.id) === numeric);
+        if (byId?.id != null) return Number(byId.id);
+        return numeric;
+    }, [tableId, tables]);
+
+    // Masa ID'sinden orders verilerini almak için yardımcı fonksiyon
+    const getOrderForTable = useCallback((tableId) => {
+        // Önce backend table ID'sini bul
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        if (!backendTable) return null;
         
-        // Eğer bulunamazsa, table number ile backend table ID eşleşmesi yap
-        if (tables && tables.length > 0) {
-            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
-            if (backendTable && orders?.[String(backendTable.id)]?.items) {
-                return orders[String(backendTable.id)].items;
-            }
+        // Backend table ID'si ile orders'dan sipariş ara
+        const backendTableId = String(backendTable.id);
+        const order = orders[backendTableId];
+        
+        // Tamamlanmış siparişleri döndürme
+        if (order && order.isCompleted === true) {
+            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            return null;
         }
         
-        return {};
-    })();
+        return order || null;
+    }, [tables, orders]);
+
+    // Check if we have local data immediately
+    const hasLocalData = useMemo(() => {
+        const order = getOrderForTable(tableId);
+        const localOrder = order?.items || {};
+        return Object.keys(localOrder).length > 0;
+    }, [getOrderForTable, tableId]);
+
+    // Initialize with local data if available
+    useEffect(() => {
+        if (hasLocalData && !orderData) {
+            const order = getOrderForTable(tableId);
+            const localOrder = order?.items || {};
+            setOrderData({
+                items: localOrder,
+                id: order?.id
+            });
+        } else if (!hasLocalData && !orderData) {
+            // If no local data, set empty order
+            setOrderData({ items: {}, id: null });
+        }
+    }, [hasLocalData, orderData, getOrderForTable, tableId]);
+
+    const currentOrder = orderData?.items || {};
 
     const totalPrice = useMemo(() =>
         Object.values(currentOrder).reduce(
@@ -45,7 +87,8 @@ export default function SummaryPage() {
 
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
 
-    if (isLoading) {
+    // Show loading only when context is loading
+    if (contextLoading) {
         return (
             <div style={{
                 padding: 30,
@@ -64,7 +107,7 @@ export default function SummaryPage() {
         );
     }
 
-    if (error) {
+    if (contextError || error) {
         return (
             <div style={{
                 padding: 30,
@@ -78,7 +121,7 @@ export default function SummaryPage() {
                 boxShadow: `0 4px 12px ${colors.shadow}`,
                 textAlign: 'center'
             }}>
-                <p style={{ color: '#dc3545' }}>{error}</p>
+                <p style={{ color: '#dc3545' }}>{contextError || error}</p>
                 <button
                     onClick={() => window.location.reload()}
                     style={{

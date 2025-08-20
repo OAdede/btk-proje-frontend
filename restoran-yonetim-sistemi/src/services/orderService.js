@@ -251,5 +251,30 @@ export const orderService = {
             console.error('Error removing order item:', error);
             throw error;
         }
+    },
+
+    // Get current user's orders (for waiters)
+    async getMyOrders() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/orders/my`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Raw API Response:', JSON.stringify(data, null, 2));
+            return data;
+        } catch (error) {
+            console.error('Error fetching my orders:', error);
+            throw error;
+        }
     }
 };

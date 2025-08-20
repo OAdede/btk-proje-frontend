@@ -162,6 +162,25 @@ export default function AdminStyleTables({ roleOverride }) {
         'reserved-special': { text: 'Özel Rezerve', color: '#ffc107', textColor: '#212529' },
     };
 
+    // Masa ID'sinden orders verilerini almak için yardımcı fonksiyon
+    const getOrderForTable = (tableId) => {
+        // Önce backend table ID'sini bul
+        const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+        if (!backendTable) return null;
+        
+        // Backend table ID'si ile orders'dan sipariş ara
+        const backendTableId = String(backendTable.id);
+        const order = orders[backendTableId];
+        
+        // Tamamlanmış siparişleri döndürme
+        if (order && order.isCompleted === true) {
+            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
+            return null;
+        }
+        
+        return order || null;
+    };
+
     const getStatus = (tableId) => {
         // Backend'den gelen masa durumunu kullan
         const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
@@ -454,7 +473,7 @@ export default function AdminStyleTables({ roleOverride }) {
                 >
                     {filteredTables.map((table) => {
                         const status = getStatus(table.id);
-                        const order = orders?.[table.id] || {};
+                        const order = getOrderForTable(table.id) || {};
                         const tableReservations = Object.values(reservations).filter((res) => res.tableId === table.id);
                         return (
                             <div
@@ -493,7 +512,7 @@ export default function AdminStyleTables({ roleOverride }) {
                                 <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{table.displayNumber}</div>
                                 <div style={{ fontSize: '1rem', marginTop: '0.5rem', fontWeight: 500 }}>
                                     {status.text}
-                                    {Object.keys(order).length > 0 && (
+                                    {order.items && Object.keys(order.items).length > 0 && (
                                         <span
                                             style={{
                                                 background: 'rgba(255,255,255,0.2)',
@@ -507,7 +526,7 @@ export default function AdminStyleTables({ roleOverride }) {
                                                 marginLeft: '8px',
                                             }}
                                         >
-                                            {Object.keys(order).length}
+                                            {Object.keys(order.items).length}
                                         </span>
                                     )}
                                 </div>

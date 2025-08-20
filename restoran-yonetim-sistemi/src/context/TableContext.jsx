@@ -465,13 +465,20 @@ export function TableProvider({ children }) {
             setProducts(newProductsByCategory);
             setProductsById(productsByIdTemp);
 
-            // Siparişleri backend masa ID'si ile indeksle (çakışmayı önler)
+            // Siparişleri hem backend masa ID'si hem de masa numarası ile indeksle
             try {
-                const ordersByTable = (ordersData || []).reduce((acc, order) => {
-                    if (!order || !order.tableId) return acc; // Geçersiz order'ları atla
+                const ordersByTable = {};
+                
+                (ordersData || []).forEach(order => {
+                    if (!order || !order.tableId) return; // Geçersiz order'ları atla
                     
-                    const keyBackendId = String(order.tableId);
-                    acc[keyBackendId] = {
+                    // Tamamlanmış siparişleri masalarda gösterme (isCompleted=true olanlar)
+                    if (order.isCompleted === true) {
+                        console.log(`Tamamlanmış sipariş ${order.orderId || order.id} masada gösterilmeyecek`);
+                        return;
+                    }
+                    
+                    const orderData = {
                         id: order.orderId ?? order.id,
                         ...order,
                         items: (order.items || []).reduce((itemAcc, item) => {
@@ -487,8 +494,19 @@ export function TableProvider({ children }) {
                             return itemAcc;
                         }, {})
                     };
-                    return acc;
-                }, {});
+                    
+                    // Backend table ID ile indeksle
+                    const keyBackendId = String(order.tableId);
+                    ordersByTable[keyBackendId] = orderData;
+                    
+                    // Masa numarası ile de indeksle (eğer bulunabilirse)
+                    const table = (diningTablesData || []).find(t => t.id === order.tableId);
+                    if (table && table.tableNumber) {
+                        const keyTableNumber = String(table.tableNumber);
+                        ordersByTable[keyTableNumber] = orderData;
+                    }
+                });
+                
                 setOrders(ordersByTable);
                 
                 if (DEBUG_TABLES) {
@@ -513,6 +531,8 @@ export function TableProvider({ children }) {
                         const frontendReservation = {
                             id: reservation.id,
                             tableId: reservation.tableId,
+                            statusId: reservation.statusId,
+                            statusName: reservation.statusName || reservation.statusNameInTurkish,
                             ad: reservation.customerName ? reservation.customerName.split(' ')[0] : '',
                             soyad: reservation.customerName ? reservation.customerName.split(' ').slice(1).join(' ') : '',
                             telefon: reservation.customerPhone,
@@ -1124,7 +1144,6 @@ export function TableProvider({ children }) {
 
         const orderData = {
             tableId: toBackendTableId,
-            userId: numericUserId,
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
@@ -1148,8 +1167,8 @@ export function TableProvider({ children }) {
                         });
                     } else {
                         console.log("Yeni sipariş oluşturuluyor...");
-                        // Yeni siparişlerde stok düşümü için backend iş mantığını tetikle
-                        await apiCall('/orders/make-order', {
+                        // upsertOrderSync endpoint'ini kullan (authentication'dan user'ı alır)
+                        await apiCall('/orders/upsert-sync', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(orderData),
@@ -1186,6 +1205,13 @@ export function TableProvider({ children }) {
             console.log("Veriler güncelleniyor...");
             await fetchData();
             updateTableStatus(tableId, "occupied");
+            
+            // Masa için aktif rezervasyonları tamamla
+            try {
+                await completeActiveReservationsForTable(tableId);
+            } catch (error) {
+                console.warn('Rezervasyon tamamlama sırasında hata (sipariş kaydedildi):', error);
+            }
             
             // Sipariş sonrası ürün müsaitlik miktarlarını güncelle
             await refreshProductAvailability();
@@ -2266,6 +2292,37 @@ export function TableProvider({ children }) {
         if (d.getFullYear() === currentYear) yearlyCount++;
     });
 
+    // Masa için aktif rezervasyonları tamamla (sipariş alındığında)
+    const completeActiveReservationsForTable = async (tableId) => {
+        try {
+            // Backend table ID'sini bul
+            const findBackendTableId = () => {
+                const numeric = Number(tableId);
+                const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                if (byId?.id != null) return byId.id;
+                const byNumber = (tables || []).find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
+                if (byNumber?.id != null) return byNumber.id;
+                return tableId;
+            };
+            const backendTableId = findBackendTableId();
+
+            console.log(`Completing active reservations for table: ${tableId} (backend ID: ${backendTableId})`);
+
+            await apiCall(`/reservations/${backendTableId}/complete-active`, {
+                method: 'POST'
+            });
+
+            // Rezervasyon listesini yenile
+            await fetchData();
+
+            console.log(`Active reservations completed for table: ${tableId}`);
+
+        } catch (error) {
+            console.error('Failed to complete active reservations:', error);
+            throw error;
+        }
+    };
+
     return (
         <TableContext.Provider
             value={{
@@ -2310,6 +2367,7 @@ export function TableProvider({ children }) {
                 addReservation,
                 removeReservation,
                 updateReservation,
+                completeActiveReservationsForTable,
                 addOrderHistoryEntry,
                 getOrderContent,
                 calculateFinancialImpact,
