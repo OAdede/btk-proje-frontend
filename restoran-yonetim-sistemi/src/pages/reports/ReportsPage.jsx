@@ -6,14 +6,12 @@ import PopularItemsChart from '../../components/reports/PopularItemsChart';
 import SalesByCategoryChart from '../../components/reports/SalesByCategoryChart';
 import EmployeePerformanceTable from '../../components/reports/EmployeePerformanceTable';
 import IncomeExpenseTable from '../../components/reports/IncomeExpenseTable';
-import { Button } from 'react-bootstrap';
 import './ReportsPage.css';
 
 const ReportsPage = () => {
     const { reservations, dailyOrderCount } = useContext(TableContext);
     const [dailySalesData, setDailySalesData] = useState(null);
     const [isLoadingSales, setIsLoadingSales] = useState(true);
-    const [isGeneratingTestData, setIsGeneratingTestData] = useState(false);
 
     // Günlük satış verilerini API'den çek
     const fetchDailySalesData = async () => {
@@ -21,18 +19,7 @@ const ReportsPage = () => {
             setIsLoadingSales(true);
             const today = new Date().toISOString().split('T')[0];
             
-            // First try to get today's data directly
-            try {
-                const todayData = await analyticsService.getDailySalesSummary(today);
-                if (todayData) {
-                    setDailySalesData(todayData);
-                    return;
-                }
-            } catch (directError) {
-                console.log('Direct daily sales fetch failed, trying fallback:', directError);
-            }
-            
-            // Fallback: Get all daily sales summaries and filter for today
+            // Get all daily sales summaries and filter for today
             const allDailyData = await analyticsService.getAllDailySalesSummaries();
             const todayData = allDailyData.find(data => data.reportDate === today);
             
@@ -49,28 +36,6 @@ const ReportsPage = () => {
     useEffect(() => {
         fetchDailySalesData();
     }, []);
-
-    // Test verisi oluştur
-    const generateTestData = async () => {
-        try {
-            setIsGeneratingTestData(true);
-            const result = await analyticsService.generateTestData();
-            
-            if (result) {
-                console.log('Test data generated:', result);
-                alert('Test verisi başarıyla oluşturuldu! Sayfayı yenileyin.');
-                // Refresh data
-                fetchDailySalesData();
-            } else {
-                alert('Test verisi oluşturulurken hata oluştu.');
-            }
-        } catch (error) {
-            console.error('Error generating test data:', error);
-            alert('Test verisi oluşturulurken hata oluştu: ' + error.message);
-        } finally {
-            setIsGeneratingTestData(false);
-        }
-    };
 
     // Aktif rezervasyonları hesapla (bugünkü rezervasyonlar)
     const getActiveReservations = () => {
@@ -102,16 +67,7 @@ const ReportsPage = () => {
 
     return (
         <div className="reports-page">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1 className="page-title">Raporlar</h1>
-                <Button 
-                    variant="outline-primary" 
-                    onClick={generateTestData}
-                    disabled={isGeneratingTestData}
-                >
-                    {isGeneratingTestData ? 'Test Verisi Oluşturuluyor...' : 'Test Verisi Oluştur'}
-                </Button>
-            </div>
+            <h1 className="page-title">Raporlar</h1>
             
             {/* İstatistik Kartları */}
             <div className="stats-container">
