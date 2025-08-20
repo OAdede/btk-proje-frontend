@@ -12,6 +12,80 @@ const ReportsPage = () => {
     const { reservations, dailyOrderCount } = useContext(TableContext);
     const [dailySalesData, setDailySalesData] = useState(null);
     const [isLoadingSales, setIsLoadingSales] = useState(true);
+    const [isGeneratingSummaries, setIsGeneratingSummaries] = useState(false);
+    const [summaryGenerationStatus, setSummaryGenerationStatus] = useState({
+        daily: false,
+        weekly: false,
+        monthly: false,
+        yearly: false
+    });
+    const [lastGeneratedTime, setLastGeneratedTime] = useState(null);
+    const [generationError, setGenerationError] = useState(null);
+
+    // Generate all summaries for current timestamp when page loads
+    const generateAllSummaries = async () => {
+        try {
+            setIsGeneratingSummaries(true);
+            setGenerationError(null); // Clear any previous errors
+            setSummaryGenerationStatus({
+                daily: false,
+                weekly: false,
+                monthly: false,
+                yearly: false
+            });
+
+            const now = new Date();
+            
+            // Safety check to ensure we have a valid date
+            if (isNaN(now.getTime())) {
+                throw new Error('Geçersiz tarih oluşturuldu');
+            }
+            
+            console.log('🕐 Starting automatic summary generation for current timestamp:', {
+                fullDate: now.toISOString(),
+                dateOnly: now.toISOString().split('T')[0],
+                timeOnly: now.toTimeString().split(' ')[0],
+                dayOfWeek: now.toLocaleDateString('en-US', { weekday: 'long' }),
+                month: now.toLocaleString('tr-TR', { month: 'long' }),
+                year: now.getFullYear()
+            });
+            
+            const results = await analyticsService.generateAllSummariesForCurrentTime();
+            
+            if (results) {
+                setSummaryGenerationStatus({
+                    daily: !!results.daily,
+                    weekly: !!results.weekly,
+                    monthly: !!results.monthly,
+                    yearly: !!results.yearly
+                });
+
+                // Set the current timestamp as last generated time
+                setLastGeneratedTime(new Date());
+
+                console.log('✅ Summary generation completed:', results);
+                console.log('📊 All reports are now up-to-date as of:', now.toLocaleString('tr-TR'));
+                
+                // After generating summaries, fetch the updated daily sales data
+                await fetchDailySalesData();
+            } else {
+                console.warn('⚠️ Summary generation returned no results');
+                setGenerationError('Rapor oluşturma işlemi sonuç döndürmedi. Lütfen tekrar deneyin.');
+            }
+        } catch (error) {
+            console.error('❌ Error generating summaries:', error);
+            // Set error state for user feedback
+            setGenerationError(`Rapor oluşturma hatası: ${error.message || 'Bilinmeyen hata'}`);
+            setSummaryGenerationStatus({
+                daily: false,
+                weekly: false,
+                monthly: false,
+                yearly: false
+            });
+        } finally {
+            setIsGeneratingSummaries(false);
+        }
+    };
 
     // Günlük satış verilerini API'den çek
     const fetchDailySalesData = async () => {
@@ -32,9 +106,14 @@ const ReportsPage = () => {
         }
     };
 
-    // Component mount olduğunda veri çek
+    // Component mount olduğunda önce özetleri oluştur, sonra veri çek
     useEffect(() => {
-        fetchDailySalesData();
+        const initializeReports = async () => {
+            // First generate all summaries for current timestamp
+            await generateAllSummaries();
+        };
+
+        initializeReports();
     }, []);
 
     // Aktif rezervasyonları hesapla (bugünkü rezervasyonlar)
@@ -67,8 +146,107 @@ const ReportsPage = () => {
 
     return (
         <div className="reports-page">
-            <h1 className="page-title">Raporlar</h1>
+            <div className="page-header">
+                <h1 className="page-title">Raporlar</h1>
+                <div className="header-controls">
+                    {lastGeneratedTime && (
+                        <div className="last-generated-info">
+                            <span className="info-icon">⏰</span>
+                            <span>Son güncelleme: {lastGeneratedTime.toLocaleString('tr-TR')}</span>
+                        </div>
+                    )}
+                    <button 
+                        className="refresh-summaries-btn"
+                        onClick={generateAllSummaries}
+                        disabled={isGeneratingSummaries}
+                    >
+                        {isGeneratingSummaries ? (
+                            <>
+                                <span className="refresh-icon spinning">🔄</span>
+                                <span>Oluşturuluyor...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="refresh-icon">🔄</span>
+                                <span>Raporları Yenile</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
             
+            {/* Summary Generation Status */}
+            {isGeneratingSummaries && (
+                <div className="summary-generation-status">
+                    <div className="status-header">
+                        <span className="status-icon">🔄</span>
+                        <span>Raporlar oluşturuluyor...</span>
+                    </div>
+                    <div className="status-details">
+                        <div className="status-item">
+                            <span className={`status-indicator ${summaryGenerationStatus.daily ? 'success' : 'pending'}`}>
+                                {summaryGenerationStatus.daily ? '✅' : '⏳'}
+                            </span>
+                            <span>Günlük Özet</span>
+                        </div>
+                        <div className="status-item">
+                            <span className={`status-indicator ${summaryGenerationStatus.weekly ? 'success' : 'pending'}`}>
+                                {summaryGenerationStatus.weekly ? '✅' : '⏳'}
+                            </span>
+                            <span>Haftalık Özet</span>
+                        </div>
+                        <div className="status-item">
+                            <span className={`status-indicator ${summaryGenerationStatus.monthly ? 'success' : 'pending'}`}>
+                                {summaryGenerationStatus.monthly ? '✅' : '⏳'}
+                            </span>
+                            <span>Aylık Özet</span>
+                        </div>
+                        <div className="status-item">
+                            <span className={`status-indicator ${summaryGenerationStatus.yearly ? 'success' : 'pending'}`}>
+                                {summaryGenerationStatus.yearly ? '✅' : '⏳'}
+                            </span>
+                            <span>Yıllık Özet</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Message */}
+            {!isGeneratingSummaries && lastGeneratedTime && !generationError && (
+                <div className="summary-success-message">
+                    <div className="success-header">
+                        <span className="success-icon">✅</span>
+                        <span>Tüm raporlar başarıyla oluşturuldu!</span>
+                    </div>
+                    <div className="success-details">
+                        <span>Raporlar {lastGeneratedTime.toLocaleString('tr-TR')} tarihinde güncellendi</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Message */}
+            {!isGeneratingSummaries && generationError && (
+                <div className="summary-error-message">
+                    <div className="error-header">
+                        <span className="error-icon">❌</span>
+                        <span>Rapor oluşturma hatası</span>
+                    </div>
+                    <div className="error-details">
+                        <span>{generationError}</span>
+                    </div>
+                    <div className="error-actions">
+                        <button 
+                            className="retry-btn"
+                            onClick={generateAllSummaries}
+                            disabled={isGeneratingSummaries}
+                        >
+                            <span className="retry-icon">🔄</span>
+                            <span>Tekrar Dene</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* İstatistik Kartları */}
             <div className="stats-container">
                 <div className="stat-card">

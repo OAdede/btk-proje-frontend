@@ -10,6 +10,83 @@
     margin-bottom: 24px;
 }
 
+/* Page Header with Refresh Button */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-title {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.refresh-summaries-btn {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px var(--shadow);
+    min-width: 160px;
+    justify-content: center;
+}
+
+.refresh-summaries-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px var(--shadow);
+}
+
+.refresh-summaries-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.refresh-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.refresh-icon.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Header Controls */
+.header-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.last-generated-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text);
+    opacity: 0.8;
+    padding: 4px 8px;
+    background: rgba(var(--primary-rgb, 0, 123, 255), 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(var(--primary-rgb, 0, 123, 255), 0.2);
+}
+
+.info-icon {
+    font-size: 1rem;
+}
+
 /* Dark mode için sayfa stilleri - Tema renklerine uygun */
 .dark-theme .reports-page {
     background-color: var(--background) !important;
@@ -28,6 +105,229 @@
 
 .light-theme .page-title {
     color: #1e293b !important;
+}
+
+/* Summary Generation Status Styles */
+.summary-generation-status {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInDown 0.5s ease-out;
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.status-icon {
+    font-size: 1.5rem;
+    animation: spin 2s linear infinite;
+}
+
+.status-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.status-indicator {
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.status-indicator.success {
+    animation: bounceIn 0.6s ease-out;
+}
+
+.status-indicator.pending {
+    opacity: 0.7;
+}
+
+/* Dark theme adjustments for summary generation status */
+.dark-theme .summary-generation-status {
+    background: linear-gradient(135deg, #4c63d2 0%, #6b46c1 100%);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* Light theme adjustments for summary generation status */
+.light-theme .summary-generation-status {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Success Message Styles */
+.summary-success-message {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInDown 0.5s ease-out;
+}
+
+.success-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.success-icon {
+    font-size: 1.5rem;
+    animation: bounceIn 0.6s ease-out;
+}
+
+.success-details {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    padding-left: 32px;
+}
+
+/* Dark theme adjustments for success message */
+.dark-theme .summary-success-message {
+    background: linear-gradient(135deg, #198754 0%, #1aa179 100%);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* Light theme adjustments for success message */
+.light-theme .summary-success-message {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Error Message Styles */
+.summary-error-message {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInDown 0.5s ease-out;
+}
+
+.error-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.error-icon {
+    font-size: 1.5rem;
+    animation: bounceIn 0.6s ease-out;
+}
+
+.error-details {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    padding-left: 32px;
+}
+
+/* Dark theme adjustments for error message */
+.dark-theme .summary-error-message {
+    background: linear-gradient(135deg, #c82333 0%, #e8590c 100%);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* Light theme adjustments for error message */
+.light-theme .summary-error-message {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Error Actions */
+.error-actions {
+    margin-top: 16px;
+    padding-left: 32px;
+}
+
+.retry-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.retry-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+.retry-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.retry-icon {
+    font-size: 1rem;
+}
+
+/* Animations */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* İstatistik Kartları */

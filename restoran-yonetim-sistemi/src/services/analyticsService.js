@@ -198,5 +198,179 @@ export const analyticsService = {
             if (DEBUG) console.error('Employee performance service error:', error);
             throw error;
         }
+    },
+
+    // Manual Summary Generation Methods
+    // Generate daily summary for a specific date
+    async generateDailySummary(date) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/generate-daily?date=${date}`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Generate daily summary API error: ${response.status} ${response.statusText}`);
+                return null;
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Daily summary generated:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning null');
+                return null;
+            }
+        } catch (error) {
+            console.error('Generate daily summary service error:', error);
+            return null;
+        }
+    },
+
+    // Generate weekly summary for a specific end date
+    async generateWeeklySummary(endDate) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/generate-weekly?endDate=${endDate}`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Generate weekly summary API error: ${response.status} ${response.statusText}`);
+                return null;
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Weekly summary generated:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning null');
+                return null;
+            }
+        } catch (error) {
+            console.error('Generate weekly summary service error:', error);
+            return null;
+        }
+    },
+
+    // Generate monthly summary for a specific year and month
+    async generateMonthlySummary(year, month) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/generate-monthly?year=${year}&month=${month}`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Generate monthly summary API error: ${response.status} ${response.statusText}`);
+                return null;
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Monthly summary generated:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning null');
+                return null;
+            }
+        } catch (error) {
+            console.error('Generate monthly summary service error:', error);
+            return null;
+        }
+    },
+
+    // Generate yearly summary for a specific year
+    async generateYearlySummary(year) {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/generate-yearly?year=${year}`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Generate yearly summary API error: ${response.status} ${response.statusText}`);
+                return null;
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Yearly summary generated:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning null');
+                return null;
+            }
+        } catch (error) {
+            console.error('Generate yearly summary service error:', error);
+            return null;
+        }
+    },
+
+    // Generate all summaries for current timestamp
+    async generateAllSummariesForCurrentTime() {
+        try {
+            const now = new Date();
+            const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1; // 1-based month
+            
+            // Get current week's end date (Sunday)
+            const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const daysToSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+            const currentWeekEndDate = new Date(now);
+            currentWeekEndDate.setDate(now.getDate() + daysToSunday);
+            const weekEndDate = currentWeekEndDate.toISOString().split('T')[0];
+
+            console.log('Generating summaries for current timestamp:', {
+                currentDate,
+                weekEndDate,
+                currentYear,
+                currentMonth
+            });
+
+            // Generate all summaries in parallel
+            const [dailyResult, weeklyResult, monthlyResult, yearlyResult] = await Promise.allSettled([
+                this.generateDailySummary(currentDate),
+                this.generateWeeklySummary(weekEndDate),
+                this.generateMonthlySummary(currentYear, currentMonth),
+                this.generateYearlySummary(currentYear)
+            ]);
+
+            const results = {
+                daily: dailyResult.status === 'fulfilled' ? dailyResult.value : null,
+                weekly: weeklyResult.status === 'fulfilled' ? weeklyResult.value : null,
+                monthly: monthlyResult.status === 'fulfilled' ? monthlyResult.value : null,
+                yearly: yearlyResult.status === 'fulfilled' ? yearlyResult.value : null
+            };
+
+            console.log('All summaries generated:', results);
+            return results;
+        } catch (error) {
+            console.error('Generate all summaries service error:', error);
+            return null;
+        }
     }
 };
