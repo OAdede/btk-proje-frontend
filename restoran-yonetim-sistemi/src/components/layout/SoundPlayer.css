@@ -1,0 +1,55 @@
+/* Webamp Container Styles */
+.sound-player-container {
+  position: relative;
+  display: inline-block;
+  margin-left: 20px;
+  z-index: 1000;
+}
+
+.webamp-container {
+  /* Webamp will render itself as a child of body, so this is just a placeholder */
+  min-height: 400px;
+  background: transparent;
+}
+
+/* Webamp Fallback Styles */
+.webamp-fallback {
+  padding: 20px;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
+  border: 2px outset #4a4a4a;
+  border-radius: 0;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+  box-shadow: 0 0 0 2px #1a1a1a, 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+.webamp-fallback p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #ffcc00;
+  text-shadow: 0 0 3px #ffcc00;
+}
+
+/* Responsive Design for Webamp */
+@media (max-width: 768px) {
+  .sound-player-container {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+  
+  .webamp-container {
+    min-height: 300px;
+  }
+}
+
+/* Webamp will handle all the Winamp-style UI internally */
+/* The component will render the classic Winamp interface with:
+   - Main player window
+   - Equalizer
+   - Playlist
+   - Milkdrop visualizations
+   - All the classic Winamp controls and features
+*/
+
+

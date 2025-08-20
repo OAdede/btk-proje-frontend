@@ -6,6 +6,7 @@ import { AuthContext } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { useBootstrap } from './context/BootstrapContext.jsx';
 import { getRoleInfoFromToken, isTokenExpired } from './utils/jwt.js';
+import HiddenWebamp from './components/layout/HiddenWebamp.jsx';
 
 
 // Layouts
@@ -124,6 +125,7 @@ function App() {
 
   return (
     <ThemeProvider>
+      <HiddenWebamp />
       {isDebugMode && (
         <div style={{ 
           position: 'fixed', 
