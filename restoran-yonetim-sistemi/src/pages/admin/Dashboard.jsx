@@ -499,9 +499,9 @@ const Dashboard = () => {
     "bos": { text: "Boş", color: "#22c55e", textColor: "#ffffff" },
     "occupied": { text: "Dolu", color: "#ef4444", textColor: "#ffffff" },
     "dolu": { text: "Dolu", color: "#ef4444", textColor: "#ffffff" },
-    "reserved": { text: "Rezerve", color: "#fbbf24", textColor: "#111827" },
+    "reserved": { text: "Rezerve", color: "#fbbf24", textColor: "#ffffff" },
     "reserved-future": { text: "Rezerve", color: "#22c55e", textColor: "#ffffff" },
-    "reserved-special": { text: "Özel Rezerve", color: "#f59e0b", textColor: "#111827" },
+    "reserved-special": { text: "Özel Rezerve", color: "#f59e0b", textColor: "#ffffff" },
   };
 
     const getStatus = (tableId) => {
@@ -1133,7 +1133,7 @@ const Dashboard = () => {
                   </div>
                   <div style={{ 
                     fontSize: 35, 
-                    fontWeight: 900, 
+                    fontWeight: 500, 
                     letterSpacing: 1,
                     color: status.textColor
                   }}>

@@ -168,9 +168,9 @@ export default function AdminStyleTables({ roleOverride }) {
         bos: { text: 'Boş', color: '#4caf50', textColor: '#fff' },
         occupied: { text: 'Dolu', color: '#dc3545', textColor: '#fff' },
         dolu: { text: 'Dolu', color: '#dc3545', textColor: '#fff' },
-        reserved: { text: 'Rezerve', color: '#ffc107', textColor: '#212529' },
+        reserved: { text: 'Rezerve', color: '#ffc107', textColor: '#fff' },
         'reserved-future': { text: 'Rezerve', color: '#4caf50', textColor: '#fff' },
-        'reserved-special': { text: 'Özel Rezerve', color: '#ffc107', textColor: '#212529' },
+        'reserved-special': { text: 'Özel Rezerve', color: '#ffc107', textColor: '#fff' },
     };
 
     // Masa ID'sinden orders verilerini almak için yardımcı fonksiyon
@@ -520,7 +520,7 @@ export default function AdminStyleTables({ roleOverride }) {
                                 >
                                     {table.capacity} Kişilik
                                 </div>
-                                <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{table.displayNumber}</div>
+                                <div style={{ fontSize: '2.5rem', fontWeight: '500' }}>{table.displayNumber}</div>
                                 <div style={{ fontSize: '1rem', marginTop: '0.5rem', fontWeight: 500 }}>
                                     {status.text}
                                     {order.items && Object.keys(order.items).length > 0 && (
