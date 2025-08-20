@@ -145,8 +145,8 @@ const EditReservationPage = () => {
             // Rezervasyonu güncelle
             updateReservation(reservationId, formData);
             
-            // Başarı mesajı göster ve sayfaya geri dön
-            alert('✅ Rezervasyon başarıyla güncellendi!');
+            // Başarı mesajı göster ve sayfaya geri dön - DEVRE DIŞI
+            // alert('✅ Rezervasyon başarıyla güncellendi!');
             navigate('/admin/reservations');
         }
     };

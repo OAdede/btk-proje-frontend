@@ -219,6 +219,14 @@ const Dashboard = () => {
     return savedCapacities;
   });
 
+  // Drag and Drop state'leri
+  const [draggedTable, setDraggedTable] = useState(null);
+  const [dragOverTable, setDragOverTable] = useState(null);
+  const [tablePositions, setTablePositions] = useState(() => {
+    const saved = localStorage.getItem('tablePositions');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   // Calculate occupancy for a table using current backend tables and reservations
   const getTableOccupancy = (tableId) => {
     const backendTable = (tables || []).find(t => String(t?.tableNumber ?? t?.id) === String(tableId));
@@ -244,24 +252,98 @@ const Dashboard = () => {
   const displayTables = useMemo(() => {
     if (!Array.isArray(tables) || tables.length === 0) return [];
     const filtered = selectedSalonId ? tables.filter(t => (t?.salon?.id ?? t?.salonId) === selectedSalonId) : tables;
-    return filtered.map(t => ({
+    const mapped = filtered.map(t => ({
       id: String(t?.tableNumber ?? t?.id),
       displayNumber: getAdminDisplayFor(t),
       capacity: t?.capacity || 4,
       backendId: t?.id,
       salonId: t?.salon?.id ?? t?.salonId
     }));
-  }, [tables, selectedSalonId, derivedSalons]);
+    
+    // Pozisyona göre sırala
+    return mapped.sort((a, b) => {
+      const aPos = tablePositions[a.id]?.order ?? parseInt(a.id) ?? 0;
+      const bPos = tablePositions[b.id]?.order ?? parseInt(b.id) ?? 0;
+      return aPos - bPos;
+    });
+  }, [tables, selectedSalonId, derivedSalons, tablePositions]);
 
   // Masa kapasitelerini localStorage'a kaydet
   useEffect(() => {
     localStorage.setItem('tableCapacities', JSON.stringify(tableCapacities));
   }, [tableCapacities]);
+
+  // Masa pozisyonlarını localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('tablePositions', JSON.stringify(tablePositions));
+  }, [tablePositions]);
   
 
   const handleReservationClick = (tableId) => {
     setSelectedTable(tableId);
     setShowReservationModal(true);
+  };
+
+  // Drag and Drop fonksiyonları
+  const handleDragStart = (e, table) => {
+    if (!showTableLayoutMode) return; // Sadece masa düzeni modunda aktif
+    setDraggedTable(table);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', table.id);
+    // Drag görsel efekti için
+    e.currentTarget.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.style.opacity = '1';
+    setDraggedTable(null);
+    setDragOverTable(null);
+  };
+
+  const handleDragOver = (e, table) => {
+    if (!showTableLayoutMode || !draggedTable) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverTable(table.id);
+  };
+
+  const handleDragLeave = (e) => {
+    if (!showTableLayoutMode) return;
+    setDragOverTable(null);
+  };
+
+  const handleDrop = (e, targetTable) => {
+    if (!showTableLayoutMode || !draggedTable || draggedTable.id === targetTable.id) return;
+    e.preventDefault();
+    
+    // İki masanın pozisyonlarını değiştir
+    const sourceTableId = draggedTable.id;
+    const targetTableId = targetTable.id;
+    
+    console.log('Masa pozisyon değişimi:', sourceTableId, '->', targetTableId);
+    
+    // Başarı mesajı göster - DEVRE DIŞI
+    // setSuccessData({
+    //   message: `Masa ${draggedTable.displayNumber} ile Masa ${targetTable.displayNumber} pozisyonları değiştirildi!`,
+    //   details: 'Yeni düzen otomatik olarak kaydedildi.'
+    // });
+    // setShowSuccess(true);
+    
+    // Pozisyon değişimini localStorage'a kaydet
+    setTablePositions(prev => {
+      const newPositions = { ...prev };
+      const sourcePos = newPositions[sourceTableId] || { order: parseInt(sourceTableId) };
+      const targetPos = newPositions[targetTableId] || { order: parseInt(targetTableId) };
+      
+      // Pozisyonları takas et
+      newPositions[sourceTableId] = targetPos;
+      newPositions[targetTableId] = sourcePos;
+      
+      return newPositions;
+    });
+
+    setDraggedTable(null);
+    setDragOverTable(null);
   };
 
   const handleTableClick = (table) => {
@@ -324,9 +406,9 @@ const Dashboard = () => {
       setShowReservationMode(false); // Rezervasyon modunu kapat
       setModalKey(prev => prev + 1); // Modal key'ini artırarak form verilerini temizle
 
-      // Başarı bildirimi göster
-      setSuccessData({ ...formData, masaNo: selectedTable });
-      setShowSuccess(true);
+      // Başarı bildirimi göster - DEVRE DIŞI
+      // setSuccessData({ ...formData, masaNo: selectedTable });
+      // setShowSuccess(true);
     } catch (error) {
       console.error('Rezervasyon oluşturma hatası:', error);
       
@@ -994,7 +1076,7 @@ const Dashboard = () => {
                 marginLeft: '15px',
                 fontWeight: 'bold'
               }}>
-                🏠 Masa Düzeni Modu Aktif
+                🏠 Masa Düzeni Modu Aktif - Masaları Sürükleyerek Taşıyın
               </span>
             )}
             {showFloorLayoutMode && (
@@ -1030,6 +1112,12 @@ const Dashboard = () => {
               return (
                 <div
                   key={table.id || crypto.randomUUID()}
+                  draggable={showTableLayoutMode}
+                  onDragStart={(e) => handleDragStart(e, table)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, table)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, table)}
                   style={{
                     backgroundColor: status.color,
                     color: status.textColor,
@@ -1039,23 +1127,28 @@ const Dashboard = () => {
                     justifyContent: "center",
                     alignItems: "center",
                     borderRadius: "16px",
-                    cursor: 'pointer',
+                    cursor: showTableLayoutMode ? 'move' : 'pointer',
                     userSelect: "none",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
                     position: 'relative',
-                    border: '2px solid rgba(0,0,0,0.08)'
+                    border: dragOverTable === table.id ? '3px solid #2196f3' : '2px solid rgba(0,0,0,0.08)',
+                    transform: draggedTable?.id === table.id ? 'scale(0.95)' : 'scale(1)'
                   }}
-                  onClick={() => handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: table.activeOrderItemsCount || 0, reservation: tableReservations[0] })}
+                  onClick={() => !showTableLayoutMode && handleTableClick({ id: table.id, name: table.displayNumber, status: tableStatus[table.id] || 'empty', orderCount: table.activeOrderItemsCount || 0, reservation: tableReservations[0] })}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.04)';
-                    e.currentTarget.style.boxShadow = '0 16px 28px rgba(0,0,0,0.18)';
+                    if (!draggedTable) {
+                      e.currentTarget.style.transform = showTableLayoutMode ? 'scale(1.02)' : 'scale(1.04)';
+                      e.currentTarget.style.boxShadow = '0 16px 28px rgba(0,0,0,0.18)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
+                    if (!draggedTable) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
+                    }
                   }}
-                  title={showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`}
+                  title={showTableLayoutMode ? `Masa ${table.displayNumber} - Sürükleyerek Taşı` : (showReservationMode && status.text === 'Boş' ? `Masa ${table.displayNumber} - Rezervasyon Yap` : `Masa ${table.displayNumber}`)}
                 >
                   {/* per-table occupancy removed */}
                   {/* Ahşap süsler kaldırıldı, sade renkli kart */}
@@ -1120,6 +1213,29 @@ const Dashboard = () => {
                     >
                       ✕
                     </button>
+                  )}
+
+                  {/* Masa düzeni modunda sürükle işareti */}
+                  {showTableLayoutMode && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '5px',
+                      left: '5px',
+                      background: 'rgba(33, 150, 243, 0.8)',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      pointerEvents: 'none',
+                      zIndex: 5
+                    }}>
+                      ⟷
+                    </div>
                   )}
 
                   {/* Masa kapasitesi */}
