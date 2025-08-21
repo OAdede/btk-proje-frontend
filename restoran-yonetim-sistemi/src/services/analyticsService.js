@@ -188,7 +188,7 @@ export const analyticsService = {
     },
 
     // Get employee performance analytics
-    async getEmployeePerformance() {
+    async getEmployeePerformance(period = 'DAILY') {
         try {
             const params = new URLSearchParams({ limit: '10', date: new Date().toISOString().split('T')[0] });
             const responseData = await httpClient.requestJson(`/analytics/employee-performance?${params}`);
@@ -371,6 +371,62 @@ export const analyticsService = {
         } catch (error) {
             console.error('Generate all summaries service error:', error);
             return null;
+        }
+    },
+
+    // Get real-time statistics for dashboard
+    async getRealtimeStats() {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+
+            if (token) { headers['Authorization'] = `Bearer ${token}`; }
+
+            const response = await fetch(`${API_BASE_URL}/analytics/realtime-stats`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.log(`Real-time stats API error: ${response.status} ${response.statusText}`);
+                return {
+                    todayOrders: 0,
+                    todayRevenue: 0,
+                    weeklyOrders: 0,
+                    weeklyRevenue: 0,
+                    monthlyOrders: 0,
+                    monthlyRevenue: 0,
+                    activeReservations: 0
+                };
+            }
+
+            try {
+                const responseData = await response.json();
+                console.log('Real-time stats loaded:', responseData);
+                return responseData;
+            } catch (jsonError) {
+                console.log('Response is not JSON, returning default values');
+                return {
+                    todayOrders: 0,
+                    todayRevenue: 0,
+                    weeklyOrders: 0,
+                    weeklyRevenue: 0,
+                    monthlyOrders: 0,
+                    monthlyRevenue: 0,
+                    activeReservations: 0
+                };
+            }
+        } catch (error) {
+            console.error('Real-time stats service error:', error);
+            return {
+                todayOrders: 0,
+                todayRevenue: 0,
+                weeklyOrders: 0,
+                weeklyRevenue: 0,
+                monthlyOrders: 0,
+                monthlyRevenue: 0,
+                activeReservations: 0
+            };
         }
     }
 };

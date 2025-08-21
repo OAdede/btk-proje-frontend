@@ -21,6 +21,8 @@ const ReportsPage = () => {
     });
     const [lastGeneratedTime, setLastGeneratedTime] = useState(null);
     const [generationError, setGenerationError] = useState(null);
+    const [realtimeStats, setRealtimeStats] = useState(null);
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
 
     // Generate all summaries for current timestamp when page loads
     const generateAllSummaries = async () => {
@@ -106,11 +108,27 @@ const ReportsPage = () => {
         }
     };
 
+    // Gerçek zamanlı istatistikleri çek
+    const fetchRealtimeStats = async () => {
+        try {
+            setIsLoadingStats(true);
+            const stats = await analyticsService.getRealtimeStats();
+            setRealtimeStats(stats);
+        } catch (error) {
+            console.error('Error fetching real-time stats:', error);
+            setRealtimeStats(null);
+        } finally {
+            setIsLoadingStats(false);
+        }
+    };
+
     // Component mount olduğunda önce özetleri oluştur, sonra veri çek
     useEffect(() => {
         const initializeReports = async () => {
             // First generate all summaries for current timestamp
             await generateAllSummaries();
+            await fetchDailySalesData();
+            await fetchRealtimeStats();
         };
 
         initializeReports();
@@ -126,13 +144,25 @@ const ReportsPage = () => {
 
     // Bugünkü siparişleri hesapla
     const getTodayOrders = () => {
-        return dailyOrderCount;
+        if (isLoadingStats) {
+            return "Yükleniyor...";
+        }
+        
+        if (realtimeStats && realtimeStats.todayOrders !== undefined) {
+            return realtimeStats.todayOrders;
+        }
+        
+        return dailyOrderCount || 0;
     };
 
     // Toplam kazancı API'den al
     const getTotalEarnings = () => {
-        if (isLoadingSales) {
+        if (isLoadingStats) {
             return "Yükleniyor...";
+        }
+        
+        if (realtimeStats && realtimeStats.todayRevenue !== undefined) {
+            return `${parseFloat(realtimeStats.todayRevenue).toLocaleString()}₺`;
         }
         
         if (dailySalesData && dailySalesData.totalRevenue) {
@@ -155,23 +185,6 @@ const ReportsPage = () => {
                             <span>Son güncelleme: {lastGeneratedTime.toLocaleString('tr-TR')}</span>
                         </div>
                     )}
-                    <button 
-                        className="refresh-summaries-btn"
-                        onClick={generateAllSummaries}
-                        disabled={isGeneratingSummaries}
-                    >
-                        {isGeneratingSummaries ? (
-                            <>
-                                <span className="refresh-icon spinning">🔄</span>
-                                <span>Oluşturuluyor...</span>
-                            </>
-                        ) : (
-                            <>
-                                <span className="refresh-icon">🔄</span>
-                                <span>Raporları Yenile</span>
-                            </>
-                        )}
-                    </button>
                 </div>
             </div>
             

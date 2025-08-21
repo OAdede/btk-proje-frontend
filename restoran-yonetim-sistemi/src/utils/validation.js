@@ -13,9 +13,11 @@ export const validationUtils = {
     if (!formData.phone.trim()) {
       errors.push("Telefon alanı zorunludur");
     } else {
+      // Remove spaces and check if it matches Turkish phone format
+      const cleanPhone = formData.phone.replace(/\s/g, '');
       const phoneRegex = /^05[0-9]{9}$/;
-      if (!phoneRegex.test(formData.phone)) {
-        errors.push("Geçerli bir telefon numarası giriniz (05xxxxxxxxx)");
+      if (!phoneRegex.test(cleanPhone)) {
+        errors.push("Geçerli bir telefon numarası giriniz (0 5xx xxx xx xx)");
       }
     }
 
@@ -45,8 +47,9 @@ export const validationUtils = {
 
   // Validate phone format (Turkish)
   validatePhone(phone) {
+    const cleanPhone = phone.replace(/\s/g, '');
     const phoneRegex = /^05[0-9]{9}$/;
-    return phoneRegex.test(phone);
+    return phoneRegex.test(cleanPhone);
   },
 
   // Validate password strength

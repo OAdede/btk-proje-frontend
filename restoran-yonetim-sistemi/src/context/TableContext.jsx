@@ -4,6 +4,8 @@ import tokenManager from "../utils/tokenManager.js";
 import httpClient from "../utils/httpClient.js";
 import secureStorage from "../utils/secureStorage.js";
 import { reservationService } from "../services/reservationService";
+import { orderService } from "../services/orderService";
+
 
 // Debug flags for different categories
 const DEBUG_TABLES = (import.meta?.env?.VITE_DEBUG_TABLES === 'true');
@@ -679,17 +681,32 @@ export function TableProvider({ children }) {
     };
 
     const checkIngredientStock = (orderItems, isIncrease = false) => {
+        console.log("Stok kontrolü başlatılıyor...");
+        console.log("Mevcut ingredients:", ingredients);
+        console.log("Sipariş edilecek ürünler:", orderItems);
+        
+        // Eğer ingredients boşsa, stok kontrolünü atla
+        if (!ingredients || Object.keys(ingredients).length === 0) {
+            console.warn("Stok verileri yüklenmemiş, stok kontrolü atlanıyor");
+            return true;
+        }
+        
         const tempIngredients = { ...ingredients };
         const invalidProducts = [];
+        let hasInsufficientStock = false;
         
         for (const [id, item] of Object.entries(orderItems)) {
             const recipe = findProductRecipe(id);
+            console.log(`Ürün ${id} için tarif:`, recipe);
+            
             if (!recipe.length) {
                 if (DEBUG_STOCK) console.log(`Ürün ${id} için tarif bulunamadı`);
                 continue;
             }
             
             for (const ingredient of recipe) {
+                console.log(`Malzeme kontrolü:`, ingredient);
+                
                 // Sıfır miktar kontrolü ekle
                 if (!ingredient.quantity || ingredient.quantity <= 0) {
                     console.warn(`Ürün ${id} için geçersiz malzeme miktarı: ${ingredient.quantity}`);
@@ -698,9 +715,25 @@ export function TableProvider({ children }) {
                 }
                 
                 const required = ingredient.quantity * item.count;
-                // Stok verisi erişilemiyorsa (ör. admin olmayan roller) stok kontrolünü atla
-                if (!tempIngredients[ingredient.ingredientId]) continue;
-                if (tempIngredients[ingredient.ingredientId].stockQuantity < required) return false;
+                console.log(`Gerekli miktar: ${required} (${ingredient.quantity} x ${item.count})`);
+                
+                // Stok verisi erişilemiyorsa kontrol et
+                if (!tempIngredients[ingredient.ingredientId]) {
+                    console.warn(`Malzeme ${ingredient.ingredientId} için stok verisi bulunamadı - kontrol atlanıyor`);
+                    continue;
+                }
+                
+                const availableStock = tempIngredients[ingredient.ingredientId].stockQuantity;
+                console.log(`Mevcut stok: ${availableStock}, Gerekli: ${required}`);
+                
+                if (availableStock < required) {
+                    console.error(`Yetersiz stok! Malzeme: ${tempIngredients[ingredient.ingredientId].name}, Mevcut: ${availableStock}, Gerekli: ${required}`);
+                    hasInsufficientStock = true;
+                    // Hata mesajını daha detaylı göster
+                    alert(`Yetersiz stok!\n\nMalzeme: ${tempIngredients[ingredient.ingredientId].name}\nMevcut: ${availableStock} ${tempIngredients[ingredient.ingredientId].unit}\nGerekli: ${required} ${tempIngredients[ingredient.ingredientId].unit}`);
+                    return false;
+                }
+                
                 tempIngredients[ingredient.ingredientId].stockQuantity -= required;
             }
         }
@@ -710,6 +743,11 @@ export function TableProvider({ children }) {
             console.warn("Geçersiz malzeme miktarları olan ürünler:", invalidProducts);
         }
         
+        if (hasInsufficientStock) {
+            return false;
+        }
+        
+        console.log("Stok kontrolü başarılı!");
         return true;
     };
 
@@ -1043,9 +1081,24 @@ export function TableProvider({ children }) {
         setError(null);
         
         const isOrderEmpty = Object.keys(finalItems).length === 0;
-        if (!isOrderEmpty && !checkIngredientStock(finalItems)) {
-            alert("Maalesef stokta yeterli içerik yok!");
-            return;
+        
+        // Stok kontrolü - sadece admin rolü için aktif
+        const token = localStorage.getItem('token');
+        const roleInfo = getRoleInfoFromToken(token || '');
+        const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
+        
+        if (!isOrderEmpty && isAdmin) {
+            console.log("Admin rolü için stok kontrolü yapılıyor...");
+            console.log("Stok verileri durumu:", {
+                ingredientsCount: Object.keys(ingredients).length,
+                ingredients: ingredients,
+                finalItems: finalItems
+            });
+            if (!checkIngredientStock(finalItems)) {
+                return;
+            }
+        } else if (!isOrderEmpty) {
+            console.log("Admin olmayan rol için stok kontrolü atlanıyor...");
         }
 
         // Malzeme miktarlarını kontrol et ve sıfır olanları filtrele
@@ -1494,11 +1547,14 @@ export function TableProvider({ children }) {
                 delete updatedItems[itemToDecrease.id];
             }
 
-            const roleInfo2 = getRoleInfoFromToken(tokenManager.getToken() || '');
-            const numericUserId2 = typeof roleInfo2?.userId === 'string' && /^\d+$/.test(roleInfo2.userId)
-                ? parseInt(roleInfo2.userId, 10)
-                : (typeof roleInfo2?.userId === 'number' ? roleInfo2.userId : 1);
-            const backendTableId2 = (() => {
+            // Get user ID from token
+            const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+            
+            // Get backend table ID
+            const backendTableId = (() => {
                 const numeric = Number(tableId);
                 const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
                 if (byNumber?.id != null) return Number(byNumber.id);
@@ -1506,20 +1562,24 @@ export function TableProvider({ children }) {
                 if (byId?.id != null) return Number(byId.id);
                 return parseInt(tableId);
             })();
+
+            // Prepare complete order data for backend
             const orderData = {
-                tableId: backendTableId2,
-                userId: numericUserId2,
+                tableId: backendTableId,
+                userId: numericUserId,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
                     quantity: item.count,
                 })),
             };
 
+            // Update the complete order
             await apiCall(`/orders/${currentOrder.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+                body: JSON.stringify(orderData),
             });
+            
             await fetchData();
             
             // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
@@ -1539,11 +1599,14 @@ export function TableProvider({ children }) {
             const updatedItems = { ...currentOrder.items };
             updatedItems[itemToIncrease.id].count += 1;
 
-            const roleInfo3 = getRoleInfoFromToken(tokenManager.getToken() || '');
-            const numericUserId3 = typeof roleInfo3?.userId === 'string' && /^\d+$/.test(roleInfo3.userId)
-                ? parseInt(roleInfo3.userId, 10)
-                : (typeof roleInfo3?.userId === 'number' ? roleInfo3.userId : 1);
-            const backendTableId3 = (() => {
+            // Get user ID from token
+            const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
+            const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                ? parseInt(roleInfo.userId, 10)
+                : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+            
+            // Get backend table ID
+            const backendTableId = (() => {
                 const numeric = Number(tableId);
                 const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
                 if (byNumber?.id != null) return Number(byNumber.id);
@@ -1551,20 +1614,24 @@ export function TableProvider({ children }) {
                 if (byId?.id != null) return Number(byId.id);
                 return parseInt(tableId);
             })();
+
+            // Prepare complete order data for backend
             const orderData = {
-                tableId: backendTableId3,
-                userId: numericUserId3,
+                tableId: backendTableId,
+                userId: numericUserId,
                 items: Object.values(updatedItems).map(item => ({
                     productId: item.id,
                     quantity: item.count,
                 })),
             };
 
+            // Update the complete order
             await apiCall(`/orders/${currentOrder.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+                body: JSON.stringify(orderData),
             });
+            
             await fetchData();
             
             // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
@@ -1584,37 +1651,47 @@ export function TableProvider({ children }) {
             const updatedItems = { ...currentOrder.items };
             delete updatedItems[itemToRemove.id];
 
-            const roleInfo4 = getRoleInfoFromToken(tokenManager.getToken() || '');
-            const numericUserId4 = typeof roleInfo4?.userId === 'string' && /^\d+$/.test(roleInfo4.userId)
-                ? parseInt(roleInfo4?.userId, 10)
-                : (typeof roleInfo4?.userId === 'number' ? roleInfo4?.userId : 1);
-            const backendTableId4 = (() => {
-                const numeric = Number(tableId);
-                const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
-                if (byNumber?.id != null) return Number(byNumber.id);
-                const byId = (tables || []).find(t => Number(t?.id) === numeric);
-                if (byId?.id != null) return Number(byId.id);
-                return parseInt(tableId);
-            })();
-            const orderData = {
-                tableId: backendTableId4,
-                userId: numericUserId4,
-                items: Object.values(updatedItems).map(item => ({
-                    productId: item.id,
-                    quantity: item.count,
-                })),
-            };
-
             if (Object.keys(updatedItems).length === 0) {
-                await apiCall(`/orders/${currentOrder.id}`, { method: 'DELETE' });
+                // Eğer hiç ürün kalmadıysa siparişi sil
+                await apiCall(`/orders/${currentOrder.id}`, {
+                    method: 'DELETE',
+                });
                 await updateTableStatus(tableId, "empty");
             } else {
+                // Get user ID from token
+                const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
+                const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
+                    ? parseInt(roleInfo.userId, 10)
+                    : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
+                
+                // Get backend table ID
+                const backendTableId = (() => {
+                    const numeric = Number(tableId);
+                    const byNumber = (tables || []).find(t => Number(t?.tableNumber ?? t?.number) === numeric);
+                    if (byNumber?.id != null) return Number(byNumber.id);
+                    const byId = (tables || []).find(t => Number(t?.id) === numeric);
+                    if (byId?.id != null) return Number(byId.id);
+                    return parseInt(tableId);
+                })();
+
+                // Prepare complete order data for backend
+                const orderData = {
+                    tableId: backendTableId,
+                    userId: numericUserId,
+                    items: Object.values(updatedItems).map(item => ({
+                        productId: item.id,
+                        quantity: item.count,
+                    })),
+                };
+
+                // Update the complete order
                 await apiCall(`/orders/${currentOrder.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...orderData, orderId: currentOrder.id }),
+                    body: JSON.stringify(orderData),
                 });
             }
+            
             await fetchData();
             
             // Sipariş güncellemesi sonrası ürün müsaitlik miktarlarını güncelle
@@ -2343,16 +2420,67 @@ export function TableProvider({ children }) {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    let dailyCount = 0;
-    let monthlyCount = 0;
-    let yearlyCount = 0;
+    // Backend'den günlük sipariş sayısını al
+    const [dailyCount, setDailyCount] = useState(0);
+    const [monthlyCount, setMonthlyCount] = useState(0);
+    const [yearlyCount, setYearlyCount] = useState(0);
 
-    Object.values(completedOrders).forEach((order) => {
-        const d = new Date(order.creationDate);
-        if (d.toLocaleDateString() === todayStr) dailyCount++;
-        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) monthlyCount++;
-        if (d.getFullYear() === currentYear) yearlyCount++;
-    });
+    // Backend'den günlük sipariş sayısını al
+    const fetchDailyOrderCount = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Accept': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`${API_BASE_URL}/analytics/revenue/realtime?period=DAILY`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setDailyCount(data.totalOrders || 0);
+            } else {
+                console.warn('Failed to fetch daily order count from backend, using local calculation');
+                // Fallback to local calculation
+                let localDailyCount = 0;
+                Object.values(completedOrders).forEach((order) => {
+                    const d = new Date(order.creationDate);
+                    if (d.toLocaleDateString() === todayStr) localDailyCount++;
+                });
+                setDailyCount(localDailyCount);
+            }
+        } catch (error) {
+            console.error('Error fetching daily order count:', error);
+            // Fallback to local calculation
+            let localDailyCount = 0;
+            Object.values(completedOrders).forEach((order) => {
+                const d = new Date(order.creationDate);
+                if (d.toLocaleDateString() === todayStr) localDailyCount++;
+            });
+            setDailyCount(localDailyCount);
+        }
+    }, [completedOrders, todayStr]);
+
+    // Aylık ve yıllık sipariş sayılarını hesapla (şimdilik local)
+    useEffect(() => {
+        let localMonthlyCount = 0;
+        let localYearlyCount = 0;
+
+        Object.values(completedOrders).forEach((order) => {
+            const d = new Date(order.creationDate);
+            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) localMonthlyCount++;
+            if (d.getFullYear() === currentYear) localYearlyCount++;
+        });
+
+        setMonthlyCount(localMonthlyCount);
+        setYearlyCount(localYearlyCount);
+    }, [completedOrders, currentMonth, currentYear]);
+
+    // Günlük sipariş sayısını al
+    useEffect(() => {
+        fetchDailyOrderCount();
+    }, [fetchDailyOrderCount]);
 
     // Masa için aktif rezervasyonları tamamla (sipariş alındığında)
     const completeActiveReservationsForTable = async (tableId) => {

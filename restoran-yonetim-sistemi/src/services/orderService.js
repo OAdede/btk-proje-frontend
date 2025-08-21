@@ -29,6 +29,29 @@ export const orderService = {
     async getOrdersByTableId(tableId) {
         try {
             const token = localStorage.getItem('token');
+            
+            // First try to get the open order for this table
+            try {
+                const openOrderResponse = await fetch(`${API_BASE_URL}/orders/table/${tableId}/open`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    }
+                });
+
+                if (openOrderResponse.ok) {
+                    const openOrder = await openOrderResponse.json();
+                    return [openOrder]; // Return as array for consistency
+                } else if (openOrderResponse.status === 204) {
+                    // No open order found, return empty array
+                    return [];
+                }
+            } catch (openOrderError) {
+                console.warn('Could not fetch open order, falling back to all orders:', openOrderError);
+            }
+
+            // Fallback: get all orders and filter by table ID
             const response = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'GET',
                 headers: {
@@ -158,7 +181,7 @@ export const orderService = {
     async getOrderItems(orderId) {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items`, {
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -170,7 +193,8 @@ export const orderService = {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            return await response.json();
+            const order = await response.json();
+            return order.items || [];
         } catch (error) {
             console.error('Error fetching order items:', error);
             throw error;
@@ -181,14 +205,37 @@ export const orderService = {
     async addOrderItem(orderId, itemData) {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items`, {
-                method: 'POST',
+            
+            // First get the current order
+            const currentOrderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+
+            if (!currentOrderResponse.ok) {
+                throw new Error(`HTTP ${currentOrderResponse.status}: ${currentOrderResponse.statusText}`);
+            }
+
+            const currentOrder = await currentOrderResponse.json();
+            
+            // Add the new item to the existing items
+            const updatedItems = [...(currentOrder.items || []), itemData];
+            
+            // Update the order with new items
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                body: JSON.stringify(itemData)
+                body: JSON.stringify({
+                    tableId: currentOrder.tableId,
+                    items: updatedItems
+                })
             });
 
             if (!response.ok) {
@@ -207,14 +254,39 @@ export const orderService = {
     async updateOrderItem(orderId, itemId, itemData) {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items`, {
+            
+            // First get the current order
+            const currentOrderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+
+            if (!currentOrderResponse.ok) {
+                throw new Error(`HTTP ${currentOrderResponse.status}: ${currentOrderResponse.statusText}`);
+            }
+
+            const currentOrder = await currentOrderResponse.json();
+            
+            // Update the specific item in the items array
+            const updatedItems = (currentOrder.items || []).map(item => 
+                item.productId === itemId ? { ...item, ...itemData } : item
+            );
+            
+            // Update the order with updated items
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                body: JSON.stringify(itemData)
+                body: JSON.stringify({
+                    tableId: currentOrder.tableId,
+                    items: updatedItems
+                })
             });
 
             if (!response.ok) {
@@ -233,12 +305,37 @@ export const orderService = {
     async removeOrderItem(orderId, itemId) {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/items`, {
-                method: 'DELETE',
+            
+            // First get the current order
+            const currentOrderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'GET',
                 headers: {
                     'Accept': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 }
+            });
+
+            if (!currentOrderResponse.ok) {
+                throw new Error(`HTTP ${currentOrderResponse.status}: ${currentOrderResponse.statusText}`);
+            }
+
+            const currentOrder = await currentOrderResponse.json();
+            
+            // Remove the specific item from the items array
+            const updatedItems = (currentOrder.items || []).filter(item => item.productId !== itemId);
+            
+            // Update the order with updated items
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    tableId: currentOrder.tableId,
+                    items: updatedItems
+                })
             });
 
             if (!response.ok) {
@@ -274,6 +371,30 @@ export const orderService = {
             return data;
         } catch (error) {
             console.error('Error fetching my orders:', error);
+            throw error;
+        }
+    },
+
+    // Delete order
+    async deleteOrder(orderId) {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error deleting order:', error);
             throw error;
         }
     }

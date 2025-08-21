@@ -56,7 +56,6 @@ export const personnelService = {
                 password: tempPassword,
                 phoneNumber: personnelData.phone.trim(),
                 photo: null,
-                createdAt: new Date().toISOString(),
                 roleName: roleName
             };
 

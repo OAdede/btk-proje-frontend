@@ -26,30 +26,32 @@ const PersonelEkleme = () => {
   const [success, setSuccess] = useState(null);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  // Telefon numarası formatı: 5xx xxx xx xx
+  // Telefon numarası formatı: 0 5xx xxx xx xx
   const formatPhoneNumber = (value) => {
     // Sadece rakamları al
     const numbers = value.replace(/\D/g, '');
     
-    // 5 ile başlamıyorsa 5 ekle
+    // 0 ile başlamıyorsa 0 ekle
     let formatted = numbers;
-    if (numbers.length > 0 && numbers[0] !== '5') {
-      formatted = '5' + numbers;
+    if (numbers.length > 0 && numbers[0] !== '0') {
+      formatted = '0' + numbers;
     }
     
-    // Maksimum 10 hane olacak şekilde kes
-    formatted = formatted.slice(0, 10);
+    // Maksimum 11 hane olacak şekilde kes (0 + 10 digit)
+    formatted = formatted.slice(0, 11);
     
-    // Format uygula: 5xx xxx xx xx
+    // Format uygula: 0 5xx xxx xx xx
     if (formatted.length >= 1) {
-      if (formatted.length <= 3) {
+      if (formatted.length <= 1) {
         formatted = formatted;
-      } else if (formatted.length <= 6) {
-        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3);
-      } else if (formatted.length <= 8) {
-        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6);
+      } else if (formatted.length <= 4) {
+        formatted = formatted.slice(0, 1) + ' ' + formatted.slice(1);
+      } else if (formatted.length <= 7) {
+        formatted = formatted.slice(0, 1) + ' ' + formatted.slice(1, 4) + ' ' + formatted.slice(4);
+      } else if (formatted.length <= 9) {
+        formatted = formatted.slice(0, 1) + ' ' + formatted.slice(1, 4) + ' ' + formatted.slice(4, 7) + ' ' + formatted.slice(7);
       } else {
-        formatted = formatted.slice(0, 3) + ' ' + formatted.slice(3, 6) + ' ' + formatted.slice(6, 8) + ' ' + formatted.slice(8);
+        formatted = formatted.slice(0, 1) + ' ' + formatted.slice(1, 4) + ' ' + formatted.slice(4, 7) + ' ' + formatted.slice(7, 9) + ' ' + formatted.slice(9);
       }
     }
     
@@ -380,7 +382,7 @@ const PersonelEkleme = () => {
               type="tel"
               value={newPerson.phone}
               onChange={handlePhoneChange}
-              placeholder="5xx xxx xx xx"
+              placeholder="0 5xx xxx xx xx"
               required
             />
             <input
