@@ -88,7 +88,9 @@ function OrdersPage() {
                     padding: '4px 8px',
                     borderRadius: '12px',
                     fontSize: '0.8rem',
-                    fontWeight: '500'
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    display: 'inline-block'
                 }}>
                     ✅ Tamamlandı
                 </span>
@@ -101,7 +103,9 @@ function OrdersPage() {
                     padding: '4px 8px',
                     borderRadius: '12px',
                     fontSize: '0.8rem',
-                    fontWeight: '500'
+                    fontWeight: '500',
+                    whiteSpace: 'nowrap',
+                    display: 'inline-block'
                 }}>
                     ⏳ Devam Ediyor
                 </span>
@@ -227,28 +231,29 @@ function OrdersPage() {
                                         borderRadius: '10px',
                                         boxShadow: '0 1px 6px var(--shadow)',
                                         padding: '12px 20px',
-                                        gap: '20px',
+                                        gap: '10px',
                                         border: '1px solid var(--border)',
                                         color: 'var(--text)',
-                                        marginBottom: '10px'
+                                        marginBottom: '10px',
+                                        flexWrap: 'nowrap'
                                     }}
                                 >
-                                    <div style={{ flex: 1, fontWeight: 600, color: 'var(--text)' }}>
+                                    <div style={{ flex: '0 0 12%', minWidth: '70px', fontWeight: 600, color: 'var(--text)' }}>
                                         Masa {order.tableNumber || order.tableId || 'N/A'}
                                     </div>
-                                    <div style={{ flex: 1, fontWeight: 500, color: 'var(--success)' }}>
+                                    <div style={{ flex: '0 0 12%', minWidth: '80px', fontWeight: 500, color: 'var(--success)' }}>
                                         {formatCurrency(order.totalPrice || 0)}
                                     </div>
-                                    <div style={{ flex: 2, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                                    <div style={{ flex: '0 0 16%', minWidth: '100px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                                         Sipariş ID: #{order.orderId || order.id}
                                     </div>
-                                    <div style={{ flex: 3, fontWeight: 500, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    <div style={{ flex: '1 1 30%', minWidth: '120px', fontWeight: 500, color: 'var(--text-secondary)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {getOrderItemsText(order.items)}
                                     </div>
-                                    <div style={{ flex: 1, textAlign: 'center' }}>
+                                    <div style={{ flex: '0 0 15%', minWidth: '110px', textAlign: 'center' }}>
                                         {getStatusBadge(order.isCompleted)}
                                     </div>
-                                    <div style={{ flex: 2, fontWeight: 500, color: 'var(--text-secondary)', textAlign: 'right', fontSize: '0.9rem' }}>
+                                    <div style={{ flex: '0 0 15%', minWidth: '120px', fontWeight: 500, color: 'var(--text-secondary)', textAlign: 'right', fontSize: '0.9rem' }}>
                                         {formatDate(order.createdAt)}
                                     </div>
                                 </div>
