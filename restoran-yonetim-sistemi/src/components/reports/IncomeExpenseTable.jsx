@@ -13,6 +13,8 @@ const IncomeExpenseTable = () => {
   const [monthlySalesData, setMonthlySalesData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [realtimeStats, setRealtimeStats] = useState(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   // API'den daily sales verilerini çek
   const fetchDailySales = async (date) => {
@@ -71,8 +73,23 @@ const IncomeExpenseTable = () => {
     }
   };
 
+  // Gerçek zamanlı istatistikleri çek
+  const fetchRealtimeStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      const stats = await analyticsService.getRealtimeStats();
+      setRealtimeStats(stats);
+    } catch (error) {
+      console.error('Error fetching real-time stats:', error);
+      setRealtimeStats(null);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
   // Component mount olduğunda ve period değiştiğinde veri çek
   useEffect(() => {
+    fetchRealtimeStats();
     if (period === 'daily') {
       fetchDailySales();
     } else if (period === 'weekly') {
@@ -261,14 +278,24 @@ const IncomeExpenseTable = () => {
                 <div className="card-body text-center">
                   <h6 style={{ color: 'white' }}>💰 Toplam Ciro</h6>
                   <h3 style={{ color: 'white', fontWeight: 'bold' }}>
-                    {currentSalesData 
-                      ? formatAmount(currentSalesData.totalRevenue)
-                      : formatAmount(totalRevenue)
+                    {isLoadingStats ? "Yükleniyor..." : 
+                     realtimeStats ? 
+                       (period === 'daily' ? `₺${parseFloat(realtimeStats.todayRevenue || 0).toLocaleString()}` :
+                        period === 'weekly' ? `₺${parseFloat(realtimeStats.weeklyRevenue || 0).toLocaleString()}` :
+                        period === 'monthly' ? `₺${parseFloat(realtimeStats.monthlyRevenue || 0).toLocaleString()}` :
+                        `₺${parseFloat(realtimeStats.todayRevenue || 0).toLocaleString()}`) :
+                       (currentSalesData ? formatAmount(currentSalesData.totalRevenue) : formatAmount(totalRevenue))
                     }
                   </h3>
                   <small style={{ color: 'white', opacity: 0.8 }}>
                     {getPeriodTitle()} toplam gelir
-                    {currentSalesData && (
+                    {realtimeStats && (
+                      <span> • {period === 'daily' ? realtimeStats.todayOrders :
+                                period === 'weekly' ? realtimeStats.weeklyOrders :
+                                period === 'monthly' ? realtimeStats.monthlyOrders :
+                                realtimeStats.todayOrders} sipariş</span>
+                    )}
+                    {!realtimeStats && currentSalesData && (
                       <span> • {currentSalesData.totalOrders} sipariş • {currentSalesData.totalCustomers} müşteri</span>
                     )}
                   </small>

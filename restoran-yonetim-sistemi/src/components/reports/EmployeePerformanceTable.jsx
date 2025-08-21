@@ -18,7 +18,19 @@ const EmployeePerformanceTable = () => {
       setIsLoading(true);
       setError(null);
       
-      // Get employee performance from monthly sales summaries endpoint
+      // Try to get employee performance from the dedicated endpoint first
+      try {
+        const performanceData = await analyticsService.getEmployeePerformance('DAILY');
+        console.log('Employee performance data from endpoint:', performanceData);
+        if (performanceData && Object.keys(performanceData).length > 0) {
+          setPerformanceData(performanceData);
+          return;
+        }
+      } catch (endpointError) {
+        console.log('Employee performance endpoint failed, trying fallback:', endpointError);
+      }
+      
+      // Fallback: Get employee performance from monthly sales summaries endpoint
       const allMonthlyData = await analyticsService.getAllMonthlySalesSummaries();
       
       // Find the most recent data with employee performance
@@ -76,21 +88,39 @@ const EmployeePerformanceTable = () => {
 
   // Performans verilerini parse et
   const parseEmployeePerformance = () => {
+    console.log('Parsing performance data:', performanceData);
     if (!performanceData) {
       return { employees: [], topPerformer: null };
     }
 
     try {
-      // Check if this is the new endpoint format (object with employee data)
+      // Check if this is the backend format (object with employees array)
       if (performanceData.employees && Array.isArray(performanceData.employees)) {
-        // This is the fallback format from daily sales data
-        return {
-          employees: performanceData.employees || [],
-          topPerformer: performanceData.topPerformer || null
-        };
+        // Transform the backend format to frontend format
+        const employees = performanceData.employees.map(emp => ({
+          employeeId: emp.employeeId,
+          employeeName: emp.employeeName || `Çalışan ${emp.employeeId}`,
+          totalSales: parseFloat(emp.totalRevenue || 0),
+          orderCount: emp.totalOrders || 0,
+          averageOrderValue: parseFloat(emp.averageOrderValue || 0),
+          customerCount: emp.totalItemsSold || 0 // Using totalItemsSold as customerCount for now
+        }));
+        
+        // Find top performer
+        let topPerformer = null;
+        let maxSales = 0;
+        
+        employees.forEach(employee => {
+          if (employee.totalSales > maxSales) {
+            maxSales = employee.totalSales;
+            topPerformer = employee;
+          }
+        });
+
+        return { employees, topPerformer };
       }
 
-      // This is the new endpoint format (object with employee IDs as keys)
+      // Fallback: This is the old endpoint format (object with employee IDs as keys)
       const employees = [];
       let topPerformer = null;
       let maxSales = 0;

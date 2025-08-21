@@ -85,27 +85,29 @@ export default function SummaryPage() {
                         console.log('Backend orders received:', backendOrders);
                         
                         if (backendOrders && backendOrders.length > 0) {
-                            // Find the most recent active order
+                            // Find the most recent active order (not completed)
                             const activeOrder = backendOrders.find(order => 
-                                order.status !== 'paid' && order.status !== 'cancelled'
+                                !order.isCompleted && order.status !== 'paid' && order.status !== 'cancelled'
                             ) || backendOrders[0];
 
-                            if (activeOrder && activeOrder.items) {
+                            if (activeOrder && activeOrder.items && activeOrder.items.length > 0) {
                                 // Transform backend order items to frontend format
                                 const transformedItems = (activeOrder.items || []).reduce((acc, item) => {
-                                    acc[item.productId] = {
-                                        id: item.productId,
-                                        name: item.productName || 'Bilinmeyen Ürün',
-                                        price: item.unitPrice || 0,
-                                        count: item.quantity || 0,
-                                        note: item.note || ''
-                                    };
+                                    if (item && item.productId) {
+                                        acc[item.productId] = {
+                                            id: item.productId,
+                                            name: item.productName || 'Bilinmeyen Ürün',
+                                            price: item.unitPrice || 0,
+                                            count: item.quantity || 0,
+                                            note: item.note || ''
+                                        };
+                                    }
                                     return acc;
                                 }, {});
 
                                 setOrderData({
                                     items: transformedItems,
-                                    id: activeOrder.id
+                                    id: activeOrder.orderId || activeOrder.id
                                 });
                                 console.log('Order data set from backend:', transformedItems);
                             } else {

@@ -884,7 +884,7 @@ const SalesChart = () => {
            </div>
          </div>
 
-         <div style={{ maxHeight: '200px', overflow: 'hidden' }}>
+         <div style={{ maxHeight: 'none', overflow: 'visible' }}>
            {dailyData && mode === 'daily' && (
              <div className="mt-2 p-2" style={{ backgroundColor: colors.cardBackground, borderRadius: '6px', border: `1px solid ${colors.border}` }}>
                <h6 style={{ color: colors.text, fontSize: '0.95rem', marginBottom: '8px' }}>Günlük Özet</h6>
@@ -910,7 +910,7 @@ const SalesChart = () => {
                {dailyData.dailyBreakdown && dailyData.dailyBreakdown.length > 0 && (
                  <div className="mt-2">
                    <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Günlük Detay</h6>
-                   <div className="row g-1">
+                   <div className="row g-1" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                      {dailyData.dailyBreakdown.map((day, index) => {
                        const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
                        const monthShortNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -956,7 +956,7 @@ const SalesChart = () => {
                {weeklyData.weeklyBreakdown && weeklyData.weeklyBreakdown.length > 0 && (
                  <div className="mt-2">
                    <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Haftalık Detay</h6>
-                   <div className="row g-1">
+                   <div className="row g-1" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                      {weeklyData.weeklyBreakdown.map((week, index) => {
                        const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 
                                           'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -1002,7 +1002,7 @@ const SalesChart = () => {
                {monthlyData.monthlyBreakdown && monthlyData.monthlyBreakdown.length > 0 && (
                  <div className="mt-2">
                    <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Aylık Detay</h6>
-                   <div className="row g-1">
+                   <div className="row g-1" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                      {monthlyData.monthlyBreakdown.map((month, index) => {
                        const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
                                           'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -1068,7 +1068,7 @@ const SalesChart = () => {
                {dateRangeData.salesByCategory && Object.keys(dateRangeData.salesByCategory).length > 0 && (
                  <div className="mt-2">
                    <h6 style={{ color: colors.text, fontSize: '0.85rem', marginBottom: '6px' }}>Kategori Bazında Satışlar</h6>
-                   <div className="row g-1">
+                   <div className="row g-1" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                      {Object.entries(dateRangeData.salesByCategory).map(([category, amount], index) => (
                        <div key={index} className="col-md-3 col-6 mb-1">
                          <small style={{ color: colors.textSecondary, fontSize: '0.7rem' }}>
