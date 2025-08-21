@@ -1083,8 +1083,7 @@ export function TableProvider({ children }) {
         const isOrderEmpty = Object.keys(finalItems).length === 0;
         
         // Stok kontrolü - sadece admin rolü için aktif
-        const token = localStorage.getItem('token');
-        const roleInfo = getRoleInfoFromToken(token || '');
+        const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
         const isAdmin = (roleInfo.roleId === 0) || (String(roleInfo.role || '').toLowerCase() === 'admin');
         
         if (!isOrderEmpty && isAdmin) {
@@ -1160,11 +1159,9 @@ export function TableProvider({ children }) {
         });
 
         // Backend OrderRequestDTO: { userId: int, tableId: int, items: [{productId, quantity}] }
-        const roleInfo = getRoleInfoFromToken(tokenManager.getToken() || '');
         const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
             ? parseInt(roleInfo.userId, 10)
             : (typeof roleInfo?.userId === 'number' ? roleInfo.userId : 1);
-
         // UI'deki tableId masa numarası olabilir; backend gerçek masa ID'si ister
         const toBackendTableId = (() => {
             const numeric = Number(tableId);
