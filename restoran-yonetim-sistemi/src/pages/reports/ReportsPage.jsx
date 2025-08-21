@@ -155,6 +155,23 @@ const ReportsPage = () => {
                             <span>Son güncelleme: {lastGeneratedTime.toLocaleString('tr-TR')}</span>
                         </div>
                     )}
+                    <button 
+                        className="refresh-summaries-btn"
+                        onClick={generateAllSummaries}
+                        disabled={isGeneratingSummaries}
+                    >
+                        {isGeneratingSummaries ? (
+                            <>
+                                <span className="refresh-icon spinning">🔄</span>
+                                <span>Oluşturuluyor...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="refresh-icon">🔄</span>
+                                <span>Raporları Yenile</span>
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
             
