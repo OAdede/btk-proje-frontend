@@ -47,7 +47,7 @@ export function TableProvider({ children }) {
 
     const apiCall = useCallback(async (endpoint, options = {}) => {
         try {
-            console.log(`API çağrısı yapılıyor: ${endpoint}`);
+
             const token = localStorage.getItem('token');
             const mergedOptions = { ...options };
             const defaultHeaders = {
@@ -102,13 +102,10 @@ export function TableProvider({ children }) {
             }
 
             if (response.status === 204) {
-                console.log(`API çağrısı başarılı (boş yanıt): ${endpoint}`);
                 return null;
             }
 
             const data = await response.json();
-
-            console.log(`API çağrısı başarılı: ${endpoint}`, data);
             return data;
 
         } catch (err) {
@@ -153,17 +150,12 @@ export function TableProvider({ children }) {
         }
 
         const finalStock = maxPossibleUnits === Infinity ? 0 : maxPossibleUnits;
-        if (finalStock === 0 && product.recipe.length > 0) {
-            console.log(`Product ${product.name} (ID: ${product.id}) has 0 stock due to insufficient ingredients`);
-        }
-
         return finalStock;
     };
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        console.log("Veriler sunucudan alınıyor...");
 
         try {
             const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -182,7 +174,6 @@ export function TableProvider({ children }) {
                         errorMsg.includes('401') || 
                         errorMsg.includes('403') || 
                         errorMsg.includes('forbidden')) {
-                        console.log("Stocks API yetkisiz erişim - boş array döndürülüyor");
                         return [];
                     }
                     throw error; // Diğer hataları yukarı fırlat
@@ -200,14 +191,13 @@ export function TableProvider({ children }) {
                         error.message.includes('Internal Server Error') ||
                         error.message.includes('isCompleted')
                     )) {
-                        console.log("Orders endpoint'inde backend hatası, boş array döndürülüyor");
                         return [];
                     }
                     throw error; // Diğer hataları yukarı fırlat
                 }
             };
 
-            console.log("API çağrıları başlatılıyor, kullanıcı rolü:", roleInfo);
+
             
             const tasks = [
                 apiCall('/products'),                // 0
@@ -221,7 +211,7 @@ export function TableProvider({ children }) {
             ];
 
             const results = await Promise.allSettled(tasks);
-            console.log("API çağrıları tamamlandı, sonuçlar:", results.map((r, i) => ({ index: i, status: r.status, error: r.reason?.message })));
+
 
             const safe = (idx, fallback) => {
                 if (results[idx]?.status === 'fulfilled') {
@@ -268,9 +258,7 @@ export function TableProvider({ children }) {
                 }
                 return acc;
             }, {});
-            console.log("Stocks'tan ingredient verisi:", newIngredients);
-            console.log("Kullanıcı rolü:", roleInfo);
-            console.log("Admin kontrolü:", isAdmin);
+
 
             const newProductsByCategory = {};
             const productsByIdTemp = {};
@@ -332,8 +320,7 @@ export function TableProvider({ children }) {
 
             // Ingredients state'ini güncelle - stocks ve product-ingredients verilerini birleştir
             const finalIngredients = { ...newIngredients, ...ingredientsFromProductIngredients };
-            console.log("Product-ingredients'dan ek ingredient verileri:", ingredientsFromProductIngredients);
-            console.log("Final ingredients:", finalIngredients);
+
             setIngredients(finalIngredients);
 
             // Reçete verilerini products array'ine de kopyala ve stok hesapla
@@ -355,7 +342,7 @@ export function TableProvider({ children }) {
 
             // API'den gelen gerçek müsaitlik miktarlarını ürünlere uygula
             if (availableQuantitiesData && availableQuantitiesData.length > 0) {
-                console.log("API'den gelen müsaitlik miktarları:", availableQuantitiesData);
+    
                 
                 // Her ürün için gerçek müsaitlik miktarını güncelle
                 availableQuantitiesData.forEach(availabilityItem => {
@@ -365,7 +352,7 @@ export function TableProvider({ children }) {
                     // ProductsById objesinde güncelle
                     if (productsByIdTemp[productId]) {
                         productsByIdTemp[productId].stock = availableAmount;
-                        console.log(`Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+    
                     }
                     
                     // Kategori bazlı products objesinde de güncelle
@@ -373,17 +360,16 @@ export function TableProvider({ children }) {
                         newProductsByCategory[categoryName].forEach(product => {
                             if (product.id === productId) {
                                 product.stock = availableAmount;
-                                console.log(`Kategori ${categoryName} - Ürün ID ${productId} stok güncellendi: ${availableAmount}`);
+        
                             }
                         });
                     });
                 });
             } else {
-                console.log("Müsaitlik miktarları API'den gelmedi, hesaplanan stok değerleri kullanılıyor");
+
             }
 
-            console.log("İşlenen ürün verileri (kategoriye göre):", newProductsByCategory);
-            console.log("İşlenen ürün verileri (ID'ye göre):", productsByIdTemp);
+
 
             setProducts(newProductsByCategory);
             setProductsById(productsByIdTemp);
@@ -397,7 +383,7 @@ export function TableProvider({ children }) {
                     
                     // Tamamlanmış siparişleri masalarda gösterme (isCompleted=true olanlar)
                     if (order.isCompleted === true) {
-                        console.log(`Tamamlanmış sipariş ${order.orderId || order.id} masada gösterilmeyecek`);
+        
                         return;
                     }
                     
@@ -438,8 +424,7 @@ export function TableProvider({ children }) {
                 setCompletedOrders(completedOrdersData || {});
 
                 // Process reservations from proper API endpoint
-                console.log('=== TABLECONTEXT RESERVATIONS DEBUG ===');
-                console.log('Raw reservationsData from API:', reservationsData);
+                
                 
                 const reservationsById = (reservationsData || []).reduce((acc, reservation) => {
                     if (reservation && reservation.id) {
@@ -460,15 +445,13 @@ export function TableProvider({ children }) {
                             createdAt: reservation.createdAt,
                             backendId: reservation.id,
                         };
-                        console.log('Processing reservation:', reservation);
-                        console.log('Transformed to frontend format:', frontendReservation);
+                        
                         acc[reservation.id] = frontendReservation;
                     }
                     return acc;
                 }, {});
                 
-                console.log('Final reservationsById object:', reservationsById);
-                console.log('Number of reservations processed:', Object.keys(reservationsById).length);
+                
                 setReservations(reservationsById);
             } catch (orderProcessingError) {
                 console.error("Sipariş verileri işlenirken hata:", orderProcessingError);
@@ -478,7 +461,7 @@ export function TableProvider({ children }) {
                 setReservations({});
             }
 
-            console.log("Veriler başarıyla alındı ve işlendi.");
+
 
         } catch (err) {
             console.error("Veriler alınırken hata:", err);
@@ -586,9 +569,7 @@ export function TableProvider({ children }) {
     };
 
     const checkIngredientStock = (orderItems, isIncrease = false) => {
-        console.log("Stok kontrolü başlatılıyor...");
-        console.log("Mevcut ingredients:", ingredients);
-        console.log("Sipariş edilecek ürünler:", orderItems);
+
         
         // Eğer ingredients boşsa, stok kontrolünü atla
         if (!ingredients || Object.keys(ingredients).length === 0) {
@@ -602,15 +583,15 @@ export function TableProvider({ children }) {
         
         for (const [id, item] of Object.entries(orderItems)) {
             const recipe = findProductRecipe(id);
-            console.log(`Ürün ${id} için tarif:`, recipe);
+
             
             if (!recipe.length) {
-                console.log(`Ürün ${id} için tarif bulunamadı - stok kontrolü atlanıyor`);
+
                 continue;
             }
             
             for (const ingredient of recipe) {
-                console.log(`Malzeme kontrolü:`, ingredient);
+
                 
                 // Sıfır miktar kontrolü ekle
                 if (!ingredient.quantity || ingredient.quantity <= 0) {
@@ -620,7 +601,7 @@ export function TableProvider({ children }) {
                 }
                 
                 const required = ingredient.quantity * item.count;
-                console.log(`Gerekli miktar: ${required} (${ingredient.quantity} x ${item.count})`);
+                
                 
                 // Stok verisi erişilemiyorsa kontrol et
                 if (!tempIngredients[ingredient.ingredientId]) {
@@ -629,7 +610,7 @@ export function TableProvider({ children }) {
                 }
                 
                 const availableStock = tempIngredients[ingredient.ingredientId].stockQuantity;
-                console.log(`Mevcut stok: ${availableStock}, Gerekli: ${required}`);
+                
                 
                 if (availableStock < required) {
                     console.error(`Yetersiz stok! Malzeme: ${tempIngredients[ingredient.ingredientId].name}, Mevcut: ${availableStock}, Gerekli: ${required}`);
@@ -652,7 +633,7 @@ export function TableProvider({ children }) {
             return false;
         }
         
-        console.log("Stok kontrolü başarılı!");
+
         return true;
     };
 
@@ -660,11 +641,11 @@ export function TableProvider({ children }) {
     const refreshProductAvailability = async () => {
         try {
             setIsRefreshingAvailability(true);
-            console.log("Ürün müsaitlik miktarları güncelleniyor...");
+    
             const availableQuantitiesData = await apiCall('/products/available-quantities');
             
             if (availableQuantitiesData && availableQuantitiesData.length > 0) {
-                console.log("Güncel müsaitlik miktarları alındı:", availableQuantitiesData);
+    
                 
                 // ProductsById objesini güncelle
                 setProductsById(prevProductsById => {
@@ -695,7 +676,7 @@ export function TableProvider({ children }) {
                     return updated;
                 });
                 
-                console.log("Ürün müsaitlik miktarları başarıyla güncellendi");
+        
                 setAvailabilityNotification({
                     type: 'success',
                     message: 'Stok durumu başarıyla güncellendi!',
@@ -757,7 +738,7 @@ export function TableProvider({ children }) {
                 throw new Error('Masa bulunamadı');
             }
 
-            console.log('Updating table with ID (PATCH mode):', tableId, 'Update data:', updateData, 'Current table:', table);
+    
 
             // Yardımcı: isim/numaradan sayısal masa numarası çıkar
             const extractTableNumber = (value, fallback) => {
@@ -785,20 +766,20 @@ export function TableProvider({ children }) {
 
             // Değişiklik yoksa erken çık
             if (!willChangeNumber && !willChangeCapacity) {
-                console.log('No changes detected for table', tableId);
+    
                 return;
             }
 
             // Sırasıyla patch et (bağımsızlar)
             if (willChangeNumber) {
-                console.log('PATCH table-number ->', nextNumber);
+    
                 await apiCall(`/dining-tables/${tableId}/table-number/${nextNumber}`, {
                     method: 'PATCH'
                 });
             }
 
             if (willChangeCapacity) {
-                console.log('PATCH capacity ->', nextCapacity);
+    
                 await apiCall(`/dining-tables/${tableId}/capacity/${nextCapacity}`, {
                     method: 'PATCH'
                 });
@@ -806,7 +787,7 @@ export function TableProvider({ children }) {
 
             // Güncel verileri yükle
             await loadTablesAndSalons();
-            console.log(`Table ${tableId} updated successfully via PATCH.`);
+
         } catch (error) {
             console.error(`Error updating table ${tableId} (PATCH):`, error);
             throw error;
@@ -855,7 +836,7 @@ export function TableProvider({ children }) {
             // Backend'den güncel veriyi al
             await loadTablesAndSalons();
 
-            console.log(`Table ${tableId} deleted successfully`);
+
         } catch (error) {
             console.error(`Error deleting table ${tableId}:`, error);
             throw error;
@@ -1095,11 +1076,7 @@ export function TableProvider({ children }) {
             items: orderItemsForBackend.map(i => ({ productId: i.productId, quantity: i.quantity })),
         };
 
-        // Sipariş verilerini logla
-        console.log("Backend'e gönderilecek sipariş verileri:", orderData);
-
         try {
-            console.log("Sipariş kaydediliyor...");
             const currentOrder = orders[String(tableId)];
             let retryCount = 0;
             const maxRetries = 2;
@@ -1107,14 +1084,12 @@ export function TableProvider({ children }) {
             while (retryCount <= maxRetries) {
                 try {
                     if (currentOrder && currentOrder.id) {
-                        console.log(`Mevcut sipariş güncelleniyor: ${currentOrder.id}`);
                         await apiCall(`/orders/${currentOrder.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(orderData),
                         });
                     } else {
-                        console.log("Yeni sipariş oluşturuluyor...");
                         // upsertOrderSync endpoint'ini kullan (authentication'dan user'ı alır)
                         await apiCall('/orders/upsert-sync', {
                             method: 'POST',
@@ -1122,7 +1097,7 @@ export function TableProvider({ children }) {
                             body: JSON.stringify(orderData),
                         });
                     }
-                    console.log("Sipariş başarıyla kaydedildi!");
+
                     break; // Başarılı olursa döngüden çık
                 } catch (retryError) {
                     retryCount++;
@@ -1133,7 +1108,7 @@ export function TableProvider({ children }) {
                         console.warn(`JPA transaction hatası, ${retryCount}. deneme yapılıyor...`);
                         // Kısa bir bekleme süresi (her denemede artan süre)
                         const waitTime = 1000 * retryCount;
-                        console.log(`${waitTime}ms bekleniyor...`);
+
                         await new Promise(resolve => setTimeout(resolve, waitTime));
                         continue;
                     }
@@ -1150,7 +1125,7 @@ export function TableProvider({ children }) {
             // Not: Yeni siparişlerde '/orders/make-order' stok düşümünü kendisi yapar.
             // Güncelleme durumlarında backend stok düşmüyor; burada manuel hareket eklemeyi tercih etmiyoruz.
 
-            console.log("Veriler güncelleniyor...");
+
             await fetchData();
             updateTableStatus(tableId, "occupied");
             
@@ -1164,7 +1139,7 @@ export function TableProvider({ children }) {
             // Sipariş sonrası ürün müsaitlik miktarlarını güncelle
             await refreshProductAvailability();
             
-            console.log("Sipariş işlemi tamamlandı!");
+
 
         } catch (error) {
             console.error("Sipariş kaydedilirken hata:", error);

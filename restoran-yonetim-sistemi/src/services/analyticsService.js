@@ -22,10 +22,10 @@ export const analyticsService = {
 
             try {
                 const responseData = await response.json();
-                console.log('Top products summary loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty object');
+
                 return { daily: [], weekly: [], monthly: [], yearly: [] };
             }
         } catch (error) {
@@ -48,16 +48,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Daily top products API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Daily top products loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -80,16 +80,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Weekly top products API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Weekly top products loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -112,16 +112,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Monthly top products API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Monthly top products loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -149,16 +149,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Sales by category API error: ${response.status} ${response.statusText}`);
+
                 return {};
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Sales by category loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty object');
+
                 return {};
             }
         } catch (error) {
@@ -181,16 +181,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`All daily sales API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('All daily sales summaries loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -213,16 +213,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Daily sales API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Daily sales summary loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -245,16 +245,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Weekly sales API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Weekly sales summary loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -277,16 +277,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`All weekly sales API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('All weekly sales summaries loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -309,16 +309,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Weekly sales data API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Weekly sales data loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -341,16 +341,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`All monthly sales API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('All monthly sales summaries loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -373,16 +373,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`All yearly sales API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('All yearly sales summaries loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -405,16 +405,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Monthly sales API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Monthly sales summary loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -443,16 +443,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Date range sales API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Date range sales summary loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -480,16 +480,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Date range summaries API error: ${response.status} ${response.statusText}`);
+
                 return [];
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Date range summaries loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty array');
+
                 return [];
             }
         } catch (error) {
@@ -516,25 +516,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Employee performance API error: ${response.status} ${response.statusText}`);
-                
-                // Try to get error details from response
-                try {
-                    const errorData = await response.text();
-                    console.log('Error response body:', errorData);
-                } catch (e) {
-                    console.log('Could not read error response body');
-                }
-                
+
                 throw new Error(`Employee performance API error: ${response.status} ${response.statusText}`);
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Employee performance loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning empty object');
+
                 return {};
             }
         } catch (error) {
@@ -558,16 +549,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Generate daily summary API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Daily summary generated:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -590,16 +581,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Generate weekly summary API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Weekly summary generated:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -622,16 +613,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Generate monthly summary API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Monthly summary generated:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -654,16 +645,16 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Generate yearly summary API error: ${response.status} ${response.statusText}`);
+
                 return null;
             }
 
             try {
                 const responseData = await response.json();
-                console.log('Yearly summary generated:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning null');
+
                 return null;
             }
         } catch (error) {
@@ -687,12 +678,7 @@ export const analyticsService = {
             currentWeekEndDate.setDate(now.getDate() + daysToSunday);
             const weekEndDate = currentWeekEndDate.toISOString().split('T')[0];
 
-            console.log('Generating summaries for current timestamp:', {
-                currentDate,
-                weekEndDate,
-                currentYear,
-                currentMonth
-            });
+
 
             // Generate all summaries in parallel
             const [dailyResult, weeklyResult, monthlyResult, yearlyResult] = await Promise.allSettled([
@@ -709,7 +695,7 @@ export const analyticsService = {
                 yearly: yearlyResult.status === 'fulfilled' ? yearlyResult.value : null
             };
 
-            console.log('All summaries generated:', results);
+
             return results;
         } catch (error) {
             console.error('Generate all summaries service error:', error);
@@ -731,7 +717,7 @@ export const analyticsService = {
             });
 
             if (!response.ok) {
-                console.log(`Real-time stats API error: ${response.status} ${response.statusText}`);
+
                 return {
                     todayOrders: 0,
                     todayRevenue: 0,
@@ -745,10 +731,10 @@ export const analyticsService = {
 
             try {
                 const responseData = await response.json();
-                console.log('Real-time stats loaded:', responseData);
+
                 return responseData;
             } catch (jsonError) {
-                console.log('Response is not JSON, returning default values');
+
                 return {
                     todayOrders: 0,
                     todayRevenue: 0,

@@ -43,14 +43,7 @@ const ReportsPage = () => {
                 throw new Error('Geçersiz tarih oluşturuldu');
             }
             
-            console.log('🕐 Starting automatic summary generation for current timestamp:', {
-                fullDate: now.toISOString(),
-                dateOnly: now.toISOString().split('T')[0],
-                timeOnly: now.toTimeString().split(' ')[0],
-                dayOfWeek: now.toLocaleDateString('en-US', { weekday: 'long' }),
-                month: now.toLocaleString('tr-TR', { month: 'long' }),
-                year: now.getFullYear()
-            });
+
             
             const results = await analyticsService.generateAllSummariesForCurrentTime();
             
@@ -65,8 +58,7 @@ const ReportsPage = () => {
                 // Set the current timestamp as last generated time
                 setLastGeneratedTime(new Date());
 
-                console.log('✅ Summary generation completed:', results);
-                console.log('📊 All reports are now up-to-date as of:', now.toLocaleString('tr-TR'));
+
                 
                 // After generating summaries, fetch the updated daily sales data
                 await fetchDailySalesData();

@@ -39,7 +39,6 @@ export default function SummaryPage() {
         
         // Tamamlanmış siparişleri döndürme
         if (order && order.isCompleted === true) {
-            console.log(`Tamamlanmış sipariş ${order.id} masada gösterilmeyecek`);
             return null;
         }
         
@@ -80,9 +79,7 @@ export default function SummaryPage() {
                 const backendTableId = getBackendTableId();
                 if (backendTableId && !isNaN(backendTableId)) {
                     try {
-                        console.log('Fetching orders for table ID:', backendTableId);
                         const backendOrders = await orderService.getOrdersByTableId(backendTableId);
-                        console.log('Backend orders received:', backendOrders);
                         
                         if (backendOrders && backendOrders.length > 0) {
                             // Find the most recent active order (not completed)
@@ -109,13 +106,11 @@ export default function SummaryPage() {
                                     items: transformedItems,
                                     id: activeOrder.orderId || activeOrder.id
                                 });
-                                console.log('Order data set from backend:', transformedItems);
+
                             } else {
-                                console.log('No items found in active order');
                                 setOrderData({ items: {}, id: null });
                             }
                         } else {
-                            console.log('No orders found for table');
                             setOrderData({ items: {}, id: null });
                         }
                     } catch (backendError) {
@@ -124,7 +119,6 @@ export default function SummaryPage() {
                         setOrderData({ items: {}, id: null });
                     }
                 } else {
-                    console.log('Invalid backend table ID, using empty order');
                     setOrderData({ items: {}, id: null });
                 }
             } catch (error) {

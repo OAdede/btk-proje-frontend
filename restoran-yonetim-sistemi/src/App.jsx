@@ -110,17 +110,7 @@ function App() {
   
   const actualNeedsBootstrap = overrideBootstrap ? false : needsBootstrap;
   
-  // Console logging for debugging
-  if (isDebugMode) {
-    console.log('Bootstrap Debug Info:', {
-      needsBootstrap,
-      overrideBootstrap,
-      actualNeedsBootstrap,
-      bootstrapLoading,
-      hasToken: !!localStorage.getItem('token'),
-      bootstrapCompleted: sessionStorage.getItem('bootstrapCompleted')
-    });
-  }
+
 
   return (
     <ThemeProvider>

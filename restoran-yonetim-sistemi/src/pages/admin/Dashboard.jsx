@@ -320,7 +320,7 @@ const Dashboard = () => {
     const sourceTableId = draggedTable.id;
     const targetTableId = targetTable.id;
     
-    console.log('Masa pozisyon değişimi:', sourceTableId, '->', targetTableId);
+
     
     // Başarı mesajı göster - DEVRE DIŞI
     // setSuccessData({
@@ -354,7 +354,7 @@ const Dashboard = () => {
     } else if (showTableLayoutMode) {
       // Masa düzeni modunda masa yönetimi modalını aç
       const tableData = tables?.find(t => String(t.tableNumber ?? t.id) === String(table.id)) || table;
-      console.log('Opening table management for:', table, 'Found backend table:', tableData);
+
       setSelectedTableForManagement({
         id: tableData?.id || table.backendId,  // Backend ID'sini kullan
         tableNumber: tableData?.tableNumber ?? table.id,
@@ -615,7 +615,7 @@ const Dashboard = () => {
         // Rezervasyon geçmiş mi kontrol et
         if (reservationTime < now) {
           // Rezervasyon geçmiş, masayı boş yap
-          console.log(`Reservation for table ${tableId} has passed, marking as empty`);
+
           updateTableStatus(tableId, 'empty');
           return statusInfo["empty"];
         }
@@ -644,7 +644,7 @@ const Dashboard = () => {
         }
       } else {
         // Rezervasyon kaydı bulunamadıysa bile backend 'reserved' olabilir; boş yapma
-        console.log(`No reservation details found for table ${tableId}, keeping as reserved`);
+
         return statusInfo["reserved"];
       }
     }
@@ -738,17 +738,17 @@ const Dashboard = () => {
 
   // Kat silme fonksiyonu
   const deleteFloor = async () => {
-    console.log('deleteFloor fonksiyonu çağrıldı, floorToDelete:', floorToDelete);
+
     if (floorToDelete !== null) {
       try {
         // 1) Önce bu salona ait tüm masaları sil
         const salonTables = tables.filter(t => (t?.salon?.id ?? t?.salonId) === floorToDelete);
-        console.log('Silinecek masalar:', salonTables.map(t => t.id));
+
         for (const table of salonTables) {
           try {
             // Önce normal silmeyi dene
             await deleteTableFromCtx(table.id);
-            console.log('Masa silindi:', table.id);
+
           } catch (error) {
             const msg = String(error.message || '');
             if (msg.includes('404')) {
@@ -759,7 +759,7 @@ const Dashboard = () => {
             // Force delete dene
             try {
               await deleteTableForce(table.id);
-              console.log('Masa force ile silindi:', table.id);
+
             } catch (e2) {
               console.error('Masa force silme de başarısız oldu:', e2);
               throw new Error(`Masa ${table.tableNumber || table.id} silinemedi: ${e2.message}`);
@@ -767,14 +767,14 @@ const Dashboard = () => {
           }
         }
         // 2) Şimdi salonu sil
-        console.log('Salon siliniyor:', floorToDelete);
+
         await salonService.deleteSalon(floorToDelete);
         // 3) Verileri tazele
         await loadTablesAndSalons();
         // 4) Modal'ı kapat (başarı bildirimi gösterme)
         setShowDeleteFloorModal(false);
         setFloorToDelete(null);
-        console.log('Kat silme işlemi tamamlandı.');
+
       } catch (error) {
         console.error('Kat silme hatası:', error);
         setWarningMessage(`Kat silinirken hata oluştu: ${error.message}`);

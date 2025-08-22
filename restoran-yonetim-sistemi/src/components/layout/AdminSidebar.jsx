@@ -27,7 +27,6 @@ const AdminSidebar = () => {
     // Kullanıcı profilini yükle (önce AuthContext, sonra backend id ile, yoksa email ile arama)
     useEffect(() => {
         const initFromAuth = () => {
-            console.log('[Profile] AuthContext.user:', user);
             // İsim ve rolü anında göster (backend gelene kadar)
             const nameFromAuth = user?.name || (user?.email ? user.email.split('@')[0] : '') || 'Kullanıcı';
             const roleFromAuth = (() => {
@@ -53,7 +52,6 @@ const AdminSidebar = () => {
                 // Sadece sayısal id ile /users/{id} dene
                 const isNumericId = id !== undefined && id !== null && String(id).match(/^\d+$/);
                 if (isNumericId) {
-                    console.log('[Profile] Fetching by numeric id:', id);
                     try {
                         data = await userService.getUserById(id);
                     } catch (e) {
@@ -64,7 +62,7 @@ const AdminSidebar = () => {
                 // ID yoksa veya bulunamazsa email ile aktif/pasif listelerde ara
                 if (!data && user?.email) {
                     try {
-                        console.log('[Profile] Searching by email in active/inactive lists:', user.email);
+
                         const [actives, inactives] = await Promise.all([
                             personnelService.getActiveUsers(),
                             personnelService.getInactiveUsers(),
@@ -77,7 +75,7 @@ const AdminSidebar = () => {
                 // Hâlâ yoksa /users (tüm kullanıcılar) üzerinden dene
                 if (!data && user?.email) {
                     try {
-                        console.log('[Profile] Fallback: searching by email in all users');
+
                         const all = await personnelService.getAllUsers();
                         data = (all || []).find(u => String(u.email || '').toLowerCase() === String(user.email).toLowerCase()) || null;
                     } catch (e) {

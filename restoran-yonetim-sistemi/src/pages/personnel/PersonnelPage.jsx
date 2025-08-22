@@ -4,7 +4,7 @@ import React from 'react';
 import PersonelEkleme from '../../components/personnel/PersonelEkleme';
 
 const PersonnelPage = () => {
-    console.log('PersonnelPage component is rendering');
+    
 
     return (
         <div style={{ padding: '20px' }}>

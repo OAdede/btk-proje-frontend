@@ -21,13 +21,13 @@ const EmployeePerformanceTable = () => {
       // Try to get employee performance from the dedicated endpoint first
       try {
         const performanceData = await analyticsService.getEmployeePerformance('DAILY');
-        console.log('Employee performance data from endpoint:', performanceData);
+
         if (performanceData && Object.keys(performanceData).length > 0) {
           setPerformanceData(performanceData);
           return;
         }
       } catch (endpointError) {
-        console.log('Employee performance endpoint failed, trying fallback:', endpointError);
+
       }
       
       // Fallback: Get employee performance from monthly sales summaries endpoint
@@ -54,7 +54,7 @@ const EmployeePerformanceTable = () => {
             } catch (jsonError) {
               // If it's "[object Object]", the data is malformed, skip it
               if (recentData.employeePerformance === '[object Object]') {
-                console.log('Employee performance data is malformed, skipping');
+  
                 setPerformanceData(null);
                 return;
               } else {
@@ -88,7 +88,7 @@ const EmployeePerformanceTable = () => {
 
   // Performans verilerini parse et
   const parseEmployeePerformance = () => {
-    console.log('Parsing performance data:', performanceData);
+
     if (!performanceData) {
       return { employees: [], topPerformer: null };
     }

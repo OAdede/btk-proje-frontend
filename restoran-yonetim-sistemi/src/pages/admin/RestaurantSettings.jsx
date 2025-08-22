@@ -135,7 +135,7 @@ const RestaurantSettings = () => {
             setTimeSaveError('');
             
             await settingsService.updateRestaurantSettings(timeSettings);
-            console.log('Time settings saved successfully:', timeSettings);
+
         } catch (error) {
             console.error('Error saving time settings:', error);
             setTimeSaveError('Zaman ayarları kaydedilirken bir hata oluştu: ' + error.message);

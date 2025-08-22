@@ -14,8 +14,7 @@ const PersonelEkleme = () => {
     role: "waiter" // Default olarak waiter seçili
   });
   
-  // Debug: State'i sürekli log'la
-  console.log('Current newPerson state:', newPerson);
+
 
   const [activeTab, setActiveTab] = useState("aktif");
   const [roleFilter, setRoleFilter] = useState("tümü");
@@ -80,7 +79,7 @@ const PersonelEkleme = () => {
       
       try {
         setIsLoadingUsers(true);
-        console.log('Starting to load users (active + inactive)...');
+
 
         // Load active and inactive lists in parallel
         const [activeUsersRaw, inactiveUsersRaw] = await Promise.all([
@@ -95,27 +94,27 @@ const PersonelEkleme = () => {
                          let roleName = 'Garson'; // default
             if (user.roles && user.roles.length > 0) {
               const roleId = user.roles[0];
-              console.log(`Mapping role for user ${user.name}: roleId = ${roleId}, type = ${typeof roleId}, roles array = [${user.roles}]`);
+
               
                                         // Map role ID to display name (backend returns: 0=admin, 1=garson, 2=kasiyer)
               if (roleId === 0 || roleId === 'admin') {
                 roleName = 'Admin';
-                console.log(`  → Mapped ${roleId} to 'Admin'`);
+
               }
               else if (roleId === 1 || roleId === 'waiter') {
                 roleName = 'Garson';
-                console.log(`  → Mapped ${roleId} to 'Garson'`);
+
               }
               else if (roleId === 2 || roleId === 'cashier') {
                 roleName = 'Kasiyer';
-                console.log(`  → Mapped ${roleId} to 'Kasiyer'`);
+
               }
                              else {
                  console.warn(`Unknown role ID for user ${user.name}: ${roleId}, defaulting to Garson`);
                  roleName = 'Garson';
                }
             } else {
-              console.log(`User ${user.name} has no roles or empty roles array`);
+
             }
            
            // Handle photo - check multiple possible photo fields
@@ -124,17 +123,17 @@ const PersonelEkleme = () => {
            // First check if user has photoBase64 (old format)
            if (user.photoBase64 && user.photoBase64.length > 0) {
              photoUrl = `data:image/jpeg;base64,${user.photoBase64}`;
-             console.log(`User ${user.name} has photoBase64, using data URL`);
+
            }
            // Then check hasPhoto boolean (new format)
            else if (user.hasPhoto === true) {
              photoUrl = `/api/users/${user.id}/photo`;
-             console.log(`User ${user.name} has photo (hasPhoto: ${user.hasPhoto}), URL: ${photoUrl}`);
+
            }
            // If neither exists, user has no photo
            else {
              photoUrl = null;
-             console.log(`User ${user.name} has no photo (hasPhoto: ${user.hasPhoto}, photoBase64: ${user.photoBase64 ? 'exists' : 'null'})`);
+
            }
           
                      return {
@@ -156,7 +155,7 @@ const PersonelEkleme = () => {
         
         if (isMounted && !isAborted) {
           setPersonnel(transformedUsers);
-          console.log('Users loaded and transformed:', transformedUsers.length);
+
           
           // Clear any previous errors
           setError(null);
@@ -197,11 +196,9 @@ const PersonelEkleme = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    console.log(`Form field changed: ${name} = ${value}`);
-    console.log('Previous state:', newPerson);
+
     
     const updatedPerson = { ...newPerson, [name]: value };
-    console.log('Updated state:', updatedPerson);
     
     setNewPerson(updatedPerson);
     // Clear error when user starts typing
@@ -227,7 +224,7 @@ const PersonelEkleme = () => {
       phone: cleanPhone
     };
     
-    console.log('Form submitted with data:', personDataToSend);
+
     
     if (!validateForm()) {
       return;
@@ -251,14 +248,7 @@ const PersonelEkleme = () => {
          isActive: responseData.isActive !== undefined ? responseData.isActive : true
        };
        
-               console.log('New person added to state:', {
-          id: newPersonWithId.id,
-          name: newPersonWithId.name,
-          role: newPersonWithId.role,
-          backendRole: responseData.roles,
-          backendRoleType: typeof responseData.roles,
-          backendRoleLength: responseData.roles ? responseData.roles.length : 0
-        });
+        
 
       setPersonnel([...personnel, newPersonWithId]);
 
@@ -465,7 +455,7 @@ const PersonelEkleme = () => {
                      onError={(e) => {
                        // If photo fails to load, show default avatar
                        if (e.target.src !== '/default-avatar.png') {
-                         console.log(`Photo failed to load for ${person.name}, using default avatar`);
+  
                          e.target.src = '/default-avatar.png';
                        }
                      }}
