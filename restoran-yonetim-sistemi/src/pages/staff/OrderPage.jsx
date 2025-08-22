@@ -22,6 +22,7 @@ export default function OrderPage() {
 
     const {
         saveFinalOrder,
+        finalizeOrder,
         orders,
         products,
         ingredients,
@@ -105,11 +106,18 @@ export default function OrderPage() {
             }
 
             const newCart = { ...prevCart };
-            if (newQty === 0 && !initialOrderCount) { // Eğer ürün daha önce onaylanmamışsa ve sayısı 0 ise sepetten sil
+            
+            // Eğer miktar 0 ise ürünü sepetten tamamen kaldır
+            if (newQty === 0) {
                 delete newCart[product.id];
-            } else { // Değilse miktarını güncelle
-                newCart[product.id] = { ...currentItem, count: newQty };
+            } else {
+                // Miktar 0'dan büyükse ürünü güncelle
+                newCart[product.id] = {
+                    ...currentItem,
+                    count: newQty
+                };
             }
+
             return newCart;
         });
     };
@@ -160,10 +168,112 @@ export default function OrderPage() {
 
     const isCashier = user && user.role === 'kasiyer';
 
-    const handlePayment = () => {
-        processPayment(tableId);
-        alert(`Masa ${tableId} için ödeme alındı.`);
-        navigate(`/${user.role}/home`);
+    const handlePayment = async () => {
+        try {
+            if (DEBUG_ORDER) console.log("Cashier: Starting payment process");
+            
+            // Step 1: Check if there are unsaved changes in the cart
+            const currentOrder = getOrderForTable(tableId);
+            const databaseItems = currentOrder?.items || {};
+            const cartItems = cart;
+            
+            // Compare cart with database to see if there are changes
+            const hasChanges = (() => {
+                const cartKeys = Object.keys(cartItems);
+                const dbKeys = Object.keys(databaseItems);
+                
+                if (DEBUG_ORDER) console.log("Cashier: Comparing cart vs database", {
+                    cartItems: cartKeys.length,
+                    databaseItems: dbKeys.length,
+                    cartProducts: cartKeys,
+                    dbProducts: dbKeys
+                });
+                
+                // Different number of items
+                if (cartKeys.length !== dbKeys.length) {
+                    if (DEBUG_ORDER) console.log("Cashier: Different number of items detected");
+                    return true;
+                }
+                
+                // Check each item for quantity differences
+                for (const productId of cartKeys) {
+                    const cartItem = cartItems[productId];
+                    const dbItem = databaseItems[productId];
+                    
+                    if (!dbItem || cartItem.count !== dbItem.count) {
+                        if (DEBUG_ORDER) console.log(`Cashier: Quantity change detected for product ${productId}:`, {
+                            cartCount: cartItem.count,
+                            dbCount: dbItem?.count || 0
+                        });
+                        return true;
+                    }
+                    
+                    // Check for note changes
+                    if ((cartItem.note || '') !== (dbItem.note || '')) {
+                        if (DEBUG_ORDER) console.log(`Cashier: Note change detected for product ${productId}`);
+                        return true;
+                    }
+                }
+                
+                if (DEBUG_ORDER) console.log("Cashier: No changes detected between cart and database");
+                return false;
+            })();
+            
+            // Step 2: Determine if we need to save the order
+            const needsOrderCreation = Object.keys(databaseItems).length === 0 && Object.keys(cartItems).length > 0;
+            const needsOrderUpdate = hasChanges && Object.keys(databaseItems).length > 0;
+            
+            if (DEBUG_ORDER) console.log("Cashier: Order state analysis", {
+                needsOrderCreation,
+                needsOrderUpdate,
+                hasChanges,
+                cartItemsCount: Object.keys(cartItems).length,
+                databaseItemsCount: Object.keys(databaseItems).length
+            });
+            
+            // Step 2a: Handle order creation for empty tables
+            if (needsOrderCreation) {
+                if (DEBUG_ORDER) console.log("Cashier: Creating new order for empty table");
+                await saveFinalOrder(tableId, cartItems);
+                
+                // Wait for state update after order creation - longer delay for reliability
+                if (DEBUG_ORDER) console.log("Cashier: New order created, waiting for state update...");
+                await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+                
+                if (DEBUG_ORDER) console.log("Cashier: Order created, proceeding to finalization");
+                
+            // Step 2b: Handle order updates for existing orders  
+            } else if (needsOrderUpdate) {
+                if (DEBUG_ORDER) console.log("Cashier: Updating existing order with changes");
+                await saveFinalOrder(tableId, cartItems);
+                
+                if (DEBUG_ORDER) console.log("Cashier: Order updated, proceeding to finalization");
+                
+            // Step 2c: Check if there's anything to process
+            } else if (Object.keys(databaseItems).length === 0) {
+                // No cart items and no database items - nothing to process
+                alert("Sipariş verilecek ürün bulunamadı.");
+                return;
+            } else {
+                // Order exists and no changes needed - proceed directly to finalization
+                if (DEBUG_ORDER) console.log("Cashier: No changes needed, proceeding directly to finalization");
+            }
+            
+            // Step 3: Finalize the order (process stock changes)
+            // Note: At this point, an order should exist either from before or just created above
+            if (DEBUG_ORDER) console.log("Cashier: Finalizing order to process stock");
+            await finalizeOrder(tableId);
+            
+            // Step 4: Process payment
+            if (DEBUG_ORDER) console.log("Cashier: Processing payment");
+            await processPayment(tableId);
+            
+            alert(`Masa ${tableId} için ödeme alındı ve masa kapatıldı.`);
+            navigate(`/${user.role}/home`);
+        } catch (error) {
+            console.error("Payment process error:", error);
+            alert(`Ödeme işlemi sırasında hata oluştu: ${error.message}`);
+        }
     };
 
     const quickNotes = ["Soğansız", "Acılı", "Az Pişmiş", "Sos Ayrı", "Ekstra Peynir", "İçecek Buzsuz"];
@@ -287,7 +397,7 @@ export default function OrderPage() {
                         })}
                     </div>
                     <div className="action-buttons">
-                        <button onClick={() => navigate(-1)} className="btn-back">Geri</button>
+                        <button onClick={() => navigate(`/${user.role}/home`)} className="btn-back">Ana Sayfa</button>
                         <button onClick={handleNext} className="btn-next">İleri</button>
                     </div>
                 </div>

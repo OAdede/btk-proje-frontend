@@ -14,7 +14,7 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api': {
-        target: process.env.BACKEND_URL || 'https://192.168.232.113:8080', // Spring Boot backend over HTTPS (local default)
+        target: process.env.BACKEND_URL || 'https://localhost:8080', // Spring Boot backend over HTTPS (local default)
         changeOrigin: true,
         secure: false,
         // Bazı backend'ler 401 ile WWW-Authenticate: Basic header'ı döndürdüğünde

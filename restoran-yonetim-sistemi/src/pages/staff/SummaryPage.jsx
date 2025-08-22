@@ -9,7 +9,7 @@ export default function Summary() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useContext(AuthContext);
-    const { orders, saveFinalOrder, tables, isLoading: contextLoading, error: contextError } = useContext(TableContext);
+    const { orders, saveFinalOrder, finalizeOrder, tables, isLoading: contextLoading, error: contextError } = useContext(TableContext);
     const { colors } = useTheme();
 
     // Debug flag for summary operations
@@ -21,6 +21,7 @@ export default function Summary() {
 
     // State for order data
     const [orderData, setOrderData] = useState(null);
+    const [databaseOrder, setDatabaseOrder] = useState(null); // Original order from database
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -66,6 +67,23 @@ export default function Summary() {
         // Prevent re-initialization if already set
         if (orderData) return;
         
+        // Store original database order for comparison
+        if (tables && tables.length > 0) {
+            const backendTable = tables.find(t => String(t?.tableNumber ?? t?.id) === tableId);
+            if (backendTable) {
+                const backendTableId = String(backendTable.id);
+                const order = orders[backendTableId];
+                
+                if (order && order.isCompleted !== true) {
+                    const localOrder = order?.items || {};
+                    setDatabaseOrder({
+                        items: localOrder,
+                        id: order?.id
+                    });
+                }
+            }
+        }
+        
         // Öncelik: Navigation state'den gelen cart verisi
         if (cartDataFromNavigation && skipBackendSync) {
             if (DEBUG_SUMMARY) console.log("Summary: Using cart data from navigation");
@@ -107,12 +125,71 @@ export default function Summary() {
     }, [cartDataFromNavigation, skipBackendSync, tableId, tables, orders, orderData]);
 
     const currentOrder = orderData?.items || {};
+    const originalOrder = databaseOrder?.items || {};
+
+    // Calculate order differences
+    const orderDifferences = useMemo(() => {
+        const differences = {
+            added: {}, // New items
+            removed: {}, // Items removed from original
+            modified: {}, // Items with quantity changes
+            unchanged: {} // Items with no changes
+        };
+
+        // Get all unique product IDs from both orders
+        const allProductIds = new Set([
+            ...Object.keys(currentOrder),
+            ...Object.keys(originalOrder)
+        ]);
+
+        allProductIds.forEach(productId => {
+            const currentItem = currentOrder[productId];
+            const originalItem = originalOrder[productId];
+            const currentCount = currentItem?.count || 0;
+            const originalCount = originalItem?.count || 0;
+
+            if (originalCount === 0 && currentCount > 0) {
+                // New item added
+                differences.added[productId] = currentItem;
+            } else if (originalCount > 0 && currentCount === 0) {
+                // Item removed
+                differences.removed[productId] = originalItem;
+            } else if (originalCount > 0 && currentCount > 0 && originalCount !== currentCount) {
+                // Item quantity modified
+                differences.modified[productId] = {
+                    ...currentItem,
+                    originalCount,
+                    countDifference: currentCount - originalCount
+                };
+            } else if (originalCount > 0 && currentCount > 0 && originalCount === currentCount) {
+                // Item unchanged
+                differences.unchanged[productId] = currentItem;
+            }
+        });
+
+        return differences;
+    }, [currentOrder, originalOrder]);
+
+    // Check if there are any changes
+    const hasChanges = useMemo(() => {
+        return Object.keys(orderDifferences.added).length > 0 ||
+               Object.keys(orderDifferences.removed).length > 0 ||
+               Object.keys(orderDifferences.modified).length > 0;
+    }, [orderDifferences]);
 
     const totalPrice = useMemo(() =>
         Object.values(currentOrder).reduce(
             (sum, item) => sum + (Number(item.price) || 0) * (Number(item.count) || 0),
             0
         ), [currentOrder]);
+
+    const originalTotalPrice = useMemo(() =>
+        Object.values(originalOrder).reduce(
+            (sum, item) => sum + (Number(item.price) || 0) * (Number(item.count) || 0),
+            0
+        ), [originalOrder]);
+
+    const priceDifference = totalPrice - originalTotalPrice;
 
     const handleConfirm = async () => {
         if (DEBUG_SUMMARY) console.log("Summary: Confirming order");
@@ -121,13 +198,15 @@ export default function Summary() {
             setIsLoading(true);
             setError(null);
             
+            // Only save/update the order - NO stock processing yet
+            // Stock will be processed when cashier clicks "Ödeme Al ve Masayı Kapat"
             await saveFinalOrder(tableId, currentOrder);
             
-            alert('Sipariş başarıyla onaylandı!');
+            alert('Sipariş başarıyla kaydedildi! Ödeme için kasiyere başvurun.');
             navigate(`/${user.role}/home`);
         } catch (error) {
-            console.error("Summary: Error confirming order:", error);
-            setError("Sipariş onaylanırken bir hata oluştu. Lütfen tekrar deneyin.");
+            console.error("Summary: Error saving order:", error);
+            setError("Sipariş kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
         } finally {
             setIsLoading(false);
         }
@@ -136,16 +215,12 @@ export default function Summary() {
     const handleGoBack = () => {
         if (DEBUG_SUMMARY) console.log("Summary: Navigating back");
         
-        // Geri dönüşte cart verisini koruyarak geri git
-        if (orderData?.isFromCart) {
-            navigate(`/${user.role}/order/${tableId}`, { 
-                state: { 
-                    restoreCart: currentOrder 
-                } 
-            });
-        } else {
-            navigate(`/${user.role}/order/${tableId}`);
-        }
+        // Always navigate to the order page with current cart data
+        navigate(`/${user.role}/order/${tableId}`, { 
+            state: { 
+                restoreCart: currentOrder 
+            } 
+        });
     };
 
     const pageTitle = `Masa ${tableId} - Sipariş Özeti`;
@@ -265,7 +340,7 @@ export default function Summary() {
                 </div>
             )}
 
-            {Object.keys(currentOrder).length === 0 ? (
+            {Object.keys(currentOrder).length === 0 && !hasChanges ? (
                 <div style={{ textAlign: "center" }}>
                     <p style={{ color: colors.text }}>Bu masaya ait görüntülenecek bir sipariş yok.</p>
                     <button
@@ -293,34 +368,164 @@ export default function Summary() {
                 </div>
             ) : (
                 <>
-                    <ul style={{ listStyleType: 'none', padding: 0 }}>
-                        {Object.entries(currentOrder).map(([id, item]) => (
-                            <li key={id} style={{
-                                padding: '15px 0',
-                                borderBottom: `1px solid ${colors.border}`,
-                                color: colors.text
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: '600', color: colors.text }}>{item.name} x {item.count}</span>
-                                    <span style={{ fontWeight: '500', color: colors.success }}>{item.count * item.price}₺</span>
+                    {/* Show changes comparison if there are differences */}
+                    {hasChanges && databaseOrder && (
+                        <div style={{
+                            marginBottom: '25px',
+                            padding: '15px',
+                            backgroundColor: colors.surfaceBackground,
+                            borderRadius: '8px',
+                            border: `1px solid ${colors.border}`
+                        }}>
+                            <h3 style={{ 
+                                color: colors.text, 
+                                marginBottom: '15px',
+                                fontSize: '1.1em'
+                            }}>📋 Değişiklik Özeti</h3>
+                            
+                            {Object.keys(orderDifferences.added).length > 0 && (
+                                <div style={{ marginBottom: '10px' }}>
+                                    <h4 style={{ color: '#059669', fontSize: '0.95em', marginBottom: '8px' }}>
+                                        ➕ Eklenen Ürünler:
+                                    </h4>
+                                    {Object.entries(orderDifferences.added).map(([id, item]) => (
+                                        <div key={`added-${id}`} style={{
+                                            padding: '5px 10px',
+                                            backgroundColor: '#d4edda',
+                                            color: '#155724',
+                                            borderRadius: '4px',
+                                            marginBottom: '3px',
+                                            fontSize: '0.9em'
+                                        }}>
+                                            {item.name} x {item.count} (+{item.count * item.price}₺)
+                                        </div>
+                                    ))}
                                 </div>
-                                {item.note && (
-                                    <p style={{
-                                        fontSize: '0.9em',
-                                        color: colors.textSecondary,
-                                        marginTop: '8px',
-                                        paddingLeft: '10px',
-                                        borderLeft: `3px solid ${colors.primary}`,
-                                        background: colors.surfaceBackground,
-                                        padding: '8px',
-                                        borderRadius: '4px'
-                                    }}>
-                                        <strong>Not:</strong> {item.note}
-                                    </p>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
+                            )}
+                            
+                            {Object.keys(orderDifferences.removed).length > 0 && (
+                                <div style={{ marginBottom: '10px' }}>
+                                    <h4 style={{ color: '#dc3545', fontSize: '0.95em', marginBottom: '8px' }}>
+                                        ➖ Kaldırılan Ürünler:
+                                    </h4>
+                                    {Object.entries(orderDifferences.removed).map(([id, item]) => (
+                                        <div key={`removed-${id}`} style={{
+                                            padding: '5px 10px',
+                                            backgroundColor: '#f8d7da',
+                                            color: '#721c24',
+                                            borderRadius: '4px',
+                                            marginBottom: '3px',
+                                            fontSize: '0.9em'
+                                        }}>
+                                            {item.name} x {item.count} (-{item.count * item.price}₺)
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {Object.keys(orderDifferences.modified).length > 0 && (
+                                <div style={{ marginBottom: '10px' }}>
+                                    <h4 style={{ color: '#ffc107', fontSize: '0.95em', marginBottom: '8px' }}>
+                                        🔄 Miktarı Değişen Ürünler:
+                                    </h4>
+                                    {Object.entries(orderDifferences.modified).map(([id, item]) => (
+                                        <div key={`modified-${id}`} style={{
+                                            padding: '5px 10px',
+                                            backgroundColor: '#fff3cd',
+                                            color: '#856404',
+                                            borderRadius: '4px',
+                                            marginBottom: '3px',
+                                            fontSize: '0.9em'
+                                        }}>
+                                            {item.name}: {item.originalCount} → {item.count} 
+                                            ({item.countDifference > 0 ? '+' : ''}{item.countDifference} adet, 
+                                            {item.countDifference > 0 ? '+' : ''}{item.countDifference * item.price}₺)
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {/* Price difference summary */}
+                            <div style={{
+                                marginTop: '15px',
+                                padding: '10px',
+                                backgroundColor: colors.cardBackground,
+                                borderRadius: '6px',
+                                borderLeft: `4px solid ${priceDifference >= 0 ? '#059669' : '#dc3545'}`
+                            }}>
+                                <div style={{ fontSize: '0.9em', color: colors.textSecondary }}>
+                                    Önceki Toplam: {originalTotalPrice}₺
+                                </div>
+                                <div style={{ fontSize: '1em', fontWeight: 'bold', color: colors.text }}>
+                                    Yeni Toplam: {totalPrice}₺
+                                </div>
+                                <div style={{ 
+                                    fontSize: '0.9em', 
+                                    color: priceDifference >= 0 ? '#059669' : '#dc3545',
+                                    fontWeight: 'bold'
+                                }}>
+                                    Fark: {priceDifference >= 0 ? '+' : ''}{priceDifference}₺
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Current order summary - show even if empty when there are changes */}
+                    {(Object.keys(currentOrder).length > 0 || hasChanges) && (
+                        <div style={{
+                            marginBottom: '20px'
+                        }}>
+                            <h3 style={{ 
+                                color: colors.text, 
+                                marginBottom: '15px',
+                                fontSize: '1.1em'
+                            }}>
+                                {hasChanges ? '📝 Güncel Sipariş' : '📋 Sipariş Detayları'}
+                            </h3>
+                            
+                            {Object.keys(currentOrder).length > 0 ? (
+                                <ul style={{ listStyleType: 'none', padding: 0 }}>
+                                    {Object.entries(currentOrder).map(([id, item]) => (
+                                        <li key={id} style={{
+                                            padding: '15px 0',
+                                            borderBottom: `1px solid ${colors.border}`,
+                                            color: colors.text
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontWeight: '600', color: colors.text }}>{item.name} x {item.count}</span>
+                                                <span style={{ fontWeight: '500', color: colors.success }}>{item.count * item.price}₺</span>
+                                            </div>
+                                            {item.note && (
+                                                <p style={{
+                                                    fontSize: '0.9em',
+                                                    color: colors.textSecondary,
+                                                    marginTop: '8px',
+                                                    paddingLeft: '10px',
+                                                    borderLeft: `3px solid ${colors.primary}`,
+                                                    background: colors.surfaceBackground,
+                                                    padding: '8px',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    <strong>Not:</strong> {item.note}
+                                                </p>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div style={{
+                                    padding: '20px',
+                                    backgroundColor: colors.surfaceBackground,
+                                    borderRadius: '8px',
+                                    border: `1px dashed ${colors.border}`,
+                                    textAlign: 'center',
+                                    color: colors.textSecondary
+                                }}>
+                                    <p>📝 Sipariş boş - Tüm ürünler kaldırıldı</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <p style={{
                         textAlign: 'right',
                         fontSize: '1.2em',
@@ -395,7 +600,9 @@ export default function Summary() {
                                 }
                             }}
                         >
-                            {isLoading ? "Kaydediliyor..." : "Siparişleri Onayla"}
+                            {isLoading ? "Kaydediliyor..." : 
+                             Object.keys(currentOrder).length === 0 && hasChanges ? "Değişiklikleri Kaydet" :
+                             "Siparişi Kaydet"}
                         </button>
                     </div>
                 </>

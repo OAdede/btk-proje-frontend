@@ -13,6 +13,7 @@ const DEBUG_STOCK = (import.meta?.env?.VITE_DEBUG_STOCK === 'true');
 const DEBUG_RESERVATIONS = (import.meta?.env?.VITE_DEBUG_RESERVATIONS === 'true');
 const DEBUG_PRODUCT = (import.meta?.env?.VITE_DEBUG_PRODUCT === 'true');
 const DEBUG_ORDER = (import.meta?.env?.VITE_DEBUG_ORDER === 'true');
+const DEBUG_PAYMENT = (import.meta?.env?.VITE_DEBUG_PAYMENT === 'true');
 
 export const TableContext = createContext();
 
@@ -1121,10 +1122,45 @@ export function TableProvider({ children }) {
             }
         }
 
-        // Geçerli ürün yoksa hata ver
+        // Handle empty order case - if original order existed but now empty, it means deletion
+        const currentOrder = orders[String(tableId)];
+        const hadExistingOrder = currentOrder && currentOrder.id && Object.keys(currentOrder.items || {}).length > 0;
+        
         if (Object.keys(validItems).length === 0) {
-            alert("Sipariş edilebilir geçerli ürün bulunamadı!");
-            return;
+            // If there was an existing order but now it's empty, delete the order
+            if (hadExistingOrder) {
+                if (DEBUG_ORDER) console.log("Deleting order as all items were removed");
+                try {
+                    await apiCall(`/orders/${currentOrder.id}`, { method: 'DELETE' });
+                    
+                    // Update local state
+                    setOrders(prev => {
+                        const newOrders = { ...prev };
+                        delete newOrders[String(tableId)];
+                        // Also delete by backend table ID if different
+                        const backendTable = (tables || []).find(t => String(t?.tableNumber ?? t?.number) === String(tableId));
+                        if (backendTable && backendTable.id !== tableId) {
+                            delete newOrders[String(backendTable.id)];
+                        }
+                        return newOrders;
+                    });
+                    
+                    // Update table status to AVAILABLE when order is completely removed
+                    await updateTableStatus(tableId, 'available');
+                    if (DEBUG_ORDER) console.log("Table status updated to AVAILABLE after order deletion");
+                    
+                    if (DEBUG_ORDER) console.log("Order deleted successfully");
+                    return; // Successfully deleted
+                } catch (error) {
+                    console.error("Error deleting order:", error);
+                    setError("Sipariş silinirken hata oluştu.");
+                    return;
+                }
+            } else {
+                // No existing order and no new items - nothing to do
+                if (DEBUG_ORDER) console.log("No items to order and no existing order to delete");
+                return;
+            }
         }
 
         // Filtrelenen ürünler hakkında log
@@ -1136,27 +1172,29 @@ export function TableProvider({ children }) {
             });
         }
 
-        // Sipariş verilerini doğrula
-        const orderItemsForBackend = Object.entries(validItems).map(([id, item]) => {
-            const product = findProductById(id);
-            if (!product) {
-                throw new Error(`Ürün ID'si bulunamadı: ${id}`);
-            }
-            
-            // Ürün miktarını kontrol et
-            if (!item.count || item.count <= 0) {
-                throw new Error(`Ürün ${product.name} için geçersiz miktar: ${item.count}`);
-            }
-            
-            return {
-                productId: product.id,
-                productName: product.name,
-                quantity: item.count,
-                unitPrice: product.price,
-                totalPrice: item.count * product.price,
-                note: item.note || ''
-            };
-        });
+        // Sipariş verilerini doğrula ve sıfır miktarlı ürünleri filtrele
+        const orderItemsForBackend = Object.entries(validItems)
+            .filter(([id, item]) => item.count > 0) // Sıfır miktarlı ürünleri filtrele
+            .map(([id, item]) => {
+                const product = findProductById(id);
+                if (!product) {
+                    throw new Error(`Ürün ID'si bulunamadı: ${id}`);
+                }
+                
+                // Ürün miktarını kontrol et
+                if (!item.count || item.count <= 0) {
+                    throw new Error(`Ürün ${product.name} için geçersiz miktar: ${item.count}`);
+                }
+                
+                return {
+                    productId: product.id,
+                    productName: product.name,
+                    quantity: item.count,
+                    unitPrice: product.price,
+                    totalPrice: item.count * product.price,
+                    note: item.note || ''
+                };
+            });
 
         // Backend OrderRequestDTO: { userId: int, tableId: int, items: [{productId, quantity}] }
         const numericUserId = typeof roleInfo?.userId === 'string' && /^\d+$/.test(roleInfo.userId)
@@ -1221,6 +1259,7 @@ export function TableProvider({ children }) {
                 try {
                     if (currentOrder && currentOrder.id) {
                         if (DEBUG_ORDER) console.log(`Mevcut sipariş güncelleniyor: ${currentOrder.id}`);
+                        // Update existing order - this does NOT process stock changes yet
                         await apiCall(`/orders/${currentOrder.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
@@ -1228,8 +1267,8 @@ export function TableProvider({ children }) {
                         });
                     } else {
                         if (DEBUG_ORDER) console.log("Yeni sipariş oluşturuluyor...");
-                        // upsertOrderSync endpoint'ini kullan (authentication'dan user'ı alır)
-                        await apiCall('/orders/upsert-sync', {
+                        // Create new order - this does NOT process stock changes yet
+                        await apiCall('/orders', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(orderData),
@@ -1451,6 +1490,48 @@ export function TableProvider({ children }) {
             } else {
                 setError(errorMessage);
             }
+        }
+    };
+
+    // Finalize order - processes stock changes and marks order as ready for payment
+    const finalizeOrder = async (tableId) => {
+        try {
+            let orderToFinalize = resolveTableOrder(tableId);
+            
+            // If no order found, refresh data and try again with retry logic
+            if (!orderToFinalize || !orderToFinalize.id) {
+                if (DEBUG_ORDER) console.log("No order found locally, refreshing data and retrying...");
+                await fetchData();
+                orderToFinalize = resolveTableOrder(tableId);
+                
+                // If still not found, wait a bit more and try one more time
+                if (!orderToFinalize || !orderToFinalize.id) {
+                    if (DEBUG_ORDER) console.log("Order still not found, waiting 1 second and trying again...");
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+                    await fetchData();
+                    orderToFinalize = resolveTableOrder(tableId);
+                }
+            }
+            
+            if (!orderToFinalize || !orderToFinalize.id) {
+                throw new Error(`Sonlandırılacak sipariş bulunamadı - Masa ${tableId}`);
+            }
+
+            if (DEBUG_ORDER) console.log(`Finalizing order ${orderToFinalize.id} for table ${tableId}`);
+            
+            // Call the finalize endpoint which processes stock changes
+            await apiCall(`/orders/${orderToFinalize.id}/finalize`, {
+                method: 'POST'
+            });
+
+            if (DEBUG_ORDER) console.log("Order finalized successfully - stock changes processed");
+            
+            // Update local order state to reflect finalization
+            await fetchData(); // Refresh data to get updated order status
+            
+        } catch (error) {
+            console.error("Error finalizing order:", error);
+            throw error;
         }
     };
 
@@ -2425,28 +2506,8 @@ export function TableProvider({ children }) {
     // Backend'den günlük sipariş sayısını al
     const fetchDailyOrderCount = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
-            const headers = { 'Accept': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-
-            const response = await fetch(`${API_BASE_URL}/analytics/revenue/realtime?period=DAILY`, {
-                method: 'GET',
-                headers: headers
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setDailyCount(data.totalOrders || 0);
-            } else {
-                console.warn('Failed to fetch daily order count from backend, using local calculation');
-                // Fallback to local calculation
-                let localDailyCount = 0;
-                Object.values(completedOrders).forEach((order) => {
-                    const d = new Date(order.creationDate);
-                    if (d.toLocaleDateString() === todayStr) localDailyCount++;
-                });
-                setDailyCount(localDailyCount);
-            }
+            const data = await apiCall('/analytics/revenue/realtime?period=DAILY');
+            setDailyCount(data.totalOrders || 0);
         } catch (error) {
             console.error('Error fetching daily order count:', error);
             // Fallback to local calculation
@@ -2457,7 +2518,7 @@ export function TableProvider({ children }) {
             });
             setDailyCount(localDailyCount);
         }
-    }, [completedOrders, todayStr]);
+    }, [apiCall, completedOrders, todayStr]);
 
     // Aylık ve yıllık sipariş sayılarını hesapla (şimdilik local)
     useEffect(() => {
@@ -2537,6 +2598,7 @@ export function TableProvider({ children }) {
                 deleteTableForce,
                 createTable,
                 saveFinalOrder,
+                finalizeOrder,
                 cancelOrder,
                 processPayment,
                 loadTablesAndSalons,
